@@ -314,6 +314,9 @@ const EURO = new Intl.NumberFormat("en-IE", {
   currency: "EUR",
 });
 
+/** Subscribe & Save discount multiplier (15% off). */
+export const SUBSCRIBE_DISCOUNT = 0.85;
+
 export function formatPrice(value: number): string {
   return EURO.format(value);
 }

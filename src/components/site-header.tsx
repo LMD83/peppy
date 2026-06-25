@@ -7,6 +7,7 @@ import { Menu, X, ShoppingBag } from "lucide-react"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { PeppyMark } from "@/components/icons"
 import { AnnouncementBar } from "@/components/announcement-bar"
+import { useCart } from "@/lib/cart-context"
 import { collections } from "@/lib/products"
 import { cn } from "@/lib/utils"
 
@@ -20,6 +21,7 @@ const navLinks = [
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false)
+  const { count } = useCart()
 
   return (
     <header className="sticky top-0 z-50 bg-background">
@@ -49,10 +51,18 @@ export function SiteHeader() {
           <div className="flex items-center gap-1">
             <Link
               href="/cart"
-              aria-label="Cart"
-              className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
+              aria-label={`Cart${count > 0 ? `, ${count} item${count === 1 ? "" : "s"}` : ""}`}
+              className={cn(
+                buttonVariants({ variant: "ghost", size: "icon" }),
+                "relative"
+              )}
             >
               <ShoppingBag />
+              {count > 0 && (
+                <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                  {count}
+                </span>
+              )}
             </Link>
             <Button
               variant="ghost"
