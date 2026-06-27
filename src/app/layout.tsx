@@ -4,6 +4,8 @@ import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Providers } from "@/components/providers";
+import { Analytics } from "@/components/analytics";
+import { CookieConsent } from "@/components/cookie-consent";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,6 +42,9 @@ export const metadata: Metadata = {
       "Informed-Sport tested protein, creatine and pre-workout. Next-day delivery across Ireland.",
   },
   robots: { index: true, follow: true },
+  verification: process.env.GOOGLE_SITE_VERIFICATION
+    ? { google: process.env.GOOGLE_SITE_VERIFICATION }
+    : undefined,
 };
 
 export default function RootLayout({
@@ -53,10 +58,12 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <Analytics />
         <Providers>
           <SiteHeader />
           <main className="flex-1">{children}</main>
           <SiteFooter />
+          <CookieConsent />
         </Providers>
       </body>
     </html>
