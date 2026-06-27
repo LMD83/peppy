@@ -389,6 +389,337 @@ export const articles: Article[] = [
     cta: { label: "Shop starter bundles", href: "/collections/bundles" },
     related: ["how-to-take-creatine", "bcaa-vs-eaa"],
   },
+  {
+    slug: "whey-isolate-vs-concentrate",
+    title: "Whey Isolate vs Concentrate: What's the Difference?",
+    metaTitle: "Whey Isolate vs Concentrate: What's the Difference?",
+    description:
+      "Isolate or concentrate? Compare protein content, lactose, price and who each whey type suits best.",
+    cluster: "Protein",
+    keyword: "whey isolate vs concentrate",
+    author: { name: "Peppy Nutrition Team", role: "Sports Nutrition" },
+    reviewer: REVIEWER,
+    datePublished: "2026-06-13",
+    readingMinutes: 5,
+    excerpt:
+      "Both are quality whey. Isolate is more filtered and lower in lactose; concentrate is better value. Here's how to choose.",
+    intro: [
+      "Whey comes in two main forms: concentrate and isolate. They're more alike than different, but a few details can help you pick the right one.",
+    ],
+    sections: [
+      {
+        heading: "How they're made",
+        paragraphs: [
+          "Concentrate is whey filtered to a high protein content while keeping small amounts of carbs and fats. Isolate is filtered further, leaving a higher percentage of protein with very little lactose or fat.",
+        ],
+      },
+      {
+        heading: "Which suits you?",
+        paragraphs: [
+          "Choose isolate if you're sensitive to lactose or want the leanest option per scoop. Choose concentrate if you want great protein at a better price and you tolerate dairy well.",
+          "For most people, concentrate is a perfectly good everyday choice. Compare the per-serving price and protein content to decide.",
+        ],
+      },
+    ],
+    takeaways: [
+      "Isolate is more filtered: higher protein %, very low lactose.",
+      "Concentrate offers excellent value and works for most people.",
+      "Pick isolate if you're lactose-sensitive or want the leanest scoop.",
+      "Compare protein per serving and price per serving.",
+    ],
+    faqs: [
+      {
+        q: "Is whey isolate worth the extra cost?",
+        a: "If you're lactose-sensitive or want the leanest option, yes. Otherwise concentrate gives you quality protein at better value.",
+      },
+      {
+        q: "Does isolate build more muscle than concentrate?",
+        a: "No meaningful difference for muscle support when total daily protein is matched — the main differences are lactose, fat and price.",
+      },
+    ],
+    cta: { label: "Shop protein", href: "/collections/protein" },
+    related: ["whey-vs-vegan-protein", "best-time-to-take-protein"],
+  },
+  {
+    slug: "how-much-protein-to-build-muscle",
+    title: "How Much Protein Do You Need to Build Muscle?",
+    metaTitle: "How Much Protein Do You Need to Build Muscle? (Simple Maths)",
+    description:
+      "A practical guide to daily protein targets for building muscle, how to spread it across meals, and where powder fits in.",
+    cluster: "Protein",
+    keyword: "how much protein to build muscle",
+    author: { name: "Peppy Nutrition Team", role: "Sports Nutrition" },
+    reviewer: REVIEWER,
+    datePublished: "2026-06-15",
+    readingMinutes: 6,
+    excerpt:
+      "Most people aiming to build muscle do well around 1.6–2.2g of protein per kg of bodyweight per day. Here's how to hit it.",
+    intro: [
+      "Protein is the building block your body uses to repair and grow muscle after training. Getting enough each day — consistently — is what matters most.",
+    ],
+    sections: [
+      {
+        heading: "A practical daily target",
+        paragraphs: [
+          "For building muscle alongside resistance training, a common evidence-based range is roughly 1.6 to 2.2 grams of protein per kilogram of bodyweight per day. For an 80kg person that's about 130–175g daily.",
+          "You don't need to be exact — aim for the range and stay consistent.",
+        ],
+      },
+      {
+        heading: "Spread it across the day",
+        paragraphs: [
+          "Rather than one big hit, spread protein across three to five meals or snacks. This makes it easier to digest and to reach your total.",
+        ],
+      },
+      {
+        heading: "Where powder helps",
+        paragraphs: [
+          "Whole foods should do most of the work, but a shake is a convenient way to close the gap on busy days or around training. Protein contributes to the growth and maintenance of muscle mass when your overall intake and training are in place.",
+        ],
+      },
+    ],
+    takeaways: [
+      "Aim for roughly 1.6–2.2g protein per kg bodyweight per day to build muscle.",
+      "Spread it across several meals.",
+      "Whole foods first; use powder to fill gaps.",
+      "Consistency over weeks beats any single perfect day.",
+    ],
+    faqs: [
+      {
+        q: "Can I eat too much protein?",
+        a: "Very high intakes offer no extra muscle benefit for most people. Staying within the recommended range is sensible and effective.",
+      },
+      {
+        q: "Do I need protein on rest days?",
+        a: "Yes — muscle repair happens between sessions, so keep your daily protein consistent on rest days too.",
+      },
+    ],
+    cta: { label: "Shop protein", href: "/collections/protein" },
+    related: ["best-time-to-take-protein", "protein-for-weight-loss"],
+  },
+  {
+    slug: "does-creatine-work",
+    title: "Does Creatine Actually Work? What the Science Says",
+    metaTitle: "Does Creatine Actually Work? What the Science Says",
+    description:
+      "Creatine is one of the most studied supplements in sport. Here's what it does, who it helps, and what to realistically expect.",
+    cluster: "Creatine",
+    keyword: "does creatine work",
+    author: { name: "Peppy Nutrition Team", role: "Sports Nutrition" },
+    reviewer: REVIEWER,
+    datePublished: "2026-06-18",
+    readingMinutes: 5,
+    excerpt:
+      "Yes — and it's one of the few supplements with strong, consistent evidence behind it. Here's what it actually does.",
+    intro: [
+      "Few supplements have as much research behind them as creatine monohydrate. So what does the evidence actually show?",
+    ],
+    sections: [
+      {
+        heading: "What creatine does",
+        paragraphs: [
+          "Creatine helps your muscles produce energy during short, intense efforts. The authorised claim is that creatine increases physical performance in successive bursts of short-term, high-intensity exercise — think lifting, sprints and repeated efforts.",
+        ],
+      },
+      {
+        heading: "What to expect",
+        paragraphs: [
+          "Effects build over a few weeks as your muscle stores fill. Many people notice they can do a little more in tough sets. It isn't a stimulant and you won't feel it instantly like a pre-workout.",
+        ],
+      },
+      {
+        heading: "Who it suits",
+        paragraphs: [
+          "It's useful for most people doing resistance or high-intensity training, and the monohydrate form is the best-studied and best value.",
+        ],
+      },
+    ],
+    takeaways: [
+      "Creatine has strong, consistent evidence for high-intensity performance.",
+      "Effects build over a few weeks, not instantly.",
+      "Monohydrate is the most-studied, best-value form.",
+      "It's not a stimulant — pair it with consistent training.",
+    ],
+    faqs: [
+      {
+        q: "How long until creatine works?",
+        a: "Stores fill over roughly 3–4 weeks on 5g/day, or about a week if you load. Consistency is key.",
+      },
+      {
+        q: "Is creatine safe?",
+        a: "Creatine monohydrate is among the most-studied supplements and is widely considered safe for healthy adults at recommended doses. Check with your doctor if you have a medical condition.",
+      },
+    ],
+    cta: { label: "Shop creatine", href: "/collections/creatine" },
+    related: ["how-to-take-creatine", "best-supplements-for-beginners"],
+  },
+  {
+    slug: "electrolytes-for-athletes",
+    title: "Electrolytes Explained: Hydration for Athletes",
+    metaTitle: "Electrolytes Explained: Hydration for Athletes (Ireland)",
+    description:
+      "What electrolytes do, when you actually need them, and how to hydrate properly for training and longer sessions.",
+    cluster: "Recovery",
+    keyword: "electrolytes for athletes",
+    author: { name: "Peppy Nutrition Team", role: "Sports Nutrition" },
+    reviewer: REVIEWER,
+    datePublished: "2026-06-21",
+    readingMinutes: 5,
+    excerpt:
+      "Water isn't always enough. For longer or sweatier sessions, electrolytes help you hydrate effectively.",
+    intro: [
+      "Electrolytes — sodium, potassium and magnesium among them — help your body hold and use water. Here's when they matter.",
+    ],
+    sections: [
+      {
+        heading: "What electrolytes do",
+        paragraphs: [
+          "When you sweat you lose water and electrolytes. Replacing them helps maintain hydration and normal muscle and nerve function during and after exercise.",
+        ],
+      },
+      {
+        heading: "When you need them",
+        paragraphs: [
+          "For short, easy sessions, water is usually fine. For long, hot or very sweaty training — endurance runs, intense classes, hot days — an electrolyte drink helps you rehydrate more effectively than water alone.",
+        ],
+      },
+      {
+        heading: "How to use them",
+        paragraphs: [
+          "Sip an electrolyte drink before, during or after longer sessions. Pair with sensible overall fluid intake across the day.",
+        ],
+      },
+    ],
+    takeaways: [
+      "Electrolytes help your body hold and use water.",
+      "Water is fine for short sessions; electrolytes shine for long/hot/sweaty ones.",
+      "Sip before, during or after longer training.",
+    ],
+    faqs: [
+      {
+        q: "Do I need electrolytes every workout?",
+        a: "Not usually. They're most useful for longer, hotter or sweatier sessions, or when you're training multiple times a day.",
+      },
+      {
+        q: "Are electrolyte drinks just sugary sports drinks?",
+        a: "No — a good electrolyte product focuses on sodium, potassium and magnesium with little sugar, unlike traditional high-sugar sports drinks.",
+      },
+    ],
+    cta: { label: "Shop recovery", href: "/collections/recovery" },
+    related: ["bcaa-vs-eaa", "best-supplements-for-beginners"],
+  },
+  {
+    slug: "pre-workout-vs-coffee",
+    title: "Pre-Workout vs Coffee: Which Is Better for Training?",
+    metaTitle: "Pre-Workout vs Coffee: Which Is Better for Training?",
+    description:
+      "Coffee or pre-workout before the gym? Compare caffeine, extra ingredients, cost and when each makes sense.",
+    cluster: "Pre-Workout",
+    keyword: "pre workout vs coffee",
+    author: { name: "Peppy Nutrition Team", role: "Sports Nutrition" },
+    reviewer: REVIEWER,
+    datePublished: "2026-06-23",
+    readingMinutes: 4,
+    excerpt:
+      "Both can sharpen a session. Coffee is simple and cheap; pre-workout adds dosed performance ingredients. Here's the trade-off.",
+    intro: [
+      "A coffee and a pre-workout both deliver caffeine, but they're not identical. Here's how to choose for your training.",
+    ],
+    sections: [
+      {
+        heading: "Coffee: simple and cheap",
+        paragraphs: [
+          "A black coffee gives you caffeine, which can support focus and perceived effort before training. It's inexpensive and familiar — a great option for many sessions.",
+        ],
+      },
+      {
+        heading: "Pre-workout: dosed and specific",
+        paragraphs: [
+          "A good pre-workout pairs caffeine with ingredients like citrulline and beta-alanine in measured doses, and comes in consistent, known amounts. A transparent label tells you exactly what's in each scoop.",
+        ],
+      },
+      {
+        heading: "Which to choose",
+        paragraphs: [
+          "For an easy session, coffee is plenty. For harder training where you want the extra ingredients and a consistent caffeine dose, pre-workout is purpose-built. Caffeine-free pre-workout is an option for evening sessions.",
+        ],
+      },
+    ],
+    takeaways: [
+      "Both deliver caffeine; coffee is simplest and cheapest.",
+      "Pre-workout adds dosed performance ingredients and consistent caffeine.",
+      "Use coffee for easy sessions, pre-workout for harder ones.",
+      "Go caffeine-free in the evening to protect sleep.",
+    ],
+    faqs: [
+      {
+        q: "Is pre-workout better than coffee?",
+        a: "Not strictly — it's different. Pre-workout adds extra dosed ingredients and a known caffeine amount; coffee is simpler and cheaper. Choose based on the session and your preference.",
+      },
+      {
+        q: "Can I take pre-workout in the evening?",
+        a: "Use a caffeine-free pre-workout in the evening so it doesn't interfere with sleep.",
+      },
+    ],
+    cta: { label: "Shop pre-workout", href: "/collections/pre-workout" },
+    related: ["best-supplements-for-beginners", "how-much-protein-to-build-muscle"],
+  },
+  {
+    slug: "protein-for-weight-loss",
+    title: "Protein and Weight Loss: How It Helps",
+    metaTitle: "Protein and Weight Loss: How It Helps (Practical Guide)",
+    description:
+      "How a higher-protein diet supports fat loss — appetite, muscle retention and an easy daily approach that works.",
+    cluster: "Weight management",
+    keyword: "protein for weight loss",
+    author: { name: "Peppy Nutrition Team", role: "Sports Nutrition" },
+    reviewer: REVIEWER,
+    datePublished: "2026-06-25",
+    readingMinutes: 5,
+    excerpt:
+      "Protein is the most useful macro when you're trying to lose fat: it keeps you full and helps protect muscle. Here's how to use it.",
+    intro: [
+      "When people lose weight well, protein is usually doing quiet heavy lifting. Here's why it helps and how to apply it.",
+    ],
+    sections: [
+      {
+        heading: "It keeps you fuller",
+        paragraphs: [
+          "Protein is the most satiating macronutrient — meals built around it tend to keep you fuller for longer, which makes a calorie deficit easier to stick to.",
+        ],
+      },
+      {
+        heading: "It helps protect muscle",
+        paragraphs: [
+          "In a deficit, adequate protein alongside resistance training helps you hold on to muscle, so more of the weight you lose comes from fat.",
+        ],
+      },
+      {
+        heading: "A simple approach",
+        paragraphs: [
+          "Anchor each meal with a protein source, and use a shake to top up on busy days. A meal replacement or protein shake can be a convenient, portion-controlled option — but it should support a balanced diet, not replace real meals entirely.",
+        ],
+      },
+    ],
+    takeaways: [
+      "Protein is the most filling macro — it makes a deficit easier.",
+      "Adequate protein + resistance training helps protect muscle while losing fat.",
+      "Anchor meals with protein; use shakes to top up.",
+      "Supplements support a balanced diet — they don't replace it.",
+    ],
+    faqs: [
+      {
+        q: "Does protein powder help you lose weight?",
+        a: "It can help indirectly by keeping you fuller and making it easier to hit protein while in a calorie deficit. It's a tool, not a magic solution — overall calories still decide fat loss.",
+      },
+      {
+        q: "Should I drink protein shakes to lose weight?",
+        a: "They can be a convenient, portion-controlled way to hit your protein target. Build most of your diet from whole foods and use shakes to fill gaps.",
+      },
+    ],
+    cta: { label: "Shop protein", href: "/collections/protein" },
+    related: ["how-much-protein-to-build-muscle", "best-time-to-take-protein"],
+  },
 ]
 
 export function getArticle(slug: string): Article | undefined {
