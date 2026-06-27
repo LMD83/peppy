@@ -6,6 +6,7 @@ import { TrustBar } from "@/components/trust-bar"
 import { ProductCard } from "@/components/product-card"
 import { InformedSportBadge } from "@/components/informed-sport-badge"
 import { bestsellers, collections } from "@/lib/products"
+import { allArticles } from "@/lib/articles"
 import { cn } from "@/lib/utils"
 
 const goals = [
@@ -15,25 +16,8 @@ const goals = [
   { label: "Daily strength", href: "/collections/creatine" },
 ]
 
-const featuredArticles = [
-  {
-    title: "Whey vs Vegan Protein: Which Is Right for You?",
-    slug: "/learn",
-    cluster: "Protein",
-  },
-  {
-    title: "How to Take Creatine: Loading vs Maintenance",
-    slug: "/learn",
-    cluster: "Creatine",
-  },
-  {
-    title: "Best Supplements for GAA Players",
-    slug: "/learn",
-    cluster: "Performance",
-  },
-]
-
 export default function Home() {
+  const featuredArticles = allArticles().slice(0, 3)
   return (
     <>
       {/* Hero */}
@@ -164,8 +148,8 @@ export default function Home() {
           <div className="grid gap-4 sm:grid-cols-3">
             {featuredArticles.map((article) => (
               <Link
-                key={article.title}
-                href={article.slug}
+                key={article.slug}
+                href={`/learn/${article.slug}`}
                 className="flex flex-col gap-2 rounded-xl border bg-card p-5 transition-shadow hover:shadow-md"
               >
                 <span className="text-xs font-medium text-primary">

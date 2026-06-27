@@ -32,6 +32,7 @@ const footerNav = [
     links: [
       { href: "/pages/terms", label: "Terms" },
       { href: "/pages/privacy", label: "Privacy" },
+      { href: "/pages/cookie-policy", label: "Cookies" },
       { href: "/pages/disclaimer", label: "Disclaimer" },
     ],
   },
