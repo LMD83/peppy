@@ -1,4 +1,5 @@
-import { collections, type Product } from "@/lib/products"
+import type { Doc } from "@convex/_generated/dataModel"
+import { collections } from "@/lib/products"
 import { cn } from "@/lib/utils"
 
 const TAGS: Record<string, string> = Object.fromEntries(
@@ -14,7 +15,7 @@ export function ProductImage({
   product,
   className,
 }: {
-  product: Product
+  product: Doc<"products">
   className?: string
 }) {
   const [from, to] = product.accent

@@ -1,7 +1,9 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import { fetchQuery } from "convex/nextjs"
 
+import { api } from "@convex/_generated/api"
 import { ProductPurchase } from "@/components/product-purchase"
 import { ProductCard } from "@/components/product-card"
 import { ProductImage } from "@/components/product-image"
@@ -10,17 +12,6 @@ import { InformedSportBadge } from "@/components/informed-sport-badge"
 import { Stars } from "@/components/stars"
 import { ShieldCheck } from "@/components/icons"
 import { Truck, BadgeEuro, Check, RefreshCw } from "lucide-react"
-import {
-  getCollection,
-  getProduct,
-  products,
-  relatedProducts,
-} from "@/lib/products"
-import { getRatingSummary } from "@/lib/reviews"
-
-export function generateStaticParams() {
-  return products.map((p) => ({ handle: p.handle }))
-}
 
 export async function generateMetadata({
   params,
@@ -28,7 +19,7 @@ export async function generateMetadata({
   params: Promise<{ handle: string }>
 }): Promise<Metadata> {
   const { handle } = await params
-  const product = getProduct(handle)
+  const product = await fetchQuery(api.products.getByHandle, { handle })
   if (!product) return {}
 
   return {
@@ -54,12 +45,14 @@ export default async function ProductPage({
   params: Promise<{ handle: string }>
 }) {
   const { handle } = await params
-  const product = getProduct(handle)
+  const product = await fetchQuery(api.products.getByHandle, { handle })
   if (!product) notFound()
 
-  const collection = getCollection(product.collection)
-  const related = relatedProducts(product)
-  const summary = getRatingSummary(product.handle)
+  const [collection, related, summary] = await Promise.all([
+    fetchQuery(api.collections.getBySlug, { slug: product.collection }),
+    fetchQuery(api.products.related, { handle: product.handle }),
+    fetchQuery(api.reviews.ratingSummary, { handle: product.handle }),
+  ])
 
   const jsonLd = {
     "@context": "https://schema.org",

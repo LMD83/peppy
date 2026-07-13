@@ -1,12 +1,9 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import { fetchQuery } from "convex/nextjs"
 
-import { infoPages, getInfoPage } from "@/lib/pages"
-
-export function generateStaticParams() {
-  return infoPages.map((p) => ({ slug: p.slug }))
-}
+import { api } from "@convex/_generated/api"
 
 export async function generateMetadata({
   params,
@@ -14,7 +11,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
-  const page = getInfoPage(slug)
+  const page = await fetchQuery(api.pages.getBySlug, { slug })
   if (!page) return {}
   return {
     title: page.title,
@@ -29,7 +26,7 @@ export default async function InfoPageRoute({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const page = getInfoPage(slug)
+  const page = await fetchQuery(api.pages.getBySlug, { slug })
   if (!page) notFound()
 
   return (

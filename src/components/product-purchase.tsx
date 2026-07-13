@@ -3,17 +3,13 @@
 import { useState } from "react"
 import { Minus, Plus, Check } from "lucide-react"
 
+import type { Doc } from "@convex/_generated/dataModel"
 import { Button } from "@/components/ui/button"
 import { useCart } from "@/lib/cart-context"
-import {
-  formatPrice,
-  pricePerServing,
-  SUBSCRIBE_DISCOUNT,
-  type Product,
-} from "@/lib/products"
+import { formatPrice, pricePerServing, SUBSCRIBE_DISCOUNT } from "@/lib/products"
 import { cn } from "@/lib/utils"
 
-export function ProductPurchase({ product }: { product: Product }) {
+export function ProductPurchase({ product }: { product: Doc<"products"> }) {
   const { add } = useCart()
   const [flavour, setFlavour] = useState(product.flavours[0])
   const [qty, setQty] = useState(1)

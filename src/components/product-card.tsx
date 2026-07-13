@@ -1,18 +1,18 @@
 import Link from "next/link"
+import { fetchQuery } from "convex/nextjs"
 
+import { api } from "@convex/_generated/api"
+import type { Doc } from "@convex/_generated/dataModel"
 import { Badge } from "@/components/ui/badge"
 import { ShieldCheck } from "@/components/icons"
 import { ProductImage } from "@/components/product-image"
 import { Stars } from "@/components/stars"
-import {
-  formatPrice,
-  pricePerServing,
-  type Product,
-} from "@/lib/products"
-import { getRatingSummary } from "@/lib/reviews"
+import { formatPrice, pricePerServing } from "@/lib/products"
 
-export function ProductCard({ product }: { product: Product }) {
-  const { rating } = getRatingSummary(product.handle)
+export async function ProductCard({ product }: { product: Doc<"products"> }) {
+  const { rating } = await fetchQuery(api.reviews.ratingSummary, {
+    handle: product.handle,
+  })
   return (
     <Link
       href={`/products/${product.handle}`}

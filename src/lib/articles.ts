@@ -1,5 +1,7 @@
-// The /learn content engine. This first batch implements quick-win articles
-// from docs/launch-plan/04-CONTENT-STRATEGY-50-ARTICLES.md. Remaining articles
+// Types + seed fixtures for the /learn content engine (see convex/seed.ts).
+// Live article content is read from Convex — see convex/articles.ts. This
+// first batch implements quick-win articles from
+// docs/launch-plan/04-CONTENT-STRATEGY-50-ARTICLES.md. Remaining articles
 // follow the same shape — add entries to `articles` to publish them.
 //
 // Compliance: only authorised-style nutrition/health claims, attributed and
@@ -721,13 +723,3 @@ export const articles: Article[] = [
     related: ["how-much-protein-to-build-muscle", "best-time-to-take-protein"],
   },
 ]
-
-export function getArticle(slug: string): Article | undefined {
-  return articles.find((a) => a.slug === slug)
-}
-
-export function allArticles(): Article[] {
-  return [...articles].sort((a, b) =>
-    a.datePublished < b.datePublished ? 1 : -1
-  )
-}
