@@ -1,18 +1,14 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import { fetchQuery } from "convex/nextjs"
 
+import { api } from "@convex/_generated/api"
 import { ProductCard } from "@/components/product-card"
 import { InformedSportBadge } from "@/components/informed-sport-badge"
-import {
-  collections,
-  getCollection,
-  productsInCollection,
-} from "@/lib/products"
 
-export function generateStaticParams() {
-  return collections.map((c) => ({ slug: c.slug }))
-}
+// Reads live Convex data — never prerender at build time.
+export const dynamic = "force-dynamic"
 
 export async function generateMetadata({
   params,
@@ -20,7 +16,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
-  const collection = getCollection(slug)
+  const collection = await fetchQuery(api.collections.getBySlug, { slug })
   if (!collection) return {}
 
   return {
@@ -40,10 +36,12 @@ export default async function CollectionPage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const collection = getCollection(slug)
+  const collection = await fetchQuery(api.collections.getBySlug, { slug })
   if (!collection) notFound()
 
-  const items = productsInCollection(collection.slug)
+  const items = await fetchQuery(api.products.byCollection, {
+    collection: collection.slug,
+  })
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">

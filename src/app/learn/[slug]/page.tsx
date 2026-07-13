@@ -2,11 +2,15 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowRight, Clock } from "lucide-react"
+import { fetchQuery } from "convex/nextjs"
 
+import { api } from "@convex/_generated/api"
 import { buttonVariants } from "@/components/ui/button-variants"
 import { Badge } from "@/components/ui/badge"
-import { articles, getArticle } from "@/lib/articles"
 import { cn } from "@/lib/utils"
+
+// Reads live Convex data — never prerender at build time.
+export const dynamic = "force-dynamic"
 
 const dateFmt = new Intl.DateTimeFormat("en-IE", {
   day: "numeric",
@@ -14,17 +18,13 @@ const dateFmt = new Intl.DateTimeFormat("en-IE", {
   year: "numeric",
 })
 
-export function generateStaticParams() {
-  return articles.map((a) => ({ slug: a.slug }))
-}
-
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
-  const article = getArticle(slug)
+  const article = await fetchQuery(api.articles.getBySlug, { slug })
   if (!article) return {}
   return {
     title: article.metaTitle,
@@ -45,12 +45,14 @@ export default async function ArticlePage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const article = getArticle(slug)
+  const article = await fetchQuery(api.articles.getBySlug, { slug })
   if (!article) notFound()
 
-  const related = article.related
-    .map((s) => getArticle(s))
-    .filter((a): a is NonNullable<typeof a> => Boolean(a))
+  const related = (
+    await Promise.all(
+      article.related.map((s) => fetchQuery(api.articles.getBySlug, { slug: s }))
+    )
+  ).filter((a): a is NonNullable<typeof a> => Boolean(a))
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -59,7 +61,7 @@ export default async function ArticlePage({
     description: article.description,
     datePublished: article.datePublished,
     author: { "@type": "Organization", name: "Peppy" },
-    reviewedBy: { "@type": "Person", name: article.reviewer.name },
+    reviewedBy: { "@type": "Person", name: article.reviewerName },
     publisher: { "@type": "Organization", name: "Peppy" },
   }
 
@@ -102,10 +104,10 @@ export default async function ArticlePage({
         </h1>
         <p className="mt-3 text-lg text-muted-foreground">{article.excerpt}</p>
         <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-          <span>By {article.author.name}</span>
+          <span>By {article.authorName}</span>
           <span aria-hidden>·</span>
           <span>
-            Reviewed by {article.reviewer.name}, {article.reviewer.role}
+            Reviewed by {article.reviewerName}, {article.reviewerRole}
           </span>
           <span aria-hidden>·</span>
           <time dateTime={article.datePublished}>
@@ -160,8 +162,8 @@ export default async function ArticlePage({
       {/* Product CTA */}
       <div className="mt-8 flex flex-col items-start gap-3 rounded-2xl border bg-accent/40 p-6 sm:flex-row sm:items-center sm:justify-between">
         <p className="font-medium">Ready to put this into practice?</p>
-        <Link href={article.cta.href} className={cn(buttonVariants())}>
-          {article.cta.label}
+        <Link href={article.ctaHref} className={cn(buttonVariants())}>
+          {article.ctaLabel}
           <ArrowRight />
         </Link>
       </div>

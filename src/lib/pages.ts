@@ -1,4 +1,5 @@
-// Static content for legal & informational pages, rendered by /pages/[slug].
+// Types + seed fixtures for informational pages (see convex/seed.ts). Live
+// page content is read from Convex — see convex/pages.ts.
 //
 // ⚠️ The legal pages (terms, privacy, cookie-policy, disclaimer, shipping-returns)
 // are starting templates, NOT legal advice. Have an Irish solicitor and your
@@ -261,7 +262,3 @@ export const infoPages: InfoPage[] = [
     ],
   },
 ]
-
-export function getInfoPage(slug: string): InfoPage | undefined {
-  return infoPages.find((p) => p.slug === slug)
-}

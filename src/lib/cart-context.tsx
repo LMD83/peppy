@@ -8,8 +8,9 @@ import {
   useMemo,
   useState,
 } from "react"
+import { useMutation, useQuery } from "convex/react"
 
-import { SUBSCRIBE_DISCOUNT } from "@/lib/products"
+import { api } from "@convex/_generated/api"
 
 export interface CartLine {
   /** Stable identity for a configured line: handle + flavour + purchase type */
@@ -22,7 +23,7 @@ export interface CartLine {
   /** Unit price after any subscribe discount, in EUR */
   unitPrice: number
   /** oklch gradient stops for the line thumbnail */
-  accent: [string, string]
+  accent: string[]
 }
 
 export interface AddToCartInput {
@@ -32,13 +33,15 @@ export interface AddToCartInput {
   subscribe: boolean
   qty: number
   basePrice: number
-  accent: [string, string]
+  accent: string[]
 }
 
 interface CartContextValue {
   lines: CartLine[]
   count: number
   subtotal: number
+  loading: boolean
+  sessionId: string | null
   add: (input: AddToCartInput) => void
   setQty: (id: string, qty: number) => void
   remove: (id: string) => void
@@ -47,88 +50,81 @@ interface CartContextValue {
 
 const CartContext = createContext<CartContextValue | null>(null)
 
-const STORAGE_KEY = "peppy-cart-v1"
+const STORAGE_KEY = "peppy-session-id"
 
-function lineId(handle: string, flavour: string, subscribe: boolean): string {
-  return `${handle}__${flavour}__${subscribe ? "sub" : "one"}`
+function getOrCreateSessionId(): string {
+  const existing = localStorage.getItem(STORAGE_KEY)
+  if (existing) return existing
+  const created = crypto.randomUUID()
+  localStorage.setItem(STORAGE_KEY, created)
+  return created
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [lines, setLines] = useState<CartLine[]>([])
-  const [hydrated, setHydrated] = useState(false)
+  const [sessionId, setSessionId] = useState<string | null>(null)
 
-  // Load persisted cart once on mount. Loading in an effect (rather than a lazy
-  // useState initializer) is deliberate: server and client both first render an
-  // empty cart, so there's no hydration mismatch — the stored cart is applied
-  // immediately after hydration.
+  // The session id identifies this browser's cart in Convex. It's generated
+  // client-side (no server cookie) so it must wait for mount.
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY)
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- storage hydration is a legitimate post-mount state sync
-      if (raw) setLines(JSON.parse(raw) as CartLine[])
-    } catch {
-      // Ignore malformed storage.
-    }
-    setHydrated(true)
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- session id read from localStorage is a legitimate post-mount state sync
+    setSessionId(getOrCreateSessionId())
   }, [])
 
-  // Persist on change (after initial hydration).
-  useEffect(() => {
-    if (!hydrated) return
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(lines))
-    } catch {
-      // Storage may be unavailable (private mode); fail silently.
-    }
-  }, [lines, hydrated])
+  const lines: CartLine[] | undefined = useQuery(
+    api.cart.get,
+    sessionId ? { sessionId } : "skip"
+  )
 
-  const add = useCallback((input: AddToCartInput) => {
-    const id = lineId(input.handle, input.flavour, input.subscribe)
-    const unitPrice = input.subscribe
-      ? input.basePrice * SUBSCRIBE_DISCOUNT
-      : input.basePrice
-    setLines((prev) => {
-      const existing = prev.find((l) => l.id === id)
-      if (existing) {
-        return prev.map((l) =>
-          l.id === id ? { ...l, qty: l.qty + input.qty } : l
-        )
-      }
-      return [
-        ...prev,
-        {
-          id,
-          handle: input.handle,
-          name: input.name,
-          flavour: input.flavour,
-          subscribe: input.subscribe,
-          qty: input.qty,
-          unitPrice,
-          accent: input.accent,
-        },
-      ]
-    })
-  }, [])
+  const addMutation = useMutation(api.cart.add)
+  const setQtyMutation = useMutation(api.cart.setQty)
+  const removeMutation = useMutation(api.cart.remove)
+  const clearMutation = useMutation(api.cart.clear)
 
-  const setQty = useCallback((id: string, qty: number) => {
-    setLines((prev) =>
-      qty <= 0
-        ? prev.filter((l) => l.id !== id)
-        : prev.map((l) => (l.id === id ? { ...l, qty } : l))
-    )
-  }, [])
+  const add = useCallback(
+    (input: AddToCartInput) => {
+      if (!sessionId) return
+      void addMutation({ sessionId, ...input })
+    },
+    [sessionId, addMutation]
+  )
 
-  const remove = useCallback((id: string) => {
-    setLines((prev) => prev.filter((l) => l.id !== id))
-  }, [])
+  const setQty = useCallback(
+    (id: string, qty: number) => {
+      if (!sessionId) return
+      void setQtyMutation({ sessionId, id, qty })
+    },
+    [sessionId, setQtyMutation]
+  )
 
-  const clear = useCallback(() => setLines([]), [])
+  const remove = useCallback(
+    (id: string) => {
+      if (!sessionId) return
+      void removeMutation({ sessionId, id })
+    },
+    [sessionId, removeMutation]
+  )
+
+  const clear = useCallback(() => {
+    if (!sessionId) return
+    void clearMutation({ sessionId })
+  }, [sessionId, clearMutation])
 
   const value = useMemo<CartContextValue>(() => {
-    const count = lines.reduce((sum, l) => sum + l.qty, 0)
-    const subtotal = lines.reduce((sum, l) => sum + l.qty * l.unitPrice, 0)
-    return { lines, count, subtotal, add, setQty, remove, clear }
-  }, [lines, add, setQty, remove, clear])
+    const resolved = lines ?? []
+    const count = resolved.reduce((sum, l) => sum + l.qty, 0)
+    const subtotal = resolved.reduce((sum, l) => sum + l.qty * l.unitPrice, 0)
+    return {
+      lines: resolved,
+      count,
+      subtotal,
+      loading: lines === undefined,
+      sessionId,
+      add,
+      setQty,
+      remove,
+      clear,
+    }
+  }, [lines, sessionId, add, setQty, remove, clear])
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>
 }

@@ -1,9 +1,13 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { Clock } from "lucide-react"
+import { fetchQuery } from "convex/nextjs"
 
+import { api } from "@convex/_generated/api"
 import { Badge } from "@/components/ui/badge"
-import { allArticles } from "@/lib/articles"
+
+// Reads live Convex data — never prerender at build time.
+export const dynamic = "force-dynamic"
 
 export const metadata: Metadata = {
   title: "Learn — Sports Nutrition Guides",
@@ -12,8 +16,8 @@ export const metadata: Metadata = {
   alternates: { canonical: "/learn" },
 }
 
-export default function LearnPage() {
-  const articles = allArticles()
+export default async function LearnPage() {
+  const articles = await fetchQuery(api.articles.list, {})
   const [featured, ...rest] = articles
 
   return (

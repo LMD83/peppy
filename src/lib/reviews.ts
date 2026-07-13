@@ -1,6 +1,5 @@
-// Sample review data. In production this comes from a reviews provider
-// (Judge.me, Okendo, Trustpilot) — the shape here mirrors what their widgets
-// and the AggregateRating schema need.
+// Seed fixtures for the `reviews` Convex table (see convex/seed.ts). Live
+// review data is read from Convex — see convex/reviews.ts.
 
 export interface Review {
   author: string
@@ -17,7 +16,7 @@ interface ReviewSet {
   reviews: Review[]
 }
 
-const REVIEWS: Record<string, ReviewSet> = {
+export const REVIEW_SETS: Record<string, ReviewSet> = {
   "whey-protein": {
     rating: 4.8,
     reviews: [
@@ -98,7 +97,7 @@ const REVIEWS: Record<string, ReviewSet> = {
   },
 }
 
-const DEFAULT_SET: ReviewSet = {
+export const DEFAULT_REVIEW_SET: ReviewSet = {
   rating: 4.6,
   reviews: [
     {
@@ -120,16 +119,4 @@ const DEFAULT_SET: ReviewSet = {
       verified: true,
     },
   ],
-}
-
-export function getReviews(handle: string): Review[] {
-  return (REVIEWS[handle] ?? DEFAULT_SET).reviews
-}
-
-export function getRatingSummary(handle: string): {
-  rating: number
-  count: number
-} {
-  const set = REVIEWS[handle] ?? DEFAULT_SET
-  return { rating: set.rating, count: set.reviews.length }
 }

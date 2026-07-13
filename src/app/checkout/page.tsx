@@ -3,7 +3,9 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Lock, CheckCircle2 } from "lucide-react"
+import { useMutation } from "convex/react"
 
+import { api } from "@convex/_generated/api"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { useCart } from "@/lib/cart-context"
 import { shippingFor } from "@/lib/checkout"
@@ -18,15 +20,17 @@ const IRISH_COUNTIES = [
 ]
 
 export default function CheckoutPage() {
-  const { lines, subtotal, count, clear } = useCart()
+  const { lines, subtotal, count, sessionId, loading } = useCart()
+  const placeOrder = useMutation(api.orders.place)
   const [placed, setPlaced] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   const shipping = shippingFor(subtotal)
   const total = subtotal + shipping
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    if (!sessionId) return
     setSubmitting(true)
 
     // ── Payment integration point ───────────────────────────────────────────
@@ -41,10 +45,14 @@ export default function CheckoutPage() {
     //
     // That route (server-side) needs STRIPE_SECRET_KEY and a webhook to confirm
     // the order. Apple/Google Pay and Revolut Pay are enabled in the Stripe
-    // dashboard. Until keys are configured we simulate a successful order.
+    // dashboard. Until keys are configured we place the order directly, so it's
+    // recorded in Convex without payment being taken.
     // ─────────────────────────────────────────────────────────────────────────
-    await new Promise((r) => setTimeout(r, 600))
-    clear()
+    const email = new FormData(e.currentTarget).get("email")
+    await placeOrder({
+      sessionId,
+      email: typeof email === "string" ? email : undefined,
+    })
     setPlaced(true)
     setSubmitting(false)
   }
@@ -64,6 +72,8 @@ export default function CheckoutPage() {
       </div>
     )
   }
+
+  if (loading) return null
 
   if (count === 0) {
     return (

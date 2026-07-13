@@ -1,8 +1,9 @@
 import { BadgeCheck } from "lucide-react"
+import { fetchQuery } from "convex/nextjs"
 
+import { api } from "@convex/_generated/api"
 import { Stars } from "@/components/stars"
 import { ReviewForm } from "@/components/review-form"
-import { getReviews, getRatingSummary } from "@/lib/reviews"
 
 const dateFmt = new Intl.DateTimeFormat("en-IE", {
   day: "numeric",
@@ -10,15 +11,17 @@ const dateFmt = new Intl.DateTimeFormat("en-IE", {
   year: "numeric",
 })
 
-export function ProductReviews({
+export async function ProductReviews({
   handle,
   productName,
 }: {
   handle: string
   productName: string
 }) {
-  const { rating, count } = getRatingSummary(handle)
-  const reviews = getReviews(handle)
+  const [{ rating, count }, reviews] = await Promise.all([
+    fetchQuery(api.reviews.ratingSummary, { handle }),
+    fetchQuery(api.reviews.byProduct, { handle }),
+  ])
 
   return (
     <section className="mt-14" id="reviews">
@@ -32,8 +35,8 @@ export function ProductReviews({
 
       <div className="grid gap-8 lg:grid-cols-3">
         <ul className="space-y-4 lg:col-span-2">
-          {reviews.map((review, i) => (
-            <li key={i} className="rounded-xl border p-5">
+          {reviews.map((review) => (
+            <li key={review._id} className="rounded-xl border p-5">
               <div className="flex items-center justify-between gap-2">
                 <Stars rating={review.rating} size="size-3.5" />
                 <time className="text-xs text-muted-foreground" dateTime={review.date}>

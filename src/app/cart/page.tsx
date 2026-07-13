@@ -14,7 +14,9 @@ import { formatPrice } from "@/lib/products"
 import { cn } from "@/lib/utils"
 
 export default function CartPage() {
-  const { lines, subtotal, count, setQty, remove } = useCart()
+  const { lines, subtotal, count, setQty, remove, loading } = useCart()
+
+  if (loading) return null
 
   if (count === 0) {
     return (

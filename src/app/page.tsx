@@ -1,13 +1,16 @@
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
+import { fetchQuery } from "convex/nextjs"
 
+import { api } from "@convex/_generated/api"
 import { buttonVariants } from "@/components/ui/button-variants"
 import { TrustBar } from "@/components/trust-bar"
 import { ProductCard } from "@/components/product-card"
 import { InformedSportBadge } from "@/components/informed-sport-badge"
-import { bestsellers, collections } from "@/lib/products"
-import { allArticles } from "@/lib/articles"
 import { cn } from "@/lib/utils"
+
+// Reads live Convex data — never prerender at build time.
+export const dynamic = "force-dynamic"
 
 const goals = [
   { label: "Build muscle", href: "/collections/protein" },
@@ -16,8 +19,13 @@ const goals = [
   { label: "Daily strength", href: "/collections/creatine" },
 ]
 
-export default function Home() {
-  const featuredArticles = allArticles().slice(0, 3)
+export default async function Home() {
+  const [featuredProducts, collections, allArticles] = await Promise.all([
+    fetchQuery(api.products.bestsellers, {}),
+    fetchQuery(api.collections.list, {}),
+    fetchQuery(api.articles.list, {}),
+  ])
+  const featuredArticles = allArticles.slice(0, 3)
   return (
     <>
       {/* Hero */}
@@ -77,7 +85,7 @@ export default function Home() {
           </Link>
         </div>
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {bestsellers().map((product) => (
+          {featuredProducts.map((product) => (
             <ProductCard key={product.handle} product={product} />
           ))}
         </div>

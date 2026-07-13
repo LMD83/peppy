@@ -1,5 +1,6 @@
-// Single source of truth for the Peppy catalogue.
-// Sample data — real products/pricing come from the commerce backend later.
+// Types + seed fixtures for the Peppy catalogue (see convex/seed.ts).
+// Live product/collection data is read from Convex — see convex/products.ts
+// and convex/collections.ts.
 
 export type CollectionSlug =
   | "protein"
@@ -322,30 +323,6 @@ export function formatPrice(value: number): string {
 }
 
 /** Price per serving, formatted — the metric customers actually compare. */
-export function pricePerServing(product: Product): string {
+export function pricePerServing(product: Pick<Product, "price" | "servings">): string {
   return EURO.format(product.price / product.servings);
-}
-
-export function getCollection(slug: string): Collection | undefined {
-  return collections.find((c) => c.slug === slug);
-}
-
-export function getProduct(handle: string): Product | undefined {
-  return products.find((p) => p.handle === handle);
-}
-
-export function productsInCollection(slug: CollectionSlug): Product[] {
-  return products.filter((p) => p.collection === slug);
-}
-
-export function bestsellers(): Product[] {
-  return products.filter((p) => p.bestseller);
-}
-
-/** Suggested cross-sell: other products, prioritising a different collection. */
-export function relatedProducts(product: Product, limit = 3): Product[] {
-  return products
-    .filter((p) => p.handle !== product.handle)
-    .sort((a, b) => Number(b.bestseller ?? false) - Number(a.bestseller ?? false))
-    .slice(0, limit);
 }
