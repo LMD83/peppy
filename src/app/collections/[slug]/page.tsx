@@ -7,6 +7,9 @@ import { api } from "@convex/_generated/api"
 import { ProductCard } from "@/components/product-card"
 import { InformedSportBadge } from "@/components/informed-sport-badge"
 
+// Reads live Convex data — never prerender at build time.
+export const dynamic = "force-dynamic"
+
 export async function generateMetadata({
   params,
 }: {

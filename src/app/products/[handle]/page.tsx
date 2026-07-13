@@ -13,6 +13,9 @@ import { Stars } from "@/components/stars"
 import { ShieldCheck } from "@/components/icons"
 import { Truck, BadgeEuro, Check, RefreshCw } from "lucide-react"
 
+// Reads live Convex data — never prerender at build time.
+export const dynamic = "force-dynamic"
+
 export async function generateMetadata({
   params,
 }: {

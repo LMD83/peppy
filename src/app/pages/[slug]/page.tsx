@@ -5,6 +5,9 @@ import { fetchQuery } from "convex/nextjs"
 
 import { api } from "@convex/_generated/api"
 
+// Reads live Convex data — never prerender at build time.
+export const dynamic = "force-dynamic"
+
 export async function generateMetadata({
   params,
 }: {

@@ -9,6 +9,9 @@ import { ProductCard } from "@/components/product-card"
 import { InformedSportBadge } from "@/components/informed-sport-badge"
 import { cn } from "@/lib/utils"
 
+// Reads live Convex data — never prerender at build time.
+export const dynamic = "force-dynamic"
+
 const goals = [
   { label: "Build muscle", href: "/collections/protein" },
   { label: "Boost energy", href: "/collections/pre-workout" },

@@ -6,6 +6,9 @@ import { fetchQuery } from "convex/nextjs"
 import { api } from "@convex/_generated/api"
 import { Badge } from "@/components/ui/badge"
 
+// Reads live Convex data — never prerender at build time.
+export const dynamic = "force-dynamic"
+
 export const metadata: Metadata = {
   title: "Learn — Sports Nutrition Guides",
   description:

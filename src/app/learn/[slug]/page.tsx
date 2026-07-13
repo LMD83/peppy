@@ -9,6 +9,9 @@ import { buttonVariants } from "@/components/ui/button-variants"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
+// Reads live Convex data — never prerender at build time.
+export const dynamic = "force-dynamic"
+
 const dateFmt = new Intl.DateTimeFormat("en-IE", {
   day: "numeric",
   month: "long",
