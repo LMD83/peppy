@@ -31,5 +31,9 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    // Independent Next.js app with its own tsconfig/path aliases — see tara/README.md.
+    "tara"
+  ]
 }
