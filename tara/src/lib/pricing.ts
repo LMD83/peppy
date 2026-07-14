@@ -1,36 +1,57 @@
-// Volume-tier + promo pricing. Shared, pure logic — safe to call from a
-// server component, a client component, or (once wired) a Convex function.
-// The two discount mechanisms never stack: whichever gives the customer the
-// better price applies, so we never accidentally over-discount an order.
+// TARA pricing rules — ported from the design handoff's convex/pricing.ts so the
+// UI and the (future) Convex backend share identical logic. All prices are
+// VAT-inclusive cents (Irish VAT 23%) — never add VAT at the end.
 
+export const VAT_RATE = 0.23;
+export const FREE_SHIP_THRESHOLD_CENTS = 15000; // €150 net goods
+export const FLAT_SHIP_CENTS = 995; // €9.95
 export const PROMO_CODE = "TARA15";
 export const PROMO_RATE = 0.15;
 
-export function volumeDiscountRate(qty: number): number {
-  if (qty >= 3) return 0.1;
-  if (qty >= 2) return 0.05;
+export function volumePercent(totalQty: number): number {
+  if (totalQty >= 3) return 0.1; // buy 3+ -> 10%
+  if (totalQty === 2) return 0.05; // buy 2 -> 5%
   return 0;
 }
 
-export interface DiscountResult {
-  rate: number;
-  label: string;
-  source: "volume" | "promo" | "none";
+export interface CartLine {
+  unitPriceCents: number;
+  qty: number;
 }
 
-export function resolveDiscount(qty: number, promoCode?: string | null): DiscountResult {
-  const volumeRate = volumeDiscountRate(qty);
-  const promoApplied = promoCode?.trim().toUpperCase() === PROMO_CODE;
-  const promoRate = promoApplied ? PROMO_RATE : 0;
+export interface OrderTotals {
+  subtotalCents: number;
+  discountCents: number;
+  discountLabel: string;
+  shippingCents: number;
+  vatCents: number;
+  totalCents: number;
+}
 
-  if (promoRate > volumeRate) {
-    return { rate: promoRate, label: `${PROMO_CODE} promo code`, source: "promo" };
-  }
-  if (volumeRate > 0) {
-    const label = qty >= 3 ? "Volume discount — 3+ vials" : "Volume discount — 2 vials";
-    return { rate: volumeRate, label, source: "volume" };
-  }
-  return { rate: 0, label: "", source: "none" };
+export function priceOrder(lines: CartLine[], promoCode?: string | null): OrderTotals {
+  const subtotalCents = lines.reduce((n, l) => n + l.unitPriceCents * l.qty, 0);
+  const totalQty = lines.reduce((n, l) => n + l.qty, 0);
+  const vPct = volumePercent(totalQty);
+  const promoApplied = promoCode?.trim().toUpperCase() === PROMO_CODE;
+  const promoPercent = promoApplied ? PROMO_RATE : 0;
+
+  // Never stack: take the better of volume vs promo.
+  const bestPct = Math.max(vPct, promoPercent);
+  const discountCents = Math.round(subtotalCents * bestPct);
+  const discountLabel =
+    promoPercent >= vPct && promoPercent > 0
+      ? `First-order −${Math.round(promoPercent * 100)}%`
+      : vPct > 0
+        ? `Volume ${totalQty} vials · −${Math.round(vPct * 100)}%`
+        : "";
+
+  const netGoods = subtotalCents - discountCents;
+  const shippingCents =
+    subtotalCents === 0 || netGoods >= FREE_SHIP_THRESHOLD_CENTS ? 0 : FLAT_SHIP_CENTS;
+  const totalCents = netGoods + shippingCents; // VAT already inside
+  const vatCents = Math.round(totalCents - totalCents / (1 + VAT_RATE));
+
+  return { subtotalCents, discountCents, discountLabel, shippingCents, vatCents, totalCents };
 }
 
 /** What to tell the customer to nudge them toward the next volume tier. */
@@ -40,35 +61,14 @@ export function volumeNudge(qty: number): string | null {
   return null;
 }
 
-export interface PriceBreakdown {
-  unitPrice: number;
-  qty: number;
-  subtotal: number;
-  discount: DiscountResult;
-  discountAmount: number;
-  total: number;
-}
-
-export function priceForQty(
-  unitPrice: number,
-  qty: number,
-  promoCode?: string | null
-): PriceBreakdown {
-  const discount = resolveDiscount(qty, promoCode);
-  const subtotal = unitPrice * qty;
-  const discountAmount = subtotal * discount.rate;
-  return {
-    unitPrice,
-    qty,
-    subtotal,
-    discount,
-    discountAmount,
-    total: subtotal - discountAmount,
-  };
+/** Deterministic verify ID from a batch number — mirrors the design reference's `vidFor`. */
+export function verifyIdFromBatch(batch: string): string {
+  const d = (batch || "").replace(/\D/g, "").padEnd(6, "0");
+  return `TV-${d.slice(0, 4)}-${d.slice(4, 6)}K${d.slice(0, 2)}-${d.slice(2, 4)}V${d.slice(4, 6)}`;
 }
 
 const EUR = new Intl.NumberFormat("en-IE", { style: "currency", currency: "EUR" });
 
-export function formatPrice(value: number): string {
-  return EUR.format(value);
+export function formatCents(cents: number): string {
+  return EUR.format(cents / 100);
 }

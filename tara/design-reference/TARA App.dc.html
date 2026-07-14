@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#0a0f16;color:#E6EDF4;font-family:Inter,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;display:flex;justify-content:center;padding:24px 0;}
+  *{box-sizing:border-box;}
+  .sc::-webkit-scrollbar{display:none;}
+</style>
+</helmet>
+
+<x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ dark }}" hint-size="390px,844px">
+  <div style="position:relative;height:100%;display:flex;flex-direction:column;background:#0a121c;color:#E6EDF4;">
+    <div class="sc" style="flex:1;overflow-y:auto;scrollbar-width:none;padding:56px 18px 104px;">
+
+      <!-- HOME -->
+      <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0 18px;">
+          <div><div style="font-size:12px;color:#8fa3b8;">{{ today }}</div><div style="font-family:'Playfair Display',serif;font-size:23px;font-weight:600;">Good morning, Aoife</div></div>
+          <div style="display:flex;align-items:center;gap:6px;background:rgba(201,161,90,.14);border:1px solid rgba(201,161,90,.4);border-radius:999px;padding:5px 11px;"><span style="width:6px;height:6px;border-radius:50%;background:#C9A15A;"></span><span style="font-size:11px;font-weight:600;color:#C9A15A;">FELLOW</span></div>
+        </div>
+        <div style="background:linear-gradient(150deg,#123a2a,#0f2438);border:1px solid #1c4a37;border-radius:18px;padding:20px;margin-bottom:14px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:14px;"><span style="font-size:11px;font-weight:700;letter-spacing:.14em;color:#12b886;">NEXT DOSE · IN 42 MIN</span><span style="font-size:11px;color:#8fa3b8;font-family:'JetBrains Mono',monospace;">08:00</span></div>
+          <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:600;">Ipamorelin</div>
+          <div style="font-size:13.5px;color:#a9bccd;margin:4px 0 16px;">200 mcg · draw <strong style="color:#E6EDF4;">10 units</strong> · subcutaneous</div>
+          <button onClick="{{ logDose }}" style="width:100%;height:48px;border:none;border-radius:12px;background:{{ dosedBg }};color:#04140d;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;">{{ dosedLabel }}</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+          <div style="background:#12263A;border:1px solid #1c3049;border-radius:16px;padding:16px;"><div style="font-size:11px;color:#8fa3b8;">STREAK</div><div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:600;color:#12b886;">12<span style="font-size:13px;color:#8fa3b8;"> days</span></div><div style="font-size:11px;color:#8fa3b8;">Adherence 96%</div></div>
+          <div style="background:#12263A;border:1px solid #1c3049;border-radius:16px;padding:16px;"><div style="font-size:11px;color:#8fa3b8;">WEIGHT · 30D</div><div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:600;">−2.4<span style="font-size:13px;color:#8fa3b8;"> kg</span></div><div style="font-size:11px;color:#12b886;">On track ↘</div></div>
+        </div>
+        <div style="font-size:12px;font-weight:700;letter-spacing:.1em;color:#8fa3b8;margin:20px 2px 10px;">TODAY</div>
+        <sc-for list="{{ todayItems }}" as="t" hint-placeholder-count="3">
+          <div style="display:flex;align-items:center;gap:14px;background:#12263A;border:1px solid #1c3049;border-radius:14px;padding:13px 16px;margin-bottom:10px;">
+            <span style="width:38px;height:38px;border-radius:10px;background:{{ t.tint }};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#04140d;font-family:'JetBrains Mono',monospace;">{{ t.u }}</span>
+            <div style="flex:1;"><div style="font-size:15px;font-weight:600;">{{ t.name }}</div><div style="font-size:12px;color:#8fa3b8;">{{ t.detail }}</div></div>
+            <div style="font-size:12px;color:#8fa3b8;font-family:'JetBrains Mono',monospace;">{{ t.time }}</div>
+          </div>
+        </sc-for>
+        <div style="display:flex;align-items:center;gap:12px;background:rgba(21,94,32,.15);border:1px solid #1c4a37;border-radius:14px;padding:14px 16px;margin-top:14px;"><span style="font-size:18px;">✓</span><div style="flex:1;font-size:13px;color:#cfe3d6;">8 verified batches in your vault</div><span style="font-size:12px;font-weight:600;color:#12b886;">View →</span></div>
+      </sc-if>
+
+      <!-- TRACK -->
+      <sc-if value="{{ isTrack }}" hint-placeholder-val="{{ false }}">
+        <div style="font-family:'Playfair Display',serif;font-size:25px;font-weight:600;padding:12px 0 14px;">Progress</div>
+        <div style="display:flex;gap:8px;margin-bottom:18px;">
+          <sc-for list="{{ metrics }}" as="m" hint-placeholder-count="4">
+            <button onClick="{{ m.pick }}" style="flex:1;height:38px;border-radius:10px;border:1px solid {{ m.bd }};background:{{ m.bg }};color:{{ m.fg }};font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;">{{ m.label }}</button>
+          </sc-for>
+        </div>
+        <div style="background:#12263A;border:1px solid #1c3049;border-radius:18px;padding:20px;margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px;"><span style="font-size:13px;color:#8fa3b8;">{{ metricTitle }}</span><span style="font-family:'Playfair Display',serif;font-size:22px;font-weight:600;">{{ metricNow }}</span></div>
+          <div style="display:flex;align-items:flex-end;gap:8px;height:120px;">
+            <sc-for list="{{ chart }}" as="b" hint-placeholder-count="8">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;"><div style="width:100%;height:{{ b.h }};background:linear-gradient(180deg,#12b886,#1B5E20);border-radius:5px 5px 0 0;"></div><span style="font-size:9px;color:#5f7387;">{{ b.label }}</span></div>
+            </sc-for>
+          </div>
+        </div>
+        <button onClick="{{ noop }}" style="width:100%;height:50px;border:none;border-radius:12px;background:#12b886;color:#04140d;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;margin-bottom:18px;">+ Log today</button>
+        <div style="font-size:12px;font-weight:700;letter-spacing:.1em;color:#8fa3b8;margin:4px 2px 10px;">PROGRESS PHOTOS</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div style="height:150px;border-radius:14px;overflow:hidden;border:1px solid #1c3049;"><image-slot id="app-prog-1" shape="rect" placeholder="Week 1"></image-slot></div>
+          <div style="height:150px;border-radius:14px;overflow:hidden;border:1px solid #1c3049;"><image-slot id="app-prog-2" shape="rect" placeholder="Week 8"></image-slot></div>
+        </div>
+      </sc-if>
+
+      <!-- PLAN -->
+      <sc-if value="{{ isPlan }}" hint-placeholder-val="{{ false }}">
+        <div style="font-family:'Playfair Display',serif;font-size:25px;font-weight:600;padding:12px 0 4px;">Your protocol</div>
+        <div style="font-size:13px;color:#8fa3b8;margin-bottom:16px;">GH-axis recovery · Week 3 of 8</div>
+        <div style="display:flex;justify-content:space-between;gap:6px;margin-bottom:20px;">
+          <sc-for list="{{ week }}" as="d" hint-placeholder-count="7">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;background:{{ d.bg }};border:1px solid {{ d.bd }};border-radius:12px;padding:12px 0;"><span style="font-size:11px;color:{{ d.fg }};font-weight:600;">{{ d.d }}</span><span style="width:7px;height:7px;border-radius:50%;background:{{ d.dot }};"></span></div>
+          </sc-for>
+        </div>
+        <div style="font-size:12px;font-weight:700;letter-spacing:.1em;color:#8fa3b8;margin:4px 2px 10px;">SCHEDULE</div>
+        <sc-for list="{{ schedule }}" as="s" hint-placeholder-count="3">
+          <div style="background:#12263A;border:1px solid #1c3049;border-radius:14px;padding:15px 16px;margin-bottom:10px;"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-size:15px;font-weight:600;">{{ s.name }}</div><div style="font-size:12px;color:#12b886;font-family:'JetBrains Mono',monospace;">{{ s.when }}</div></div><div style="font-size:12px;color:#8fa3b8;margin-top:4px;">{{ s.note }}</div></div>
+        </sc-for>
+        <div style="background:rgba(21,94,32,.15);border:1px solid #1c4a37;border-radius:14px;padding:16px;margin-top:14px;"><div style="font-size:11px;font-weight:700;letter-spacing:.12em;color:#12b886;margin-bottom:6px;">SMART TIMING</div><div style="font-size:13px;line-height:1.5;color:#cfe3d6;">Ipamorelin is best dosed fasted. We’ll notify you 40 min before each window and log it automatically.</div></div>
+      </sc-if>
+
+      <!-- LEARN -->
+      <sc-if value="{{ isLearn }}" hint-placeholder-val="{{ false }}">
+        <div style="font-family:'Playfair Display',serif;font-size:25px;font-weight:600;padding:12px 0 14px;">Knowledge</div>
+        <div style="position:relative;border-radius:18px;overflow:hidden;margin-bottom:16px;height:180px;">
+          <image-slot id="app-learn-hero" shape="rect" placeholder="Featured film"></image-slot>
+          <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,18,28,.1),rgba(10,18,28,.85));pointer-events:none;"></div>
+          <div style="position:absolute;left:16px;bottom:14px;right:16px;pointer-events:none;"><div style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#C9A15A;">FELLOW FILM</div><div style="font-family:'Playfair Display',serif;font-size:19px;font-weight:600;">Reconstitution, done right</div></div>
+        </div>
+        <sc-for list="{{ library }}" as="l" hint-placeholder-count="4">
+          <div style="display:flex;align-items:center;gap:14px;background:#12263A;border:1px solid #1c3049;border-radius:14px;padding:14px 16px;margin-bottom:10px;">
+            <span style="width:38px;height:38px;border-radius:10px;background:{{ l.tint }};display:flex;align-items:center;justify-content:center;font-size:16px;">{{ l.icon }}</span>
+            <div style="flex:1;"><div style="font-size:14.5px;font-weight:600;">{{ l.title }}</div><div style="font-size:12px;color:#8fa3b8;">{{ l.meta }}</div></div>
+            <span style="font-size:12px;color:{{ l.lockFg }};">{{ l.lock }}</span>
+          </div>
+        </sc-for>
+      </sc-if>
+
+      <!-- YOU -->
+      <sc-if value="{{ isYou }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:14px;padding:14px 0 20px;">
+          <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#1B5E20,#12b886);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:22px;font-weight:700;">A</div>
+          <div><div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:600;">Aoife Byrne</div><div style="font-size:12px;color:#C9A15A;font-weight:600;">Fellow · member since 2026</div></div>
+        </div>
+        <div style="background:linear-gradient(150deg,#1a2f1f,#0f2438);border:1px solid #1c4a37;border-radius:16px;padding:18px;margin-bottom:12px;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.12em;color:#C9A15A;margin-bottom:8px;">REFER & EARN</div>
+          <div style="font-size:14px;line-height:1.5;color:#cfe3d6;margin-bottom:14px;">Give a friend €10, get €10. <strong style="color:#E6EDF4;">3 friends joined</strong> → €30 credit banked.</div>
+          <div style="height:8px;border-radius:6px;background:#0a121c;overflow:hidden;margin-bottom:14px;"><div style="width:60%;height:100%;background:linear-gradient(90deg,#12b886,#C9A15A);"></div></div>
+          <button onClick="{{ noop }}" style="width:100%;height:44px;border:none;border-radius:11px;background:#12b886;color:#04140d;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;">Share invite link</button>
+        </div>
+        <sc-for list="{{ youRows }}" as="r" hint-placeholder-count="4">
+          <div style="display:flex;align-items:center;gap:14px;background:#12263A;border:1px solid #1c3049;border-radius:14px;padding:15px 16px;margin-bottom:10px;">
+            <span style="font-size:17px;">{{ r.icon }}</span>
+            <div style="flex:1;"><div style="font-size:14.5px;font-weight:600;">{{ r.title }}</div><div style="font-size:12px;color:#8fa3b8;">{{ r.sub }}</div></div>
+            <span style="font-size:16px;color:#5f7387;">›</span>
+          </div>
+        </sc-for>
+      </sc-if>
+
+    </div>
+
+    <!-- TAB BAR -->
+    <div style="position:absolute;left:0;right:0;bottom:0;display:flex;background:rgba(10,18,28,.92);backdrop-filter:blur(12px);border-top:1px solid #1c3049;padding:8px 6px 26px;">
+      <sc-for list="{{ tabs }}" as="tab" hint-placeholder-count="5">
+        <button onClick="{{ tab.go }}" style="flex:1;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;font-family:inherit;padding:4px 0;">
+          <span style="font-size:20px;line-height:1;filter:{{ tab.filter }};opacity:{{ tab.op }};">{{ tab.icon }}</span>
+          <span style="font-size:10px;font-weight:600;color:{{ tab.fg }};">{{ tab.label }}</span>
+        </button>
+      </sc-for>
+    </div>
+  </div>
+</x-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:430,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  state = { tab: 'home', metric: 'weight', dosed: false };
+  renderVals() {
+    const s = this.state;
+    const TABS = [
+      { key:'home', label:'Home', icon:'🏠' },
+      { key:'track', label:'Track', icon:'📈' },
+      { key:'plan', label:'Plan', icon:'🗓️' },
+      { key:'learn', label:'Learn', icon:'📚' },
+      { key:'you', label:'You', icon:'👤' },
+    ];
+    const tabs = TABS.map(t => ({ ...t, go:()=>this.setState({ tab:t.key }),
+      fg: s.tab===t.key ? '#12b886' : '#5f7387',
+      op: s.tab===t.key ? '1' : '.5',
+      filter: s.tab===t.key ? 'none' : 'grayscale(1)' }));
+
+    const metricData = {
+      weight: { title:'Weight (kg)', now:'78.6', label:'weight', bars:[70,66,60,54,48,40,34,30] },
+      skin:   { title:'Skin clarity (self-score)', now:'8.4', label:'skin', bars:[30,38,44,50,58,66,74,84] },
+      sleep:  { title:'Sleep (hrs)', now:'7.8', label:'sleep', bars:[52,48,60,58,66,72,70,78] },
+      energy: { title:'Energy (self-score)', now:'8.1', label:'energy', bars:[40,46,52,50,62,68,72,80] },
+    };
+    const md = metricData[s.metric] || metricData.weight;
+    const metrics = [
+      { key:'weight', label:'Weight' }, { key:'skin', label:'Skin' },
+      { key:'sleep', label:'Sleep' }, { key:'energy', label:'Energy' },
+    ].map(m => ({ ...m, pick:()=>this.setState({ metric:m.key }),
+      bg: s.metric===m.key ? '#12b886' : '#12263A',
+      fg: s.metric===m.key ? '#04140d' : '#8fa3b8',
+      bd: s.metric===m.key ? '#12b886' : '#1c3049' }));
+
+    return {
+      dark: true,
+      isHome: s.tab==='home', isTrack: s.tab==='track', isPlan: s.tab==='plan', isLearn: s.tab==='learn', isYou: s.tab==='you',
+      tabs, today: 'Tuesday · 14 July',
+      noop: ()=>{},
+      logDose: ()=>this.setState({ dosed:true }),
+      dosedLabel: s.dosed ? '✓ Logged — nice work' : 'Log this dose',
+      dosedBg: s.dosed ? '#1c4a37' : '#12b886',
+      todayItems: [
+        { u:'10U', name:'Ipamorelin', detail:'200 mcg · fasted', time:'08:00', tint:'#12b886' },
+        { u:'8U', name:'BPC-157', detail:'250 mcg · with food', time:'13:00', tint:'#4a90d9' },
+        { u:'10U', name:'CJC-1295', detail:'200 mcg · pre-bed', time:'22:00', tint:'#b98cd9' },
+      ],
+      metrics, metricTitle: md.title, metricNow: md.now, metricLabelLc: md.label,
+      chart: md.bars.map((h,i)=>({ h: h+'%', label:['1','2','3','4','5','6','7','8'][i] })),
+      week: ['M','T','W','T','F','S','S'].map((d,i)=>({ d, dot: i<2 ? '#12b886' : (i===2 ? '#C9A15A' : '#22374d'),
+        bg: i===2 ? 'rgba(201,161,90,.12)' : '#12263A', bd: i===2 ? 'rgba(201,161,90,.4)' : '#1c3049',
+        fg: i===2 ? '#C9A15A' : '#8fa3b8' })),
+      schedule: [
+        { name:'Ipamorelin', when:'08:00', note:'200 mcg · draw 10 units · fasted' },
+        { name:'BPC-157', when:'13:00', note:'250 mcg · draw 8 units · with food' },
+        { name:'CJC-1295', when:'22:00', note:'200 mcg · draw 10 units · pre-bed' },
+      ],
+      library: [
+        { icon:'🎬', title:'Reconstitution masterclass', meta:'Video · 8 min', lock:'FELLOW', lockFg:'#C9A15A', tint:'rgba(201,161,90,.18)' },
+        { icon:'📄', title:'GH-axis protocol library', meta:'12 protocols', lock:'', lockFg:'#12b886', tint:'rgba(18,184,134,.16)' },
+        { icon:'🧬', title:'Peptide glossary', meta:'A–Z · plain English', lock:'', lockFg:'#12b886', tint:'rgba(74,144,217,.16)' },
+        { icon:'🔬', title:'Reading a COA', meta:'Guide · 5 min', lock:'', lockFg:'#12b886', tint:'rgba(185,140,217,.16)' },
+      ],
+      youRows: [
+        { icon:'📦', title:'Orders & reorder', sub:'Last order TARA-2026-4821' },
+        { icon:'🔁', title:'Subscription', sub:'6-month plan · save 5%' },
+        { icon:'✓', title:'Verified vault', sub:'8 authenticated batches' },
+        { icon:'⚙️', title:'Notifications & settings', sub:'Reminders on · 3 windows' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

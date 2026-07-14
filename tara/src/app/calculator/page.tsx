@@ -1,19 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, Trash2, Beaker } from "lucide-react";
+import { Search, Trash2, Printer } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { searchPeptides, getPeptide, type Peptide } from "@/lib/peptides";
-import {
-  DEFAULT_RECONSTITUTION_ML,
-  computeConcentration,
-  drawTable,
-} from "@/lib/reconstitution";
-import { usePeptideLog } from "@/hooks/use-peptide-log";
+import { searchProducts, type Product } from "@/lib/products";
+import { DEFAULT_BAC_ML, calculate } from "@/lib/reconstitution";
+import { useSessionLog } from "@/hooks/use-session-log";
 import { cn } from "@/lib/utils";
+
+const BAC_PRESETS = [1, 2, 3];
 
 const dateFmt = new Intl.DateTimeFormat("en-IE", {
   day: "numeric",
@@ -24,212 +21,375 @@ const dateFmt = new Intl.DateTimeFormat("en-IE", {
 
 export default function CalculatorPage() {
   const [query, setQuery] = useState("");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [vialMg, setVialMg] = useState(0);
-  const [volumeMl, setVolumeMl] = useState(DEFAULT_RECONSTITUTION_ML);
+  const [selected, setSelected] = useState<Product | null>(null);
+  const [variantLabel, setVariantLabel] = useState<string | null>(null);
+  const [vialMg, setVialMg] = useState<number>(0);
+  const [bacMl, setBacMl] = useState<number>(DEFAULT_BAC_ML);
+  const [targetMcg, setTargetMcg] = useState<number>(0);
 
-  const { entries, addEntry, removeEntry } = usePeptideLog();
+  const { rows, addRow, removeRow, clearLog } = useSessionLog();
 
-  const results = useMemo(() => (selectedId ? [] : searchPeptides(query)), [query, selectedId]);
-  const selected: Peptide | undefined = selectedId ? getPeptide(selectedId) : undefined;
+  const results = useMemo(() => (selected ? [] : searchProducts(query)), [query, selected]);
 
-  function selectPeptide(p: Peptide) {
-    setSelectedId(p.id);
-    setVialMg(p.vialMg);
-    setVolumeMl(DEFAULT_RECONSTITUTION_ML);
+  function pickProduct(p: Product) {
+    setSelected(p);
     setQuery(p.name);
+    const first = p.variants[0];
+    setVariantLabel(first?.label ?? null);
+    const mg = parseFloat(first?.label ?? "");
+    setVialMg(Number.isFinite(mg) ? mg : 0);
+    setBacMl(DEFAULT_BAC_ML);
+  }
+
+  function pickVariant(label: string) {
+    setVariantLabel(label);
+    const mg = parseFloat(label);
+    if (Number.isFinite(mg)) setVialMg(mg);
   }
 
   function clearSelection() {
-    setSelectedId(null);
+    setSelected(null);
+    setVariantLabel(null);
     setQuery("");
     setVialMg(0);
-    setVolumeMl(DEFAULT_RECONSTITUTION_ML);
+    setBacMl(DEFAULT_BAC_ML);
+    setTargetMcg(0);
   }
 
-  const concentration = computeConcentration(vialMg, volumeMl);
-  const table = volumeMl > 0 && vialMg > 0 ? drawTable(vialMg, volumeMl) : [];
+  const calc = calculate(vialMg, bacMl, targetMcg);
 
   function handleAddToLog() {
-    if (!selected || vialMg <= 0 || volumeMl <= 0) return;
-    addEntry({
-      peptideId: selected.id,
-      peptideName: selected.name,
-      vialMg,
-      volumeMl,
-      concentrationMgPerMl: concentration.concentrationMgPerMl,
+    if (!calc.valid) return;
+    addRow({
+      compound: selected?.name ?? "Custom compound",
+      reconstitutionSpec: `${vialMg} mg / ${bacMl} mL`,
+      units: calc.units,
+      drawMl: calc.drawMl,
+      drawsPerVial: calc.drawsPerVial,
     });
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-12">
-      <header className="mb-8 max-w-2xl">
-        <h1 className="font-serif text-3xl font-semibold tracking-tight">
-          Reconstitution calculator
-        </h1>
-        <p className="mt-2 text-muted-foreground">
-          Search a compound, set the reconstitution volume, and get the resulting solution
-          concentration. We recommend 2&nbsp;mL of bacteriostatic water as a starting point for
-          most vials — adjust to match your protocol.
-        </p>
-      </header>
+    <div className="mx-auto max-w-5xl px-4 py-14">
+      <p className="mb-2 text-xs font-semibold tracking-[0.18em] text-secondary">
+        RECONSTITUTION CALCULATOR
+      </p>
+      <h1 className="mb-3 max-w-2xl font-serif text-4xl font-semibold text-foreground">
+        Reconstitution, without the guesswork.
+      </h1>
+      <p className="mb-10 max-w-2xl text-[15.5px] leading-relaxed text-muted-foreground">
+        Search any compound to load its vial size, then set the bacteriostatic water —{" "}
+        <strong className="text-foreground">we recommend 2&nbsp;mL</strong> — and the amount per
+        draw. We return the draw on a U-100 syringe, the volume per draw, and draws per vial. Add
+        several to build a session log below. A tool, not advice — for laboratory research use
+        only.
+      </p>
 
-      <div className="relative">
-        <label htmlFor="peptide-search" className="sr-only">
-          Search peptides
-        </label>
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            id="peptide-search"
-            value={query}
-            placeholder="Start typing a compound name — e.g. BPC-157"
-            className="pl-9"
-            onChange={(e) => {
-              setQuery(e.target.value);
-              if (selectedId) setSelectedId(null);
-            }}
-            autoComplete="off"
-          />
-        </div>
-
-        {results.length > 0 && (
-          <ul className="absolute z-10 mt-1 w-full rounded-md border border-border bg-card shadow-md">
-            {results.map((p) => (
-              <li key={p.id}>
-                <button
-                  type="button"
-                  onClick={() => selectPeptide(p)}
-                  className="flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left text-sm hover:bg-accent"
-                >
-                  <span className="font-medium">{p.name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {p.category} · {p.vialMg} mg vial
-                  </span>
+      <div className="grid gap-7 lg:grid-cols-2">
+        {/* Inputs */}
+        <div className="flex flex-col gap-6 rounded-md border border-border bg-card p-7">
+          <div className="relative flex flex-col gap-2">
+            <label htmlFor="compound-search" className="text-sm font-semibold">
+              Search compound{" "}
+              <span className="font-normal text-muted-foreground">— type to load its details</span>
+            </label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="compound-search"
+                value={query}
+                placeholder="Click to browse, or type to narrow…"
+                className="pl-9"
+                autoComplete="off"
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  if (selected) setSelected(null);
+                }}
+              />
+            </div>
+            {results.length > 0 && (
+              <ul className="absolute top-full z-20 mt-1 max-h-80 w-full overflow-y-auto rounded-md border border-input bg-card shadow-lg">
+                {results.map((p) => (
+                  <li key={p.slug} className="border-b border-muted last:border-0">
+                    <button
+                      type="button"
+                      onClick={() => pickProduct(p)}
+                      className="flex w-full items-center gap-3 px-3.5 py-2.5 text-left hover:bg-accent"
+                    >
+                      <span
+                        className="h-8 w-1 shrink-0 rounded-sm"
+                        style={{ background: p.accent }}
+                        aria-hidden="true"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-semibold">{p.name}</span>
+                        <span className="block text-xs text-muted-foreground">
+                          {p.category} · {p.variants[0]?.label}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-[11px] font-semibold text-primary">Load →</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {selected && (
+              <div className="flex items-center gap-2 rounded-sm border border-[#cfe3d6] bg-accent px-3 py-2 text-[13px] text-accent-foreground">
+                <span className="size-1.5 rounded-full bg-primary" />
+                Loaded: <strong>{selected.name}</strong>
+                <button type="button" onClick={clearSelection} className="ml-auto text-xs underline">
+                  Change
                 </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {selected && (
-        <div className="mt-6 rounded-xl border border-border bg-card p-6">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl font-semibold">{selected.name}</h2>
-                <Badge>{selected.category}</Badge>
-              </div>
-              <p className="mt-1.5 max-w-lg text-sm text-muted-foreground">{selected.summary}</p>
-            </div>
-            <Button variant="ghost" size="sm" onClick={clearSelection}>
-              Change compound
-            </Button>
-          </div>
-
-          <p className="mt-3 text-xs text-muted-foreground">{selected.storage}</p>
-
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="vial-mg" className="mb-1.5 block text-sm font-medium">
-                Vial strength (mg)
-              </label>
-              <Input
-                id="vial-mg"
-                type="number"
-                min={0}
-                step={0.1}
-                value={vialMg}
-                onChange={(e) => setVialMg(Number(e.target.value))}
-              />
-            </div>
-            <div>
-              <label htmlFor="volume-ml" className="mb-1.5 block text-sm font-medium">
-                Reconstitution volume (mL of BAC water)
-              </label>
-              <Input
-                id="volume-ml"
-                type="number"
-                min={0.1}
-                step={0.1}
-                value={volumeMl}
-                onChange={(e) => setVolumeMl(Number(e.target.value))}
-              />
-              <p className="mt-1 text-xs text-muted-foreground">
-                Default recommendation: {DEFAULT_RECONSTITUTION_ML} mL.
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-6 rounded-lg bg-muted/60 p-4">
-            <div className="flex items-baseline gap-2">
-              <Beaker className="size-4 text-primary" />
-              <span className="text-lg font-semibold tabular-nums">
-                {concentration.concentrationMgPerMl.toFixed(3)} mg/mL
-              </span>
-              <span className="text-sm text-muted-foreground">resulting concentration</span>
-            </div>
-
-            {table.length > 0 && (
-              <div className="mt-4 overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
-                      <th className="pb-2 pr-4">Draw volume</th>
-                      <th className="pb-2">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody className="tabular-nums">
-                    {table.map((row) => (
-                      <tr key={row.drawMl} className="border-t border-border">
-                        <td className="py-1.5 pr-4">{row.drawMl.toFixed(1)} mL</td>
-                        <td className="py-1.5">{row.mcg.toLocaleString()} mcg</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
               </div>
             )}
           </div>
 
-          <Button className="mt-5" onClick={handleAddToLog} disabled={vialMg <= 0 || volumeMl <= 0}>
-            Add to research log
+          {selected && selected.variants.length > 1 && (
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-semibold">
+                Vial strength <span className="font-normal text-muted-foreground">— select an available size</span>
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {selected.variants.map((v) => (
+                  <button
+                    key={v.label}
+                    type="button"
+                    onClick={() => pickVariant(v.label)}
+                    className={cn(
+                      "h-[38px] rounded-sm border px-4 text-[13.5px] font-semibold",
+                      variantLabel === v.label
+                        ? "border-primary bg-accent text-primary"
+                        : "border-input bg-card text-foreground"
+                    )}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-2">
+            <label htmlFor="vial-mg" className="text-sm font-semibold">
+              Peptide in vial <span className="font-normal text-muted-foreground">(mg) — or enter manually</span>
+            </label>
+            <Input
+              id="vial-mg"
+              type="number"
+              min={0}
+              step={0.5}
+              inputMode="decimal"
+              className="font-mono text-base"
+              value={vialMg || ""}
+              onChange={(e) => setVialMg(Number(e.target.value))}
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label htmlFor="bac-ml" className="text-sm font-semibold">
+              Bacteriostatic water added <span className="font-normal text-muted-foreground">(mL)</span>
+            </label>
+            <Input
+              id="bac-ml"
+              type="number"
+              min={0}
+              step={0.5}
+              inputMode="decimal"
+              className="font-mono text-base"
+              value={bacMl || ""}
+              onChange={(e) => setBacMl(Number(e.target.value))}
+            />
+            <div className="mt-0.5 flex gap-2">
+              {BAC_PRESETS.map((ml) => (
+                <button
+                  key={ml}
+                  type="button"
+                  onClick={() => setBacMl(ml)}
+                  className="h-8 rounded-full border border-border bg-muted px-3 text-xs font-semibold text-muted-foreground hover:border-primary hover:text-primary"
+                >
+                  {ml} mL
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label htmlFor="target-mcg" className="text-sm font-semibold">
+              Amount per draw <span className="font-normal text-muted-foreground">(mcg)</span>
+            </label>
+            <Input
+              id="target-mcg"
+              type="number"
+              min={0}
+              step={25}
+              inputMode="decimal"
+              className="font-mono text-base"
+              value={targetMcg || ""}
+              onChange={(e) => setTargetMcg(Number(e.target.value))}
+            />
+          </div>
+
+          <Button onClick={handleAddToLog} disabled={!calc.valid}>
+            + Add to session log
           </Button>
         </div>
-      )}
 
-      <section className="mt-12">
-        <h2 className="mb-4 text-lg font-semibold">Research log</h2>
-        {entries.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Nothing logged yet — configure a compound above and add it to your log.
-          </p>
-        ) : (
-          <ul className="divide-y divide-border rounded-xl border border-border bg-card">
-            {entries.map((entry) => (
-              <li key={entry.id} className="flex items-center justify-between gap-4 p-4">
-                <div>
-                  <p className="font-medium">{entry.peptideName}</p>
-                  <p className={cn("text-xs text-muted-foreground", "tabular-nums")}>
-                    {entry.vialMg} mg in {entry.volumeMl} mL ·{" "}
-                    {entry.concentrationMgPerMl.toFixed(3)} mg/mL ·{" "}
-                    {dateFmt.format(new Date(entry.createdAt))}
-                  </p>
+        {/* Results */}
+        <div className="flex flex-col gap-5">
+          <div className="rounded-md bg-panel p-8 text-panel-foreground">
+            <span className="text-xs font-semibold tracking-[0.14em] text-secondary">
+              DRAW ON A U-100 SYRINGE
+            </span>
+            <div className="mt-4 flex items-baseline gap-2.5">
+              <span className="font-serif text-6xl font-semibold leading-none">
+                {calc.valid ? calc.units.toFixed(1) : "—"}
+              </span>
+              <span className="text-lg text-panel-muted">units</span>
+            </div>
+            <div className="mt-5 flex items-center gap-1.5">
+              <div className="relative h-[26px] flex-1 overflow-hidden rounded-sm border border-panel-border bg-[#12263A]">
+                <div
+                  className="h-full bg-gradient-to-r from-secondary to-[#00b585] transition-[width]"
+                  style={{ width: `${calc.fillPct}%` }}
+                />
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-1.5 font-mono text-[9px] text-panel-muted">
+                  <span>0</span>
+                  <span>50</span>
+                  <span>100</span>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label={`Remove ${entry.peptideName} from log`}
-                  onClick={() => removeEntry(entry.id)}
-                >
-                  <Trash2 className="size-4" />
-                </Button>
-              </li>
-            ))}
-          </ul>
+              </div>
+              <div className="h-2.5 w-4 rounded-r-sm bg-panel-border" />
+            </div>
+            {calc.overfill && (
+              <p className="mt-3 text-[12.5px] leading-relaxed text-[#e0b44a]">
+                Draw exceeds one full U-100 syringe. Add more bacteriostatic water to lower the
+                draw, or split into two draws.
+              </p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-3 gap-3.5">
+            <StatCard label="VOLUME / DRAW" value={calc.valid ? `${calc.drawMl.toFixed(3)} mL` : "—"} />
+            <StatCard
+              label="CONCENTRATION"
+              value={calc.valid ? calc.concentrationMcgPerMl.toFixed(0) : "—"}
+              unit="mcg/mL"
+            />
+            <StatCard
+              label="DRAWS / VIAL"
+              value={calc.valid ? String(calc.drawsPerVial) : "—"}
+              tone="primary"
+            />
+          </div>
+
+          <div className="rounded-md bg-muted p-4 text-[12.5px] leading-relaxed text-muted-foreground">
+            A U-100 syringe holds 100 units per mL, so 1 unit = 0.01 mL. Figures are arithmetic
+            only and assume complete dissolution.
+          </div>
+        </div>
+      </div>
+
+      {rows.length > 0 && (
+        <div className="mt-10 overflow-hidden rounded-md border border-border bg-card">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border bg-muted/40 px-6 py-4">
+            <span className="text-xs font-bold tracking-[0.1em]">SESSION LOG</span>
+            <div className="flex items-center gap-4">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => window.print()}
+                className="gap-1.5"
+              >
+                <Printer className="size-3.5" />
+                Print / Save PDF
+              </Button>
+              <button
+                type="button"
+                onClick={clearLog}
+                className="text-xs font-semibold text-destructive hover:underline"
+              >
+                Clear all
+              </button>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-left text-[10.5px] tracking-[0.08em] text-muted-foreground">
+                  <th className="px-6 py-2.5 font-medium">COMPOUND</th>
+                  <th className="px-4 py-2.5 font-medium">RECONSTITUTION</th>
+                  <th className="px-4 py-2.5 text-right font-medium">DRAW (U)</th>
+                  <th className="px-4 py-2.5 text-right font-medium">VOL (mL)</th>
+                  <th className="px-4 py-2.5 text-right font-medium">DRAWS</th>
+                  <th className="px-6 py-2.5" />
+                </tr>
+              </thead>
+              <tbody className="tabular-nums">
+                {rows.map((row) => (
+                  <tr key={row.id} className="border-b border-muted last:border-0">
+                    <td className="px-6 py-3 font-semibold">{row.compound}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                      {row.reconstitutionSpec}
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono font-semibold text-primary">
+                      {row.units.toFixed(1)}
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono text-foreground">
+                      {row.drawMl.toFixed(3)}
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono text-foreground">
+                      {row.drawsPerVial}
+                    </td>
+                    <td className="px-6 py-3 text-right">
+                      <button
+                        type="button"
+                        onClick={() => removeRow(row.id)}
+                        aria-label={`Remove ${row.compound}`}
+                        className="text-destructive hover:underline"
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="px-6 py-3 text-[11px] text-muted-foreground">
+            Logged {rows.length > 0 && dateFmt.format(new Date(rows[0].createdAt))} · A U-100
+            syringe holds 100 units per mL (1 unit = 0.01 mL). For laboratory research use only —
+            not for human or veterinary use.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  unit,
+  tone = "default",
+}: {
+  label: string;
+  value: string;
+  unit?: string;
+  tone?: "default" | "primary";
+}) {
+  return (
+    <div className="flex flex-col gap-1.5 rounded-md border border-border bg-card p-5">
+      <span className="text-[11.5px] font-semibold tracking-[0.1em] text-muted-foreground">
+        {label}
+      </span>
+      <span
+        className={cn(
+          "font-mono text-xl font-semibold tabular-nums",
+          tone === "primary" ? "text-primary" : "text-foreground"
         )}
-      </section>
+      >
+        {value} {unit && <span className="text-xs font-normal text-muted-foreground">{unit}</span>}
+      </span>
     </div>
   );
 }

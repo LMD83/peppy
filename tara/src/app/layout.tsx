@@ -1,55 +1,55 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Playfair_Display, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { SiteHeader } from "@/components/site-header";
+import { Providers } from "@/components/providers";
+
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+});
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
+  subsets: ["latin"],
+  weight: ["400", "600"],
+});
 
 export const metadata: Metadata = {
   title: {
-    default: "TARA — Research Peptides, Handled Properly",
-    template: "%s | TARA",
+    default: "TARA Peptides — Research-Grade Transparency, Verified",
+    template: "%s | TARA Peptides",
   },
   description:
-    "TARA is a research-use peptide platform: verified compounds, a reconstitution calculator, and a research log — built for laboratory use, not consumer dosing.",
+    "German-sourced research compounds, supported by batch documentation, QR authentication, and scientific education. For laboratory research use only.",
 };
-
-const nav = [
-  { href: "/", label: "Home" },
-  { href: "/catalogue", label: "Catalogue" },
-  { href: "/calculator", label: "Calculator" },
-];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="antialiased">
+    <html
+      lang="en"
+      className={`${playfair.variable} ${inter.variable} ${jetbrainsMono.variable} antialiased`}
+    >
       <body className="flex min-h-screen flex-col font-sans">
-        <header className="border-b border-border bg-card">
-          <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-            <Link href="/" className="flex items-baseline gap-2">
-              <span className="font-serif text-xl font-semibold tracking-tight">TARA</span>
-              <span className="hidden text-xs text-muted-foreground sm:inline">
-                research-use peptides
-              </span>
-            </Link>
-            <nav className="flex items-center gap-5 text-sm font-medium">
-              {nav.map((item) => (
-                <Link key={item.href} href={item.href} className="text-muted-foreground hover:text-foreground">
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-        </header>
-
-        <main className="flex-1">{children}</main>
-
-        <footer className="border-t border-border bg-card">
-          <div className="mx-auto max-w-6xl px-4 py-8 text-xs text-muted-foreground">
-            <p className="max-w-2xl">
-              All products are sold for laboratory and research use only, are not for human or
-              veterinary use, and are not drugs, dietary supplements, or cosmetics. Nothing on
-              this site is dosing guidance.
-            </p>
-          </div>
-        </footer>
+        <Providers>
+          <SiteHeader />
+          <main className="flex-1">{children}</main>
+          <footer className="border-t border-border bg-card">
+            <div className="mx-auto max-w-6xl px-4 py-10 text-xs text-muted-foreground">
+              <p className="max-w-2xl font-medium">
+                For laboratory research use only. Not for human or veterinary use.
+              </p>
+              <p className="mt-2">© 2026 TARA Peptides.</p>
+            </div>
+          </footer>
+        </Providers>
       </body>
     </html>
   );

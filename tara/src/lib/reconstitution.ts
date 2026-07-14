@@ -1,34 +1,42 @@
-// Pure solution-concentration math for the reconstitution calculator.
-// Deliberately stops at "concentration" — it does not recommend or compute
-// a personal dose. See docs/COMPLIANCE.md.
+// Reconstitution math — ported from the design handoff's calculator logic
+// (mg, BAC water, target amount -> concentration, draw volume, U-100 units,
+// draws/vial). Deliberately stops at solution concentration and syringe
+// units; it does not recommend a personal amount to administer. See
+// docs/COMPLIANCE.md for the vocabulary this file (and its callers) follow —
+// "amount," never "dose."
 
-export const DEFAULT_RECONSTITUTION_ML = 2;
+export const DEFAULT_BAC_ML = 2;
 
-export interface ConcentrationResult {
-  vialMg: number;
-  volumeMl: number;
-  /** Resulting concentration, in mg per mL. */
-  concentrationMgPerMl: number;
-  /** Resulting concentration, in mcg per 0.1 mL — the common draw increment. */
-  mcgPerTenthMl: number;
+export interface CalcResult {
+  valid: boolean;
+  /** Concentration, in mcg per mL. */
+  concentrationMcgPerMl: number;
+  /** Volume drawn for the target amount, in mL. */
+  drawMl: number;
+  /** Draw volume expressed in U-100 insulin-syringe units (1 unit = 0.01 mL). */
+  units: number;
+  /** How many draws of the target amount the vial yields. */
+  drawsPerVial: number;
+  /** True once the draw exceeds a single U-100 syringe (100 units / 1 mL). */
+  overfill: boolean;
+  fillPct: number;
 }
 
-export function computeConcentration(vialMg: number, volumeMl: number): ConcentrationResult {
-  const concentrationMgPerMl = volumeMl > 0 ? vialMg / volumeMl : 0;
+export function calculate(vialMg: number, bacMl: number, targetMcg: number): CalcResult {
+  const totalMcg = vialMg * 1000;
+  const concentrationMcgPerMl = bacMl > 0 ? totalMcg / bacMl : 0;
+  const drawMl = concentrationMcgPerMl > 0 ? targetMcg / concentrationMcgPerMl : 0;
+  const units = drawMl * 100;
+  const drawsPerVial = targetMcg > 0 ? Math.floor(totalMcg / targetMcg) : 0;
+  const valid = vialMg > 0 && bacMl > 0 && targetMcg > 0 && units > 0;
+
   return {
-    vialMg,
-    volumeMl,
-    concentrationMgPerMl,
-    mcgPerTenthMl: concentrationMgPerMl * 1000 * 0.1,
+    valid,
+    concentrationMcgPerMl,
+    drawMl,
+    units,
+    drawsPerVial,
+    overfill: valid && units > 100,
+    fillPct: valid ? Math.max(2, Math.min(100, units)) : 0,
   };
-}
-
-/** A draw-volume reference table from 0.1 mL up to the full reconstituted volume. */
-export function drawTable(vialMg: number, volumeMl: number): { drawMl: number; mcg: number }[] {
-  const { concentrationMgPerMl } = computeConcentration(vialMg, volumeMl);
-  const steps = Math.round(volumeMl / 0.1);
-  return Array.from({ length: steps }, (_, i) => {
-    const drawMl = Math.round((i + 1) * 0.1 * 100) / 100;
-    return { drawMl, mcg: Math.round(drawMl * concentrationMgPerMl * 1000) };
-  });
 }
