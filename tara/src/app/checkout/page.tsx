@@ -14,6 +14,7 @@ import {
 } from "@/lib/pricing";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Price } from "@/components/price";
 
 export default function CheckoutPage() {
   const { lines, count, clear } = useCart();
@@ -179,7 +180,7 @@ export default function CheckoutPage() {
             <Row label="Includes VAT (23%)" value={formatCents(totals.vatCents)} muted />
             <div className="flex justify-between border-t border-border pt-2 text-base font-semibold">
               <span>Total</span>
-              <span className="font-mono">{formatCents(totals.totalCents)}</span>
+              <Price cents={totals.totalCents} className="font-mono" />
             </div>
           </dl>
 

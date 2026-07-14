@@ -9,7 +9,7 @@ is the original full spec, `BRAND-KIT.md` the design tokens,
 `UPDATES-July2026.md` the feature update, and `design-reference/` the
 high-fidelity HTML prototypes (open `design-reference/TARA Website.dc.html`
 directly in a browser to interact with every screen). Real brand tokens, the
-51-SKU catalogue, and the Convex schema in this build are all ported from it.
+50-SKU catalogue (one CSV pair merged — see src/lib/products.ts), and the Convex schema in this build are all ported from it.
 See `docs/COMPLIANCE.md` for the vocabulary rules this build follows (amount,
 not dose) and why.
 
@@ -18,7 +18,7 @@ not dose) and why.
 - **Brand** — real tokens from `BRAND-KIT.md`: primary green `#1B5E20`,
   accent `#009B72`, Playfair Display / Inter / JetBrains Mono, the hexagon
   logo mark (`src/components/logo-mark.tsx`).
-- **Catalogue** (`/catalogue`) — all 51 SKUs from
+- **Catalogue** (`/catalogue`) — all 50 SKUs from
   `design-reference/Pricing Model.csv`, category filter chips with counts,
   sort, stock badges. Multi-strength products only had a single "from" price
   in the CSV; larger variants are priced by a documented mg-ratio heuristic

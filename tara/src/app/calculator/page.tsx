@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { Search, Trash2, Printer } from "lucide-react";
+import NumberFlow, { type Format } from "@number-flow/react";
+import { toast } from "sonner";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -60,12 +62,16 @@ export default function CalculatorPage() {
 
   function handleAddToLog() {
     if (!calc.valid) return;
+    const compound = selected?.name ?? "Custom compound";
     addRow({
-      compound: selected?.name ?? "Custom compound",
+      compound,
       reconstitutionSpec: `${vialMg} mg / ${bacMl} mL`,
       units: calc.units,
       drawMl: calc.drawMl,
       drawsPerVial: calc.drawsPerVial,
+    });
+    toast.success(`${compound} added to session log`, {
+      description: `${calc.units.toFixed(1)} units · ${calc.drawMl.toFixed(3)} mL draw`,
     });
   }
 
@@ -242,7 +248,11 @@ export default function CalculatorPage() {
             </span>
             <div className="mt-4 flex items-baseline gap-2.5">
               <span className="font-serif text-6xl font-semibold leading-none">
-                {calc.valid ? calc.units.toFixed(1) : "—"}
+                {calc.valid ? (
+                  <NumberFlow value={calc.units} format={{ minimumFractionDigits: 1, maximumFractionDigits: 1 }} />
+                ) : (
+                  "—"
+                )}
               </span>
               <span className="text-lg text-panel-muted">units</span>
             </div>
@@ -269,15 +279,20 @@ export default function CalculatorPage() {
           </div>
 
           <div className="grid grid-cols-3 gap-3.5">
-            <StatCard label="VOLUME / DRAW" value={calc.valid ? `${calc.drawMl.toFixed(3)} mL` : "—"} />
+            <StatCard
+              label="VOLUME / DRAW"
+              value={calc.valid ? calc.drawMl : "—"}
+              format={{ minimumFractionDigits: 3, maximumFractionDigits: 3 }}
+              unit="mL"
+            />
             <StatCard
               label="CONCENTRATION"
-              value={calc.valid ? calc.concentrationMcgPerMl.toFixed(0) : "—"}
+              value={calc.valid ? Math.round(calc.concentrationMcgPerMl) : "—"}
               unit="mcg/mL"
             />
             <StatCard
               label="DRAWS / VIAL"
-              value={calc.valid ? String(calc.drawsPerVial) : "—"}
+              value={calc.valid ? calc.drawsPerVial : "—"}
               tone="primary"
             />
           </div>
@@ -369,11 +384,14 @@ export default function CalculatorPage() {
 function StatCard({
   label,
   value,
+  format,
   unit,
   tone = "default",
 }: {
   label: string;
-  value: string;
+  /** A number animates via NumberFlow; a string (e.g. "—") renders as plain text. */
+  value: number | string;
+  format?: Format;
   unit?: string;
   tone?: "default" | "primary";
 }) {
@@ -388,7 +406,8 @@ function StatCard({
           tone === "primary" ? "text-primary" : "text-foreground"
         )}
       >
-        {value} {unit && <span className="text-xs font-normal text-muted-foreground">{unit}</span>}
+        {typeof value === "number" ? <NumberFlow value={value} format={format} /> : value}{" "}
+        {unit && <span className="text-xs font-normal text-muted-foreground">{unit}</span>}
       </span>
     </div>
   );

@@ -3,6 +3,7 @@ import { ArrowRight } from "lucide-react";
 
 import { LogoMark } from "@/components/logo-mark";
 import { Button } from "@/components/ui/button";
+import { Reveal } from "@/components/reveal";
 import { products, fromPriceCents } from "@/lib/products";
 import { formatCents } from "@/lib/pricing";
 
@@ -49,13 +50,10 @@ export default function Home() {
         </div>
         <div className="border-t border-border">
           <div className="mx-auto grid max-w-6xl grid-cols-2 sm:grid-cols-5">
-            {trustItems.map((t) => (
-              <span
-                key={t}
-                className="border-r border-border px-4 py-4 text-center text-[13px] font-semibold last:border-r-0"
-              >
-                {t}
-              </span>
+            {trustItems.map((t, i) => (
+              <Reveal key={t} delay={i * 0.06} className="border-r border-border last:border-r-0">
+                <span className="block px-4 py-4 text-center text-[13px] font-semibold">{t}</span>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -69,27 +67,28 @@ export default function Home() {
           </Link>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {featured.map((p) => (
-            <Link
-              key={p.slug}
-              href={`/products/${p.slug}`}
-              className="group overflow-hidden rounded-md border border-border bg-card transition-shadow hover:shadow-md"
-            >
-              <div className="h-1.5 w-full" style={{ background: p.accent }} aria-hidden="true" />
-              <div className="p-5">
-                <h3 className="font-semibold group-hover:text-primary">{p.name}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{p.plain}</p>
-                <p className="mt-3 font-mono text-sm">
-                  from <span className="font-semibold">{formatCents(fromPriceCents(p))}</span>
-                </p>
-              </div>
-            </Link>
+          {featured.map((p, i) => (
+            <Reveal key={p.slug} delay={i * 0.08}>
+              <Link
+                href={`/products/${p.slug}`}
+                className="group block overflow-hidden rounded-md border border-border bg-card transition-shadow hover:shadow-md"
+              >
+                <div className="h-1.5 w-full" style={{ background: p.accent }} aria-hidden="true" />
+                <div className="p-5">
+                  <h3 className="font-semibold group-hover:text-primary">{p.name}</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">{p.plain}</p>
+                  <p className="mt-3 font-mono text-sm">
+                    from <span className="font-semibold">{formatCents(fromPriceCents(p))}</span>
+                  </p>
+                </div>
+              </Link>
+            </Reveal>
           ))}
         </div>
       </section>
 
       <section className="border-t border-border bg-muted/30">
-        <div className="mx-auto max-w-6xl px-4 py-16 text-center">
+        <Reveal className="mx-auto max-w-6xl px-4 py-16 text-center">
           <h2 className="font-serif text-2xl font-semibold">
             Reconstitution &amp; the syringe math, without the guesswork.
           </h2>
@@ -100,7 +99,7 @@ export default function Home() {
           <Link href="/calculator" className="mt-6 inline-block">
             <Button size="lg">Open the calculator</Button>
           </Link>
-        </div>
+        </Reveal>
       </section>
     </>
   );
