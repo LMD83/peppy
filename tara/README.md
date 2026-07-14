@@ -46,10 +46,18 @@ not dose) and why.
   point in the file and `convex/SUMUP.md`.
 - **`convex/`** — the handoff's schema + `pricing.ts` + `orders.ts` +
   `verifications.ts` + `loyalty.ts` + `auth.md` + `SUMUP.md`, ported as-is.
-  Not deployed — no TARA Convex deployment credentials were available in
-  this session. `convex/_generated/*` are hand-written stand-ins (see the
-  comment at the top of each) so the scaffold typechecks; run `npx convex
-  dev` once you have a deployment to push it for real and regenerate them.
+  `.env.local` (gitignored) points at the real deployment, `fearless-wolf-510`
+  — but this sandbox has no network access to `convex.dev`/`convex.cloud`, so
+  the schema/functions still haven't actually been pushed. `convex/_generated/*`
+  are hand-written stand-ins (see the comment at the top of each) so the
+  scaffold typechecks in the meantime. **To finish:** run `npx convex dev`
+  once from a machine with network access — it pushes the schema/functions
+  and regenerates `convex/_generated/*` for real. No seed script exists yet:
+  `convex/schema.ts`'s `products` table requires `purity`, `method`, `batch`,
+  `format`, and `stacks` fields that aren't in `src/lib/products.ts` (the CSV
+  didn't have them, and `batch` is one-per-product in the schema vs.
+  one-per-variant in the current mock data) — reconcile those before writing
+  the seed mutation, rather than inventing placeholder values for them.
 - **Research Schedule** (`/schedule`) — the first slice of the roadmap's
   account/companion-app layer: recurring protocol windows per compound (every
   12h/24h/48h/weekly/custom), a "next scheduled window" card, and best-effort

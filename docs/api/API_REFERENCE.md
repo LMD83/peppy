@@ -16,15 +16,13 @@ new guide page in the dashboard).
 
 ## Deployment
 
-| | |
-|---|---|
-| Dev deployment | `fearless-wolf-510` (`eu-west-1`) |
-| Cloud URL (queries/mutations) | `https://fearless-wolf-510.eu-west-1.convex.cloud` |
-| HTTP Actions URL | `https://fearless-wolf-510.eu-west-1.convex.site` |
-
-Set locally via `.env.local` (`CONVEX_DEPLOYMENT`, `NEXT_PUBLIC_CONVEX_URL`)
-— see `.env.example`. No HTTP actions are defined yet (`convex/http.ts` does
-not exist), so the `.convex.site` URL has nothing routed to it.
+Not yet provisioned. (The `fearless-wolf-510` deployment previously listed
+here was assigned in error — that deployment is actually TARA's, see
+`tara/README.md`.) Run `npx convex dev` to create Peppy's own deployment,
+then set `CONVEX_DEPLOYMENT` and `NEXT_PUBLIC_CONVEX_URL` in `.env.local` —
+see `.env.example`. No HTTP actions are defined yet (`convex/http.ts` does
+not exist), so a `.convex.site` URL, once you have one, has nothing routed
+to it.
 
 ## Functions
 
