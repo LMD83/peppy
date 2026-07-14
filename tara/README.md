@@ -50,6 +50,14 @@ not dose) and why.
   this session. `convex/_generated/*` are hand-written stand-ins (see the
   comment at the top of each) so the scaffold typechecks; run `npx convex
   dev` once you have a deployment to push it for real and regenerate them.
+- **Research Schedule** (`/schedule`) — the first slice of the roadmap's
+  account/companion-app layer: recurring protocol windows per compound (every
+  12h/24h/48h/weekly/custom), a "next scheduled window" card, and best-effort
+  browser notifications (permission-gated, fires only while the tab is open —
+  not a real push-notification system). No auth yet, so it's
+  `localStorage`-backed and ungated rather than per-account. Built entirely
+  in the softened vocabulary from `docs/COMPLIANCE.md` — "amount" and
+  "scheduled window," never "dose."
 
 ## What's not built yet
 
@@ -59,11 +67,12 @@ not dose) and why.
 - **Guided finder, stack library, Knowledge/Docs, FAQ** — all in the design
   reference, none built here.
 - **Accounts + auth** — no Convex Auth wiring yet (needs a real deployment).
-- **The account dashboard / companion-app features** — next-scheduled
-  measurement cards, protocol/schedule tracking, progress charts, referrals,
-  subscriptions. See `docs/COMPLIANCE.md` — these are the features the
-  compliance flag was about; build them using the softened vocabulary there,
-  not the design reference's dosing language directly.
+  The Research Schedule above is a preview of the dashboard experience, built
+  without login.
+- **The rest of the companion-app roadmap** — progress/weight tracking,
+  photo timelines, protocol templates auto-built from order history, real
+  push notifications, referrals, subscriptions. See `docs/COMPLIANCE.md` —
+  same vocabulary rules apply when these are built.
 - **Real payment** — SumUp isn't wired; see `convex/SUMUP.md`.
 
 ## Commands

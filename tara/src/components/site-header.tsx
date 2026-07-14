@@ -12,6 +12,7 @@ const nav = [
   { href: "/catalogue", label: "Research Compounds" },
   { href: "/verify", label: "Verify" },
   { href: "/calculator", label: "Calculator" },
+  { href: "/schedule", label: "Schedule" },
 ];
 
 export function SiteHeader() {

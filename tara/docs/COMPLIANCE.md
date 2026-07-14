@@ -37,11 +37,19 @@ laboratory and research use only, are not for human or veterinary use, and
 are not drugs, dietary supplements, or cosmetics. Checkout requires an
 explicit research-use declaration before payment (see `src/app/checkout/page.tsx`).
 
-**Not yet built**, and gated on this vocabulary before they are: the
+**Built, using this vocabulary:** the Research Schedule (`/schedule`) —
+recurring protocol windows per compound, a "next scheduled window" card, and
+best-effort browser notifications (permission-gated, local to the tab only).
+Copy there says "amount" and "scheduled window" throughout, never "dose."
+It's explicitly framed as a personal organisation tool that doesn't
+recommend an amount or interval.
+
+**Not yet built**, and still gated on this vocabulary: the rest of the
 companion-app-style features from `design-reference/Roadmap & Automations.md`
-— next-dose reminders, "log dose," dose-window notifications, injection-site
-tracking. Build them as *scheduled research measurements* and *protocol
-logs*, not a personal dosing tracker, using the table above.
+— progress/weight tracking, photo timelines, protocol templates auto-built
+from orders, and real push notifications (the current ones only fire while
+the tab is open). Avoid "injection site" if site-rotation tracking is built —
+call it "sample site" or "location."
 
 Get category-specific legal review before scaling paid acquisition or before
 any copy strays from these rules.
