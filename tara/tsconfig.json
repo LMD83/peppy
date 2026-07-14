@@ -19,8 +19,7 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"],
-      "@convex/*": ["./convex/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": [
@@ -31,9 +30,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": [
-    "node_modules",
-    // Independent Next.js app with its own tsconfig/path aliases — see tara/README.md.
-    "tara"
-  ]
+  "exclude": ["node_modules"]
 }

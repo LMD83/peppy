@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#F2F4F7;color:#1A1A1A;font-family:Inter,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;}
+  a{color:#1B5E20;} a:hover{color:#009B72;}
+</style>
+</helmet>
+
+<div style="max-width:1080px;margin:0 auto;padding:56px 24px 96px;">
+
+  <!-- logo lockup -->
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:34px;">
+    <svg width="46" height="46" viewBox="0 0 48 48" fill="none" aria-label="TARA mark">
+      <path d="M24 3 L42 13.5 V34.5 L24 45 L6 34.5 V13.5 Z" stroke="#1B5E20" stroke-width="2.4" fill="#F6FBF8"></path>
+      <path d="M24 15 L24 33 M17 19.5 L31 28.5 M31 19.5 L17 28.5" stroke="#1B5E20" stroke-width="2.2" stroke-linecap="round"></path>
+      <circle cx="24" cy="24" r="3.2" fill="#009B72"></circle>
+    </svg>
+    <div style="line-height:1;">
+      <div style="font-family:'Playfair Display',Georgia,serif;font-size:26px;font-weight:700;letter-spacing:.24em;color:#1B5E20;">TARA</div>
+      <div style="font-size:9.5px;font-weight:600;letter-spacing:.28em;color:#55606E;margin-top:5px;">PEPTIDES · RESEARCH GRADE</div>
+    </div>
+  </div>
+
+  <!-- title -->
+  <div style="margin-bottom:14px;">
+    <p style="margin:0 0 10px;font-size:12px;font-weight:600;letter-spacing:.2em;color:#1B5E20;">KIT & PACKAGING CONCEPT</p>
+    <h1 style="margin:0 0 14px;font-family:'Playfair Display',Georgia,serif;font-size:46px;font-weight:600;line-height:1.05;">The unboxing is the proof.</h1>
+    <p style="margin:0;font-size:16px;line-height:1.6;color:#55606E;max-width:660px;text-wrap:pretty;">A 3D-printed vial holder, a rigid presentation box, and two consumable tiers — designed so every order arrives as a considered, clinical kit rather than a padded envelope. Costed for both low-volume prototyping and at-scale sourcing.</p>
+  </div>
+
+  <div style="display:flex;gap:10px;margin:28px 0 40px;flex-wrap:wrap;">
+    <span style="font-size:12.5px;color:#55606E;align-self:center;">Finish preview:</span>
+    <sc-for list="{{ finishes }}" as="f" hint-placeholder-count="2">
+      <button onClick="{{ f.pick }}" style="display:inline-flex;align-items:center;gap:9px;height:40px;padding:0 15px;background:{{ f.bg }};border:1px solid {{ f.bd }};border-radius:2px;font-size:13px;font-weight:600;color:{{ f.fg }};cursor:pointer;font-family:inherit;" style-focus="outline:2px solid #1565C0;outline-offset:2px;"><span style="width:16px;height:16px;border-radius:50%;background:{{ f.swatch }};border:1px solid rgba(0,0,0,.15);"></span>{{ f.label }}</button>
+    </sc-for>
+  </div>
+
+  <!-- ===== HOLDER ===== -->
+  <section style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:8px;overflow:hidden;margin-bottom:28px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;">
+      <!-- schematic -->
+      <div style="padding:40px;background:{{ holderBg }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;border-right:1px solid #E4E7EC;transition:background .3s;">
+        <div style="width:100%;max-width:360px;">
+          <!-- top view: 5 wells -->
+          <div style="position:relative;background:{{ holderBlock }};border-radius:16px;padding:26px 22px;box-shadow:0 18px 40px rgba(13,27,42,.16);transition:background .3s;">
+            <div style="display:flex;gap:14px;justify-content:center;">
+              <sc-for list="{{ wells }}" as="w" hint-placeholder-count="5">
+                <div style="width:46px;height:46px;border-radius:50%;background:{{ wellFill }};box-shadow:inset 0 3px 8px rgba(0,0,0,.35);"></div>
+              </sc-for>
+            </div>
+            <div style="text-align:center;margin-top:20px;font-family:'Playfair Display',Georgia,serif;font-size:17px;letter-spacing:.22em;color:{{ wordmark }};transition:color .3s;">TARA</div>
+          </div>
+          <p style="text-align:center;margin:14px 0 0;font-size:11.5px;color:#8a95a5;font-family:'JetBrains Mono',monospace;">TOP VIEW · 5 × Ø22mm wells · 3 mL vials</p>
+        </div>
+      </div>
+      <!-- spec + photo slot -->
+      <div style="padding:40px;">
+        <p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:.16em;color:#1565C0;">COMPONENT 01</p>
+        <h2 style="margin:0 0 14px;font-family:'Playfair Display',Georgia,serif;font-size:28px;font-weight:600;">The vial holder</h2>
+        <p style="margin:0 0 20px;font-size:14.5px;line-height:1.6;color:#3f4854;">One modular 5-well block covers every order from 1 to 5 vials — a single part to print and stock. Snug Ø22 mm wells seat 3 mL vials upright; chamfered edges and a debossed TARA wordmark read as considered, not printed.</p>
+        <div style="display:flex;flex-direction:column;gap:9px;font-size:13.5px;">
+          <sc-for list="{{ holderSpec }}" as="r" hint-placeholder-count="5">
+            <div style="display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #F2F4F7;padding-bottom:7px;"><span style="color:#55606E;">{{ r.k }}</span><span style="font-weight:600;text-align:right;">{{ r.v }}</span></div>
+          </sc-for>
+        </div>
+        <div style="margin-top:22px;height:150px;border-radius:6px;overflow:hidden;border:1px dashed #cfe3d6;">
+          <image-slot id="holder-photo" shape="rect" placeholder="Drop prototype render / photo"></image-slot>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ALTERNATIVE: DIE-CUT INSERT ===== -->
+  <section style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:8px;overflow:hidden;margin-bottom:28px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;">
+      <div style="padding:40px;">
+        <p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:.16em;color:#B87333;">COMPONENT 01 · ALTERNATIVE</p>
+        <h2 style="margin:0 0 14px;font-family:'Playfair Display',Georgia,serif;font-size:28px;font-weight:600;">Die-cut cardboard insert</h2>
+        <p style="margin:0 0 20px;font-size:14.5px;line-height:1.6;color:#3f4854;">A cheaper, fully recyclable alternative to the printed holder: a folded kraft insert with punched cut-outs that grip each 3 mL vial. No printing, no plastic, and a clean, tactile "lift-the-lid" reveal — the everyday standard option that still presents well.</p>
+        <div style="display:flex;flex-direction:column;gap:9px;font-size:13.5px;">
+          <sc-for list="{{ insertSpec }}" as="r" hint-placeholder-count="4">
+            <div style="display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #F2F4F7;padding-bottom:7px;"><span style="color:#55606E;">{{ r.k }}</span><span style="font-weight:600;text-align:right;">{{ r.v }}</span></div>
+          </sc-for>
+        </div>
+        <div style="margin-top:20px;background:#FBF7F0;border:1px solid #ead8bf;border-radius:4px;padding:14px 16px;font-size:13px;line-height:1.5;color:#7a531d;"><strong>Standard tier</strong> uses this insert; <strong>Premium tier</strong> uses the 3D-printed holder above. Same carton either way.</div>
+      </div>
+      <!-- insert schematic -->
+      <div style="padding:40px;background:#faf6ee;border-left:1px solid #E4E7EC;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;">
+        <div style="background:linear-gradient(135deg,#d4b98c,#c4a675);border:1px solid #a98f63;border-radius:8px;padding:26px;box-shadow:0 16px 34px rgba(70,50,20,.22);">
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;">
+            <sc-for list="{{ insertHoles }}" as="h" hint-placeholder-count="10">
+              <div style="width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 50% 40%,#5c4a2c,#3a2e18);box-shadow:inset 0 2px 5px rgba(0,0,0,.5);"></div>
+            </sc-for>
+          </div>
+        </div>
+        <p style="text-align:center;margin:0;font-size:11.5px;color:#8a95a5;font-family:'JetBrains Mono',monospace;">DIE-CUT INSERT · 10 × Ø22mm cut-outs</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== BOX / DIELINE ===== -->
+  <section style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:8px;overflow:hidden;margin-bottom:28px;padding:40px;">
+    <p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:.16em;color:#1565C0;">COMPONENT 02</p>
+    <h2 style="margin:0 0 14px;font-family:'Playfair Display',Georgia,serif;font-size:28px;font-weight:600;">The presentation box</h2>
+    <p style="margin:0 0 28px;font-size:14.5px;line-height:1.6;color:#3f4854;max-width:640px;">A rigid two-piece lid box, soft-touch matte, with the holder seated in a moulded-pulp tray. The COA card and verification QR sit inside the lid, so opening the box is the first act of authentication.</p>
+    <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:32px;align-items:start;">
+      <!-- dieline -->
+      <div>
+        <div style="background:#FAFAFA;border:1px solid #E4E7EC;border-radius:6px;padding:28px;">
+          <div style="position:relative;margin:0 auto;width:260px;height:200px;">
+            <!-- base + flaps: dashed fold lines -->
+            <div style="position:absolute;left:70px;top:60px;width:120px;height:80px;border:1.5px solid #1B5E20;background:#F6FBF8;"></div>
+            <div style="position:absolute;left:70px;top:0;width:120px;height:60px;border:1.5px dashed #B0BAC6;border-bottom:none;"></div>
+            <div style="position:absolute;left:70px;top:140px;width:120px;height:60px;border:1.5px dashed #B0BAC6;border-top:none;"></div>
+            <div style="position:absolute;left:0;top:60px;width:70px;height:80px;border:1.5px dashed #B0BAC6;border-right:none;"></div>
+            <div style="position:absolute;left:190px;top:60px;width:70px;height:80px;border:1.5px dashed #B0BAC6;border-left:none;"></div>
+            <span style="position:absolute;left:112px;top:94px;font-size:10px;font-family:'JetBrains Mono',monospace;color:#1B5E20;">BASE</span>
+          </div>
+          <p style="text-align:center;margin:16px 0 0;font-size:11.5px;color:#8a95a5;font-family:'JetBrains Mono',monospace;">DIELINE · solid = cut · dashed = fold</p>
+        </div>
+        <div style="margin-top:16px;height:150px;border-radius:6px;overflow:hidden;border:1px dashed #cfe3d6;">
+          <image-slot id="box-photo" shape="rect" placeholder="Drop box mockup / photo"></image-slot>
+        </div>
+      </div>
+      <!-- box spec -->
+      <div style="display:flex;flex-direction:column;gap:9px;font-size:13.5px;">
+        <sc-for list="{{ boxSpec }}" as="r" hint-placeholder-count="5">
+          <div style="display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #F2F4F7;padding-bottom:7px;"><span style="color:#55606E;">{{ r.k }}</span><span style="font-weight:600;text-align:right;">{{ r.v }}</span></div>
+        </sc-for>
+        <p style="margin:14px 0 0;font-size:12.5px;line-height:1.55;color:#55606E;">Standard folding-carton templates (FEFCO 0427 rigid-style lid, or a magnetic-close rigid box) are available off-the-shelf from EU box suppliers — no custom tooling needed at prototype stage.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CARTON RANGE ===== -->
+  <section style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:8px;overflow:hidden;margin-bottom:28px;padding:40px;">
+    <p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:.16em;color:#1565C0;">COMPONENT 03</p>
+    <h2 style="margin:0 0 14px;font-family:'Playfair Display',Georgia,serif;font-size:28px;font-weight:600;">The carton range</h2>
+    <p style="margin:0 0 36px;font-size:14.5px;line-height:1.6;color:#3f4854;max-width:640px;">Four printed kraft cartons — 4, 6, 8 and 10 × 3 mL vials — each carrying the TARA logo on the front panel. A single visual system that scales with order size.</p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:36px 28px;align-items:end;padding:20px 0 8px;background:linear-gradient(180deg,#FFFFFF,#FAFAFA);">
+      <sc-for list="{{ cartons }}" as="c" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:20px;">
+          <!-- 3D kraft carton -->
+          <div style="--w:{{ c.w }}px;--h:{{ c.h }}px;--d:22px;width:calc(var(--w) + var(--d));padding-top:var(--d);position:relative;">
+            <div style="position:relative;width:var(--w);height:var(--h);filter:drop-shadow(0 24px 22px rgba(70,50,20,.28));">
+              <!-- top face -->
+              <div style="position:absolute;left:0;top:calc(-1 * var(--d));width:100%;height:var(--d);background:linear-gradient(180deg,#e0c99e,#d3ba8a);transform:skewX(-45deg);transform-origin:bottom left;border:1px solid #a98f63;"></div>
+              <!-- right face -->
+              <div style="position:absolute;top:0;right:calc(-1 * var(--d));width:var(--d);height:100%;background:linear-gradient(90deg,#b89a6c,#a5875a);transform:skewY(-45deg);transform-origin:top left;border:1px solid #a98f63;"></div>
+              <!-- front face -->
+              <div style="position:absolute;inset:0;background:linear-gradient(135deg,#d4b98c,#c4a675);border:1px solid #a98f63;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;">
+                <svg width="30" height="30" viewBox="0 0 48 48" fill="none"><path d="M24 3 L42 13.5 V34.5 L24 45 L6 34.5 V13.5 Z" stroke="#1B5E20" stroke-width="2.6" fill="none"></path><path d="M24 15 L24 33 M17 19.5 L31 28.5 M31 19.5 L17 28.5" stroke="#1B5E20" stroke-width="2.4" stroke-linecap="round"></path><circle cx="24" cy="24" r="3" fill="#1B5E20"></circle></svg>
+                <div style="font-family:'Playfair Display',Georgia,serif;font-size:18px;font-weight:700;letter-spacing:.22em;color:#1B5E20;">TARA</div>
+                <div style="font-size:7px;font-weight:600;letter-spacing:.24em;color:#6b5a3a;">PEPTIDES · RESEARCH GRADE</div>
+                <div style="display:flex;gap:5px;margin-top:2px;">
+                  <sc-for list="{{ c.dots }}" as="d" hint-placeholder-count="4">
+                    <span style="width:6px;height:6px;border-radius:50%;background:#1B5E20;opacity:.55;"></span>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:15px;font-weight:600;color:#1A1A1A;">{{ c.label }}</div>
+            <div style="font-size:11.5px;color:#8a95a5;font-family:'JetBrains Mono',monospace;margin-top:3px;">{{ c.dims }}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="margin-top:32px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div style="height:200px;border-radius:6px;overflow:hidden;border:1px dashed #cfe3d6;">
+        <image-slot id="carton-render-1" shape="rect" placeholder="Drop photoreal carton render"></image-slot>
+      </div>
+      <div style="height:200px;border-radius:6px;overflow:hidden;border:1px dashed #cfe3d6;">
+        <image-slot id="carton-render-2" shape="rect" placeholder="Drop lifestyle / open-box photo"></image-slot>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TIERS ===== -->
+  <section style="margin-bottom:28px;">
+    <h2 style="margin:0 0 6px;font-family:'Playfair Display',Georgia,serif;font-size:28px;font-weight:600;">Consumable tiers</h2>
+    <p style="margin:0 0 22px;font-size:14.5px;line-height:1.6;color:#55606E;max-width:640px;">Standard ships the familiar needle-and-swab set. Premium swaps in a reusable click-dial injection pen — clinical, refined, and the reason someone chooses TARA over a baggie of needles.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <sc-for list="{{ tiers }}" as="t" hint-placeholder-count="2">
+        <div style="background:#FFFFFF;border:1px solid {{ t.border }};border-radius:8px;overflow:hidden;display:flex;flex-direction:column;">
+          <div style="height:5px;background:{{ t.accent }};"></div>
+          <div style="padding:26px;display:flex;flex-direction:column;gap:14px;flex:1;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+              <span style="font-family:'Playfair Display',Georgia,serif;font-size:22px;font-weight:600;">{{ t.name }}</span>
+              <span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:{{ t.tagFg }};background:{{ t.tagBg }};border:1px solid {{ t.tagBd }};border-radius:2px;padding:5px 8px;white-space:nowrap;">{{ t.tag }}</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;padding:14px 0;border-top:1px solid #F2F4F7;border-bottom:1px solid #F2F4F7;">
+              <sc-for list="{{ t.items }}" as="i" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:10px;font-size:13.5px;color:#3f4854;"><span style="width:6px;height:6px;border-radius:50%;background:{{ t.accent }};flex-shrink:0;"></span>{{ i }}</div>
+              </sc-for>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:8px;margin-top:auto;">
+              <span style="font-size:12px;color:#55606E;">cost at scale</span>
+              <span style="font-family:'Playfair Display',Georgia,serif;font-size:24px;font-weight:600;">{{ t.costScale }}</span>
+              <span style="font-size:12.5px;color:#8a95a5;">/ {{ t.costLow }} low-vol</span>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:8px;">
+              <span style="font-size:12px;color:#55606E;">suggested retail add-on</span>
+              <span style="font-family:'Playfair Display',Georgia,serif;font-size:20px;font-weight:600;color:#1B5E20;">{{ t.retail }}</span>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- ===== PRICING ===== -->
+  <section style="background:#0D1B2A;border-radius:8px;padding:40px;color:#E6EDF4;">
+    <p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:.16em;color:#009B72;">SOURCING & COST-UP</p>
+    <h2 style="margin:0 0 8px;font-family:'Playfair Display',Georgia,serif;font-size:28px;font-weight:600;color:#E6EDF4;">Component pricing</h2>
+    <p style="margin:0 0 26px;font-size:13.5px;line-height:1.6;color:#8fa3b8;max-width:620px;">Indicative EUR unit costs — <strong style="color:#E6EDF4;">low-vol</strong> = prototype / small run, <strong style="color:#E6EDF4;">scale</strong> = 500+ units. Estimates for planning; confirm against live supplier quotes.</p>
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
+        <thead>
+          <tr style="border-bottom:1px solid #33475e;text-align:left;">
+            <th style="padding:11px 8px;font-size:10.5px;letter-spacing:.08em;color:#8fa3b8;">COMPONENT</th>
+            <th style="padding:11px 8px;font-size:10.5px;letter-spacing:.08em;color:#8fa3b8;">SPEC / SOURCE</th>
+            <th style="padding:11px 8px;font-size:10.5px;letter-spacing:.08em;color:#8fa3b8;text-align:right;">LOW-VOL</th>
+            <th style="padding:11px 8px;font-size:10.5px;letter-spacing:.08em;color:#8fa3b8;text-align:right;">AT SCALE</th>
+          </tr>
+        </thead>
+        <tbody>
+          <sc-for list="{{ costRows }}" as="r" hint-placeholder-count="8">
+            <tr style="border-bottom:1px solid #1c3049;">
+              <td style="padding:12px 8px;font-weight:600;color:#E6EDF4;">{{ r.name }}</td>
+              <td style="padding:12px 8px;color:#8fa3b8;font-size:12.5px;">{{ r.source }}</td>
+              <td style="padding:12px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:#E6EDF4;">{{ r.low }}</td>
+              <td style="padding:12px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:#009B72;">{{ r.scale }}</td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin:24px 0 0;font-size:11.5px;line-height:1.55;color:#5f7387;">Reusable pen sourced as a click-dial reusable injector; pen needles 32G 4–6 mm. Holder printed in matte PLA or resin. All figures ex-VAT, ex-carriage. For laboratory research use only.</p>
+  </section>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1080,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  state = { finish: 'green' };
+
+  renderVals() {
+    const finish = this.state.finish;
+    const green = finish === 'green';
+    const finishes = [
+      { key:'green', label:'Matte green', swatch:'#2f5e3f' },
+      { key:'offwhite', label:'Off-white', swatch:'#ECE7DA' },
+    ].map(f => ({ ...f,
+      pick: () => this.setState({ finish: f.key }),
+      bg: this.state.finish===f.key ? '#0D1B2A' : '#FFFFFF',
+      fg: this.state.finish===f.key ? '#FFFFFF' : '#1A1A1A',
+      bd: this.state.finish===f.key ? '#0D1B2A' : '#D0D5DD',
+    }));
+
+    const cartons = [
+      { label:'4-vial carton', vials:4, w:'150', h:'96', dims:'135 × 60 × 55 mm', dots:[1,2,3,4] },
+      { label:'6-vial carton', vials:6, w:'182', h:'104', dims:'160 × 60 × 60 mm', dots:[1,2,3,4,5,6] },
+      { label:'8-vial carton', vials:8, w:'212', h:'112', dims:'185 × 65 × 65 mm', dots:[1,2,3,4,5,6,7,8] },
+      { label:'10-vial carton', vials:10, w:'242', h:'120', dims:'210 × 65 × 70 mm', dots:[1,2,3,4,5,6,7,8,9,10] },
+    ];
+    return {
+      finishes, cartons,
+      insertHoles: [1,2,3,4,5,6,7,8,9,10],
+      insertSpec: [
+        { k:'Capacity', v:'Up to 10 × 3 mL vials' },
+        { k:'Material', v:'Folded kraft board, recyclable' },
+        { k:'Cut-outs', v:'Ø 22 mm punched holes' },
+        { k:'Cost vs holder', v:'~90% cheaper' },
+      ],
+      holderBg: green ? '#eef4ef' : '#f5f3ec',
+      holderBlock: green ? '#2f5e3f' : '#e7e1d3',
+      wellFill: green ? '#24492f' : '#d3ccba',
+      wordmark: green ? '#dfeee5' : '#7a7259',
+      wells: [1,2,3,4,5],
+      holderSpec: [
+        { k:'Capacity', v:'1–5 × 3 mL vials' },
+        { k:'Well diameter', v:'Ø 22 mm' },
+        { k:'Footprint', v:'~118 × 44 × 30 mm' },
+        { k:'Material', v:green ? 'Matte green PLA / resin' : 'Off-white PLA / resin' },
+        { k:'Detail', v:'Debossed TARA wordmark' },
+      ],
+      boxSpec: [
+        { k:'Style', v:'Rigid two-piece lid' },
+        { k:'Finish', v:'Soft-touch matte' },
+        { k:'Insert', v:'Moulded-pulp tray' },
+        { k:'Inner lid', v:'COA card + verify QR' },
+        { k:'Internal size', v:'~135 × 60 × 45 mm' },
+      ],
+      tiers: [
+        { name:'Standard kit', tag:'ESSENTIALS', accent:'linear-gradient(90deg,#1565C0,#009B72)',
+          border:'#E4E7EC', tagFg:'#1565C0', tagBg:'#EEF4FB', tagBd:'#cdddf0',
+          items:['Die-cut cardboard vial insert','Printed kraft carton','1 × 3 mL bacteriostatic water','10 × insulin needles','10 × alcohol swabs'],
+          costLow:'€5.85', costScale:'€3.05', retail:'€12.95' },
+        { name:'Premium kit', tag:'HOLDER + REUSABLE PEN', accent:'linear-gradient(90deg,#1B5E20,#B87333)',
+          border:'#cfe3d6', tagFg:'#1B5E20', tagBg:'#F6FBF8', tagBd:'#cfe3d6',
+          items:['3D-printed 5-well holder','Printed kraft carton + tray','1 × 3 mL bacteriostatic water','Reusable click-dial injection pen','10 × 32G pen needles','10 × alcohol swabs'],
+          costLow:'€15.30', costScale:'€8.40', retail:'€29.95' },
+      ],
+      costRows: [
+        { name:'Vial holder (5-well)', source:'3D print · matte PLA/resin', low:'€4.80', scale:'€2.20' },
+        { name:'Die-cut cardboard insert', source:'Folded kraft · punched', low:'€0.60', scale:'€0.25' },
+        { name:'Presentation box', source:'Rigid lid · soft-touch', low:'€3.40', scale:'€1.60' },
+        { name:'Pulp tray insert', source:'Moulded fibre', low:'€0.55', scale:'€0.35' },
+        { name:'Bacteriostatic water 3 mL', source:'Sterile vial', low:'€0.85', scale:'€0.60' },
+        { name:'Insulin needle (each)', source:'U-100 · box of 100', low:'€0.08', scale:'€0.05' },
+        { name:'Alcohol swab (each)', source:'70% IPA · bulk', low:'€0.02', scale:'€0.01' },
+        { name:'Reusable injection pen', source:'Click-dial injector', low:'€4.90', scale:'€2.40' },
+        { name:'Pen needle 32G (each)', source:'4–6 mm · box of 100', low:'€0.06', scale:'€0.04' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
