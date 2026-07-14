@@ -7,7 +7,7 @@ import { ConvexProvider, ConvexReactClient } from "convex/react"
 // so prerendering client components doesn't crash the build. Real
 // deployments (Vercel, `next dev` with .env.local) always have the env var
 // set, so this path is never hit outside of build-only CI.
-const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL ?? "https://placeholder.convex.cloud"
+const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL || "https://placeholder.convex.cloud"
 
 const convex = new ConvexReactClient(convexUrl)
 
