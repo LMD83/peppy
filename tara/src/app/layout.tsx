@@ -3,6 +3,7 @@ import { Playfair_Display, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 import { Providers } from "@/components/providers";
+import { PageTransition } from "@/components/page-transition";
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
@@ -40,7 +41,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="flex min-h-screen flex-col font-sans">
         <Providers>
           <SiteHeader />
-          <main className="flex-1">{children}</main>
+          <main className="flex-1">
+            <PageTransition>{children}</PageTransition>
+          </main>
           <footer className="border-t border-border bg-card">
             <div className="mx-auto max-w-6xl px-4 py-10 text-xs text-muted-foreground">
               <p className="max-w-2xl font-medium">

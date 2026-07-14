@@ -505,16 +505,6 @@ export const products: Product[] = [
     accent: "linear-gradient(145deg,#B87333,#6b4319)",
     variants: [
       { label: "10mg", priceCents: 3299 },
-    ],
-  },
-  {
-    slug: "ss-31-elamipretide",
-    name: "SS-31 (Elamipretide)",
-    category: "Antioxidant / Mito",
-    stock: "out",
-    plain: "Bulk variant",
-    accent: "linear-gradient(145deg,#B87333,#6b4319)",
-    variants: [
       { label: "50mg", priceCents: 11599 },
     ],
   },
