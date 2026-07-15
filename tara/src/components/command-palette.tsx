@@ -131,7 +131,7 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
             <CommandSeparator className="my-1 h-px bg-border" />
 
             <CommandGroup heading="Compounds" className="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground [&_[cmdk-group-heading]]:px-1 [&_[cmdk-group-heading]]:pb-1.5">
-              {products.map((p) => (
+              {products.filter((p) => p.kind === "compound").map((p) => (
                 <CommandItem
                   key={p.slug}
                   value={`${p.name} ${p.category}`}
@@ -141,6 +141,26 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
                   <span>
                     <span className="font-medium text-foreground">{p.name}</span>
                     <span className="ml-2 text-xs text-muted-foreground">{p.category}</span>
+                  </span>
+                  <span className="font-mono text-xs text-muted-foreground">
+                    {formatCents(p.variants[0]?.priceCents ?? 0)}
+                  </span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+
+            <CommandSeparator className="my-1 h-px bg-border" />
+
+            <CommandGroup heading="Lab supplies" className="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground [&_[cmdk-group-heading]]:px-1 [&_[cmdk-group-heading]]:pb-1.5">
+              {products.filter((p) => p.kind === "supply").map((p) => (
+                <CommandItem
+                  key={p.slug}
+                  value={`${p.name} ${p.category}`}
+                  onSelect={() => go(`/products/${p.slug}`)}
+                  className="flex cursor-pointer items-center justify-between gap-3 rounded-sm px-3 py-2.5 text-sm data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground"
+                >
+                  <span>
+                    <span className="font-medium text-foreground">{p.name}</span>
                   </span>
                   <span className="font-mono text-xs text-muted-foreground">
                     {formatCents(p.variants[0]?.priceCents ?? 0)}
