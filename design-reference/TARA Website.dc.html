@@ -1,0 +1,1734 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#FAFAFA;color:#1A1A1A;font-family:Inter,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;}
+  button{font-family:inherit;}
+  @keyframes taraRise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes taraPulse{0%,100%{opacity:.4}50%{opacity:1}}
+  @keyframes taraSpin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion: reduce){*{animation-duration:.01ms !important}}
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;flex-direction:column;">
+
+<!-- ============ HEADER ============ -->
+<header style="position:sticky;top:0;z-index:50;background:#FFFFFF;border-bottom:1px solid #E4E7EC;">
+  <div style="max-width:1200px;margin:0 auto;padding:8px 24px;min-height:72px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+    <button onClick="{{ goHome }}" style="display:flex;align-items:center;gap:12px;background:none;border:none;padding:0;cursor:pointer;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">
+      <img src="assets/logo-mark.png" alt="TARA Peptides" style="height:42px;width:auto;display:block;">
+      <span style="display:flex;flex-direction:column;align-items:flex-start;line-height:1;">
+        <span style="font-family:'Playfair Display',Georgia,serif;font-size:20px;font-weight:600;letter-spacing:.22em;color:#1B5E20;">TARA</span>
+        <span style="font-size:9px;font-weight:600;letter-spacing:.32em;color:#55606E;margin-top:3px;">PEPTIDES</span>
+      </span>
+    </button>
+    <nav style="display:flex;align-items:center;gap:2px;flex:1;">
+      <button onClick="{{ goCatalog }}" style="height:40px;padding:0 13px;background:none;border:none;border-bottom:2px solid {{ navCatalog }};cursor:pointer;font-size:14px;font-weight:500;color:#1A1A1A;" style-hover="color:#1B5E20;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">Research Compounds</button>
+      <button onClick="{{ goVerify }}" style="height:40px;padding:0 13px;background:none;border:none;border-bottom:2px solid {{ navVerify }};cursor:pointer;font-size:14px;font-weight:500;color:#1A1A1A;" style-hover="color:#1B5E20;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">Verify</button>
+      <button onClick="{{ goKnowledge }}" style="height:40px;padding:0 13px;background:none;border:none;border-bottom:2px solid {{ navKnowledge }};cursor:pointer;font-size:14px;font-weight:500;color:#1A1A1A;" style-hover="color:#1B5E20;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">Knowledge</button>
+      <button onClick="{{ goDocs }}" style="height:40px;padding:0 13px;background:none;border:none;border-bottom:2px solid {{ navDocs }};cursor:pointer;font-size:14px;font-weight:500;color:#1A1A1A;" style-hover="color:#1B5E20;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">Documentation</button>
+      <button onClick="{{ goStacks }}" style="height:40px;padding:0 13px;background:none;border:none;border-bottom:2px solid {{ navStacks }};cursor:pointer;font-size:14px;font-weight:500;color:#1A1A1A;" style-hover="color:#1B5E20;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">Stacks</button>
+      <button onClick="{{ goCalc }}" style="height:40px;padding:0 13px;background:none;border:none;border-bottom:2px solid {{ navCalc }};cursor:pointer;font-size:14px;font-weight:500;color:#1A1A1A;" style-hover="color:#1B5E20;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">Calculator</button>
+    </nav>
+    <sc-if value="{{ hasCart }}" hint-placeholder-val="{{ false }}">
+      <button onClick="{{ goCheckout }}" style="display:inline-flex;align-items:center;gap:7px;height:44px;padding:0 16px;background:#F6FBF8;border:1px solid #1B5E20;border-radius:2px;font-size:13px;font-weight:600;color:#1B5E20;cursor:pointer;font-family:inherit;" style-hover="background:#e9f5ee;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+        Order · {{ cartCount }}
+      </button>
+    </sc-if>
+    <div style="display:flex;align-items:stretch;height:44px;border:1px solid #1B5E20;border-radius:2px;overflow:hidden;background:#FFFFFF;">
+      <span style="display:flex;align-items:center;padding:0 4px 0 11px;color:#1B5E20;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><line x1="14" y1="14" x2="14" y2="21"></line><line x1="18" y1="14" x2="21" y2="14"></line><line x1="18" y1="18" x2="21" y2="18"></line><line x1="18" y1="21" x2="21" y2="21"></line></svg>
+      </span>
+      <input value="{{ headerVerify }}" onChange="{{ onHeaderInput }}" onKeyDown="{{ onHeaderKey }}" placeholder="Verify a batch — TV-XXXX…" spellcheck="false" aria-label="Verify a batch by ID" style="width:190px;border:none;outline:none;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#1A1A1A;padding:0 8px;background:transparent;" style-focus="outline:none;">
+      <button onClick="{{ onHeaderVerify }}" style="padding:0 16px;background:#1B5E20;border:none;color:#FFFFFF;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;" style-hover="background:#164D1A;" style-focus="outline:2px solid #1565C0;outline-offset:-2px;">Verify</button>
+    </div>
+  </div>
+</header>
+
+<main style="flex:1;">
+
+<!-- ============ HOME ============ -->
+<sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+<div data-screen-label="Home">
+  <section style="background:#FAFAFA;border-bottom:1px solid #E4E7EC;">
+    <div style="max-width:1200px;margin:0 auto;padding:88px 24px 76px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:48px;align-items:center;">
+      <div>
+        <p style="margin:0 0 20px;font-size:12px;font-weight:600;letter-spacing:.18em;color:#009B72;">GERMAN-SOURCED · BATCH-DOCUMENTED · QR-VERIFIED</p>
+        <h1 style="margin:0 0 24px;font-family:'Playfair Display',Georgia,serif;font-size:56px;line-height:1.12;font-weight:600;color:#1A1A1A;max-width:640px;text-wrap:balance;">Research-grade transparency, verified.</h1>
+        <p style="margin:0 0 36px;font-size:18px;line-height:1.6;color:#55606E;max-width:560px;text-wrap:pretty;">German-sourced research compounds, supported by batch documentation, QR authentication, and scientific education. We explain — we do not persuade.</p>
+        <div style="display:flex;gap:16px;">
+          <button onClick="{{ goVerify }}" style="height:48px;padding:0 28px;background:#1B5E20;border:none;border-radius:2px;color:#FFFFFF;font-size:15px;font-weight:600;cursor:pointer;" style-hover="background:#164D1A;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">Verify a batch</button>
+          <button onClick="{{ goCatalog }}" style="height:48px;padding:0 28px;background:transparent;border:1px solid #1B5E20;border-radius:2px;color:#1B5E20;font-size:15px;font-weight:600;cursor:pointer;" style-hover="background:#F6FBF8;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">Explore research compounds</button>
+        </div>
+      </div>
+      <img src="assets/logo-primary.png" alt="TARA — Ancient wisdom, modern science" style="width:290px;justify-self:center;mix-blend-mode:multiply;">
+    </div>
+    <div style="border-top:1px solid #E4E7EC;background:#FFFFFF;">
+      <div style="max-width:1200px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));">
+        <sc-for list="{{ trustItems }}" as="t" hint-placeholder-count="5">
+          <button onClick="{{ t.go }}" style="padding:18px 8px;background:none;border:none;border-right:1px solid #E4E7EC;font-size:13px;font-weight:600;color:#1A1A1A;cursor:pointer;" style-hover="color:#1B5E20;" style-focus="outline:2px solid #1565C0;outline-offset:-2px;">{{ t.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section style="background:#FFFFFF;border-bottom:1px solid #E4E7EC;">
+    <div style="max-width:1200px;margin:0 auto;padding:64px 24px;">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:24px;margin-bottom:28px;flex-wrap:wrap;">
+        <div>
+          <p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:.18em;color:#1565C0;">START WITH YOUR GOAL</p>
+          <h2 style="margin:0;font-family:'Playfair Display',Georgia,serif;font-size:34px;font-weight:600;color:#1A1A1A;">Not sure where to begin? Tell us what you’re researching.</h2>
+        </div>
+        <button onClick="{{ goFinder }}" style="align-self:flex-end;background:none;border:none;padding:4px 0;font-size:14px;font-weight:600;color:#1B5E20;text-decoration:underline;text-underline-offset:3px;cursor:pointer;font-family:inherit;" style-hover="color:#009B72;">Open the guided finder →</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;">
+        <sc-for list="{{ goals }}" as="g" hint-placeholder-count="6">
+          <button onClick="{{ g.pickGo }}" style="text-align:left;background:#FAFAFA;border:1px solid #E4E7EC;border-radius:6px;padding:20px;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;gap:10px;" style-hover="border-color:#1B5E20;background:#F6FBF8;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1B5E20" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ g.icon }}"></path></svg>
+            <span style="font-size:15px;font-weight:600;color:#1A1A1A;">{{ g.label }}</span>
+            <span style="font-size:12.5px;line-height:1.45;color:#55606E;">{{ g.blurb }}</span>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section style="background:#F2F4F7;border-bottom:1px solid #E4E7EC;">
+    <div style="max-width:1200px;margin:0 auto;padding:72px 24px;">
+      <p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:.18em;color:#B87333;">TARA QUALITY CHAIN</p>
+      <h2 style="margin:0 0 40px;font-family:'Playfair Display',Georgia,serif;font-size:34px;font-weight:600;color:#1A1A1A;">Six steps between a German supplier and your bench.</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;">
+        <sc-for list="{{ chainSteps }}" as="step" hint-placeholder-count="6">
+          <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:4px;padding:20px 16px;display:flex;flex-direction:column;gap:10px;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:#009B72;">{{ step.num }}</span>
+            <span style="font-size:14px;font-weight:600;color:#1A1A1A;line-height:1.35;">{{ step.title }}</span>
+            <span style="font-size:12.5px;color:#55606E;line-height:1.5;">{{ step.desc }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section style="background:#FAFAFA;border-bottom:1px solid #E4E7EC;">
+    <div style="max-width:1200px;margin:0 auto;padding:72px 24px;">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:24px;margin-bottom:36px;">
+        <div>
+          <p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:.18em;color:#B87333;">FEATURED COMPOUNDS</p>
+          <h2 style="margin:0;font-family:'Playfair Display',Georgia,serif;font-size:34px;font-weight:600;color:#1A1A1A;">Identity, purity, batch. No claims.</h2>
+        </div>
+        <button onClick="{{ goCatalog }}" style="background:none;border:none;padding:4px 0;font-size:14px;font-weight:600;color:#1B5E20;text-decoration:underline;text-underline-offset:3px;cursor:pointer;" style-hover="color:#009B72;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">View all compounds</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:24px;">
+        <sc-for list="{{ featured }}" as="p" hint-placeholder-count="3">
+          <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:4px;overflow:hidden;display:flex;flex-direction:column;">
+            <div style="height:4px;background:{{ p.accent }};"></div>
+            <div style="padding:22px;display:flex;flex-direction:column;gap:14px;flex:1;">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+                <div><h3 style="margin:0;font-family:'Playfair Display',Georgia,serif;font-size:22px;font-weight:600;color:#1A1A1A;">{{ p.name }}</h3><p style="margin:4px 0 0;font-size:13px;color:#B87333;font-weight:600;">{{ p.strengthLabel }} · {{ p.format }}</p></div>
+                <span style="font-size:10.5px;font-weight:700;letter-spacing:.06em;color:#1B5E20;background:#F6FBF8;border:1px solid #1B5E20;border-radius:2px;padding:4px 7px;white-space:nowrap;">✓ VERIFIED</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:7px;font-size:13px;">
+                <div style="display:flex;justify-content:space-between;border-bottom:1px solid #F2F4F7;padding-bottom:6px;"><span style="color:#55606E;">Purity</span><span style="font-weight:600;">{{ p.purity }} · {{ p.method }}</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:#55606E;">Batch</span><span style="font-family:'JetBrains Mono',monospace;font-weight:600;color:#1565C0;">{{ p.batch }}</span></div>
+              </div>
+              <div style="margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:8px;">
+                <span style="font-family:'Playfair Display',Georgia,serif;font-size:20px;font-weight:600;">{{ p.priceLabel }}</span>
+                <button onClick="{{ p.open }}" style="height:38px;padding:0 16px;background:#1B5E20;border:none;border-radius:2px;color:#FFFFFF;font-size:13px;font-weight:600;cursor:pointer;" style-hover="background:#164D1A;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">Specification →</button>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section style="background:#FAFAFA;">
+    <div style="max-width:1200px;margin:0 auto;padding:72px 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;align-items:stretch;">
+      <div style="background:#0D1B2A;border-radius:4px;padding:40px;display:flex;flex-direction:column;gap:20px;">
+        <p style="margin:0;font-size:12px;font-weight:600;letter-spacing:.18em;color:#009B72;">TARA VERIFY</p>
+        <h3 style="margin:0;font-family:'Playfair Display',Georgia,serif;font-size:28px;font-weight:600;color:#E6EDF4;text-wrap:balance;">Every vial carries a unique, publicly checkable identity.</h3>
+        <p style="margin:0;font-size:14.5px;line-height:1.6;color:#8a95a5;">Scan the QR code on the label — or type the verification ID printed beside it — and the batch record, release status, and Certificate of Analysis appear in under a second. No login, no account.</p>
+        <div style="background:#12263A;border:1px solid #23374d;border-radius:4px;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:14px;color:#E6EDF4;">TV-8XQ4-KL92-M71P</span>
+            <span style="font-size:12px;color:#8a95a5;">Tesamorelin 5 mg · Batch G260701</span>
+          </div>
+          <span style="font-size:12px;font-weight:700;letter-spacing:.08em;color:#0D1B2A;background:#009B72;border-radius:2px;padding:6px 10px;white-space:nowrap;">✓ AUTHENTIC</span>
+        </div>
+        <div><button onClick="{{ trySampleVerify }}" style="height:44px;padding:0 24px;background:#009B72;border:none;border-radius:2px;color:#0D1B2A;font-size:14px;font-weight:700;cursor:pointer;" style-hover="background:#00b585;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">Try a sample verification →</button></div>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:4px;padding:40px;display:flex;flex-direction:column;gap:18px;">
+        <p style="margin:0;font-size:12px;font-weight:600;letter-spacing:.18em;color:#1565C0;">KNOWLEDGE CENTRE</p>
+        <h3 style="margin:0;font-family:'Playfair Display',Georgia,serif;font-size:28px;font-weight:600;color:#1A1A1A;">Written to be cited, not to convert.</h3>
+        <div style="display:flex;flex-direction:column;">
+          <sc-for list="{{ knowledgePreview }}" as="k" hint-placeholder-count="5">
+            <button onClick="{{ goKnowledge }}" style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 2px;background:none;border:none;border-bottom:1px solid #F2F4F7;font-size:14.5px;font-weight:500;color:#1A1A1A;cursor:pointer;text-align:left;" style-hover="color:#1565C0;" style-focus="outline:2px solid #1565C0;outline-offset:-2px;"><span>{{ k }}</span><span style="color:#1565C0;">→</span></button>
+          </sc-for>
+        </div>
+        <button onClick="{{ goKnowledge }}" style="align-self:flex-start;background:none;border:none;padding:4px 0;font-size:14px;font-weight:600;color:#1B5E20;text-decoration:underline;text-underline-offset:3px;cursor:pointer;" style-hover="color:#009B72;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">Browse the Knowledge Centre</button>
+      </div>
+    </div>
+  </section>
+</div>
+</sc-if>
+
+<!-- ============ CATALOGUE ============ -->
+<sc-if value="{{ isCatalog }}" hint-placeholder-val="{{ false }}">
+<div data-screen-label="Research Compounds" style="max-width:1200px;margin:0 auto;padding:56px 24px 80px;">
+  <p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:.18em;color:#B87333;">RESEARCH COMPOUNDS</p>
+  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:24px;margin-bottom:12px;">
+    <h1 style="margin:0;font-family:'Playfair Display',Georgia,serif;font-size:42px;font-weight:600;color:#1A1A1A;">The catalogue</h1>
+    <label style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:500;color:#55606E;">Sort by
+      <select value="{{ sortKey }}" onChange="{{ onSortChange }}" style="height:36px;border:1px solid #D0D5DD;border-radius:2px;background:#FFFFFF;font-size:13px;color:#1A1A1A;padding:0 8px;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">
+        <option value="name">Name (A–Z)</option>
+        <option value="price">Price (low–high)</option>
+        <option value="purity">Purity (high–low)</option>
+      </select>
+    </label>
+  </div>
+  <p style="margin:0 0 28px;font-size:15.5px;line-height:1.6;color:#55606E;max-width:660px;text-wrap:pretty;">Every card is a specification in miniature: identity, purity with method, and a live batch code. The evidence is available before the product page is even opened.</p>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px;">
+    <sc-for list="{{ catChips }}" as="c" hint-placeholder-count="7">
+      <button onClick="{{ c.pick }}" style="display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 14px;background:{{ c.bg }};border:1px solid {{ c.bd }};border-radius:999px;font-size:13px;font-weight:600;color:{{ c.fg }};cursor:pointer;font-family:inherit;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">{{ c.label }}<span style="font-size:11px;font-weight:600;opacity:.7;">{{ c.count }}</span></button>
+    </sc-for>
+  </div>
+  <p style="margin:0 0 32px;font-size:13px;color:#55606E;">Showing <span style="font-weight:600;color:#1A1A1A;">{{ resultCount }}</span> compounds.</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:24px;">
+    <sc-for list="{{ sortedProducts }}" as="p" hint-placeholder-count="9">
+      <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:4px;overflow:hidden;display:flex;flex-direction:column;">
+        <div style="height:4px;background:{{ p.accent }};"></div>
+        <div style="padding:22px;display:flex;flex-direction:column;gap:14px;flex:1;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+            <div><h3 style="margin:0;font-family:'Playfair Display',Georgia,serif;font-size:21px;font-weight:600;color:#1A1A1A;">{{ p.name }}</h3><p style="margin:4px 0 0;font-size:13px;color:#B87333;font-weight:600;">{{ p.strengthLabel }} · {{ p.format }}</p></div>
+            <span style="font-size:10.5px;font-weight:700;letter-spacing:.06em;color:#1B5E20;background:#F6FBF8;border:1px solid #1B5E20;border-radius:2px;padding:4px 7px;white-space:nowrap;">✓ VERIFIED</span>
+          </div>
+          <p style="margin:0;font-size:13px;line-height:1.55;color:#55606E;">{{ p.plain }}</p>
+          <div style="display:flex;flex-direction:column;gap:7px;font-size:13px;">
+            <div style="display:flex;justify-content:space-between;border-bottom:1px solid #F2F4F7;padding-bottom:6px;"><span style="color:#55606E;">Purity</span><span style="font-weight:600;">{{ p.purity }} · {{ p.method }}</span></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:#55606E;">Batch</span><span style="font-family:'JetBrains Mono',monospace;font-weight:600;color:#1565C0;">{{ p.batch }}</span></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:{{ p.stock.color }};">
+            <span style="width:7px;height:7px;border-radius:50%;background:{{ p.stock.color }};"></span>{{ p.stock.label }}
+          </div>
+          <div style="margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:8px;">
+            <span style="font-family:'Playfair Display',Georgia,serif;font-size:20px;font-weight:600;">{{ p.priceLabel }}</span>
+            <div style="display:flex;gap:8px;">
+              <button onClick="{{ p.open }}" style="height:38px;padding:0 13px;background:transparent;border:1px solid #1B5E20;border-radius:2px;color:#1B5E20;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;" style-hover="background:#F6FBF8;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">Details</button>
+              <button onClick="{{ p.addOne }}" style="height:38px;padding:0 15px;background:#1B5E20;border:none;border-radius:2px;color:#FFFFFF;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;" style-hover="background:#164D1A;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">Add</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ PRODUCT ============ -->
+<sc-if value="{{ isProduct }}" hint-placeholder-val="{{ false }}">
+<div data-screen-label="Product specification" style="max-width:1200px;margin:0 auto;padding:40px 24px 80px;">
+  <button onClick="{{ goCatalog }}" style="background:none;border:none;padding:4px 0;margin-bottom:32px;font-size:13.5px;font-weight:500;color:#55606E;cursor:pointer;" style-hover="color:#1B5E20;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">← Research Compounds</button>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:48px;align-items:start;">
+    <div style="display:flex;flex-direction:column;gap:32px;">
+      <div>
+        <p style="margin:0 0 10px;font-size:12px;font-weight:600;letter-spacing:.18em;color:#B87333;">RESEARCH COMPOUND · SPECIFICATION SHEET</p>
+        <h1 style="margin:0 0 6px;font-family:'Playfair Display',Georgia,serif;font-size:46px;font-weight:600;color:#1A1A1A;">{{ product.name }}</h1>
+        <p style="margin:0 0 18px;font-size:17px;color:#B87333;font-weight:600;">{{ selStrength }} · {{ product.format }}</p>
+        <p style="margin:0;font-size:17px;line-height:1.6;color:#1A1A1A;max-width:560px;text-wrap:pretty;">{{ productPlain }}</p>
+        <div style="margin-top:18px;background:#F6FBF8;border:1px solid #cfe3d6;border-radius:4px;padding:16px 18px;display:flex;gap:12px;align-items:flex-start;">
+          <span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#1B5E20;background:#FFFFFF;border:1px solid #cfe3d6;border-radius:2px;padding:4px 7px;white-space:nowrap;">STACKS</span>
+          <span style="font-size:13.5px;line-height:1.55;color:#14401b;">{{ productStacks }}</span>
+        </div>
+      </div>
+      <div style="border:1px solid #E4E7EC;border-radius:4px;overflow:hidden;background:#FFFFFF;">
+        <div style="height:4px;background:linear-gradient(90deg,#1B5E20,#009B72,#1565C0,#6A1B9A);"></div>
+        <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:14.5px;">
+          <tbody>
+            <tr style="background:#FAFAFA;"><td style="padding:14px 20px;color:#55606E;width:230px;">Purity (analytical method)</td><td style="padding:14px 20px;font-weight:600;">{{ product.purity }} ({{ product.method }})</td></tr>
+            <tr><td style="padding:14px 20px;color:#55606E;">Net content</td><td style="padding:14px 20px;font-weight:600;">{{ selStrength }}, {{ product.format }}</td></tr>
+            <tr style="background:#FAFAFA;"><td style="padding:14px 20px;color:#55606E;">Current batch</td><td style="padding:14px 20px;"><button onClick="{{ verifyThisBatch }}" style="background:none;border:none;padding:0;font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;color:#1565C0;text-decoration:underline;text-underline-offset:3px;cursor:pointer;" style-hover="color:#009B72;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">{{ product.batch }} — verify ↗</button></td></tr>
+            <tr><td style="padding:14px 20px;color:#55606E;">Supplier origin</td><td style="padding:14px 20px;font-weight:600;">Germany</td></tr>
+            <tr style="background:#FAFAFA;"><td style="padding:14px 20px;color:#55606E;">Release status</td><td style="padding:14px 20px;"><span style="font-size:11.5px;font-weight:700;letter-spacing:.08em;color:#1B5E20;background:#F6FBF8;border:1px solid #1B5E20;border-radius:2px;padding:4px 8px;">RELEASED</span></td></tr>
+            <tr><td style="padding:14px 20px;color:#55606E;">Certificate of Analysis</td><td style="padding:14px 20px;"><button onClick="{{ toggleCoa }}" style="background:none;border:none;padding:0;font-size:14.5px;font-weight:600;color:#1B5E20;text-decoration:underline;text-underline-offset:3px;cursor:pointer;" style-hover="color:#009B72;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">View COA inline ↓</button></td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+      <sc-if value="{{ coaOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="border:1px solid #1B5E20;border-radius:4px;overflow:hidden;background:#FFFFFF;animation:taraRise 220ms ease-out;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 24px;background:#F6FBF8;border-bottom:1px solid #cfe3d6;">
+            <div style="display:flex;flex-direction:column;gap:3px;">
+              <span style="font-size:11px;font-weight:600;letter-spacing:.16em;color:#1B5E20;">CERTIFICATE OF ANALYSIS</span>
+              <span style="font-size:13px;color:#55606E;">{{ product.name }} · batch <span style="font-family:'JetBrains Mono',monospace;color:#1565C0;">{{ product.batch }}</span></span>
+            </div>
+            <span style="font-size:11.5px;font-weight:700;letter-spacing:.06em;color:#1B5E20;background:#FFFFFF;border:1px solid #1B5E20;border-radius:2px;padding:5px 9px;white-space:nowrap;">✓ ALL PASS</span>
+          </div>
+          <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
+            <thead>
+              <tr style="border-bottom:1px solid #E4E7EC;">
+                <th style="text-align:left;padding:11px 24px;font-size:10.5px;font-weight:600;letter-spacing:.1em;color:#55606E;">PARAMETER</th>
+                <th style="text-align:left;padding:11px 16px;font-size:10.5px;font-weight:600;letter-spacing:.1em;color:#55606E;">RESULT</th>
+                <th style="text-align:left;padding:11px 24px;font-size:10.5px;font-weight:600;letter-spacing:.1em;color:#55606E;">SPECIFICATION</th>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{ coaRows }}" as="r" hint-placeholder-count="8">
+                <tr style="border-bottom:1px solid #F2F4F7;">
+                  <td style="padding:11px 24px;color:#3f4854;">{{ r.k }}</td>
+                  <td style="padding:11px 16px;font-weight:600;color:#1A1A1A;">{{ r.v }}</td>
+                  <td style="padding:11px 24px;color:#55606E;font-family:'JetBrains Mono',monospace;font-size:12.5px;">{{ r.spec }}</td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:16px 24px;border-top:1px solid #E4E7EC;background:#FAFAFA;">
+            <span style="font-size:12.5px;color:#55606E;">Signed off by QA · 2026-04 · retained for 5 years</span>
+            <div style="display:flex;gap:10px;">
+              <button onClick="{{ downloadCoa }}" style="height:36px;padding:0 16px;background:#1B5E20;border:none;border-radius:2px;color:#FFFFFF;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;" style-hover="background:#164D1A;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">Download PDF ↓</button>
+              <button onClick="{{ toggleCoa }}" style="height:36px;padding:0 16px;background:transparent;border:1px solid #D0D5DD;border-radius:2px;color:#55606E;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;" style-hover="color:#1A1A1A;border-color:#1A1A1A;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">Collapse</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:4px;padding:28px;">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:22px;">
+          <h2 style="margin:0;font-family:'Playfair Display',Georgia,serif;font-size:22px;font-weight:600;color:#1A1A1A;">Provenance</h2>
+          <span style="font-size:12px;font-weight:600;letter-spacing:.1em;color:#009B72;">SUPPLIER → BENCH</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0;position:relative;">
+          <sc-for list="{{ provenance }}" as="ev" hint-placeholder-count="6">
+            <div style="display:flex;flex-direction:column;gap:8px;padding:0 8px 4px 0;border-top:2px solid {{ ev.color }};padding-top:14px;position:relative;">
+              <span style="position:absolute;top:-8px;left:0;width:13px;height:13px;border-radius:50%;background:{{ ev.color }};border:2px solid #FFFFFF;box-shadow:0 0 0 1px {{ ev.color }};"></span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#55606E;">{{ ev.date }}</span>
+              <span style="font-size:14px;font-weight:600;color:#1A1A1A;line-height:1.25;">{{ ev.label }}</span>
+              <span style="font-size:12px;color:#55606E;line-height:1.4;">{{ ev.sub }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="background:#0D1B2A;border-radius:4px;padding:24px 28px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;">
+        <div style="display:flex;flex-direction:column;gap:4px;max-width:420px;">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.16em;color:#009B72;">RECONSTITUTION CALCULATOR</span>
+          <span style="font-size:14.5px;line-height:1.5;color:#E6EDF4;">Work out BAC water volume, dose units on a U-100 syringe, and doses per vial — prefilled for {{ product.name }}.</span>
+        </div>
+        <button onClick="{{ openCalcFor }}" style="height:44px;padding:0 22px;background:#009B72;border:none;border-radius:2px;color:#0D1B2A;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;" style-hover="background:#00b585;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">Open calculator →</button>
+      </div>
+
+      <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:4px;padding:28px;">
+        <h2 style="margin:0 0 14px;font-family:'Playfair Display',Georgia,serif;font-size:22px;font-weight:600;color:#1A1A1A;">Storage &amp; handling</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;font-size:14px;line-height:1.6;color:#3f4854;">
+          <div><span style="display:block;font-size:11.5px;font-weight:600;letter-spacing:.12em;color:#1565C0;margin-bottom:6px;">LYOPHILISED</span>Store at −20 °C, protected from light. Stable for 24 months from manufacture in the original sealed vial.</div>
+          <div><span style="display:block;font-size:11.5px;font-weight:600;letter-spacing:.12em;color:#1565C0;margin-bottom:6px;">IN SOLUTION</span>Store at 2–8 °C after reconstitution. Cold-chain dispatch available; see shipping documentation.</div>
+        </div>
+      </div>
+    </div>
+    <div style="position:sticky;top:96px;display:flex;flex-direction:column;gap:16px;">
+      <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:4px;padding:28px;display:flex;flex-direction:column;gap:18px;">
+        <sc-if value="{{ hasVariants }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <span style="font-size:12px;font-weight:600;letter-spacing:.08em;color:#55606E;">STRENGTH</span>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+              <sc-for list="{{ variantOptions }}" as="v" hint-placeholder-count="2">
+                <button onClick="{{ v.pick }}" style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 14px;background:{{ v.bg }};border:1px solid {{ v.bd }};border-radius:2px;cursor:pointer;font-family:inherit;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">
+                  <span style="font-size:13.5px;font-weight:600;color:{{ v.fg }};">{{ v.label }}</span>
+                  <span style="font-size:11.5px;color:{{ v.fg }};opacity:.8;">{{ v.price }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <div style="display:flex;align-items:baseline;gap:8px;">
+          <span style="font-family:'Playfair Display',Georgia,serif;font-size:34px;font-weight:600;color:#1A1A1A;">{{ selPrice }}</span>
+          <span style="font-size:12.5px;color:#55606E;">{{ selStrength }} · incl. VAT</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:13.5px;color:#3f4854;">
+          <span>Documentation reviewed above · batch {{ product.batch }}</span>
+          <span>Dispatch within 24 h of batch confirmation</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:{{ product.stock.color }};">
+          <span style="width:7px;height:7px;border-radius:50%;background:{{ product.stock.color }};"></span>{{ product.stock.label }}
+        </div>
+        <button onClick="{{ addToOrder }}" style="height:48px;background:#1B5E20;border:none;border-radius:2px;color:#FFFFFF;font-size:15px;font-weight:600;cursor:pointer;" style-hover="background:#164D1A;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">Add to order</button>
+        <sc-if value="{{ justAdded }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:#F6FBF8;border:1px solid #cfe3d6;border-radius:2px;padding:10px 14px;animation:taraRise 200ms ease-out;">
+            <span style="font-size:13px;color:#1B5E20;font-weight:600;">Added — {{ cartCount }} in your order.</span>
+            <button onClick="{{ goCheckout }}" style="background:none;border:none;padding:0;font-size:13px;font-weight:700;color:#1B5E20;text-decoration:underline;text-underline-offset:3px;cursor:pointer;font-family:inherit;" style-hover="color:#009B72;">Review order →</button>
+          </div>
+        </sc-if>
+      </div>
+      <div style="background:#F2F4F7;border-radius:4px;padding:16px 20px;font-size:12.5px;line-height:1.55;color:#55606E;">Documentation precedes purchase on this page by design: the evidence comes before the buy button.</div>
+    </div>
+  </div>
+  <div style="margin-top:48px;background:#1A1A1A;border-radius:4px;padding:20px 28px;">
+    <p style="margin:0;font-size:14px;font-weight:600;letter-spacing:.02em;color:#FFFFFF;">For laboratory research use only. Not for human or veterinary use.</p>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ VERIFY (dark) ============ -->
+<sc-if value="{{ isVerify }}" hint-placeholder-val="{{ false }}">
+<div data-screen-label="TARA Verify" style="background:#0D1B2A;min-height:calc(100vh - 72px);">
+  <div style="max-width:760px;margin:0 auto;padding:64px 24px 96px;">
+    <p style="margin:0 0 10px;font-size:12px;font-weight:600;letter-spacing:.2em;color:#009B72;text-align:center;">TARA VERIFY</p>
+    <h1 style="margin:0 0 14px;font-family:'Playfair Display',Georgia,serif;font-size:42px;font-weight:600;color:#E6EDF4;text-align:center;text-wrap:balance;">Is this vial genuine?</h1>
+    <p style="margin:0 0 40px;font-size:15.5px;line-height:1.6;color:#8a95a5;text-align:center;text-wrap:pretty;">Enter the verification ID printed beside the QR code on your vial label. Works without login, on any device.</p>
+    <div style="background:#12263A;border:1px solid #23374d;border-radius:4px;padding:32px;">
+      <label for="verify-id" style="display:block;font-size:13px;font-weight:600;color:#E6EDF4;margin-bottom:8px;">Verification ID</label>
+      <div style="display:flex;gap:12px;">
+        <input id="verify-id" value="{{ verifyInput }}" onChange="{{ onVerifyInput }}" onKeyDown="{{ onVerifyKey }}" placeholder="TV-XXXX-XXXX-XXXX" spellcheck="false" style="flex:1;height:48px;background:#0D1B2A;border:1px solid #33475e;border-radius:2px;color:#E6EDF4;font-family:'JetBrains Mono',monospace;font-size:16px;letter-spacing:.06em;padding:0 16px;box-sizing:border-box;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">
+        <button onClick="{{ onVerifySubmit }}" style="height:48px;padding:0 28px;background:#009B72;border:none;border-radius:2px;color:#0D1B2A;font-size:15px;font-weight:700;cursor:pointer;" style-hover="background:#00b585;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">Verify</button>
+      </div>
+      <p style="margin:10px 0 0;font-size:12.5px;color:#8a95a5;">Paste with any separators — we tidy it up. Four groups of four, like TV-XXXX-XXXX-XXXX.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:20px;align-items:center;">
+        <span style="font-size:12px;color:#8a95a5;">Try a sample:</span>
+        <sc-for list="{{ samples }}" as="s" hint-placeholder-count="4">
+          <button onClick="{{ s.try }}" style="background:#0D1B2A;border:1px solid #33475e;border-radius:2px;color:#8a95a5;font-family:'JetBrains Mono',monospace;font-size:11.5px;padding:6px 10px;cursor:pointer;" style-hover="color:#E6EDF4;border-color:#009B72;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">{{ s.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+
+    <sc-if value="{{ verifyBusy }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top:24px;background:#12263A;border:1px solid #23374d;border-radius:4px;padding:32px;display:flex;flex-direction:column;gap:12px;">
+        <div style="height:14px;width:40%;background:#1c334a;border-radius:2px;animation:taraPulse 1.2s ease-in-out infinite;"></div>
+        <div style="height:14px;width:70%;background:#1c334a;border-radius:2px;animation:taraPulse 1.2s ease-in-out infinite .15s;"></div>
+        <p style="margin:6px 0 0;font-size:12.5px;color:#8a95a5;">Checking the batch register…</p>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ hasResult }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top:24px;animation:taraRise 240ms ease-out;">
+        <div style="background:#12263A;border:1px solid {{ result.borderColor }};border-radius:4px;overflow:hidden;">
+          <div style="overflow-x:auto;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 28px;border-bottom:1px solid #23374d;">
+            <span style="font-size:12px;font-weight:600;letter-spacing:.2em;color:#8a95a5;">T A R A · V E R I F Y</span>
+            <span style="font-size:13px;font-weight:700;letter-spacing:.08em;color:{{ result.badgeText }};background:{{ result.badgeBg }};border-radius:2px;padding:7px 12px;">{{ result.badge }}</span>
+          </div>
+          <sc-if value="{{ result.found }}" hint-placeholder-val="{{ true }}">
+            <table style="width:100%;border-collapse:collapse;font-size:14.5px;">
+              <tbody>
+                <tr><td style="padding:13px 28px;color:#8a95a5;width:220px;">Product</td><td style="padding:13px 28px;color:#E6EDF4;font-weight:600;">{{ result.productName }}</td></tr>
+                <tr style="background:#101f31;"><td style="padding:13px 28px;color:#8a95a5;">Batch</td><td style="padding:13px 28px;color:#E6EDF4;font-family:'JetBrains Mono',monospace;">{{ result.batch }}</td></tr>
+                <tr><td style="padding:13px 28px;color:#8a95a5;">Serial</td><td style="padding:13px 28px;color:#E6EDF4;font-family:'JetBrains Mono',monospace;">{{ result.serial }}</td></tr>
+                <tr style="background:#101f31;"><td style="padding:13px 28px;color:#8a95a5;">Supplier origin</td><td style="padding:13px 28px;color:#E6EDF4;">Germany</td></tr>
+                <tr><td style="padding:13px 28px;color:#8a95a5;">Release status</td><td style="padding:13px 28px;color:#E6EDF4;">{{ result.release }}</td></tr>
+                <tr style="background:#101f31;"><td style="padding:13px 28px;color:#8a95a5;">First scanned</td><td style="padding:13px 28px;color:#E6EDF4;">{{ result.firstScan }}</td></tr>
+                <tr><td style="padding:13px 28px;color:#8a95a5;">Certificate of Analysis</td><td style="padding:13px 28px;"><button onClick="{{ downloadResultCoa }}" style="background:none;border:none;padding:0;font-size:14.5px;font-weight:600;color:#009B72;text-decoration:underline;text-underline-offset:3px;cursor:pointer;" style-hover="color:#00b585;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">Download ↓</button></td></tr>
+                <tr style="background:#101f31;"><td style="padding:13px 28px;color:#8a95a5;">Classification</td><td style="padding:13px 28px;color:#E6EDF4;">Research use only</td></tr>
+              </tbody>
+            </table>
+          </sc-if>
+          <sc-if value="{{ result.notFound }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:28px;display:flex;flex-direction:column;gap:12px;">
+              <p style="margin:0;font-size:15px;line-height:1.6;color:#E6EDF4;">This ID is not in our register. Label wear and transcription slips are common — this is not necessarily a counterfeit.</p>
+              <p style="margin:0;font-size:14px;line-height:1.6;color:#8a95a5;">Check the ID has four groups, like <span style="font-family:'JetBrains Mono',monospace;color:#E6EDF4;">TV-XXXX-XXXX-XXXX</span>, or email a photo of the label to <span style="color:#009B72;">verify@tara.ie</span> and we will check it by hand.</p>
+            </div>
+          </sc-if>
+          </div>
+          <sc-if value="{{ result.note }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:16px 28px;border-top:1px solid #23374d;font-size:13.5px;line-height:1.55;color:{{ result.noteColor }};">{{ result.note }}</div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <div style="margin-top:48px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;font-size:13px;line-height:1.6;color:#8a95a5;">
+      <div style="border:1px solid #23374d;border-radius:4px;padding:18px 20px;">The first scan date and time is recorded and shown — a re-sold or re-labelled vial betrays itself.</div>
+      <div style="border:1px solid #23374d;border-radius:4px;padding:18px 20px;">A recalled or quarantined batch flips every verification page in that batch to its status instantly.</div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ KNOWLEDGE ============ -->
+<sc-if value="{{ isKnowledge }}" hint-placeholder-val="{{ false }}">
+<div data-screen-label="Knowledge Centre" style="max-width:1200px;margin:0 auto;padding:56px 24px 80px;">
+  <p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:.18em;color:#1565C0;">KNOWLEDGE CENTRE</p>
+  <h1 style="margin:0 0 12px;font-family:'Playfair Display',Georgia,serif;font-size:42px;font-weight:600;color:#1A1A1A;">Technical education, written to be cited.</h1>
+  <p style="margin:0 0 44px;font-size:15.5px;line-height:1.6;color:#55606E;max-width:660px;text-wrap:pretty;">Author attribution, references, and revision dates — and zero product promotion inside educational content. The article that never mentions a product builds the most trust in all of them.</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:22px;">
+    <sc-for list="{{ articles }}" as="a" hint-placeholder-count="6">
+      <article style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:4px;padding:26px;display:flex;flex-direction:column;gap:12px;">
+        <span style="font-size:11px;font-weight:600;letter-spacing:.14em;color:{{ a.tagColor }};">{{ a.tag }}</span>
+        <h3 style="margin:0;font-family:'Playfair Display',Georgia,serif;font-size:21px;font-weight:600;color:#1A1A1A;line-height:1.25;">{{ a.title }}</h3>
+        <p style="margin:0;font-size:13.5px;line-height:1.6;color:#55606E;flex:1;">{{ a.excerpt }}</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #F2F4F7;padding-top:12px;font-size:12px;color:#55606E;">
+          <span>{{ a.author }}</span><span style="font-family:'JetBrains Mono',monospace;">{{ a.date }}</span>
+        </div>
+      </article>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ DOCUMENTATION ============ -->
+<sc-if value="{{ isDocs }}" hint-placeholder-val="{{ false }}">
+<div data-screen-label="Documentation" style="max-width:1200px;margin:0 auto;padding:56px 24px 80px;">
+  <p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:.18em;color:#B87333;">DOCUMENTATION</p>
+  <h1 style="margin:0 0 12px;font-family:'Playfair Display',Georgia,serif;font-size:42px;font-weight:600;color:#1A1A1A;">Every batch, on the record.</h1>
+  <p style="margin:0 0 44px;font-size:15.5px;line-height:1.6;color:#55606E;max-width:660px;text-wrap:pretty;">Certificates of Analysis, batch registers, and handling guidance — indexed and downloadable. The documentation is the product as much as the compound is.</p>
+  <div style="border:1px solid #E4E7EC;border-radius:4px;overflow-x:auto;background:#FFFFFF;">
+    <table style="width:100%;min-width:640px;border-collapse:collapse;font-size:14px;">
+      <thead>
+        <tr style="border-bottom:2px solid #1B5E20;">
+          <th style="text-align:left;padding:14px 20px;font-size:11px;font-weight:600;letter-spacing:.1em;color:#55606E;">COMPOUND</th>
+          <th style="text-align:left;padding:14px 20px;font-size:11px;font-weight:600;letter-spacing:.1em;color:#55606E;">BATCH</th>
+          <th style="text-align:left;padding:14px 20px;font-size:11px;font-weight:600;letter-spacing:.1em;color:#55606E;">PURITY</th>
+          <th style="text-align:left;padding:14px 20px;font-size:11px;font-weight:600;letter-spacing:.1em;color:#55606E;">RELEASED</th>
+          <th style="text-align:right;padding:14px 20px;font-size:11px;font-weight:600;letter-spacing:.1em;color:#55606E;">COA</th>
+        </tr>
+      </thead>
+      <tbody>
+        <sc-for list="{{ docRows }}" as="d" hint-placeholder-count="9">
+          <tr style="border-bottom:1px solid #F2F4F7;background:{{ d.stripe }};">
+            <td style="padding:13px 20px;font-weight:600;">{{ d.name }}</td>
+            <td style="padding:13px 20px;font-family:'JetBrains Mono',monospace;color:#1565C0;">{{ d.batch }}</td>
+            <td style="padding:13px 20px;text-align:left;">{{ d.purity }}</td>
+            <td style="padding:13px 20px;font-family:'JetBrains Mono',monospace;color:#55606E;">{{ d.date }}</td>
+            <td style="padding:13px 20px;text-align:right;"><button onClick="{{ d.download }}" style="background:none;border:none;padding:0;font-size:13.5px;font-weight:600;color:#1B5E20;text-decoration:underline;text-underline-offset:3px;cursor:pointer;" style-hover="color:#009B72;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">Download ↓</button></td>
+          </tr>
+        </sc-for>
+      </tbody>
+    </table>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ CALCULATOR ============ -->
+<sc-if value="{{ isCalc }}" hint-placeholder-val="{{ false }}">
+<div data-screen-label="Reconstitution calculator" style="max-width:1100px;margin:0 auto;padding:56px 24px 80px;">
+  <p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:.18em;color:#009B72;">RECONSTITUTION CALCULATOR</p>
+  <h1 style="margin:0 0 12px;font-family:'Playfair Display',Georgia,serif;font-size:42px;font-weight:600;color:#1A1A1A;">Reconstitution &amp; dosing, without the guesswork.</h1>
+  <p style="margin:0 0 40px;font-size:15.5px;line-height:1.6;color:#55606E;max-width:680px;text-wrap:pretty;">Enter the vial amount, the bacterial water you will add, and your target dose. We return the draw on a U-100 insulin syringe, the volume per dose, and how many doses the vial holds. A tool, not advice — for laboratory research use only.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:28px;align-items:start;">
+    <!-- inputs -->
+    <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:4px;padding:32px;display:flex;flex-direction:column;gap:26px;">
+      <div style="display:flex;flex-direction:column;gap:9px;">
+        <label style="font-size:13px;font-weight:600;color:#1A1A1A;">Peptide in vial <span style="color:#55606E;font-weight:500;">(mg)</span></label>
+        <input value="{{ calcMg }}" onChange="{{ onCalcMg }}" type="number" min="0" step="0.5" inputmode="decimal" style="height:48px;border:1px solid #D0D5DD;border-radius:2px;font-family:'JetBrains Mono',monospace;font-size:16px;color:#1A1A1A;padding:0 14px;box-sizing:border-box;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:9px;">
+        <label style="font-size:13px;font-weight:600;color:#1A1A1A;">Bacteriostatic water added <span style="color:#55606E;font-weight:500;">(mL)</span></label>
+        <input value="{{ calcBac }}" onChange="{{ onCalcBac }}" type="number" min="0" step="0.5" inputmode="decimal" style="height:48px;border:1px solid #D0D5DD;border-radius:2px;font-family:'JetBrains Mono',monospace;font-size:16px;color:#1A1A1A;padding:0 14px;box-sizing:border-box;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">
+        <div style="display:flex;gap:8px;margin-top:2px;">
+          <sc-for list="{{ calcPresets }}" as="pre" hint-placeholder-count="3">
+            <button onClick="{{ pre.set }}" style="height:32px;padding:0 12px;background:#F2F4F7;border:1px solid #E4E7EC;border-radius:999px;font-size:12px;font-weight:600;color:#3f4854;cursor:pointer;font-family:inherit;" style-hover="border-color:#1B5E20;color:#1B5E20;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">{{ pre.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:9px;">
+        <label style="font-size:13px;font-weight:600;color:#1A1A1A;">Target dose <span style="color:#55606E;font-weight:500;">(mcg)</span></label>
+        <input value="{{ calcDose }}" onChange="{{ onCalcDose }}" type="number" min="0" step="25" inputmode="decimal" style="height:48px;border:1px solid #D0D5DD;border-radius:2px;font-family:'JetBrains Mono',monospace;font-size:16px;color:#1A1A1A;padding:0 14px;box-sizing:border-box;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">
+      </div>
+    </div>
+
+    <!-- results -->
+    <div style="display:flex;flex-direction:column;gap:20px;">
+      <div style="background:#0D1B2A;border-radius:4px;padding:32px;display:flex;flex-direction:column;gap:22px;">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;">
+          <span style="font-size:12px;font-weight:600;letter-spacing:.14em;color:#009B72;">DRAW ON A U-100 SYRINGE</span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:10px;">
+          <span style="font-family:'Playfair Display',Georgia,serif;font-size:64px;font-weight:600;color:#E6EDF4;line-height:1;">{{ calc.units }}</span>
+          <span style="font-size:18px;color:#8a95a5;">units</span>
+        </div>
+        <!-- syringe -->
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div style="flex:1;height:26px;background:#12263A;border:1px solid #33475e;border-radius:3px;overflow:hidden;position:relative;">
+            <div style="height:100%;width:{{ calc.fillPct }};background:linear-gradient(90deg,#009B72,#00b585);transition:width .25s ease;"></div>
+            <div style="position:absolute;inset:0;display:flex;justify-content:space-between;padding:0 6px;align-items:center;pointer-events:none;">
+              <span style="font-size:9px;color:#5a6b7d;font-family:'JetBrains Mono',monospace;">0</span>
+              <span style="font-size:9px;color:#5a6b7d;font-family:'JetBrains Mono',monospace;">50</span>
+              <span style="font-size:9px;color:#5a6b7d;font-family:'JetBrains Mono',monospace;">100</span>
+            </div>
+          </div>
+          <div style="width:16px;height:10px;background:#33475e;border-radius:0 2px 2px 0;"></div>
+        </div>
+        <sc-if value="{{ calc.overfill }}" hint-placeholder-val="{{ false }}">
+          <p style="margin:0;font-size:12.5px;line-height:1.5;color:#e0b44a;">Dose exceeds one full U-100 syringe. Add more bacteriostatic water to lower the draw, or split the dose.</p>
+        </sc-if>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;">
+        <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:4px;padding:20px;display:flex;flex-direction:column;gap:6px;">
+          <span style="font-size:11.5px;font-weight:600;letter-spacing:.1em;color:#55606E;">VOLUME / DOSE</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;color:#1A1A1A;">{{ calc.volMl }} mL</span>
+        </div>
+        <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:4px;padding:20px;display:flex;flex-direction:column;gap:6px;">
+          <span style="font-size:11.5px;font-weight:600;letter-spacing:.1em;color:#55606E;">CONCENTRATION</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;color:#1A1A1A;">{{ calc.conc }} <span style="font-size:12px;color:#55606E;">mcg/mL</span></span>
+        </div>
+        <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:4px;padding:20px;display:flex;flex-direction:column;gap:6px;">
+          <span style="font-size:11.5px;font-weight:600;letter-spacing:.1em;color:#55606E;">DOSES / VIAL</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;color:#1B5E20;">{{ calc.doses }}</span>
+        </div>
+      </div>
+      <div style="background:#F2F4F7;border-radius:4px;padding:16px 20px;font-size:12.5px;line-height:1.55;color:#55606E;">A U-100 syringe holds 100 units per mL, so 1 unit = 0.01 mL. Figures are arithmetic only and assume complete dissolution.</div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ CHECKOUT ============ -->
+<sc-if value="{{ isCheckout }}" hint-placeholder-val="{{ false }}">
+<div data-screen-label="Checkout" style="max-width:1080px;margin:0 auto;padding:40px 24px 80px;">
+
+  <!-- stepper -->
+  <div style="display:flex;align-items:center;gap:6px;margin-bottom:36px;flex-wrap:wrap;">
+    <sc-for list="{{ checkoutSteps }}" as="st" hint-placeholder-count="4">
+      <button onClick="{{ st.go }}" style="display:flex;align-items:center;gap:10px;background:none;border:none;padding:4px 6px;cursor:pointer;font-family:inherit;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">
+        <span style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;background:{{ st.circleBg }};color:{{ st.circleFg }};border:1px solid {{ st.circleBd }};">{{ st.mark }}</span>
+        <span style="font-size:13.5px;font-weight:600;color:{{ st.labelColor }};">{{ st.label }}</span>
+      </button>
+      <span style="width:28px;height:1px;background:#D0D5DD;"></span>
+    </sc-for>
+  </div>
+
+  <!-- ---------- REVIEW ---------- -->
+  <sc-if value="{{ stepReview }}" hint-placeholder-val="{{ true }}">
+    <sc-if value="{{ cartEmpty }}" hint-placeholder-val="{{ false }}">
+      <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:4px;padding:64px 32px;text-align:center;">
+        <h1 style="margin:0 0 12px;font-family:'Playfair Display',Georgia,serif;font-size:30px;font-weight:600;color:#1A1A1A;">Your order is empty</h1>
+        <p style="margin:0 0 28px;font-size:15px;color:#55606E;">Add a documented compound to begin. Evidence first, always.</p>
+        <button onClick="{{ goShop }}" style="height:46px;padding:0 26px;background:#1B5E20;border:none;border-radius:2px;color:#FFFFFF;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" style-hover="background:#164D1A;">Browse research compounds</button>
+      </div>
+    </sc-if>
+    <sc-if value="{{ cartCount }}" hint-placeholder-val="{{ true }}">
+      <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:28px;align-items:start;">
+        <div>
+          <h1 style="margin:0 0 6px;font-family:'Playfair Display',Georgia,serif;font-size:34px;font-weight:600;color:#1A1A1A;">Review your order</h1>
+          <p style="margin:0 0 24px;font-size:14px;color:#55606E;">Every vial ships with its Certificate of Analysis and a unique verification ID.</p>
+          <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:4px;overflow:hidden;">
+            <sc-for list="{{ cartLines }}" as="l" hint-placeholder-count="2">
+              <div style="display:flex;gap:16px;padding:20px;border-bottom:1px solid #F2F4F7;align-items:center;">
+                <div style="width:5px;height:52px;border-radius:3px;background:{{ l.accent }};flex-shrink:0;"></div>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-family:'Playfair Display',Georgia,serif;font-size:18px;font-weight:600;color:#1A1A1A;">{{ l.name }}</div>
+                  <div style="font-size:12.5px;color:#55606E;margin-top:2px;">{{ l.strength }} · batch <span style="font-family:'JetBrains Mono',monospace;color:#1565C0;">{{ l.batch }}</span></div>
+                </div>
+                <div style="display:flex;align-items:center;border:1px solid #D0D5DD;border-radius:2px;overflow:hidden;">
+                  <button onClick="{{ l.dec }}" style="width:32px;height:34px;background:#FAFAFA;border:none;font-size:16px;color:#3f4854;cursor:pointer;font-family:inherit;" style-hover="background:#F2F4F7;">−</button>
+                  <span style="width:34px;text-align:center;font-size:14px;font-weight:600;">{{ l.qty }}</span>
+                  <button onClick="{{ l.inc }}" style="width:32px;height:34px;background:#FAFAFA;border:none;font-size:16px;color:#3f4854;cursor:pointer;font-family:inherit;" style-hover="background:#F2F4F7;">+</button>
+                </div>
+                <div style="width:80px;text-align:right;font-weight:600;font-size:15px;">{{ l.lineTotal }}</div>
+                <button onClick="{{ l.remove }}" aria-label="Remove" style="background:none;border:none;color:#B4232A;font-size:12px;cursor:pointer;font-family:inherit;padding:4px;" style-hover="text-decoration:underline;">Remove</button>
+              </div>
+            </sc-for>
+          </div>
+          <button onClick="{{ goShop }}" style="margin-top:16px;background:none;border:none;padding:0;font-size:13.5px;font-weight:600;color:#1B5E20;cursor:pointer;font-family:inherit;" style-hover="color:#009B72;">← Add another compound</button>
+        </div>
+
+        <!-- summary -->
+        <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:4px;padding:26px;position:sticky;top:96px;">
+          <h2 style="margin:0 0 18px;font-size:14px;font-weight:700;letter-spacing:.04em;color:#1A1A1A;">ORDER SUMMARY</h2>
+          <sc-if value="{{ showVolumeNudge }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;gap:8px;align-items:flex-start;background:#FFF8EE;border:1px solid #ead8bf;border-radius:2px;padding:10px 12px;margin-bottom:12px;font-size:12.5px;color:#7a531d;line-height:1.4;"><span style="font-weight:700;">%</span><span>{{ volumeNudge }}</span></div>
+          </sc-if>
+          <sc-if value="{{ showFreeShipNudge }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#F6FBF8;border:1px solid #cfe3d6;border-radius:2px;padding:10px 12px;margin-bottom:16px;font-size:12.5px;color:#14401b;line-height:1.4;">Add {{ freeShipRemaining }} more to unlock <strong>free EU shipping</strong>.</div>
+          </sc-if>
+          <div style="display:flex;flex-direction:column;gap:10px;font-size:14px;color:#3f4854;">
+            <div style="display:flex;justify-content:space-between;"><span>Subtotal (incl. VAT)</span><span style="font-weight:600;">{{ subtotal }}</span></div>
+            <sc-if value="{{ hasDiscount }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;justify-content:space-between;color:#1B5E20;"><span>{{ discountLabel }}</span><span style="font-weight:600;">−{{ discount }}</span></div>
+            </sc-if>
+            <div style="display:flex;justify-content:space-between;"><span>Shipping</span><span style="font-weight:600;">{{ shipping }}</span></div>
+            <div style="display:flex;justify-content:space-between;"><span>Includes VAT (23%)</span><span style="font-weight:600;">{{ vat }}</span></div>
+            <div style="display:flex;justify-content:space-between;border-top:1px solid #E4E7EC;padding-top:12px;margin-top:4px;font-size:18px;font-weight:700;color:#1A1A1A;"><span>Total</span><span>{{ total }}</span></div>
+          </div>
+          <div style="margin:18px 0;display:flex;gap:8px;">
+            <input value="{{ promo }}" onChange="{{ onPromo }}" placeholder="Promo code" spellcheck="false" style="flex:1;height:40px;border:1px solid #D0D5DD;border-radius:2px;font-family:'JetBrains Mono',monospace;font-size:13px;padding:0 12px;box-sizing:border-box;text-transform:uppercase;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">
+            <button onClick="{{ applyPromo }}" style="height:40px;padding:0 16px;background:#0D1B2A;border:none;border-radius:2px;color:#FFFFFF;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;" style-hover="background:#1a2f45;">Apply</button>
+          </div>
+          <sc-if value="{{ promoMsg }}" hint-placeholder-val="">
+            <p style="margin:-8px 0 14px;font-size:12.5px;color:#55606E;">{{ promoMsg }}</p>
+          </sc-if>
+          <button onClick="{{ toDetails }}" style="width:100%;height:50px;background:#1B5E20;border:none;border-radius:2px;color:#FFFFFF;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;" style-hover="background:#164D1A;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">Continue to details →</button>
+          <p style="margin:12px 0 0;font-size:11.5px;color:#8a95a5;text-align:center;">Automatic volume saving: <strong>2 vials −5%</strong>, <strong>3+ vials −10%</strong>. Or code <strong>TARA15</strong> for 15% off a first order.</p>
+        </div>
+      </div>
+    </sc-if>
+  </sc-if>
+
+  <!-- ---------- DETAILS ---------- -->
+  <sc-if value="{{ stepDetails }}" hint-placeholder-val="{{ false }}">
+    <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:28px;align-items:start;">
+      <div>
+        <h1 style="margin:0 0 6px;font-family:'Playfair Display',Georgia,serif;font-size:34px;font-weight:600;color:#1A1A1A;">Delivery details</h1>
+        <p style="margin:0 0 24px;font-size:14px;color:#55606E;">Where should the documented batch be dispatched?</p>
+        <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:4px;padding:28px;display:flex;flex-direction:column;gap:18px;">
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            <label style="font-size:13px;font-weight:600;color:#1A1A1A;">Full name / institution</label>
+            <input value="{{ cust.name }}" onChange="{{ setCust('name') }}" style="height:46px;border:1px solid #D0D5DD;border-radius:2px;font-size:15px;padding:0 14px;box-sizing:border-box;font-family:inherit;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            <label style="font-size:13px;font-weight:600;color:#1A1A1A;">Email (invoice &amp; verification links sent here)</label>
+            <input value="{{ cust.email }}" onChange="{{ setCust('email') }}" type="email" style="height:46px;border:1px solid #D0D5DD;border-radius:2px;font-size:15px;padding:0 14px;box-sizing:border-box;font-family:inherit;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            <label style="font-size:13px;font-weight:600;color:#1A1A1A;">Address</label>
+            <input value="{{ cust.addr }}" onChange="{{ setCust('addr') }}" style="height:46px;border:1px solid #D0D5DD;border-radius:2px;font-size:15px;padding:0 14px;box-sizing:border-box;font-family:inherit;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+            <div style="display:flex;flex-direction:column;gap:7px;">
+              <label style="font-size:13px;font-weight:600;color:#1A1A1A;">City</label>
+              <input value="{{ cust.city }}" onChange="{{ setCust('city') }}" style="height:46px;border:1px solid #D0D5DD;border-radius:2px;font-size:15px;padding:0 14px;box-sizing:border-box;font-family:inherit;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:7px;">
+              <label style="font-size:13px;font-weight:600;color:#1A1A1A;">Eircode / ZIP</label>
+              <input value="{{ cust.post }}" onChange="{{ setCust('post') }}" style="height:46px;border:1px solid #D0D5DD;border-radius:2px;font-size:15px;padding:0 14px;box-sizing:border-box;font-family:inherit;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:7px;">
+              <label style="font-size:13px;font-weight:600;color:#1A1A1A;">Country</label>
+              <input value="{{ cust.country }}" onChange="{{ setCust('country') }}" style="height:46px;border:1px solid #D0D5DD;border-radius:2px;font-size:15px;padding:0 14px;box-sizing:border-box;font-family:inherit;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">
+            </div>
+          </div>
+          <label style="display:flex;gap:12px;align-items:flex-start;padding:14px;background:#FAFAFA;border:1px solid #E4E7EC;border-radius:2px;cursor:pointer;">
+            <input type="checkbox" checked="{{ declaration }}" onChange="{{ toggleDeclaration }}" style="width:18px;height:18px;margin-top:1px;flex-shrink:0;accent-color:#1B5E20;">
+            <span style="font-size:13px;line-height:1.55;color:#3f4854;">I confirm these materials are for <strong>laboratory research use only</strong>, not for human or veterinary use, and that I am a qualified researcher purchasing in that capacity.</span>
+          </label>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:20px;">
+          <button onClick="{{ backStep }}" style="height:46px;padding:0 22px;background:transparent;border:1px solid #D0D5DD;border-radius:2px;color:#55606E;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" style-hover="border-color:#1A1A1A;color:#1A1A1A;">← Back</button>
+          <button onClick="{{ toPayment }}" style="height:46px;padding:0 26px;background:#1B5E20;border:none;border-radius:2px;color:#FFFFFF;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;opacity:{{ detailsOpacity }};" style-hover="background:#164D1A;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">Continue to payment →</button>
+        </div>
+      </div>
+
+      <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:4px;padding:26px;position:sticky;top:96px;">
+        <h2 style="margin:0 0 18px;font-size:14px;font-weight:700;letter-spacing:.04em;color:#1A1A1A;">ORDER SUMMARY</h2>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:14px;color:#3f4854;">
+          <div style="display:flex;justify-content:space-between;"><span>Subtotal</span><span style="font-weight:600;">{{ subtotal }}</span></div>
+          <sc-if value="{{ hasDiscount }}" hint-placeholder-val="{{ false }}"><div style="display:flex;justify-content:space-between;color:#1B5E20;"><span>Discount</span><span style="font-weight:600;">−{{ discount }}</span></div></sc-if>
+          <div style="display:flex;justify-content:space-between;"><span>Shipping</span><span style="font-weight:600;">{{ shipping }}</span></div>
+          <div style="display:flex;justify-content:space-between;"><span>Includes VAT (23%)</span><span style="font-weight:600;">{{ vat }}</span></div>
+          <div style="display:flex;justify-content:space-between;border-top:1px solid #E4E7EC;padding-top:12px;margin-top:4px;font-size:18px;font-weight:700;color:#1A1A1A;"><span>Total</span><span>{{ total }}</span></div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ---------- PAYMENT ---------- -->
+  <sc-if value="{{ stepPayment }}" hint-placeholder-val="{{ false }}">
+    <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:28px;align-items:start;">
+      <div>
+        <h1 style="margin:0 0 6px;font-family:'Playfair Display',Georgia,serif;font-size:34px;font-weight:600;color:#1A1A1A;">Payment</h1>
+        <div style="display:flex;align-items:center;gap:8px;margin:0 0 24px;font-size:13px;color:#55606E;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1B5E20" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          Secured by <strong style="color:#1A1A1A;">SumUp</strong> · card details are encrypted and never touch our servers.
+        </div>
+
+        <!-- wallets -->
+        <div style="display:flex;gap:12px;margin-bottom:20px;">
+          <button onClick="{{ payApple }}" style="flex:1;height:52px;background:#000000;border:none;border-radius:4px;color:#FFFFFF;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;" style-hover="opacity:.88;" style-focus="outline:2px solid #1565C0;outline-offset:2px;"> Pay</button>
+          <button onClick="{{ payGoogle }}" style="flex:1;height:52px;background:#FFFFFF;border:1px solid #D0D5DD;border-radius:4px;color:#1A1A1A;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;" style-hover="background:#FAFAFA;" style-focus="outline:2px solid #1565C0;outline-offset:2px;"><span style="font-weight:700;"><span style="color:#4285F4;">G</span><span style="color:#EA4335;">o</span><span style="color:#FBBC05;">o</span><span style="color:#4285F4;">g</span><span style="color:#34A853;">l</span><span style="color:#EA4335;">e</span></span> Pay</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;color:#8a95a5;font-size:12px;">
+          <span style="flex:1;height:1px;background:#E4E7EC;"></span>OR PAY BY CARD<span style="flex:1;height:1px;background:#E4E7EC;"></span>
+        </div>
+
+        <!-- card form -->
+        <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:4px;padding:26px;display:flex;flex-direction:column;gap:16px;">
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            <label style="font-size:13px;font-weight:600;color:#1A1A1A;">Name on card</label>
+            <input value="{{ card.name }}" onChange="{{ setCardName }}" style="height:46px;border:1px solid #D0D5DD;border-radius:2px;font-size:15px;padding:0 14px;box-sizing:border-box;font-family:inherit;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            <label style="font-size:13px;font-weight:600;color:#1A1A1A;">Card number</label>
+            <input value="{{ card.number }}" onChange="{{ setCardNumber }}" inputmode="numeric" placeholder="1234 5678 9012 3456" style="height:46px;border:1px solid #D0D5DD;border-radius:2px;font-family:'JetBrains Mono',monospace;font-size:15px;letter-spacing:.06em;padding:0 14px;box-sizing:border-box;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div style="display:flex;flex-direction:column;gap:7px;">
+              <label style="font-size:13px;font-weight:600;color:#1A1A1A;">Expiry (MM/YY)</label>
+              <input value="{{ card.exp }}" onChange="{{ setCardExp }}" inputmode="numeric" placeholder="09/28" style="height:46px;border:1px solid #D0D5DD;border-radius:2px;font-family:'JetBrains Mono',monospace;font-size:15px;padding:0 14px;box-sizing:border-box;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:7px;">
+              <label style="font-size:13px;font-weight:600;color:#1A1A1A;">CVC</label>
+              <input value="{{ card.cvc }}" onChange="{{ setCardCvc }}" inputmode="numeric" placeholder="123" style="height:46px;border:1px solid #D0D5DD;border-radius:2px;font-family:'JetBrains Mono',monospace;font-size:15px;padding:0 14px;box-sizing:border-box;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">
+            </div>
+          </div>
+          <sc-if value="{{ payError }}" hint-placeholder-val="">
+            <div style="background:#FDF2F2;border:1px solid #f0c9c9;border-radius:2px;padding:12px 14px;font-size:13px;color:#8a2b30;line-height:1.4;">{{ payError }}</div>
+          </sc-if>
+          <button onClick="{{ payCard }}" style="height:52px;background:#1B5E20;border:none;border-radius:2px;color:#FFFFFF;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;opacity:{{ cardOpacity }};display:flex;align-items:center;justify-content:center;gap:10px;" style-hover="background:#164D1A;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">
+            <sc-if value="{{ payBusy }}" hint-placeholder-val="{{ false }}"><span style="width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#FFFFFF;border-radius:50%;display:inline-block;animation:taraSpin .7s linear infinite;"></span></sc-if>
+            Pay {{ total }}
+          </button>
+          <p style="margin:0;font-size:11.5px;color:#8a95a5;text-align:center;">Test: card <span style="font-family:'JetBrains Mono',monospace;">4000 0000 0000 0002</span> is declined; any other number succeeds.</p>
+        </div>
+        <button onClick="{{ backStep }}" style="margin-top:16px;background:none;border:none;padding:0;font-size:13.5px;font-weight:600;color:#55606E;cursor:pointer;font-family:inherit;" style-hover="color:#1A1A1A;">← Back to details</button>
+      </div>
+
+      <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:4px;padding:26px;position:sticky;top:96px;">
+        <h2 style="margin:0 0 18px;font-size:14px;font-weight:700;letter-spacing:.04em;color:#1A1A1A;">ORDER SUMMARY</h2>
+        <div style="display:flex;flex-direction:column;gap:9px;font-size:13.5px;color:#3f4854;margin-bottom:14px;">
+          <sc-for list="{{ cartLines }}" as="l" hint-placeholder-count="2">
+            <div style="display:flex;justify-content:space-between;gap:10px;"><span>{{ l.qty }} × {{ l.name }}</span><span style="font-weight:600;white-space:nowrap;">{{ l.lineTotal }}</span></div>
+          </sc-for>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:14px;color:#3f4854;border-top:1px solid #E4E7EC;padding-top:14px;">
+          <sc-if value="{{ hasDiscount }}" hint-placeholder-val="{{ false }}"><div style="display:flex;justify-content:space-between;color:#1B5E20;"><span>Discount</span><span style="font-weight:600;">−{{ discount }}</span></div></sc-if>
+          <div style="display:flex;justify-content:space-between;"><span>Shipping</span><span style="font-weight:600;">{{ shipping }}</span></div>
+          <div style="display:flex;justify-content:space-between;"><span>Includes VAT (23%)</span><span style="font-weight:600;">{{ vat }}</span></div>
+          <div style="display:flex;justify-content:space-between;border-top:1px solid #E4E7EC;padding-top:12px;font-size:18px;font-weight:700;color:#1A1A1A;"><span>Total</span><span>{{ total }}</span></div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ---------- CONFIRMATION ---------- -->
+  <sc-if value="{{ stepDone }}" hint-placeholder-val="{{ false }}">
+    <div style="animation:taraRise 260ms ease-out;">
+      <div style="background:#0D1B2A;border-radius:6px;padding:40px;color:#E6EDF4;margin-bottom:24px;">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;">
+          <span style="width:44px;height:44px;border-radius:50%;background:#009B72;display:flex;align-items:center;justify-content:center;font-size:22px;color:#0D1B2A;font-weight:700;">✓</span>
+          <div>
+            <p style="margin:0;font-size:12px;font-weight:600;letter-spacing:.18em;color:#009B72;">PAYMENT CONFIRMED · SUMUP</p>
+            <h1 style="margin:2px 0 0;font-family:'Playfair Display',Georgia,serif;font-size:30px;font-weight:600;color:#E6EDF4;">Thank you — your order is placed.</h1>
+          </div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:28px;font-size:14px;">
+          <div><span style="color:#8a95a5;">Order</span><br><span style="font-family:'JetBrains Mono',monospace;font-size:16px;color:#E6EDF4;">{{ orderNo }}</span></div>
+          <div><span style="color:#8a95a5;">Invoice</span><br><span style="font-family:'JetBrains Mono',monospace;font-size:16px;color:#E6EDF4;">{{ invoiceNo }}</span></div>
+          <div><span style="color:#8a95a5;">Date</span><br><span style="font-family:'JetBrains Mono',monospace;font-size:16px;color:#E6EDF4;">{{ orderDate }}</span></div>
+          <div><span style="color:#8a95a5;">Total paid</span><br><span style="font-family:'JetBrains Mono',monospace;font-size:16px;color:#009B72;">{{ total }}</span></div>
+        </div>
+      </div>
+
+      <!-- timeline -->
+      <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:6px;padding:28px;margin-bottom:24px;">
+        <h2 style="margin:0 0 22px;font-family:'Playfair Display',Georgia,serif;font-size:20px;font-weight:600;color:#1A1A1A;">What happens next</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0;">
+          <sc-for list="{{ orderTimeline }}" as="t" hint-placeholder-count="5">
+            <div style="border-top:2px solid {{ t.color }};padding-top:14px;padding-right:10px;position:relative;">
+              <span style="position:absolute;top:-8px;left:0;width:13px;height:13px;border-radius:50%;background:{{ t.color }};border:2px solid #FFFFFF;box-shadow:0 0 0 1px {{ t.color }};"></span>
+              <div style="font-size:14px;font-weight:600;color:#1A1A1A;line-height:1.25;">{{ t.label }}</div>
+              <div style="font-size:12px;color:#55606E;margin-top:4px;line-height:1.4;">{{ t.sub }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1.35fr 1fr;gap:24px;align-items:start;">
+        <!-- INVOICE -->
+        <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:6px;overflow:hidden;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 28px;border-bottom:1px solid #E4E7EC;background:#FAFAFA;">
+            <span style="font-size:12px;font-weight:700;letter-spacing:.1em;color:#1A1A1A;">INVOICE</span>
+            <button onClick="{{ printInvoice }}" style="height:34px;padding:0 14px;background:#1B5E20;border:none;border-radius:2px;color:#FFFFFF;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;" style-hover="background:#164D1A;">Download PDF ↓</button>
+          </div>
+          <div style="padding:28px;">
+            <div style="display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:24px;">
+              <div>
+                <div style="font-family:'Playfair Display',Georgia,serif;font-size:20px;font-weight:600;letter-spacing:.16em;color:#1B5E20;">TARA</div>
+                <div style="font-size:12px;color:#55606E;margin-top:6px;line-height:1.5;">{{ biz.name }}<br>{{ biz.addr }}<br>{{ biz.city }}<br>VAT {{ biz.vat }}</div>
+              </div>
+              <div style="text-align:right;font-size:12px;color:#55606E;line-height:1.6;">
+                <div><span style="color:#8a95a5;">Invoice</span> <span style="font-family:'JetBrains Mono',monospace;color:#1A1A1A;">{{ invoiceNo }}</span></div>
+                <div><span style="color:#8a95a5;">Order</span> <span style="font-family:'JetBrains Mono',monospace;color:#1A1A1A;">{{ orderNo }}</span></div>
+                <div><span style="color:#8a95a5;">Date</span> <span style="font-family:'JetBrains Mono',monospace;color:#1A1A1A;">{{ orderDate }}</span></div>
+              </div>
+            </div>
+            <div style="margin-bottom:20px;font-size:12.5px;color:#3f4854;line-height:1.5;">
+              <span style="color:#8a95a5;">Billed to</span><br><strong>{{ cust.name }}</strong><br>{{ cust.addr }}, {{ cust.city }} {{ cust.post }}<br>{{ cust.country }}
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+              <thead>
+                <tr style="border-bottom:1.5px solid #1A1A1A;text-align:left;">
+                  <th style="padding:8px 4px;font-size:10px;letter-spacing:.08em;color:#55606E;">ITEM · BATCH · VERIFY ID</th>
+                  <th style="padding:8px 4px;font-size:10px;letter-spacing:.08em;color:#55606E;text-align:center;">QTY</th>
+                  <th style="padding:8px 4px;font-size:10px;letter-spacing:.08em;color:#55606E;text-align:right;">AMOUNT</th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{ invoiceLines }}" as="l" hint-placeholder-count="2">
+                  <tr style="border-bottom:1px solid #F2F4F7;">
+                    <td style="padding:11px 4px;">
+                      <div style="font-weight:600;color:#1A1A1A;">{{ l.name }} · {{ l.strength }}</div>
+                      <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#55606E;margin-top:3px;">Batch {{ l.batch }} · <span style="color:#1B5E20;">{{ l.verifyId }}</span></div>
+                    </td>
+                    <td style="padding:11px 4px;text-align:center;color:#3f4854;">{{ l.qty }}</td>
+                    <td style="padding:11px 4px;text-align:right;font-weight:600;color:#1A1A1A;">{{ l.lineTotal }}</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+            <div style="display:flex;flex-direction:column;gap:7px;font-size:12.5px;color:#3f4854;margin-top:16px;padding-top:14px;border-top:1px solid #E4E7EC;">
+              <div style="display:flex;justify-content:space-between;"><span>Subtotal</span><span>{{ subtotal }}</span></div>
+              <sc-if value="{{ hasDiscount }}" hint-placeholder-val="{{ false }}"><div style="display:flex;justify-content:space-between;color:#1B5E20;"><span>Discount</span><span>−{{ discount }}</span></div></sc-if>
+              <div style="display:flex;justify-content:space-between;"><span>Shipping</span><span>{{ shipping }}</span></div>
+              <div style="display:flex;justify-content:space-between;"><span>Includes VAT (23%)</span><span>{{ vat }}</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:700;color:#1A1A1A;border-top:1px solid #E4E7EC;padding-top:9px;margin-top:3px;"><span>Total paid</span><span>{{ total }}</span></div>
+            </div>
+            <p style="margin:18px 0 0;font-size:11px;color:#8a95a5;line-height:1.5;">Every line carries its batch number and a unique TARA Verify ID — this invoice is itself a document of authenticity. Paid via SumUp. For laboratory research use only.</p>
+          </div>
+        </div>
+
+        <!-- EMAIL PREVIEW -->
+        <div style="position:sticky;top:96px;display:flex;flex-direction:column;gap:16px;">
+          <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:6px;overflow:hidden;">
+            <div style="padding:14px 18px;border-bottom:1px solid #E4E7EC;background:#FAFAFA;display:flex;align-items:center;gap:8px;">
+              <span style="width:9px;height:9px;border-radius:50%;background:#009B72;"></span>
+              <span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#55606E;">AUTOMATED EMAIL · SENT</span>
+            </div>
+            <div style="padding:18px;font-size:12.5px;color:#3f4854;line-height:1.55;">
+              <div style="border-bottom:1px solid #F2F4F7;padding-bottom:10px;margin-bottom:12px;">
+                <div><span style="color:#8a95a5;">To</span> {{ cust.email }}</div>
+                <div><span style="color:#8a95a5;">From</span> orders@tara.ie</div>
+                <div style="font-weight:600;color:#1A1A1A;margin-top:4px;">Your TARA order {{ orderNo }} — confirmed &amp; verifiable</div>
+              </div>
+              <p style="margin:0 0 10px;">Thank you. Your payment has been received via SumUp and your invoice <strong>{{ invoiceNo }}</strong> is attached as a PDF.</p>
+              <p style="margin:0 0 10px;">Each vial carries a unique verification ID — check it the moment it arrives:</p>
+              <div style="background:#F6FBF8;border:1px solid #cfe3d6;border-radius:2px;padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#1B5E20;">
+                <sc-for list="{{ invoiceLines }}" as="l" hint-placeholder-count="2"><div>{{ l.name }} → {{ l.verifyId }}</div></sc-for>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+                <span style="font-size:12px;font-weight:600;color:#FFFFFF;background:#1B5E20;border-radius:2px;padding:8px 14px;">Track order</span>
+                <span style="font-size:12px;font-weight:600;color:#1B5E20;background:#FFFFFF;border:1px solid #1B5E20;border-radius:2px;padding:8px 14px;">Reorder in one click</span>
+              </div>
+              <div style="margin-top:14px;display:flex;align-items:center;gap:8px;font-size:11px;color:#8a95a5;">
+                <span>📎</span> invoice-{{ invoiceNo }}.pdf · COA bundle.pdf
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <button onClick="{{ continueShopping }}" style="height:46px;background:#1B5E20;border:none;border-radius:2px;color:#FFFFFF;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" style-hover="background:#164D1A;">Continue shopping</button>
+            <button onClick="{{ reorder }}" style="height:46px;background:transparent;border:1px solid #D0D5DD;border-radius:2px;color:#3f4854;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" style-hover="border-color:#1A1A1A;color:#1A1A1A;">View this order again</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</sc-if>
+
+</main>
+
+<!-- ============ FINDER ============ -->
+<sc-if value="{{ isFinder }}" hint-placeholder-val="{{ false }}">
+<div data-screen-label="Find by goal" style="max-width:1200px;margin:0 auto;padding:56px 24px 80px;">
+  <p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:.18em;color:#1565C0;">GUIDED FINDER</p>
+  <h1 style="margin:0 0 12px;font-family:'Playfair Display',Georgia,serif;font-size:42px;font-weight:600;color:#1A1A1A;">What are you researching?</h1>
+  <p style="margin:0 0 36px;font-size:15.5px;line-height:1.6;color:#55606E;max-width:680px;text-wrap:pretty;">Pick a research goal and we’ll point you to the most relevant documented compounds — and the stacks they’re typically studied in.</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:44px;">
+    <sc-for list="{{ goals }}" as="g" hint-placeholder-count="6">
+      <button onClick="{{ g.pick }}" style="text-align:left;background:{{ g.active ? '#0D1B2A' : '#FFFFFF' }};border:1px solid {{ g.active ? '#0D1B2A' : '#E4E7EC' }};border-radius:6px;padding:22px;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;gap:12px;" style-hover="border-color:#1B5E20;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="{{ g.active ? '#009B72' : '#1B5E20' }}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ g.icon }}"></path></svg>
+        <span style="font-size:17px;font-weight:600;color:{{ g.active ? '#FFFFFF' : '#1A1A1A' }};">{{ g.label }}</span>
+        <span style="font-size:13px;line-height:1.5;color:{{ g.active ? '#8fa3b8' : '#55606E' }};">{{ g.blurb }}</span>
+      </button>
+    </sc-for>
+  </div>
+  <sc-if value="{{ hasGoal }}" hint-placeholder-val="{{ false }}">
+    <div style="animation:taraRise 240ms ease-out;">
+      <h2 style="margin:0 0 20px;font-family:'Playfair Display',Georgia,serif;font-size:26px;font-weight:600;color:#1A1A1A;">Recommended for {{ goalTitle }}</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;">
+        <sc-for list="{{ goalResults }}" as="p" hint-placeholder-count="4">
+          <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:6px;overflow:hidden;display:flex;flex-direction:column;">
+            <div style="height:6px;background:{{ p.accent }};"></div>
+            <div style="padding:20px;display:flex;flex-direction:column;gap:12px;flex:1;">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;">
+                <span style="font-family:'Playfair Display',Georgia,serif;font-size:19px;font-weight:600;color:#1A1A1A;">{{ p.name }}</span>
+                <span style="font-family:'Playfair Display',Georgia,serif;font-size:16px;font-weight:600;color:#1B5E20;white-space:nowrap;">{{ p.priceLabel }}</span>
+              </div>
+              <p style="margin:0;font-size:13px;line-height:1.55;color:#55606E;flex:1;">{{ p.plain }}</p>
+              <button onClick="{{ p.open }}" style="height:40px;background:#1B5E20;border:none;border-radius:2px;color:#FFFFFF;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;" style-hover="background:#164D1A;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">View compound →</button>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <button onClick="{{ goStacks }}" style="margin-top:28px;background:none;border:none;padding:0;font-size:14px;font-weight:600;color:#1B5E20;cursor:pointer;font-family:inherit;text-decoration:underline;text-underline-offset:3px;" style-hover="color:#009B72;">See ready-made stacks for this goal →</button>
+    </div>
+  </sc-if>
+</div>
+</sc-if>
+
+<!-- ============ STACKS ============ -->
+<sc-if value="{{ isStacks }}" hint-placeholder-val="{{ false }}">
+<div data-screen-label="Stack library" style="max-width:1200px;margin:0 auto;padding:56px 24px 80px;">
+  <p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:.18em;color:#1565C0;">STACK LIBRARY</p>
+  <h1 style="margin:0 0 12px;font-family:'Playfair Display',Georgia,serif;font-size:42px;font-weight:600;color:#1A1A1A;">Researched combinations, one click to order.</h1>
+  <p style="margin:0 0 36px;font-size:15.5px;line-height:1.6;color:#55606E;max-width:700px;text-wrap:pretty;">These are the pairings most often studied together, each with the rationale in plain English. Add the whole stack at a bundle price — every vial still ships with its own Certificate of Analysis and verification ID.</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:22px;">
+    <sc-for list="{{ stacks }}" as="st" hint-placeholder-count="6">
+      <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:6px;overflow:hidden;display:flex;flex-direction:column;">
+        <div style="height:6px;background:{{ st.accent }};"></div>
+        <div style="padding:24px;display:flex;flex-direction:column;gap:14px;flex:1;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+            <span style="font-family:'Playfair Display',Georgia,serif;font-size:22px;font-weight:600;color:#1A1A1A;">{{ st.name }}</span>
+            <span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:#1B5E20;background:#F6FBF8;border:1px solid #cfe3d6;border-radius:2px;padding:5px 8px;white-space:nowrap;">{{ st.tag }}</span>
+          </div>
+          <p style="margin:0;font-size:13.5px;line-height:1.55;color:#55606E;flex:1;">{{ st.note }}</p>
+          <div style="display:flex;flex-direction:column;gap:8px;padding:14px 0;border-top:1px solid #F2F4F7;border-bottom:1px solid #F2F4F7;">
+            <sc-for list="{{ st.items }}" as="it" hint-placeholder-count="2">
+              <button onClick="{{ it.open }}" style="display:flex;align-items:center;gap:10px;background:none;border:none;padding:0;cursor:pointer;font-family:inherit;text-align:left;" style-hover="color:#1B5E20;">
+                <span style="width:6px;height:6px;border-radius:50%;background:#1B5E20;flex-shrink:0;"></span>
+                <span style="font-size:14px;font-weight:500;color:#3f4854;">{{ it.name }}</span>
+              </button>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:10px;">
+            <span style="font-family:'Playfair Display',Georgia,serif;font-size:26px;font-weight:600;color:#1A1A1A;">{{ st.bundleLabel }}</span>
+            <span style="font-size:13px;color:#8a95a5;text-decoration:line-through;">{{ st.rawLabel }}</span>
+            <span style="font-size:12px;font-weight:600;color:#009B72;">save {{ st.saveLabel }}</span>
+          </div>
+          <button onClick="{{ st.add }}" style="height:46px;background:#1B5E20;border:none;border-radius:2px;color:#FFFFFF;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" style-hover="background:#164D1A;" style-focus="outline:2px solid #1565C0;outline-offset:2px;">Add stack to order →</button>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ FAQ ============ -->
+<sc-if value="{{ isFaq }}" hint-placeholder-val="{{ false }}">
+<div data-screen-label="FAQ" style="max-width:820px;margin:0 auto;padding:56px 24px 80px;">
+  <p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:.18em;color:#1565C0;">QUESTIONS &amp; ANSWERS</p>
+  <h1 style="margin:0 0 12px;font-family:'Playfair Display',Georgia,serif;font-size:42px;font-weight:600;color:#1A1A1A;">Everything you need before you order.</h1>
+  <p style="margin:0 0 36px;font-size:15.5px;line-height:1.6;color:#55606E;text-wrap:pretty;">Verification, payment, shipping and handling — answered plainly. Anything else, our team replies within one working day.</p>
+  <div style="display:flex;flex-direction:column;gap:12px;">
+    <sc-for list="{{ faqs }}" as="f" hint-placeholder-count="6">
+      <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:6px;overflow:hidden;">
+        <button onClick="{{ f.toggle }}" style="width:100%;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 24px;background:none;border:none;cursor:pointer;font-family:inherit;text-align:left;" style-focus="outline:2px solid #1565C0;outline-offset:-2px;">
+          <span style="font-size:16px;font-weight:600;color:#1A1A1A;">{{ f.q }}</span>
+          <span style="font-size:22px;font-weight:400;color:#1B5E20;flex-shrink:0;">{{ f.sign }}</span>
+        </button>
+        <sc-if value="{{ f.open }}" hint-placeholder-val="{{ false }}">
+          <p style="margin:0;padding:0 24px 22px;font-size:14.5px;line-height:1.65;color:#3f4854;text-wrap:pretty;">{{ f.a }}</p>
+        </sc-if>
+      </div>
+    </sc-for>
+  </div>
+  <div style="margin-top:36px;background:#0D1B2A;border-radius:6px;padding:28px 32px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;">
+    <div style="max-width:440px;">
+      <p style="margin:0 0 4px;font-size:11px;font-weight:600;letter-spacing:.16em;color:#009B72;">STILL DECIDING?</p>
+      <p style="margin:0;font-size:15px;line-height:1.5;color:#E6EDF4;">Not sure which compound fits your research? Use the guided finder, or browse combinations in the stack library.</p>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button onClick="{{ goFinder }}" style="height:44px;padding:0 20px;background:#009B72;border:none;border-radius:2px;color:#0D1B2A;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;" style-hover="background:#00b585;">Find by goal</button>
+      <button onClick="{{ goStacks }}" style="height:44px;padding:0 20px;background:transparent;border:1px solid #3a4b5e;border-radius:2px;color:#E6EDF4;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" style-hover="border-color:#009B72;">View stacks</button>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ FOOTER ============ -->
+<footer style="background:#0D1B2A;color:#8a95a5;">
+  <div style="max-width:1200px;margin:0 auto;padding:56px 24px 40px;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:40px;">
+    <div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <img src="assets/logo-mark.png" alt="" style="height:40px;width:auto;filter:brightness(0) invert(1);opacity:.92;">
+        <span style="display:flex;flex-direction:column;line-height:1;"><span style="font-family:'Playfair Display',serif;font-size:19px;font-weight:600;letter-spacing:.22em;color:#E6EDF4;">TARA</span><span style="font-size:9px;font-weight:600;letter-spacing:.32em;color:#8a95a5;margin-top:3px;">PEPTIDES</span></span>
+      </div>
+      <p style="margin:0 0 6px;font-family:'Playfair Display',serif;font-style:italic;font-size:15px;color:#E6EDF4;">Ancient wisdom. Modern science.</p>
+      <p style="margin:0;font-size:13px;line-height:1.6;max-width:280px;">German-sourced research compounds, documented and verifiable. We explain; we do not persuade.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <span style="font-size:11px;font-weight:600;letter-spacing:.14em;color:#E6EDF4;margin-bottom:4px;">EXPLORE</span>
+      <button onClick="{{ goCatalog }}" style="background:none;border:none;padding:0;text-align:left;font-size:13.5px;color:#8a95a5;cursor:pointer;" style-hover="color:#009B72;">Research Compounds</button>
+      <button onClick="{{ goVerify }}" style="background:none;border:none;padding:0;text-align:left;font-size:13.5px;color:#8a95a5;cursor:pointer;" style-hover="color:#009B72;">Verify a batch</button>
+      <button onClick="{{ goKnowledge }}" style="background:none;border:none;padding:0;text-align:left;font-size:13.5px;color:#8a95a5;cursor:pointer;" style-hover="color:#009B72;">Knowledge Centre</button>
+      <button onClick="{{ goDocs }}" style="background:none;border:none;padding:0;text-align:left;font-size:13.5px;color:#8a95a5;cursor:pointer;" style-hover="color:#009B72;">Documentation</button>
+      <button onClick="{{ goCalc }}" style="background:none;border:none;padding:0;text-align:left;font-size:13.5px;color:#8a95a5;cursor:pointer;" style-hover="color:#009B72;">Reconstitution calculator</button>
+      <button onClick="{{ goFinder }}" style="background:none;border:none;padding:0;text-align:left;font-size:13.5px;color:#8a95a5;cursor:pointer;" style-hover="color:#009B72;">Find by goal</button>
+      <button onClick="{{ goStacks }}" style="background:none;border:none;padding:0;text-align:left;font-size:13.5px;color:#8a95a5;cursor:pointer;" style-hover="color:#009B72;">Stack library</button>
+      <button onClick="{{ goFaq }}" style="background:none;border:none;padding:0;text-align:left;font-size:13.5px;color:#8a95a5;cursor:pointer;" style-hover="color:#009B72;">FAQ</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <span style="font-size:11px;font-weight:600;letter-spacing:.14em;color:#E6EDF4;margin-bottom:4px;">TRUST</span>
+      <span style="font-size:13.5px;">German sourcing</span>
+      <span style="font-size:13.5px;">Batch documentation</span>
+      <span style="font-size:13.5px;">QR verification</span>
+      <span style="font-size:13.5px;">Cold-chain dispatch</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <span style="font-size:11px;font-weight:600;letter-spacing:.14em;color:#E6EDF4;margin-bottom:4px;">CONTACT</span>
+      <span style="font-size:13.5px;">verify@tara.ie</span>
+      <span style="font-size:13.5px;">support@tara.ie</span>
+      <span style="font-size:13.5px;">Ireland · EU dispatch</span>
+    </div>
+  </div>
+  <div style="border-top:1px solid #23374d;">
+    <div style="max-width:1200px;margin:0 auto;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;">
+      <span style="font-size:12px;">© 2026 TARA Peptides. For laboratory research use only. Not for human or veterinary use.</span>
+      <span style="font-size:12px;font-family:'JetBrains Mono',monospace;">EU · ISO-aligned QA</span>
+    </div>
+  </div>
+</footer>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1200,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  state = { view: 'home', productId: 'tesamorelin', variantIndex: 0, sortKey: 'name', justAdded: false, justAddedId: null,
+            goal: null, faqOpen: 0,
+            verifyInput: '', verifyBusy: false, resultKey: null,
+            headerVerify: '', catFilter: 'all', coaOpen: false,
+            calcMg: '5', calcBac: '2', calcDose: '250',
+            cartItems: [], coStep: 'review', declaration: false, promo: '', promoApplied: false, promoMsg: '',
+            payTab: 'card',
+            cust: { name:'', email:'', addr:'', city:'', post:'', country:'Ireland' },
+            card: { name:'', number:'', exp:'', cvc:'' },
+            payBusy: false, payError: '', orderNo: null, orderDate: '', invoiceNo: null };
+
+  // ---------- data ----------
+  get PRODUCTS() {
+    // Prices are FINAL, VAT-inclusive EUR (≈17% under Revive Peptides). variants[].price drives everything.
+    const P = (id,name,cat,purity,batch,accent,plain,stacks,variants,format) => ({
+      id,name,cat,purity,method:'HPLC',batch,accent,plain,stacks,
+      format:format||'lyophilised vial', variants, price: Math.min(...variants.map(v=>v.price)),
+    });
+    return [
+      // ---- Growth hormone / GHRH ----
+      P('tesamorelin','Tesamorelin','GHRH','99.2%','G260701','linear-gradient(90deg,#1B5E20,#009B72)',
+        'A growth-hormone-releasing hormone (GHRH) analogue studied for reducing visceral fat and supporting body composition.',
+        'Commonly researched alongside Ipamorelin for a steadier growth-hormone pulse.',
+        [{label:'5 mg',price:32.99},{label:'10 mg',price:54.99}]),
+      P('sermorelin','Sermorelin','GHRH','99.1%','G260741','linear-gradient(90deg,#009B72,#6A1B9A)',
+        'A shorter GHRH fragment used to study natural growth-hormone release and sleep quality.',
+        'Often paired with a GHRP such as Ipamorelin to amplify the release.',
+        [{label:'5 mg',price:32.99}]),
+      P('cjc1295nodac','CJC-1295 (no DAC)','GHRH','99.0%','G260731','linear-gradient(90deg,#1B5E20,#1565C0)',
+        'A short-acting GHRH analogue (Mod GRF 1-29) that produces a clean, fast growth-hormone pulse.',
+        'The classic partner to Ipamorelin — GHRH + GHRP is the most-studied growth combination.',
+        [{label:'5 mg',price:24.99}]),
+      P('cjc1295','CJC-1295 DAC','GHRH','98.8%','G260734','linear-gradient(90deg,#1B5E20,#1565C0)',
+        'A long-acting GHRH analogue whose DAC tail extends growth-hormone elevation for days per dose.',
+        'Researched with Ipamorelin where less-frequent dosing is preferred.',
+        [{label:'2 mg',price:26.99},{label:'5 mg',price:41.99}]),
+      P('ipamorelin','Ipamorelin','Secretagogue','99.4%','G260713','linear-gradient(90deg,#009B72,#1565C0)',
+        'A selective growth-hormone secretagogue that prompts a GH pulse with minimal effect on hunger or cortisol.',
+        'The go-to GHRP to stack with CJC-1295 or Tesamorelin.',
+        [{label:'5 mg',price:21.99},{label:'10 mg',price:36.99}]),
+      P('igf1lr3','IGF-1 LR3','Growth','98.7%','G260748','linear-gradient(90deg,#1565C0,#009B72)',
+        'A long-acting form of insulin-like growth factor-1 studied for muscle-cell growth and repair.',
+        'Sometimes researched after a GH-axis stack; advanced use only.',
+        [{label:'1 mg',price:66.99}]),
+      P('pegmgf','PEG-MGF','Growth','98.5%','G260752','linear-gradient(90deg,#1565C0,#6A1B9A)',
+        'A pegylated mechano-growth factor studied for muscle repair after mechanical stress.',
+        'Explored alongside IGF-1 LR3 in recovery research.',
+        [{label:'2 mg',price:27.99}]),
+      // ---- Repair / regenerative ----
+      P('bpc157','BPC-157','Repair','99.0%','G260722','linear-gradient(90deg,#1565C0,#6A1B9A)',
+        'A stable gastric peptide widely studied for tendon, gut and soft-tissue healing.',
+        'Pairs with TB-500 — the two together are the most popular recovery stack (see Wolverine Blend).',
+        [{label:'5 mg',price:19.99},{label:'10 mg',price:32.99}]),
+      P('tb500','TB-500','Repair','98.6%','G260755','linear-gradient(90deg,#1565C0,#009B72)',
+        'A thymosin β4 fragment studied for cell migration, flexibility and wound repair.',
+        'The classic partner to BPC-157 for injury and recovery research.',
+        [{label:'5 mg',price:26.99},{label:'10 mg',price:32.99}]),
+      P('ara290','ARA-290','Repair','98.9%','G260760','linear-gradient(90deg,#6A1B9A,#1565C0)',
+        'An EPO-derived peptide studied for nerve repair and neuropathic pain.',
+        'Researched on its own; occasionally with BPC-157 for nerve-tissue work.',
+        [{label:'10 mg',price:49.99}]),
+      P('follistatin','Follistatin 344','Repair','98.4%','G260763','linear-gradient(90deg,#1B5E20,#6A1B9A)',
+        'A protein that binds myostatin, studied for its effect on muscle-mass regulation.',
+        'A premium standalone; not typically stacked.',
+        [{label:'1 mg',price:91.99}]),
+      // ---- Metabolic / GLP-1 ----
+      P('retatrutide','Retatrutide','Metabolic','99.1%','G260770','linear-gradient(90deg,#1B5E20,#009B72)',
+        'A triple GLP-1/GIP/glucagon receptor agonist studied for significant weight and metabolic outcomes.',
+        'Used standalone; the most in-demand metabolic research compound.',
+        [{label:'10 mg',price:90.99},{label:'20 mg',price:149.99},{label:'30 mg',price:199.99},{label:'40 mg',price:259.99},{label:'60 mg',price:349.99}]),
+      P('tirzepatide','Tirzepatide','Metabolic','99.0%','G260773','linear-gradient(90deg,#009B72,#1565C0)',
+        'A dual GLP-1/GIP receptor agonist studied for blood-sugar control and weight reduction.',
+        'Researched standalone; a leading metabolic compound.',
+        [{label:'20 mg',price:111.99},{label:'40 mg',price:189.99},{label:'50 mg',price:229.99},{label:'60 mg',price:269.99}]),
+      P('cagrilintide','Cagrilintide','Metabolic','98.8%','G260776','linear-gradient(90deg,#1565C0,#1B5E20)',
+        'A long-acting amylin analogue studied for appetite regulation and satiety.',
+        'Frequently researched together with a GLP-1 such as Retatrutide.',
+        [{label:'10 mg',price:74.99}]),
+      P('aod9604','AOD-9604','Metabolic','98.7%','G260781','linear-gradient(90deg,#009B72,#6A1B9A)',
+        'A modified fragment of growth hormone studied for fat metabolism without affecting blood sugar.',
+        'Sometimes combined with fat-loss GHRH research.',
+        [{label:'5 mg',price:31.99},{label:'10 mg',price:54.99}]),
+      P('amino1mq','5-Amino-1MQ','Metabolic','98.6%','G260786','linear-gradient(90deg,#B87333,#1B5E20)',
+        'A small molecule (NNMT inhibitor) studied for boosting cellular energy metabolism and fat cell activity.',
+        'Explored alongside NAD+ in metabolic research.',
+        [{label:'10 mg',price:32.99},{label:'50 mg',price:99.99}]),
+      P('motsc','MOTS-c','Metabolic','98.9%','G260789','linear-gradient(90deg,#009B72,#1565C0)',
+        'A mitochondrial-derived peptide studied for exercise capacity and insulin sensitivity.',
+        'Researched with metabolic and longevity compounds.',
+        [{label:'10 mg',price:29.99},{label:'40 mg',price:99.99}]),
+      // ---- Longevity / antioxidant ----
+      P('epithalon','Epithalon','Longevity','99.3%','G260784','linear-gradient(90deg,#1B5E20,#009B72)',
+        'A tetrapeptide studied for its effect on telomerase and cellular ageing.',
+        'Often researched with NAD+ in longevity protocols.',
+        [{label:'10 mg',price:21.99},{label:'50 mg',price:69.99}]),
+      P('nadplus','NAD+','Longevity','99.0%','G260792','linear-gradient(90deg,#6A1B9A,#1565C0)',
+        'A coenzyme central to energy production, studied for cellular repair and ageing.',
+        'Pairs with Epithalon or 5-Amino-1MQ in longevity research.',
+        [{label:'500 mg',price:57.99},{label:'1000 mg',price:99.99}]),
+      P('glutathione','Glutathione','Antioxidant','98.5%','G260795','linear-gradient(90deg,#009B72,#B87333)',
+        'The body’s master antioxidant, studied for detoxification and skin brightness.',
+        'Researched alongside GHK-Cu for skin work.',
+        [{label:'1500 mg',price:32.99}]),
+      P('ss31','SS-31','Antioxidant','98.8%','G260798','linear-gradient(90deg,#1565C0,#6A1B9A)',
+        'A mitochondria-targeted peptide (Elamipretide) studied for protecting cellular energy production.',
+        'Explored with MOTS-c in mitochondrial research.',
+        [{label:'10 mg',price:32.99},{label:'50 mg',price:114.99}]),
+      // ---- Cognitive / nootropic ----
+      P('semax','Semax','Nootropic','99.0%','G260779','linear-gradient(90deg,#1565C0,#6A1B9A)',
+        'A peptide studied for focus, memory and neuroprotection.',
+        'Frequently paired with Selank for cognition-and-calm research.',
+        [{label:'10 mg',price:30.99}]),
+      P('selank','Selank','Nootropic','98.9%','G260803','linear-gradient(90deg,#6A1B9A,#009B72)',
+        'A peptide studied for reducing anxiety while supporting clear thinking.',
+        'The classic partner to Semax.',
+        [{label:'10 mg',price:27.99}]),
+      P('dsip','DSIP','Nootropic','98.7%','G260806','linear-gradient(90deg,#1B5E20,#6A1B9A)',
+        'Delta-sleep-inducing peptide, studied for deeper sleep and stress-hormone balance.',
+        'Researched on its own for sleep quality.',
+        [{label:'5 mg',price:23.99},{label:'10 mg',price:38.99}]),
+      P('vip','VIP','Nootropic','98.6%','G260809','linear-gradient(90deg,#1565C0,#009B72)',
+        'Vasoactive intestinal peptide, studied for immune balance and inflammation of the airways.',
+        'Advanced standalone research use.',
+        [{label:'5 mg',price:35.99}]),
+      // ---- Melanocortin / sexual health ----
+      P('mt2','Melanotan 2','Melanocortin','98.8%','G260812','linear-gradient(90deg,#B87333,#6A1B9A)',
+        'A melanocortin agonist studied for skin pigmentation (tanning) and libido.',
+        'Standalone; MT-2 is the more potent of the two Melanotans.',
+        [{label:'10 mg',price:23.99}]),
+      P('mt1','Melanotan 1','Melanocortin','98.9%','G260815','linear-gradient(90deg,#B87333,#1565C0)',
+        'A melanocortin peptide studied for tanning with a milder profile than MT-2.',
+        'Researched standalone.',
+        [{label:'10 mg',price:26.99}]),
+      P('pt141','PT-141','Sexual','98.7%','G260818','linear-gradient(90deg,#6A1B9A,#B87333)',
+        'Bremelanotide, a melanocortin peptide studied for sexual arousal in both sexes.',
+        'Standalone research compound.',
+        [{label:'10 mg',price:22.99}]),
+      P('kisspeptin','Kisspeptin-10','Sexual','98.6%','G260821','linear-gradient(90deg,#1B5E20,#6A1B9A)',
+        'A signalling peptide studied for its role in reproductive-hormone release.',
+        'Researched standalone in hormone studies.',
+        [{label:'10 mg',price:47.99}]),
+      // ---- Anti-inflammatory / antimicrobial ----
+      P('kpv','KPV','Anti-inflammatory','98.9%','G260824','linear-gradient(90deg,#009B72,#1B5E20)',
+        'A short alpha-MSH fragment studied for calming inflammation, especially in the gut.',
+        'Pairs with BPC-157 for gut-health research.',
+        [{label:'10 mg',price:32.99}]),
+      P('ll37','LL-37','Anti-inflammatory','98.5%','G260827','linear-gradient(90deg,#1565C0,#B87333)',
+        'A natural antimicrobial peptide studied for wound defence and immune response.',
+        'Advanced standalone research use.',
+        [{label:'5 mg',price:38.99}]),
+      // ---- Blends ----
+      P('wolverine','Wolverine Blend','Blend','99.0%','G260830','linear-gradient(90deg,#1565C0,#009B72)',
+        'BPC-157 and TB-500 co-formulated in one vial — the most popular all-round recovery stack.',
+        'Complete in itself; the two peptides work in synergy for tissue repair.',
+        [{label:'BPC 10 + TB 10 mg',price:39.99}],'co-lyophilised vial'),
+      P('glowblend','GLOW Blend','Blend','99.1%','G260833','linear-gradient(90deg,#B87333,#6A1B9A)',
+        'GHK-Cu, BPC-157 and TB-500 together — a skin, hair and recovery research blend.',
+        'Complete stack; combines repair and cosmetic peptides.',
+        [{label:'70 mg total',price:74.99}],'co-lyophilised vial'),
+      P('klowblend','KLOW Blend','Blend','99.0%','G260836','linear-gradient(90deg,#6A1B9A,#1565C0)',
+        'GHK-Cu, KPV, BPC-157 and TB-500 — a four-peptide skin and gut-recovery blend.',
+        'Complete stack; the most comprehensive of the blends.',
+        [{label:'80 mg total',price:99.99}],'co-lyophilised vial'),
+      P('ghrhstack','CJC-1295 + Ipamorelin','Blend','99.2%','G260839','linear-gradient(90deg,#1B5E20,#1565C0)',
+        'The definitive GHRH + GHRP growth pairing, pre-mixed in one vial.',
+        'Complete stack; the most-studied growth-hormone combination.',
+        [{label:'CJC 2 + Ipa 5 mg',price:47.99}],'co-lyophilised vial'),
+      // ---- Lab supplies ----
+      P('bacwater','Bacteriostatic Water','Supplies','—','G260842','linear-gradient(90deg,#55606E,#1565C0)',
+        'Sterile water with benzyl alcohol — the standard diluent for reconstituting any lyophilised peptide.',
+        'Needed for every peptide you reconstitute.',
+        [{label:'3 mL',price:3.49},{label:'10 mL',price:6.99}],'sterile vial'),
+      P('aceticacid','Acetic Acid 0.6%','Supplies','—','G260845','linear-gradient(90deg,#55606E,#6A1B9A)',
+        'A mild acidic diluent for peptides that dissolve poorly in bacteriostatic water.',
+        'Used to reconstitute stubborn peptides such as some blends.',
+        [{label:'3 mL',price:4.49}],'sterile vial'),
+      P('syringes','Insulin Syringes','Supplies','—','G260848','linear-gradient(90deg,#55606E,#009B72)',
+        'U-100 insulin syringes for accurate measuring of reconstituted material.',
+        'Pair with the reconstitution calculator to draw the right units.',
+        [{label:'20-pack',price:8.99},{label:'40-pack',price:15.99}],'sealed pack'),
+    ];
+  }
+
+  get SAMPLES() {
+    return {
+      'TV-8XQ4-KL92-M71P': { status:'authentic', productName:'Tesamorelin 5 mg', batch:'G260701', serial:'00427', release:'Released · 2026-04-12', firstScan:'2026-05-02 09:14 UTC', productId:'tesamorelin' },
+      'TV-2RN7-BC55-Q80D': { status:'authentic', productName:'Ipamorelin 5 mg', batch:'G260713', serial:'01180', release:'Released · 2026-04-19', firstScan:'2026-05-11 16:40 UTC', productId:'ipamorelin' },
+      'TV-9WZ1-TT34-X02K': { status:'recalled', productName:'BPC-157 10 mg', batch:'G260590', serial:'00061', release:'Quarantined · recall R-2026-03', firstScan:'2026-03-28 11:02 UTC', productId:'bpc157' },
+      'TV-5HJ8-PP19-N44V': { status:'reused', productName:'CJC-1295 2 mg', batch:'G260734', serial:'00902', release:'Released · 2026-04-22', firstScan:'2026-05-06 08:20 UTC', productId:'cjc1295' },
+    };
+  }
+
+  // ---------- navigation ----------
+  nav(view, extra) { this.setState({ view, justAdded:false, ...(extra||{}) }); if (typeof window!=='undefined') window.scrollTo(0,0); }
+
+  // ---------- cart (variant-aware: items keyed by id + variant index) ----------
+  addItem(id, vi) {
+    vi = vi || 0;
+    this.setState(st => {
+      const items = st.cartItems.slice();
+      const i = items.findIndex(x => x.id === id && x.vi === vi);
+      if (i >= 0) items[i] = { ...items[i], qty: items[i].qty + 1 };
+      else items.push({ id, vi, qty: 1 });
+      return { cartItems: items, justAdded: true, justAddedId: id };
+    });
+  }
+  changeQty(id, vi, d) {
+    this.setState(st => {
+      let items = st.cartItems.map(x => (x.id===id && x.vi===vi) ? { ...x, qty: x.qty + d } : x).filter(x => x.qty > 0);
+      return { cartItems: items };
+    });
+  }
+  removeItem(id, vi) { this.setState(st => ({ cartItems: st.cartItems.filter(x => !(x.id === id && x.vi === vi)) })); }
+
+  applyPromo() {
+    const code = (this.state.promo||'').trim().toUpperCase();
+    if (!code) return;
+    if (code === 'TARA15' || code === 'WELCOME15') this.setState({ promoApplied:true, promoMsg:'15% first-order discount applied.' });
+    else this.setState({ promoApplied:false, promoMsg:'That code is not recognised. Try TARA15.' });
+  }
+
+  // ---------- checkout flow ----------
+  order() { return ['review','details','payment','confirmation']; }
+  gotoStep(k) { this.setState({ coStep:k, payError:'' }); if (typeof window!=='undefined') window.scrollTo(0,0); }
+  prevStep() { const o=this.order(); const i=o.indexOf(this.state.coStep); return o[Math.max(0,i-1)]; }
+
+  fmtCardNo(v) { return (v||'').replace(/\D/g,'').slice(0,16).replace(/(.{4})/g,'$1 ').trim(); }
+  fmtExp(v) { const d=(v||'').replace(/\D/g,'').slice(0,4); return d.length>2 ? d.slice(0,2)+'/'+d.slice(2) : d; }
+
+  placeOrder(method) {
+    // Mirrors a SumUp server-to-server checkout: create checkout → confirm status.
+    // Test rule (as per SumUp sandbox): card 4000 0000 0000 0002 always declines.
+    const num = (this.state.card.number||'').replace(/\s/g,'');
+    this.setState({ payBusy:true, payError:'' });
+    clearTimeout(this._pt);
+    this._pt = setTimeout(() => {
+      if (method === 'card' && num === '4000000000000002') {
+        this.setState({ payBusy:false, payError:'Card declined by issuer (test card 4000…0002). Try another card or a wallet.' });
+        return;
+      }
+      const d = new Date();
+      const seq = 1000 + Math.floor(Math.random()*9000);
+      this.setState({
+        payBusy:false, coStep:'confirmation',
+        orderNo: 'TARA-' + d.getFullYear() + '-' + seq,
+        invoiceNo: 'INV-' + d.getFullYear() + '-' + (seq+380),
+        orderDate: d.toISOString().slice(0,10),
+      });
+      if (typeof window!=='undefined') window.scrollTo(0,0);
+    }, 1600);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const products = this.PRODUCTS;
+    const product = products.find(p => p.id === s.productId) || products[0];
+    const fmtPrice = n => '€' + n;
+
+    const money = n => '€' + Number(n).toFixed(2);
+    // selected variant for the product page
+    const vidx = Math.min(s.variantIndex || 0, (product.variants ? product.variants.length : 1) - 1);
+    const selVariant = (product.variants && product.variants[vidx]) || { label:'', price:product.price||0 };
+
+    const openProduct = id => () => this.nav('product', { productId:id, variantIndex:0 });
+    const stockMap = { cjc1295:'low', klowblend:'low' };
+    const stockInfo = st => st==='low'
+      ? { label:'Low stock — ships today', color:'#B87333' }
+      : { label:'In stock — ships today', color:'#1B5E20' };
+    const mapCard = p => {
+      const prices = (p.variants || [{ price:p.price }]).map(v => v.price);
+      const min = Math.min(...prices);
+      const multi = prices.length > 1;
+      const strengthLabel = (p.variants || []).map(v => v.label).join(' · ');
+      return { ...p, strengthLabel, priceLabel: (multi ? 'from ' : '') + money(min),
+        open: openProduct(p.id), addOne: () => this.addItem(p.id, 0), stock: stockInfo(stockMap[p.id]) };
+    };
+
+    // category filter + sorting
+    const cats = ['all', ...Array.from(new Set(products.map(p => p.cat)))];
+    const catChips = cats.map(c => ({
+      key: c,
+      label: c === 'all' ? 'All compounds' : c,
+      count: c === 'all' ? products.length : products.filter(p => p.cat === c).length,
+      active: s.catFilter === c,
+      bg: s.catFilter === c ? '#1B5E20' : '#FFFFFF',
+      fg: s.catFilter === c ? '#FFFFFF' : '#3f4854',
+      bd: s.catFilter === c ? '#1B5E20' : '#D0D5DD',
+      pick: () => this.setState({ catFilter: c }),
+    }));
+    const filtered = s.catFilter === 'all' ? products : products.filter(p => p.cat === s.catFilter);
+    const sorted = [...filtered].sort((a,b) => {
+      if (s.sortKey === 'price') return a.price - b.price;
+      if (s.sortKey === 'purity') return parseFloat(b.purity) - parseFloat(a.purity);
+      return a.name.localeCompare(b.name);
+    }).map(mapCard);
+
+    // verify result
+    let result = null, hasResult = false;
+    if (s.resultKey !== null) {
+      hasResult = true;
+      const hit = this.SAMPLES[s.resultKey];
+      if (!hit) {
+        result = { found:false, notFound:true, badge:'NOT FOUND', badgeText:'#E6EDF4', badgeBg:'#7a2230', borderColor:'#7a2230', note:null };
+      } else if (hit.status === 'authentic') {
+        result = { found:true, notFound:false, badge:'✓ AUTHENTIC', badgeText:'#0D1B2A', badgeBg:'#009B72', borderColor:'#009B72',
+          productName:hit.productName, batch:hit.batch, serial:hit.serial, release:hit.release, firstScan:hit.firstScan,
+          note:'This code matches a released batch and has been scanned before from a consistent record.', noteColor:'#8a95a5' };
+      } else if (hit.status === 'recalled') {
+        result = { found:true, notFound:false, badge:'⚠ RECALLED', badgeText:'#0D1B2A', badgeBg:'#B87333', borderColor:'#B87333',
+          productName:hit.productName, batch:hit.batch, serial:hit.serial, release:hit.release, firstScan:hit.firstScan,
+          note:'This batch is under an active recall. Do not use. Contact verify@tara.ie with this serial for return instructions.', noteColor:'#e0a56a' };
+      } else if (hit.status === 'reused') {
+        result = { found:true, notFound:false, badge:'⚠ CHECK', badgeText:'#0D1B2A', badgeBg:'#e0b44a', borderColor:'#e0b44a',
+          productName:hit.productName, batch:hit.batch, serial:hit.serial, release:hit.release, firstScan:hit.firstScan,
+          note:'This serial has been scanned repeatedly from differing locations. The vial is genuine but may have been re-sold — verify the seal is intact.', noteColor:'#e0c07a' };
+      }
+    }
+
+    const samples = Object.keys(this.SAMPLES).map(k => ({ label:k, try: () => this.runVerify(k) }));
+
+    const trustItems = [
+      { label:'German sourcing', go:() => this.nav('knowledge') },
+      { label:'Batch documentation', go:() => this.nav('docs') },
+      { label:'QR verification', go:() => this.nav('verify') },
+      { label:'Research use only', go:() => this.nav('knowledge') },
+      { label:'Secure dispatch', go:() => this.nav('docs') },
+    ];
+
+    const chainSteps = [
+      { num:'01', title:'German supplier', desc:'Sourced from audited manufacturers with documented provenance.' },
+      { num:'02', title:'Batch intake', desc:'Every lot logged with origin, quantity, and manufacture date.' },
+      { num:'03', title:'Analytical test', desc:'Identity and purity confirmed by HPLC; results recorded on the COA.' },
+      { num:'04', title:'Serialise', desc:'Each vial assigned a unique verification ID and QR code.' },
+      { num:'05', title:'Release', desc:'Batch released only after documentation review and sign-off.' },
+      { num:'06', title:'Dispatch', desc:'Cold-chain where required, tracked to the researcher.' },
+    ];
+
+    const knowledgePreview = [
+      'Understanding Certificates of Analysis',
+      'HPLC purity: what the number means',
+      'Reconstitution and storage of lyophilised peptides',
+      'Reading a batch record',
+      'Cold-chain handling for research materials',
+    ];
+
+    const articles = [
+      { tag:'ANALYTICAL METHODS', tagColor:'#1565C0', title:'How to read a Certificate of Analysis', excerpt:'Identity, assay, purity, and the methods behind each line — and what a COA can and cannot tell you.', author:'Dr. M. Kettering', date:'2026-04-30' },
+      { tag:'QUALITY', tagColor:'#1B5E20', title:'HPLC purity, and what the percentage means', excerpt:'A 99% purity figure is meaningful only alongside its method and column. Here is how to interpret it.', author:'Dr. A. Lindqvist', date:'2026-04-12' },
+      { tag:'HANDLING', tagColor:'#B87333', title:'Reconstitution and storage of lyophilised peptides', excerpt:'Diluent choice, concentration, and cold-chain — the handling decisions that preserve a compound\u2019s integrity.', author:'S. Wehner, MSc', date:'2026-03-27' },
+      { tag:'TRACEABILITY', tagColor:'#6A1B9A', title:'What a batch record actually contains', excerpt:'From supplier lot to released vial: the fields on a batch record and why each one is retained.', author:'Dr. M. Kettering', date:'2026-03-08' },
+      { tag:'PROVENANCE', tagColor:'#1B5E20', title:'Why German sourcing, specifically', excerpt:'Regulatory environment, manufacturing standards, and documentation culture — the case for a single origin.', author:'Editorial', date:'2026-02-20' },
+      { tag:'COMPLIANCE', tagColor:'#1565C0', title:'\u201CResearch use only\u201D is not a formality', excerpt:'What the classification means for how materials are described, sold, and handled — with no exceptions.', author:'Compliance', date:'2026-02-02' },
+    ];
+
+    const docRows = products.map((p,i) => ({
+      name:p.name, batch:p.batch, purity:p.purity + ' · ' + p.method, date:'2026-04-' + String(10+i).padStart(2,'0'),
+      stripe: i % 2 ? '#FAFAFA' : '#FFFFFF', download: () => alert('Demo — COA for ' + p.name + ' (' + p.batch + ') would download as PDF.'),
+    }));
+
+    // ---- reconstitution calculator ----
+    const num = v => { const n = parseFloat(v); return isFinite(n) && n > 0 ? n : 0; };
+    const mg = num(s.calcMg), bac = num(s.calcBac), dose = num(s.calcDose);
+    const totalMcg = mg * 1000;
+    const conc = bac > 0 ? totalMcg / bac : 0;            // mcg per mL
+    const volMl = conc > 0 ? dose / conc : 0;             // mL per dose
+    const units = volMl * 100;                            // U-100 insulin units
+    const doses = dose > 0 ? Math.floor(totalMcg / dose) : 0;
+    const calcValid = mg > 0 && bac > 0 && dose > 0 && units > 0;
+    const fmt = (n, d=2) => (Math.round(n * Math.pow(10,d)) / Math.pow(10,d)).toLocaleString('en-GB');
+    const calc = {
+      valid: calcValid,
+      units: calcValid ? fmt(units, 1) : '—',
+      volMl: calcValid ? fmt(volMl, 3) : '—',
+      conc: calcValid ? fmt(conc, 0) : '—',
+      doses: calcValid ? String(doses) : '—',
+      fillPct: (calcValid ? Math.max(2, Math.min(100, units)) : 0) + '%',
+      overfill: calcValid && units > 100,
+    };
+
+    // ---- provenance timeline (per product) ----
+    const baseDay = 8 + (products.findIndex(p=>p.id===product.id) % 12);
+    const provenance = [
+      { icon:'🏭', label:'German supplier', sub:'Lot received · Frankfurt', date:'2026-03-'+String(baseDay).padStart(2,'0'), color:'#B87333' },
+      { icon:'📋', label:'Batch intake', sub:'Logged & quarantined', date:'2026-03-'+String(baseDay+3).padStart(2,'0'), color:'#55606E' },
+      { icon:'🧪', label:'HPLC test', sub:product.purity+' · '+product.method, date:'2026-04-'+String(baseDay).padStart(2,'0'), color:'#1565C0' },
+      { icon:'🏷️', label:'Serialised', sub:'Unique QR per vial', date:'2026-04-'+String(baseDay+2).padStart(2,'0'), color:'#6A1B9A' },
+      { icon:'✓', label:'Released', sub:'QA sign-off complete', date:'2026-04-'+String(baseDay+5).padStart(2,'0'), color:'#1B5E20' },
+      { icon:'📦', label:'Dispatch ready', sub:'Cold-chain where required', date:'2026-04-'+String(baseDay+6).padStart(2,'0'), color:'#009B72' },
+    ];
+
+    // ---- inline COA assay lines ----
+    const coaRows = [
+      { k:'Appearance', v:'White to off-white lyophilised powder', spec:'Conforms' },
+      { k:'Identity (MS)', v:'Consistent with reference mass', spec:'Conforms' },
+      { k:'Purity (HPLC)', v:product.purity, spec:'≥ 98.0%' },
+      { k:'Single impurity (max)', v:'0.31%', spec:'≤ 1.0%' },
+      { k:'Water content (KF)', v:'3.8%', spec:'≤ 6.0%' },
+      { k:'Acetate content', v:'7.2%', spec:'Report' },
+      { k:'Endotoxin (LAL)', v:'< 5 EU/mg', spec:'≤ 10 EU/mg' },
+      { k:'Net peptide', v:selVariant.label, spec:'Label claim' },
+    ];
+
+    // ---- cart / checkout (prices are VAT-INCLUSIVE; no VAT is added at the end) ----
+    const priceAt = (p, vi) => { const v = p && p.variants && p.variants[vi]; return v ? v.price : (p ? (p.price||0) : 0); };
+    const cartLines = s.cartItems.map(it => {
+      const p = products.find(x => x.id === it.id) || {};
+      const v = (p.variants && p.variants[it.vi]) || { label:'', price:p.price||0 };
+      return { id:it.id, vi:it.vi, name:p.name, strength:v.label, batch:p.batch, accent:p.accent,
+        price:v.price, priceLabel:money(v.price), qty:it.qty, lineTotal:money(v.price*it.qty),
+        inc:()=>this.changeQty(it.id,it.vi,1), dec:()=>this.changeQty(it.id,it.vi,-1), remove:()=>this.removeItem(it.id,it.vi) };
+    });
+    const cartCount = s.cartItems.reduce((n,i)=>n+i.qty,0);
+    const subtotalN = s.cartItems.reduce((n,it)=>{ const p=products.find(x=>x.id===it.id); return n + priceAt(p,it.vi)*it.qty; },0);
+    // Automatic volume tier: 2 vials → 5%, 3+ vials → 10%. Applied to the whole order.
+    const volumePct = cartCount >= 3 ? 0.10 : (cartCount === 2 ? 0.05 : 0);
+    const promoPct = s.promoApplied ? 0.15 : 0;
+    const bestPct = Math.max(volumePct, promoPct);            // take the better deal, never double-discount
+    const discountN = (bestPct>0 && subtotalN>0) ? Math.round(subtotalN*bestPct*100)/100 : 0;
+    const discountLabel = (promoPct >= volumePct && promoPct>0)
+      ? 'First-order −15%'
+      : (volumePct>0 ? ('Volume ' + (cartCount) + ' vials · −' + Math.round(volumePct*100) + '%') : '');
+    // Nudge the shopper toward the next tier
+    const volumeNudge = cartCount===1 ? 'Add another vial and save 5% on your order.'
+      : (cartCount===2 ? 'Add one more vial to save 10% on your order.' : '');
+    const FREE_SHIP = 150;
+    const netGoods = subtotalN - discountN;
+    const shipN = (subtotalN===0 || netGoods>=FREE_SHIP) ? 0 : 9.95;
+    const freeShipRemaining = Math.max(0, FREE_SHIP - netGoods);
+    const totalN = Math.round((netGoods + shipN)*100)/100;       // VAT already inside
+    const vatN = Math.round((totalN - totalN/1.23)*100)/100;      // VAT contained within the total
+
+
+    // verify ID per line (deterministic from batch) — the invoice moat
+    const vidFor = batch => { const d=(batch||'').replace(/\D/g,'').padEnd(6,'0'); return 'TV-'+d.slice(0,4)+'-'+d.slice(4,6)+'K'+d.slice(0,2)+'-'+d.slice(2,4)+'V'+d.slice(4,6); };
+    const invoiceLines = cartLines.map(l => ({ ...l, verifyId: vidFor(l.batch) }));
+
+    const checkoutSteps = [
+      { key:'review', label:'Review', n:'1' },
+      { key:'details', label:'Details', n:'2' },
+      { key:'payment', label:'Payment', n:'3' },
+      { key:'confirmation', label:'Confirmation', n:'4' },
+    ].map(st => {
+      const order = ['review','details','payment','confirmation'];
+      const active = s.coStep===st.key;
+      const done = order.indexOf(st.key) < order.indexOf(s.coStep);
+      return { ...st, active, done,
+        mark: done ? '✓' : st.n,
+        circleBg: active ? '#1B5E20' : (done ? '#009B72' : '#FFFFFF'),
+        circleFg: (active||done) ? '#FFFFFF' : '#8a95a5',
+        circleBd: (active||done) ? 'transparent' : '#D0D5DD',
+        labelColor: active ? '#1A1A1A' : '#8a95a5',
+        go: () => { if (done) this.gotoStep(st.key); },
+      };
+    });
+
+    const orderTimeline = [
+      { label:'Payment received', sub:'SumUp · card / wallet', color:'#1B5E20', done:true },
+      { label:'Invoice issued', sub:'With batch & verify IDs', color:'#1B5E20', done:true },
+      { label:'Batch confirmed', sub:'QA re-check before pack', color:'#009B72', done:true },
+      { label:'Dispatched', sub:'Cold-chain, tracked', color:'#B87333', done:false },
+      { label:'Verifiable on arrival', sub:'Scan the QR on the vial', color:'#1565C0', done:false },
+    ];
+
+    const c = s.cust;
+    const detailsValid = !!(c.name.trim() && /.+@.+\..+/.test(c.email) && c.addr.trim() && c.city.trim() && c.post.trim() && s.declaration);
+    const cd = s.card;
+    const cardValid = !!(cd.name.trim() && cd.number.replace(/\s/g,'').length>=15 && /^\d\d\/\d\d$/.test(cd.exp) && cd.cvc.length>=3);
+
+    // ---- goal-based finder ----
+    const findP = id => products.find(x => x.id === id) || {};
+    const GOALS = [
+      { key:'recovery', label:'Recovery & repair', icon:'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z', blurb:'Tendon, gut and soft-tissue research.', ids:['bpc157','tb500','wolverine','kpv'] },
+      { key:'fatloss', label:'Fat loss & metabolic', icon:'M13 2L3 14h9l-1 8 10-12h-9l1-8z', blurb:'GLP-1 and metabolic compounds.', ids:['retatrutide','tirzepatide','cagrilintide','aod9604'] },
+      { key:'growth', label:'Growth & performance', icon:'M3 3v18h18M18.7 8l-5.1 5.2-2.8-2.7L7 14.3', blurb:'GHRH + secretagogue research.', ids:['cjc1295nodac','ipamorelin','ghrhstack','tesamorelin'] },
+      { key:'longevity', label:'Longevity & cellular', icon:'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z', blurb:'Telomere, NAD+ and mitochondrial work.', ids:['epithalon','nadplus','motsc','ss31'] },
+      { key:'cognition', label:'Focus & mood', icon:'M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44A2.5 2.5 0 0 1 4 17.5v-2A2.5 2.5 0 0 1 4 11a2.5 2.5 0 0 1 .5-4.9A2.5 2.5 0 0 1 7 3.5', blurb:'Nootropic and sleep peptides.', ids:['semax','selank','dsip'] },
+      { key:'skin', label:'Skin & hair', icon:'M12 2a10 10 0 1 0 10 10c0-1.5-.3-2.9-.9-4.2', blurb:'Cosmetic and cellular-repair peptides.', ids:['glowblend','klowblend','glutathione','mt1'] },
+    ].map(g => ({ ...g, active: s.goal===g.key,
+      pick: () => this.setState({ goal:g.key }),
+      pickGo: () => this.nav('finder', { goal:g.key }) }));
+    const activeGoal = GOALS.find(g => g.active) || null;
+    const goalResults = activeGoal ? activeGoal.ids.map(id => mapCard(findP(id))).filter(p=>p.id) : [];
+    const goalTitle = activeGoal ? activeGoal.label : '';
+
+    // ---- stack library (bundle = sum of cheapest variants, rounded, ~8% off) ----
+    const mkStack = (name, tag, ids, note, accent) => {
+      const items = ids.map(findP);
+      const raw = items.reduce((n,p)=>n + Math.min(...(p.variants||[{price:p.price}]).map(v=>v.price)), 0);
+      const bundle = Math.round(raw*0.92*100)/100;
+      return { name, tag, note, accent, saveLabel: money(Math.round((raw-bundle)*100)/100),
+        rawLabel: money(raw), bundleLabel: money(bundle),
+        items: items.map(p=>({ name:p.name, open:()=>this.nav('product',{productId:p.id,variantIndex:0}) })),
+        add: () => { ids.forEach(id => this.addItem(id, 0)); this.nav('checkout'); } };
+    };
+    const STACKS = [
+      mkStack('The Recovery Stack','MOST POPULAR',['bpc157','tb500'],'BPC-157 for local repair, TB-500 for systemic recovery — the definitive injury-research pair.','linear-gradient(90deg,#1565C0,#009B72)'),
+      mkStack('The Growth Stack','GH AXIS',['cjc1295nodac','ipamorelin'],'A GHRH sets the level while the GHRP adds the pulse — the most-studied growth combination.','linear-gradient(90deg,#1B5E20,#1565C0)'),
+      mkStack('The Gut & Skin Stack','WELLNESS',['bpc157','kpv','glutathione'],'Gut-calming and antioxidant peptides researched together for skin and digestive work.','linear-gradient(90deg,#B87333,#6A1B9A)'),
+      mkStack('The Longevity Stack','CELLULAR',['epithalon','nadplus'],'Telomere and cellular-energy research combined in one protocol.','linear-gradient(90deg,#6A1B9A,#1565C0)'),
+      mkStack('The Focus Stack','COGNITION',['semax','selank'],'Clear thinking plus calm — the classic nootropic pairing.','linear-gradient(90deg,#1565C0,#6A1B9A)'),
+      mkStack('The Metabolic Stack','ADVANCED',['retatrutide','cagrilintide'],'A triple-agonist GLP-1 with an amylin analogue for appetite-regulation research.','linear-gradient(90deg,#1B5E20,#009B72)'),
+    ];
+
+    // ---- FAQ ----
+    const FAQS = [
+      { q:'How does batch verification work?', a:'Every vial carries a unique QR code and verification ID. Scan it or enter it in the Verify field at the top of any page to pull up that exact batch\u2019s Certificate of Analysis, purity, test method and first-scan date \u2014 no login, no PDF hunting. The invoice you receive also lists a verify ID per line, so the paperwork itself proves authenticity.' },
+      { q:'Are these products for human use?', a:'No. All materials are supplied strictly for laboratory and in-vitro research use only, and are not for human or veterinary use. By ordering you confirm you are a qualified researcher purchasing in that capacity.' },
+      { q:'How are payments handled?', a:'Card and wallet payments are processed securely through SumUp. Card details are encrypted and never stored on our servers. Prices shown are final and VAT-inclusive \u2014 what you see is what you pay.' },
+      { q:'What are your shipping options to Ireland and the EU?', a:'Orders dispatch within 24 hours of batch confirmation, tracked, with cold-chain handling where a compound requires it. Shipping is a flat \u20ac9.95, and free on orders over \u20ac150.' },
+      { q:'How should I store and reconstitute the peptides?', a:'Lyophilised vials are shipped stable at room temperature but should be refrigerated on arrival and, once reconstituted with bacteriostatic water, kept refrigerated. Use the reconstitution calculator to work out exact dosing on a U-100 syringe.' },
+      { q:'How do your discounts work?', a:'Volume savings are automatic \u2014 2 vials take 5% off your order and 3 or more take 10%, applied at checkout with nothing to enter. First-time researchers can instead use code TARA15 for 15% off; we apply whichever saving is larger rather than stacking them. Free shipping applies to every order over \u20ac150.' },
+    ].map((f,i) => ({ ...f, open: s.faqOpen===i, toggle: () => this.setState(st => ({ faqOpen: st.faqOpen===i ? -1 : i })), sign: s.faqOpen===i ? '\u2212' : '+' }));
+
+    return {
+      // routing flags
+      isHome: s.view==='home', isCatalog: s.view==='catalog', isProduct: s.view==='product',
+      isVerify: s.view==='verify', isKnowledge: s.view==='knowledge', isDocs: s.view==='docs', isCalc: s.view==='calc',
+      isCheckout: s.view==='checkout', isFinder: s.view==='finder', isStacks: s.view==='stacks', isFaq: s.view==='faq',
+      stepReview: s.coStep==='review', stepDetails: s.coStep==='details', stepPayment: s.coStep==='payment', stepDone: s.coStep==='confirmation',
+      navCatalog: s.view==='catalog' ? '#1B5E20' : 'transparent',
+      navVerify: s.view==='verify' ? '#1B5E20' : 'transparent',
+      navKnowledge: s.view==='knowledge' ? '#1B5E20' : 'transparent',
+      navDocs: s.view==='docs' ? '#1B5E20' : 'transparent',
+      navCalc: s.view==='calc' ? '#1B5E20' : 'transparent',
+      navFinder: s.view==='finder' ? '#1B5E20' : 'transparent',
+      navStacks: s.view==='stacks' ? '#1B5E20' : 'transparent',
+      goHome:()=>this.nav('home'), goCatalog:()=>this.nav('catalog'), goVerify:()=>this.nav('verify'),
+      goKnowledge:()=>this.nav('knowledge'), goDocs:()=>this.nav('docs'), goCalc:()=>this.nav('calc'),
+      goFinder:()=>this.nav('finder'), goStacks:()=>this.nav('stacks'), goFaq:()=>this.nav('faq'),
+      // header inline verify
+      headerVerify: s.headerVerify,
+      onHeaderInput: e => this.setState({ headerVerify: e.target.value }),
+      onHeaderKey: e => { if (e.key==='Enter') this.headerVerifySubmit(); },
+      onHeaderVerify: () => this.headerVerifySubmit(),
+      // header
+      hasCart: cartCount>0, cartCount, goCheckout: ()=>this.nav('checkout'),
+      // home
+      trustItems, chainSteps, knowledgePreview,
+      featured: sorted.filter(p=>['tesamorelin','ipamorelin','bpc157'].includes(p.id)),
+      trySampleVerify: () => this.runVerify('TV-8XQ4-KL92-M71P', true),
+      // catalog
+      sortKey: s.sortKey, sortedProducts: sorted, catChips, resultCount: sorted.length,
+      onSortChange: e => this.setState({ sortKey: e.target.value }),
+      // product
+      product: mapCard(product), provenance, coaRows, coaOpen: s.coaOpen,
+      productPlain: product.plain, productStacks: product.stacks,
+      selStrength: selVariant.label, selPrice: money(selVariant.price),
+      hasVariants: (product.variants || []).length > 1,
+      variantOptions: (product.variants || []).map((v,i) => ({
+        label: v.label, price: money(v.price), active: i === vidx,
+        bg: i === vidx ? '#1B5E20' : '#FFFFFF', fg: i === vidx ? '#FFFFFF' : '#1A1A1A', bd: i === vidx ? '#1B5E20' : '#D0D5DD',
+        pick: () => this.setState({ variantIndex: i }),
+      })),
+      toggleCoa: () => this.setState(st => ({ coaOpen: !st.coaOpen })),
+      openCalcFor: () => this.nav('calc', { calcMg: String(parseFloat(selVariant.label)) || '5' }),
+      addToOrder: () => this.addItem(product.id, vidx),
+      justAdded: s.justAdded && s.justAddedId===product.id,
+      downloadCoa: () => alert('Demo — COA for ' + product.name + ' (' + product.batch + ') would download as PDF.'),
+      verifyThisBatch: () => { const key = Object.keys(this.SAMPLES).find(k=>this.SAMPLES[k].productId===product.id) || 'TV-8XQ4-KL92-M71P'; this.runVerify(key, true); },
+      // verify
+      verifyInput: s.verifyInput, verifyBusy: s.verifyBusy, hasResult, result, samples,
+      onVerifyInput: e => this.setState({ verifyInput: e.target.value }),
+      onVerifyKey: e => { if (e.key==='Enter') this.submitVerify(); },
+      onVerifySubmit: () => this.submitVerify(),
+      downloadResultCoa: () => alert('Demo — COA would download as PDF.'),
+      // knowledge / docs
+      articles, docRows,
+      // finder / stacks / faq
+      goals: GOALS, goalResults, goalTitle, hasGoal: !!activeGoal,
+      stacks: STACKS, faqs: FAQS,
+      // calculator
+      calc, calcMg: s.calcMg, calcBac: s.calcBac, calcDose: s.calcDose, calcProductName: product.name,
+      onCalcMg: e => this.setState({ calcMg: e.target.value }),
+      onCalcBac: e => this.setState({ calcBac: e.target.value }),
+      onCalcDose: e => this.setState({ calcDose: e.target.value }),
+      calcPresets: [
+        { label:'BAC water 1 mL', set:()=>this.setState({ calcBac:'1' }) },
+        { label:'2 mL', set:()=>this.setState({ calcBac:'2' }) },
+        { label:'3 mL', set:()=>this.setState({ calcBac:'3' }) },
+      ],
+      // ---- checkout ----
+      checkoutSteps, cartLines, invoiceLines, cartCount, orderTimeline,
+      cartEmpty: cartCount===0,
+      subtotal: money(subtotalN), discount: money(discountN), hasDiscount: discountN>0, discountLabel,
+      volumeNudge, showVolumeNudge: !!volumeNudge,
+      shipping: shipN===0 ? 'Free' : money(shipN), shipIsFree: shipN===0,
+      vat: money(vatN), total: money(totalN), totalRaw: totalN.toFixed(2),
+      freeShipRemaining: money(freeShipRemaining), showFreeShipNudge: freeShipRemaining>0 && subtotalN>0,
+      promo: s.promo, promoApplied: s.promoApplied, promoMsg: s.promoMsg,
+      onPromo: e => this.setState({ promo: e.target.value, promoMsg:'' }),
+      applyPromo: () => this.applyPromo(),
+      goShop: () => this.nav('catalog'),
+      toDetails: () => { if (cartCount>0) this.gotoStep('details'); },
+      backStep: () => this.gotoStep(this.prevStep()),
+      // details form
+      cust: c, declaration: s.declaration,
+      setCust: f => e => this.setState({ cust: { ...this.state.cust, [f]: e.target.value } }),
+      toggleDeclaration: () => this.setState(st => ({ declaration: !st.declaration })),
+      detailsValid, detailsOpacity: detailsValid ? '1' : '0.5',
+      toPayment: () => { if (detailsValid) this.gotoStep('payment'); },
+      // payment
+      payTab: s.payTab, setPayTab: t => () => this.setState({ payTab: t, payError:'' }),
+      card: cd, cardValid, cardOpacity: cardValid ? '1' : '0.5',
+      setCardName: e => this.setState({ card: { ...this.state.card, name: e.target.value } }),
+      setCardNumber: e => this.setState({ card: { ...this.state.card, number: this.fmtCardNo(e.target.value) } }),
+      setCardExp: e => this.setState({ card: { ...this.state.card, exp: this.fmtExp(e.target.value) } }),
+      setCardCvc: e => this.setState({ card: { ...this.state.card, cvc: e.target.value.replace(/\D/g,'').slice(0,4) } }),
+      payBusy: s.payBusy, payError: s.payError,
+      payCard: () => this.placeOrder('card'),
+      payApple: () => this.placeOrder('apple'),
+      payGoogle: () => this.placeOrder('google'),
+      // confirmation
+      orderNo: s.orderNo, orderDate: s.orderDate, invoiceNo: s.invoiceNo,
+      biz: { name:'TARA Peptides Ltd', addr:'Unit 4, Eastgate Business Park', city:'Little Island, Co. Cork, T45 XY12, Ireland', vat:'IE 4821996 T', reg:'IE 692184' },
+      printInvoice: () => { if (typeof window!=='undefined') window.print(); },
+      reorder: () => this.gotoStep('review'),
+      continueShopping: () => this.nav('catalog'),
+    };
+  }
+
+  normalizeId(raw) {
+    const clean = (raw || '').toUpperCase().replace(/[^A-Z0-9]/g,'');
+    if (clean.startsWith('TV') && clean.length >= 14) {
+      const body = clean.slice(2);
+      return 'TV-' + body.slice(0,4) + '-' + body.slice(4,8) + '-' + body.slice(8,12);
+    }
+    return clean;
+  }
+
+  headerVerifySubmit() {
+    const raw = this.state.headerVerify;
+    if (!raw || !raw.trim()) { this.nav('verify'); return; }
+    this.runVerify(this.normalizeId(raw));
+    this.setState({ headerVerify:'' });
+  }
+
+  submitVerify() {
+    const key = this.normalizeId(this.state.verifyInput);
+    if (!key) return;
+    this.runVerify(key);
+  }
+
+  runVerify(key, navFirst) {
+    const go = () => {
+      this.setState({ view:'verify', verifyInput:key, verifyBusy:true, resultKey:null });
+      if (typeof window!=='undefined') window.scrollTo(0,0);
+      clearTimeout(this._vt);
+      this._vt = setTimeout(() => this.setState({ verifyBusy:false, resultKey:key }), 750);
+    };
+    go();
+  }
+}
+</script>
+</body>
+</html>

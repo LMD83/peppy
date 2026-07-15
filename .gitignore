@@ -9,9 +9,14 @@ out/
 build/
 dist/
 
+# Convex local deployment data
+.convex/
+
 # Environment
 .env
 .env.local
+.env.production
+.env.convex
 .env.development.local
 .env.test.local
 .env.production.local
