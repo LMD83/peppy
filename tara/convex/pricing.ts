@@ -39,6 +39,12 @@ export function priceOrder(lines: CartLine[], promoPercent = 0) {
   return { subtotalCents, discountCents, discountLabel, shippingCents, vatCents, totalCents };
 }
 
+export function formatCents(cents: number): string {
+  return new Intl.NumberFormat("en-IE", { style: "currency", currency: "EUR" }).format(
+    cents / 100
+  );
+}
+
 // Deterministic verify ID from a batch number (mirror of the design reference).
 export function verifyIdFromBatch(batch: string): string {
   const d = (batch || "").replace(/\D/g, "").padEnd(6, "0");

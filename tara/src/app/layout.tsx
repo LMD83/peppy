@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Playfair_Display, Inter, JetBrains_Mono } from "next/font/google";
+import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 import { Providers } from "@/components/providers";
@@ -34,26 +35,28 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html
-      lang="en"
-      className={`${playfair.variable} ${inter.variable} ${jetbrainsMono.variable} antialiased`}
-    >
-      <body className="flex min-h-screen flex-col font-sans">
-        <Providers>
-          <SiteHeader />
-          <main className="flex-1">
-            <PageTransition>{children}</PageTransition>
-          </main>
-          <footer className="border-t border-border bg-card">
-            <div className="mx-auto max-w-6xl px-4 py-10 text-xs text-muted-foreground">
-              <p className="max-w-2xl font-medium">
-                For laboratory research use only. Not for human or veterinary use.
-              </p>
-              <p className="mt-2">© 2026 TARA Peptides.</p>
-            </div>
-          </footer>
-        </Providers>
-      </body>
-    </html>
+    <ConvexAuthNextjsServerProvider>
+      <html
+        lang="en"
+        className={`${playfair.variable} ${inter.variable} ${jetbrainsMono.variable} antialiased`}
+      >
+        <body className="flex min-h-screen flex-col font-sans">
+          <Providers>
+            <SiteHeader />
+            <main className="flex-1">
+              <PageTransition>{children}</PageTransition>
+            </main>
+            <footer className="border-t border-border bg-card">
+              <div className="mx-auto max-w-6xl px-4 py-10 text-xs text-muted-foreground">
+                <p className="max-w-2xl font-medium">
+                  For laboratory research use only. Not for human or veterinary use.
+                </p>
+                <p className="mt-2">© 2026 TARA Peptides.</p>
+              </div>
+            </footer>
+          </Providers>
+        </body>
+      </html>
+    </ConvexAuthNextjsServerProvider>
   );
 }
