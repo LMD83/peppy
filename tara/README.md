@@ -59,13 +59,26 @@ not dose) and why.
   in the softened vocabulary from `docs/COMPLIANCE.md` — "amount" and
   "scheduled window," never "dose."
 
+- **Home** (`/`) — the goal-finder grid (6 goals linking into `/finder`) and
+  the six-step "TARA quality chain" section, both ported from the design
+  reference, sit above the existing featured-compounds section.
+- **Guided finder** (`/finder`) — pick a research goal, see the matching
+  compounds (`src/lib/goals.ts`), with a link into the stack library.
+- **Stack library** (`/stacks`) — the 6 researched bundles from the design
+  reference (`src/lib/stacks.ts`), bundle price computed live at ~8% off the
+  sum of each item's cheapest variant, one-click "add stack to order."
+- **FAQ** (`/faq`) — accordion with the 6 Q&As from the design reference
+  (`src/lib/faqs.ts`).
+- **Checkout: included reconstitution kit** — Standard vs Premium tier
+  selector (Standard = cardboard insert + needles + free swabs; Premium =
+  3D-printed holder + reusable pen + pen needles + free swabs), consumables
+  scaled to cart vial count, folded into the order total at the same
+  volume/promo discount rate as the rest of the order.
+
 ## What's not built yet
 
-- **Home, in full** — the real design has a goal-finder grid and a six-step
-  "quality chain" section; this build has a simplified hero + featured
-  compounds instead.
-- **Guided finder, stack library, Knowledge/Docs, FAQ** — all in the design
-  reference, none built here.
+- **Knowledge/Docs** — educational articles, in the design reference, not
+  built here.
 - **Accounts + auth** — no Convex Auth wiring yet (needs a real deployment).
   The Research Schedule above is a preview of the dashboard experience, built
   without login.
