@@ -14,9 +14,12 @@ import { cn } from "@/lib/utils";
 
 const nav = [
   { href: "/catalogue", label: "Research Compounds" },
+  { href: "/finder", label: "Guided Finder" },
+  { href: "/stacks", label: "Stacks" },
   { href: "/verify", label: "Verify" },
   { href: "/calculator", label: "Calculator" },
   { href: "/schedule", label: "Schedule" },
+  { href: "/faq", label: "FAQ" },
 ];
 
 export function SiteHeader() {

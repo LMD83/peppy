@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, HeartPulse, Flame, TrendingUp, Infinity as InfinityIcon, Brain, Sparkles } from "lucide-react";
 
 import { LogoMark } from "@/components/logo-mark";
 import { Button } from "@/components/ui/button";
 import { Reveal } from "@/components/reveal";
 import { products, fromPriceCents } from "@/lib/products";
 import { formatCents } from "@/lib/pricing";
+import { goals } from "@/lib/goals";
 
 const trustItems = [
   "German-sourced",
@@ -16,6 +17,25 @@ const trustItems = [
 ];
 
 const featured = products.filter((p) => p.stock === "in" && p.kind === "compound").slice(0, 4);
+
+const GOAL_ICONS: Record<string, typeof HeartPulse> = {
+  recovery: HeartPulse,
+  fatloss: Flame,
+  growth: TrendingUp,
+  longevity: InfinityIcon,
+  cognition: Brain,
+  skin: Sparkles,
+};
+
+// TARA quality chain — from the design reference's `chainSteps`.
+const chainSteps = [
+  { num: "01", title: "German supplier", desc: "Sourced from audited manufacturers with documented provenance." },
+  { num: "02", title: "Batch intake", desc: "Every lot logged with origin, quantity, and manufacture date." },
+  { num: "03", title: "Analytical test", desc: "Identity and purity confirmed by HPLC; results recorded on the COA." },
+  { num: "04", title: "Serialise", desc: "Each vial assigned a unique verification ID and QR code." },
+  { num: "05", title: "Release", desc: "Batch released only after documentation review and sign-off." },
+  { num: "06", title: "Dispatch", desc: "Cold-chain where required, tracked to the researcher." },
+];
 
 export default function Home() {
   return (
@@ -54,6 +74,55 @@ export default function Home() {
               <Reveal key={t} delay={i * 0.06} className="border-r border-border last:border-r-0">
                 <span className="block px-4 py-4 text-center text-[13px] font-semibold">{t}</span>
               </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4 py-16">
+        <div className="mb-2 text-center">
+          <p className="text-xs font-semibold tracking-[0.18em] text-secondary">GUIDED FINDER</p>
+          <h2 className="mt-2 font-serif text-2xl font-semibold">What are you researching?</h2>
+        </div>
+        <div className="mx-auto mt-7 grid max-w-4xl gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {goals.map((g) => {
+            const Icon = GOAL_ICONS[g.key] ?? Sparkles;
+            return (
+              <Link
+                key={g.key}
+                href={`/finder?goal=${g.key}`}
+                className="flex items-start gap-3 rounded-md border border-border bg-card p-5 transition-colors hover:border-primary/40"
+              >
+                <Icon className="mt-0.5 size-5 shrink-0 text-secondary" />
+                <span>
+                  <span className="block font-semibold">{g.label}</span>
+                  <span className="block text-sm text-muted-foreground">{g.blurb}</span>
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="border-t border-border bg-muted/30">
+        <div className="mx-auto max-w-6xl px-4 py-16">
+          <p className="mb-2 text-xs font-semibold tracking-[0.18em] text-[#B87333]">
+            TARA QUALITY CHAIN
+          </p>
+          <h2 className="mb-9 font-serif text-2xl font-semibold">
+            From supplier to your bench — every step documented.
+          </h2>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {chainSteps.map((step) => (
+              <div key={step.num} className="flex gap-4">
+                <span className="font-serif text-2xl font-semibold text-muted-foreground/50">
+                  {step.num}
+                </span>
+                <div>
+                  <h3 className="font-semibold">{step.title}</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">{step.desc}</p>
+                </div>
+              </div>
             ))}
           </div>
         </div>

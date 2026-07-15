@@ -13,9 +13,12 @@ import {
   volumeNudge,
   formatCents,
   verifyIdFromBatch,
-  FREE_SHIP_THRESHOLD_CENTS,
+  volumePercent,
   PROMO_CODE,
   PROMO_RATE,
+  VAT_RATE,
+  FREE_SHIP_THRESHOLD_CENTS,
+  FLAT_SHIP_CENTS,
 } from "@/lib/pricing";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +27,35 @@ import { SumUpWidget } from "@/components/sumup-widget";
 
 type Stage = "form" | "payment";
 
+// Included reconstitution kit — the July 2026 update's Standard/Premium
+// tier selector, ported from the design reference (all prices in cents).
+const BAC_EACH_CENTS = 349;
+const NEEDLE_EACH_CENTS = 35;
+const HOLDER_CENTS = 490;
+const PEN_CENTS = 690;
+
+type KitTier = "standard" | "premium";
+
+function kitLinesFor(tier: KitTier, vialCount: number) {
+  if (vialCount === 0) return { lines: [] as { name: string; detail: string; amountLabel: string }[], totalCents: 0 };
+  const needlesCents = NEEDLE_EACH_CENTS * 10 * vialCount;
+  const bacCents = BAC_EACH_CENTS * vialCount;
+  const premium = tier === "premium";
+  const lines = [
+    { name: "Bacteriostatic water 3 mL", detail: `1 per vial · ${vialCount} total`, amountLabel: formatCents(bacCents) },
+    premium
+      ? { name: "3D-printed 5-well holder", detail: "presentation holder", amountLabel: formatCents(HOLDER_CENTS) }
+      : { name: "Die-cut cardboard insert", detail: "holds your vials", amountLabel: "Free" },
+    premium
+      ? { name: "Reusable injection pen", detail: "click-dial injector", amountLabel: formatCents(PEN_CENTS) }
+      : null,
+    { name: premium ? "Pen needles 32G" : "Insulin needles", detail: `10 per vial · ${10 * vialCount} total`, amountLabel: formatCents(needlesCents) },
+    { name: "Alcohol swabs", detail: `10 per vial · on us`, amountLabel: "Free" },
+  ].filter((l): l is { name: string; detail: string; amountLabel: string } => l != null);
+  const totalCents = premium ? bacCents + HOLDER_CENTS + PEN_CENTS + needlesCents : bacCents + needlesCents;
+  return { lines, totalCents };
+}
+
 export default function CheckoutPage() {
   const { lines, count, clear } = useCart();
   const [promoCode, setPromoCode] = useState("");
@@ -31,6 +63,7 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [stage, setStage] = useState<Stage>("form");
   const [orderNo, setOrderNo] = useState("");
+  const [kitTier, setKitTier] = useState<KitTier>("standard");
   const [checkoutId, setCheckoutId] = useState<string | null>(null);
   const [buyerEmail, setBuyerEmail] = useState("");
 
@@ -39,10 +72,23 @@ export default function CheckoutPage() {
   const confirmCheckoutFromClient = useAction(api.sumup.confirmCheckoutFromClient);
   const orderStatus = useQuery(api.orders.getOrderStatus, orderNo ? { orderNo } : "skip");
 
-  const totals = useMemo(
-    () => priceOrder(lines.map((l) => ({ unitPriceCents: l.unitPriceCents, qty: l.qty })), promoCode),
-    [lines, promoCode]
-  );
+  const kit = useMemo(() => kitLinesFor(kitTier, count), [kitTier, count]);
+
+  const totals = useMemo(() => {
+    const base = priceOrder(lines.map((l) => ({ unitPriceCents: l.unitPriceCents, qty: l.qty })), promoCode);
+    // Fold the kit cost into the same discount rate as the rest of the order
+    // (kit qty never counts toward the volume tier itself — see vialCount).
+    const promoApplied = promoCode.trim().toUpperCase() === PROMO_CODE;
+    const bestPct = Math.max(volumePercent(count), promoApplied ? PROMO_RATE : 0);
+    const kitDiscountCents = Math.round(kit.totalCents * bestPct);
+    const subtotalCents = base.subtotalCents + kit.totalCents;
+    const discountCents = base.discountCents + kitDiscountCents;
+    const netGoods = subtotalCents - discountCents;
+    const shippingCents = subtotalCents === 0 || netGoods >= FREE_SHIP_THRESHOLD_CENTS ? 0 : FLAT_SHIP_CENTS;
+    const totalCents = netGoods + shippingCents;
+    const vatCents = Math.round(totalCents - totalCents / (1 + VAT_RATE));
+    return { ...base, subtotalCents, discountCents, shippingCents, vatCents, totalCents };
+  }, [lines, promoCode, kit.totalCents, count]);
   const nudge = volumeNudge(count);
   const toFreeShip = Math.max(0, FREE_SHIP_THRESHOLD_CENTS - (totals.subtotalCents - totals.discountCents));
 
@@ -190,6 +236,43 @@ export default function CheckoutPage() {
               );
             })}
           </ul>
+
+          <fieldset className="space-y-4 rounded-md border border-border bg-card p-5">
+            <legend className="px-1 text-sm font-semibold">Reconstitution kit · included</legend>
+            <div className="flex flex-wrap gap-2">
+              {(["standard", "premium"] as const).map((tier) => (
+                <button
+                  key={tier}
+                  type="button"
+                  onClick={() => setKitTier(tier)}
+                  className={`h-10 rounded-sm border px-4 text-sm font-semibold ${
+                    kitTier === tier
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-input bg-card text-foreground"
+                  }`}
+                >
+                  {tier === "standard" ? "Standard kit" : "Premium kit"}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {kitTier === "standard"
+                ? "Cardboard insert · needles · swabs"
+                : "3D-printed holder · reusable pen · pen needles · swabs"}
+            </p>
+            {kit.lines.length > 0 && (
+              <ul className="divide-y divide-muted text-sm">
+                {kit.lines.map((l) => (
+                  <li key={l.name} className="flex items-center justify-between py-2">
+                    <span>
+                      {l.name} <span className="text-xs text-muted-foreground">— {l.detail}</span>
+                    </span>
+                    <span className="font-mono text-xs">{l.amountLabel}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </fieldset>
 
           <fieldset className="space-y-3 rounded-md border border-border bg-card p-5">
             <legend className="px-1 text-sm font-semibold">Delivery details</legend>
