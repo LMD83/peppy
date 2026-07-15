@@ -8,10 +8,14 @@
  * @module
  */
 
-import type * as loyalty from "../loyalty.js";
+import type * as articles from "../articles.js";
+import type * as cart from "../cart.js";
+import type * as collections from "../collections.js";
 import type * as orders from "../orders.js";
-import type * as pricing from "../pricing.js";
-import type * as verifications from "../verifications.js";
+import type * as pages from "../pages.js";
+import type * as products from "../products.js";
+import type * as reviews from "../reviews.js";
+import type * as seed from "../seed.js";
 
 import type {
   ApiFromModules,
@@ -20,10 +24,14 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  loyalty: typeof loyalty;
+  articles: typeof articles;
+  cart: typeof cart;
+  collections: typeof collections;
   orders: typeof orders;
-  pricing: typeof pricing;
-  verifications: typeof verifications;
+  pages: typeof pages;
+  products: typeof products;
+  reviews: typeof reviews;
+  seed: typeof seed;
 }>;
 
 /**

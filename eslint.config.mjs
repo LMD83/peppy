@@ -16,6 +16,8 @@ const eslintConfig = defineConfig([
     "convex/_generated/**",
     // Independent Next.js app with its own eslint.config.mjs — see tara/README.md.
     "tara/**",
+    // Design prototype runtime — not part of the Next.js app.
+    "design-reference/**",
   ]),
 ]);
 
