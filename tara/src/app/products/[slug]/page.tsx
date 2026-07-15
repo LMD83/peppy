@@ -3,14 +3,17 @@
 import { useMemo, useState } from "react";
 import { notFound, useParams } from "next/navigation";
 import Link from "next/link";
-import { ShieldCheck, Calculator } from "lucide-react";
+import { motion } from "motion/react";
+import { toast } from "sonner";
+import { ShieldCheck, Calculator, Check } from "lucide-react";
 
 import { getProduct } from "@/lib/products";
-import { formatCents, verifyIdFromBatch } from "@/lib/pricing";
+import { verifyIdFromBatch, formatCents } from "@/lib/pricing";
 import { mockBatch } from "@/lib/mock-batch";
 import { useCart } from "@/lib/cart-context";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Price } from "@/components/price";
 
 export default function ProductPage() {
   const params = useParams<{ slug: string }>();
@@ -41,6 +44,9 @@ export default function ProductPage() {
     });
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
+    toast.success(`${product.name} added to order`, {
+      description: `${variant.label} · qty ${qty} · ${formatCents(variant.priceCents * qty)}`,
+    });
   }
 
   return (
@@ -94,7 +100,7 @@ export default function ProductPage() {
           )}
 
           <div className="flex items-baseline gap-3">
-            <span className="font-serif text-3xl font-semibold">{formatCents(variant.priceCents)}</span>
+            <Price cents={variant.priceCents} className="font-serif text-3xl font-semibold" />
             <span className="text-xs text-muted-foreground">includes VAT (23%)</span>
             <Badge variant={product.stock === "out" ? "outline" : "default"}>
               {product.stock === "out" ? "Out of stock" : "In stock"}
@@ -111,14 +117,22 @@ export default function ProductPage() {
                 +
               </Button>
             </div>
-            <Button
-              className="flex-1"
-              size="lg"
-              onClick={handleAdd}
-              disabled={product.stock === "out"}
-            >
-              {added ? "Added" : "Add to order"}
-            </Button>
+            <motion.div className="flex-1" whileTap={{ scale: 0.97 }}>
+              <Button
+                className="w-full"
+                size="lg"
+                onClick={handleAdd}
+                disabled={product.stock === "out"}
+              >
+                {added ? (
+                  <>
+                    <Check className="size-4" /> Added
+                  </>
+                ) : (
+                  "Add to order"
+                )}
+              </Button>
+            </motion.div>
           </div>
 
           <Link

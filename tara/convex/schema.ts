@@ -1,15 +1,24 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { authTables } from "@convex-dev/auth/server";
 
 // TARA Peptides — Convex schema.
 // Prices are stored in cents, VAT-INCLUSIVE (Irish VAT 23%). Never add VAT at checkout.
 
 export default defineSchema({
+  // Convex Auth's own tables (authAccounts, authSessions, authRefreshTokens, ...).
+  ...authTables,
+
   users: defineTable({
-    email: v.string(),
-    name: v.string(),
-    // auth handled by Convex Auth; this mirrors profile + address
-    passwordHash: v.optional(v.string()),
+    // Convex Auth reads/writes these fields directly — keep names/optionality as-is.
+    name: v.optional(v.string()),
+    image: v.optional(v.string()),
+    email: v.optional(v.string()),
+    emailVerificationTime: v.optional(v.number()),
+    phone: v.optional(v.string()),
+    phoneVerificationTime: v.optional(v.number()),
+    isAnonymous: v.optional(v.boolean()),
+    // TARA profile fields.
     defaultAddress: v.optional(
       v.object({
         addr: v.string(),
@@ -18,14 +27,10 @@ export default defineSchema({
         country: v.string(),
       })
     ),
-    createdAt: v.number(),
-  }).index("by_email", ["email"]),
-
-  sessions: defineTable({
-    userId: v.id("users"),
-    token: v.string(),
-    expiresAt: v.number(),
-  }).index("by_token", ["token"]),
+    createdAt: v.optional(v.number()),
+  })
+    .index("email", ["email"])
+    .index("phone", ["phone"]),
 
   products: defineTable({
     slug: v.string(), // e.g. "bpc157"
@@ -52,6 +57,7 @@ export default defineSchema({
     status: v.union(
       v.literal("pending"),
       v.literal("paid"),
+      v.literal("failed"),
       v.literal("dispatched"),
       v.literal("cancelled")
     ),
@@ -70,10 +76,13 @@ export default defineSchema({
     vatCents: v.number(), // contained within total
     totalCents: v.number(),
     sumupCheckoutId: v.optional(v.string()),
+    sumupCheckoutReference: v.optional(v.string()),
+    confirmationEmailSentAt: v.optional(v.number()),
     createdAt: v.number(),
   })
     .index("by_user", ["userId"])
-    .index("by_orderNo", ["orderNo"]),
+    .index("by_orderNo", ["orderNo"])
+    .index("by_sumupCheckoutId", ["sumupCheckoutId"]),
 
   orderItems: defineTable({
     orderId: v.id("orders"),
@@ -115,4 +124,12 @@ export default defineSchema({
     nextRunAt: v.number(),
     active: v.boolean(),
   }).index("by_user", ["userId"]),
+
+  // Inbound webhook events we've processed — dedupe replays and keep an audit trail.
+  webhookEvents: defineTable({
+    source: v.union(v.literal("sumup"), v.literal("resend")),
+    eventKey: v.string(), // sumup: checkout id; resend: svix-id
+    receivedAt: v.number(),
+    payload: v.string(), // raw JSON, for audit/debugging
+  }).index("by_source_key", ["source", "eventKey"]),
 });

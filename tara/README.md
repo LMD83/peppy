@@ -9,7 +9,7 @@ is the original full spec, `BRAND-KIT.md` the design tokens,
 `UPDATES-July2026.md` the feature update, and `design-reference/` the
 high-fidelity HTML prototypes (open `design-reference/TARA Website.dc.html`
 directly in a browser to interact with every screen). Real brand tokens, the
-51-SKU catalogue, and the Convex schema in this build are all ported from it.
+50-SKU catalogue (one CSV pair merged — see src/lib/products.ts), and the Convex schema in this build are all ported from it.
 See `docs/COMPLIANCE.md` for the vocabulary rules this build follows (amount,
 not dose) and why.
 
@@ -18,7 +18,7 @@ not dose) and why.
 - **Brand** — real tokens from `BRAND-KIT.md`: primary green `#1B5E20`,
   accent `#009B72`, Playfair Display / Inter / JetBrains Mono, the hexagon
   logo mark (`src/components/logo-mark.tsx`).
-- **Catalogue** (`/catalogue`) — all 51 SKUs from
+- **Catalogue** (`/catalogue`) — all 50 SKUs from
   `design-reference/Pricing Model.csv`, category filter chips with counts,
   sort, stock badges. Multi-strength products only had a single "from" price
   in the CSV; larger variants are priced by a documented mg-ratio heuristic
@@ -46,10 +46,18 @@ not dose) and why.
   point in the file and `convex/SUMUP.md`.
 - **`convex/`** — the handoff's schema + `pricing.ts` + `orders.ts` +
   `verifications.ts` + `loyalty.ts` + `auth.md` + `SUMUP.md`, ported as-is.
-  Not deployed — no TARA Convex deployment credentials were available in
-  this session. `convex/_generated/*` are hand-written stand-ins (see the
-  comment at the top of each) so the scaffold typechecks; run `npx convex
-  dev` once you have a deployment to push it for real and regenerate them.
+  `.env.local` (gitignored) points at the real deployment, `fearless-wolf-510`
+  — but this sandbox has no network access to `convex.dev`/`convex.cloud`, so
+  the schema/functions still haven't actually been pushed. `convex/_generated/*`
+  are hand-written stand-ins (see the comment at the top of each) so the
+  scaffold typechecks in the meantime. **To finish:** run `npx convex dev`
+  once from a machine with network access — it pushes the schema/functions
+  and regenerates `convex/_generated/*` for real. No seed script exists yet:
+  `convex/schema.ts`'s `products` table requires `purity`, `method`, `batch`,
+  `format`, and `stacks` fields that aren't in `src/lib/products.ts` (the CSV
+  didn't have them, and `batch` is one-per-product in the schema vs.
+  one-per-variant in the current mock data) — reconcile those before writing
+  the seed mutation, rather than inventing placeholder values for them.
 - **Research Schedule** (`/schedule`) — the first slice of the roadmap's
   account/companion-app layer: recurring protocol windows per compound (every
   12h/24h/48h/weekly/custom), a "next scheduled window" card, and best-effort
