@@ -15,7 +15,7 @@ const trustItems = [
   "For research use only",
 ];
 
-const featured = products.filter((p) => p.stock === "in").slice(0, 4);
+const featured = products.filter((p) => p.stock === "in" && p.kind === "compound").slice(0, 4);
 
 export default function Home() {
   return (
