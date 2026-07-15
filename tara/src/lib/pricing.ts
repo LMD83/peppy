@@ -5,8 +5,13 @@
 export const VAT_RATE = 0.23;
 export const FREE_SHIP_THRESHOLD_CENTS = 15000; // €150 net goods
 export const FLAT_SHIP_CENTS = 995; // €9.95
+export const PROMO_CODES = ["TARA15", "WELCOME15"];
 export const PROMO_CODE = "TARA15";
 export const PROMO_RATE = 0.15;
+
+export function isPromoCode(code?: string | null): boolean {
+  return PROMO_CODES.includes((code ?? "").trim().toUpperCase());
+}
 
 export function volumePercent(totalQty: number): number {
   if (totalQty >= 3) return 0.1; // buy 3+ -> 10%
@@ -32,7 +37,7 @@ export function priceOrder(lines: CartLine[], promoCode?: string | null): OrderT
   const subtotalCents = lines.reduce((n, l) => n + l.unitPriceCents * l.qty, 0);
   const totalQty = lines.reduce((n, l) => n + l.qty, 0);
   const vPct = volumePercent(totalQty);
-  const promoApplied = promoCode?.trim().toUpperCase() === PROMO_CODE;
+  const promoApplied = isPromoCode(promoCode);
   const promoPercent = promoApplied ? PROMO_RATE : 0;
 
   // Never stack: take the better of volume vs promo.
@@ -56,8 +61,8 @@ export function priceOrder(lines: CartLine[], promoCode?: string | null): OrderT
 
 /** What to tell the customer to nudge them toward the next volume tier. */
 export function volumeNudge(qty: number): string | null {
-  if (qty === 1) return "Add 1 more vial to unlock 5% off";
-  if (qty === 2) return "Add 1 more vial to unlock 10% off";
+  if (qty === 1) return "Add another vial and save 5%";
+  if (qty === 2) return "Add one more to save 10%";
   return null;
 }
 

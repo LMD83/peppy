@@ -1,4 +1,4 @@
-import { getProduct, fromPriceCents, type Product } from "@/lib/products";
+import { getProductById, fromPriceCents, type Product } from "@/lib/products";
 
 export interface StackDef {
   key: string;
@@ -6,12 +6,11 @@ export interface StackDef {
   tag: string;
   note: string;
   accent: string;
-  slugs: string[];
+  ids: string[];
 }
 
-// Bundle definitions — the July 2026 update's "Stack library." Bundle price
-// is ~8% off the sum of each item's cheapest variant, ported from the design
-// reference's `mkStack`.
+// Bundle definitions — the "Stack library." Bundle price is ~8% off the sum
+// of each item's cheapest variant (ported from the design reference).
 export const stackDefs: StackDef[] = [
   {
     key: "recovery",
@@ -19,7 +18,7 @@ export const stackDefs: StackDef[] = [
     tag: "MOST POPULAR",
     note: "BPC-157 for local repair, TB-500 for systemic recovery — the definitive injury-research pair.",
     accent: "linear-gradient(90deg,#1565C0,#009B72)",
-    slugs: ["bpc-157", "tb-500"],
+    ids: ["bpc157", "tb500"],
   },
   {
     key: "growth",
@@ -27,7 +26,7 @@ export const stackDefs: StackDef[] = [
     tag: "GH AXIS",
     note: "A GHRH sets the level while the GHRP adds the pulse — the most-studied growth combination.",
     accent: "linear-gradient(90deg,#1B5E20,#1565C0)",
-    slugs: ["cjc-1295-no-dac", "ipamorelin"],
+    ids: ["cjc1295nodac", "ipamorelin"],
   },
   {
     key: "gutskin",
@@ -35,7 +34,7 @@ export const stackDefs: StackDef[] = [
     tag: "WELLNESS",
     note: "Gut-calming and antioxidant peptides researched together for skin and digestive work.",
     accent: "linear-gradient(90deg,#B87333,#6A1B9A)",
-    slugs: ["bpc-157", "kpv", "glutathione"],
+    ids: ["bpc157", "kpv", "glutathione"],
   },
   {
     key: "longevity",
@@ -43,7 +42,7 @@ export const stackDefs: StackDef[] = [
     tag: "CELLULAR",
     note: "Telomere and cellular-energy research combined in one protocol.",
     accent: "linear-gradient(90deg,#6A1B9A,#1565C0)",
-    slugs: ["epitalon", "nad"],
+    ids: ["epithalon", "nadplus"],
   },
   {
     key: "focus",
@@ -51,7 +50,7 @@ export const stackDefs: StackDef[] = [
     tag: "COGNITION",
     note: "Clear thinking plus calm — the classic nootropic pairing.",
     accent: "linear-gradient(90deg,#1565C0,#6A1B9A)",
-    slugs: ["semax", "selank"],
+    ids: ["semax", "selank"],
   },
   {
     key: "metabolic",
@@ -59,7 +58,7 @@ export const stackDefs: StackDef[] = [
     tag: "ADVANCED",
     note: "A triple-agonist GLP-1 with an amylin analogue for appetite-regulation research.",
     accent: "linear-gradient(90deg,#1B5E20,#009B72)",
-    slugs: ["retatrutide", "cagrilintide"],
+    ids: ["retatrutide", "cagrilintide"],
   },
 ];
 
@@ -72,7 +71,7 @@ export interface Stack extends StackDef {
 
 export function getStacks(): Stack[] {
   return stackDefs.map((def) => {
-    const items = def.slugs.map(getProduct).filter((p): p is Product => Boolean(p));
+    const items = def.ids.map(getProductById).filter((p): p is Product => Boolean(p));
     const rawCents = items.reduce((n, p) => n + fromPriceCents(p), 0);
     const bundleCents = Math.round(rawCents * 0.92);
     return { ...def, items, rawCents, bundleCents, saveCents: rawCents - bundleCents };
