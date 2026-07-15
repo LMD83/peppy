@@ -1,171 +1,94 @@
-# AI Website Cloner Template
+# TARA Peptides — Developer Handoff
 
-<a href="https://github.com/JCodesMore/ai-website-cloner-template/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License" /></a> <a href="https://github.com/JCodesMore/ai-website-cloner-template/stargazers"><img src="https://img.shields.io/github/stars/JCodesMore/ai-website-cloner-template?style=flat" alt="Stars" /></a> <a href="https://discord.gg/hrTSX5yTpB"><img src="https://img.shields.io/discord/1400896964597383279?label=discord" alt="Discord" /></a>
+Build spec for implementing the TARA Peptides e-commerce site as production software.
+Target stack: **React (front end) + Convex (backend/DB/auth) + SumUp (payments)**.
 
-A reusable template for reverse-engineering any website into a clean, modern Next.js codebase using AI coding agents. 
+---
 
-**Recommended: [Claude Code](https://docs.anthropic.com/en/docs/claude-code) with Opus 4.7 for best results** — but works with a variety of AI coding agents.
+## 0. How to use this package
 
-Point it at a URL, run `/clone-website`, and your AI agent will inspect the site, extract design tokens and assets, write component specs, and dispatch parallel builders to reconstruct every section.
+- **`design-reference/TARA Website.dc.html`** — the high-fidelity design reference. This is the **source of truth for look, layout, copy, and behavior**. Open it in a browser to interact with every screen. It is a design prototype (a single-file component), **not** production code to copy line-for-line — recreate it properly in your stack.
+- **`design-reference/Pricing Model.csv`** — full SKU list with competitor prices, undercut columns, and recommended final prices. Use it to seed the `products` table.
+- **`convex/`** — starter backend files (schema + functions). Drop into a Convex project and extend.
+- This README — the full spec: screens, components, design tokens, data model, business rules.
 
-## Demo
+**Recommended first prompt to Claude Code:**
+> Read README.md. Scaffold a React + Vite front end and a Convex backend matching the schema in `convex/`. Implement the screens in order (Catalogue → Product → Checkout → Account). Use the design reference HTML for exact layout, copy, and colors.
 
-[![Watch the demo](docs/design-references/comparison.png)](https://youtu.be/O669pVZ_qr0)
+---
 
-> Click the image above to watch the full demo on YouTube.
+## 1. Product overview
 
-## Quick Start
+TARA Peptides sells research peptides in Ireland/EU. The strategic wedge is **proof over hype**: every vial is batch-tested and independently verifiable (COA + unique verify ID), with no login required to verify. The site undercuts the main competitor (Revive Peptides) by ~15–17% on VAT-inclusive pricing.
 
-> **Important:** Start by making your own copy with GitHub's **Use this template** button. Do not clone this template repository directly for your website project, and do not open pull requests here with your generated website.
+Core differentiators to preserve:
+1. **Login-free batch verification** — header verify field on every page.
+2. **Verification-linked invoices** — every invoice line carries batch + verify ID.
+3. **Reconstitution calculator** — mg/BAC-water/dose → syringe units.
+4. **Guided finder + stack library** — goal-based discovery and researched bundles.
 
-1. **Create your own repository from this template**
+---
 
-   On the GitHub page for this project, click **Use this template**, then click **Create a new repository**.
+## 2. Design tokens
 
-   Give your new repository a name, choose whether it should be public or private, then click **Create repository**. If GitHub shows an **Include all branches** option, you can leave it off.
+**Colors**
+- Primary green `#1B5E20` (hover `#164D1A`); accent green `#009B72`.
+- Ink `#1A1A1A`; body text `#3f4854`; muted `#55606E`; faint `#8a95a5`.
+- Borders `#E4E7EC` / `#D0D5DD`; surfaces `#FFFFFF`, `#FAFAFA`, `#F2F4F7`.
+- Green wash `#F6FBF8` / border `#cfe3d6`. Dark panel `#0D1B2A`.
+- Blue `#1565C0`; purple `#6A1B9A`; copper `#B87333`. Error `#B4232A` / `#8a2b30`.
+- Warning wash `#FFF8EE` / border `#ead8bf` / text `#7a531d`.
 
-   This gives you your own separate project to work in, so your website changes stay in your account instead of coming back to the main template.
+**Type**
+- Display: **Playfair Display** (serif) — headings, prices.
+- Body/UI: system sans (ship Inter or similar).
+- Mono: **JetBrains Mono** — batch codes, verify IDs, card/calculator numbers.
 
-2. **Open your new repository on your computer**
+**Shape**: radii 2px (controls) to 6px (cards). 1px borders. Sparing shadows. Generous whitespace.
 
-   After GitHub creates your copy, open that new repository. Click **Code** and open or clone your new repository with your preferred coding tool.
+---
 
-   If you use the terminal, the command will look like this:
+## 3. Screens (all in the design reference)
 
-   ```bash
-   git clone https://github.com/YOUR-USERNAME/YOUR-NEW-REPOSITORY.git
-   cd YOUR-NEW-REPOSITORY
-   ```
+1. **Home** — hero; goal-finder strip (6 goals); quality-chain section; featured compounds.
+2. **Catalogue** — category filter chips w/ counts; sort (name/price/purity); product cards with stock badge, plain-English blurb, "from €X", Details + Add.
+3. **Product** — strength variant selector (price updates live), plain-English description, STACKS callout, spec table, inline-expanding COA, provenance timeline, calculator entry.
+4. **Checkout** (4 steps: Review → Details → Payment → Confirmation) — cart with qty steppers; **automatic volume discount**; promo code; free-shipping nudge; research-use declaration; SumUp payment (wallets + card); confirmation with verification-linked invoice, order timeline, and automated-email preview.
+5. **Reconstitution calculator** — mg + BAC water + dose → U-100 units, volume/dose, concentration, doses/vial; overfill warning.
+6. **Guided finder** — pick a research goal → recommended compounds + link to stacks.
+7. **Stack library** — 6 researched bundles with rationale, components, bundle price (~8% off), one-click add.
+8. **FAQ** — accordion (verification, research-use, payment, shipping, storage, discounts).
+9. **Verify** — enter/scan batch ID → COA result (login-free).
+10. **Knowledge / Docs** — educational articles and documentation.
+11. **Account** (TO BUILD — see §5) — auth, dashboard, order history, reorder, My Verifications, loyalty.
 
-3. **Install dependencies**
-   ```bash
-   npm install
-   ```
-4. **Start your AI agent** — Claude Code recommended:
-   ```bash
-   claude --chrome
-   ```
-5. **Run the skill**:
-   ```
-   /clone-website <target-url1> [<target-url2> ...]
-   ```
-6. **Customize** (optional) — after the base clone is built, modify as needed
+---
 
-> Using a different agent? Open `AGENTS.md` for project instructions — most agents pick it up automatically.
+## 4. Business rules
 
-## Supported Platforms
+- **Prices are VAT-inclusive** (Irish VAT 23%). Never add VAT at the end. Show "Includes VAT (23%)" as a contained line. `vat = total − total/1.23`.
+- **Volume discount (automatic, no code):** 2 vials (total qty) → 5% off order; 3+ vials → 10% off. Applies to whole-order subtotal.
+- **Promo code** `TARA15` → 15% (first order). **Never stack** with volume — apply `max(volumePct, promoPct)`.
+- **Shipping:** flat €9.95; **free when net goods ≥ €150**. Show "add €X more" nudge below threshold.
+- **Verify ID** is deterministic from batch number (see reference `vidFor`), shown per invoice line.
+- **Research-use declaration** checkbox required before payment.
 
-| Agent                                                         | Status                     |
-| ------------------------------------------------------------- | -------------------------- |
-| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | **Recommended** — Opus 4.7 |
-| [Codex CLI](https://github.com/openai/codex)                  | Supported                  |
-| [OpenCode](https://opencode.ai/)                              | Supported                  |
-| [GitHub Copilot](https://github.com/features/copilot)         | Supported                  |
-| [Cursor](https://cursor.com/)                                 | Supported                  |
-| [Windsurf](https://codeium.com/windsurf)                      | Supported                  |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli)     | Supported                  |
-| [Cline](https://github.com/cline/cline)                       | Supported                  |
-| [Roo Code](https://github.com/RooCodeInc/Roo-Code)            | Supported                  |
-| [Continue](https://continue.dev/)                             | Supported                  |
-| [Amazon Q](https://aws.amazon.com/q/developer/)               | Supported                  |
-| [Augment Code](https://www.augmentcode.com/)                  | Supported                  |
-| [Aider](https://aider.chat/)                                  | Supported                  |
+---
 
-## Prerequisites
+## 5. Account system + loyalty (to build)
 
-- [Node.js](https://nodejs.org/) 24+
-- An AI coding agent (see [Supported Platforms](#supported-platforms))
+Backed by Convex (see `convex/`). Screens:
+- **Auth** — register / sign in (Convex Auth).
+- **Dashboard** — order history, saved addresses, one-click **reorder**, download invoice + COA per order.
+- **My Verifications** — every batch the user has purchased, each still verifiable with its COA. (Unique retention feature — a personal authentication ledger.)
+- **Loyalty** — the automatic volume tiers are cart-level and need no login. Optional future: spend-based tiers, subscribe-&-save (recurring orders at 10–15% off), referral (give €10/get €10), restock alerts. Schema stubs included.
 
-## Tech Stack
+---
 
-- **Next.js 16** — App Router, React 19, TypeScript strict
-- **shadcn/ui** — Radix primitives + Tailwind CSS v4
-- **Tailwind CSS v4** — oklch design tokens
-- **Lucide React** — default icons (replaced by extracted SVGs during cloning)
+## 6. Data model → see `convex/schema.ts`
 
-## How It Works
+Tables: `users`, `sessions`, `products`, `orders`, `orderItems`, `verifications`, `loyalty`, `subscriptions`. Seed `products` from `design-reference/Pricing Model.csv`.
 
-The `/clone-website` skill runs a multi-phase pipeline:
+## 7. Payments → see `convex/SUMUP.md`
 
-1. **Reconnaissance** — screenshots, design token extraction, interaction sweep (scroll, click, hover, responsive)
-2. **Foundation** — updates fonts, colors, globals, downloads all assets
-3. **Component Specs** — writes detailed spec files (`docs/research/components/`) with exact computed CSS values, states, behaviors, and content
-4. **Parallel Build** — dispatches builder agents in git worktrees, one per section/component
-5. **Assembly & QA** — merges worktrees, wires up the page, runs visual diff against the original
-
-Each builder agent receives the full component specification inline — exact `getComputedStyle()` values, interaction models, multi-state content, responsive breakpoints, and asset paths. No guessing.
-
-## Use Cases
-
-- **Platform migration** — rebuild a site you own from WordPress/Webflow/Squarespace into a modern Next.js codebase
-- **Lost source code** — your site is live but the repo is gone, the developer left, or the stack is legacy. Get the code back in a modern format
-- **Learning** — deconstruct how production sites achieve specific layouts, animations, and responsive behavior by working with real code
-
-## Not Intended For
-
-- **Phishing or impersonation** — this project must not be used for deceptive purposes, impersonation, or any activity that breaks the law.
-- **Passing off someone's design as your own** — logos, brand assets, and original copy belong to their owners.
-- **Violating terms of service** — some sites explicitly prohibit scraping or reproduction. Check first.
-
-## Project Structure
-
-```
-src/
-  app/              # Next.js routes
-  components/       # React components
-    ui/             # shadcn/ui primitives
-    icons.tsx       # Extracted SVG icons
-  lib/utils.ts      # cn() utility
-  types/            # TypeScript interfaces
-  hooks/            # Custom React hooks
-public/
-  images/           # Downloaded images from target
-  videos/           # Downloaded videos from target
-  seo/              # Favicons, OG images
-docs/
-  research/         # Extraction output & component specs
-  design-references/ # Screenshots
-scripts/
-  sync-agent-rules.sh  # Regenerate agent instruction files
-  sync-skills.mjs      # Regenerate /clone-website for all platforms
-AGENTS.md           # Agent instructions (single source of truth)
-CLAUDE.md           # Claude Code config (imports AGENTS.md)
-GEMINI.md           # Gemini CLI config (imports AGENTS.md)
-```
-
-## Commands
-
-```bash
-npm run dev    # Start dev server
-npm run build  # Production build
-npm run lint   # ESLint check
-npm run typecheck # TypeScript check
-npm run check  # Run lint + typecheck + build
-```
-
-### If using docker
-
-```bash
-docker compose up app --build # build and run the app
-docker compose up dev --build # run the app in dev mode on port 3001
-```
-
-## Updating for Other Platforms
-
-Two source-of-truth files power all platform support. Edit the source, then run the sync script:
-
-| What                   | Source of truth                         | Sync command                       |
-| ---------------------- | --------------------------------------- | ---------------------------------- |
-| Project instructions   | `AGENTS.md`                             | `bash scripts/sync-agent-rules.sh` |
-| `/clone-website` skill | `.claude/skills/clone-website/SKILL.md` | `node scripts/sync-skills.mjs`     |
-
-Each script regenerates the platform-specific copies automatically. Agents that read the source files natively need no regeneration.
-
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=JCodesMore/ai-website-cloner-template&type=Date)](https://star-history.com/#JCodesMore/ai-website-cloner-template&Date)
-
-## License
-
-MIT
+Server-to-server SumUp checkout: create checkout (secret key server-side only) → customer pays (widget/hosted) → confirm via API/webhook → `orders.markPaid` → generate invoice + send email.
