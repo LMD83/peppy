@@ -1,22 +1,20 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import { fetchQuery } from "convex/nextjs"
 
+import { api } from "@convex/_generated/api"
 import { ProductPurchase } from "@/components/product-purchase"
 import { ProductCard } from "@/components/product-card"
+import { ProductImage } from "@/components/product-image"
+import { ProductReviews } from "@/components/product-reviews"
 import { InformedSportBadge } from "@/components/informed-sport-badge"
+import { Stars } from "@/components/stars"
 import { ShieldCheck } from "@/components/icons"
-import { Truck, BadgeEuro, Check } from "lucide-react"
-import {
-  getCollection,
-  getProduct,
-  products,
-  relatedProducts,
-} from "@/lib/products"
+import { Truck, BadgeEuro, Check, RefreshCw } from "lucide-react"
 
-export function generateStaticParams() {
-  return products.map((p) => ({ handle: p.handle }))
-}
+// Reads live Convex data — never prerender at build time.
+export const dynamic = "force-dynamic"
 
 export async function generateMetadata({
   params,
@@ -24,7 +22,7 @@ export async function generateMetadata({
   params: Promise<{ handle: string }>
 }): Promise<Metadata> {
   const { handle } = await params
-  const product = getProduct(handle)
+  const product = await fetchQuery(api.products.getByHandle, { handle })
   if (!product) return {}
 
   return {
@@ -50,11 +48,14 @@ export default async function ProductPage({
   params: Promise<{ handle: string }>
 }) {
   const { handle } = await params
-  const product = getProduct(handle)
+  const product = await fetchQuery(api.products.getByHandle, { handle })
   if (!product) notFound()
 
-  const collection = getCollection(product.collection)
-  const related = relatedProducts(product)
+  const [collection, related, summary] = await Promise.all([
+    fetchQuery(api.collections.getBySlug, { slug: product.collection }),
+    fetchQuery(api.products.related, { handle: product.handle }),
+    fetchQuery(api.reviews.ratingSummary, { handle: product.handle }),
+  ])
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -67,6 +68,11 @@ export default async function ProductPage({
       priceCurrency: "EUR",
       price: product.price.toFixed(2),
       availability: "https://schema.org/InStock",
+    },
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: summary.rating.toFixed(1),
+      reviewCount: summary.count,
     },
   }
 
@@ -97,15 +103,15 @@ export default async function ProductPage({
       </nav>
 
       <div className="grid gap-8 lg:grid-cols-2">
-        {/* Gallery placeholder */}
+        {/* Gallery */}
         <div
-          className="aspect-square rounded-2xl"
+          className="flex aspect-square items-center justify-center rounded-2xl p-8"
           style={{
-            backgroundImage: `linear-gradient(145deg, ${product.accent[0]}, ${product.accent[1]})`,
+            backgroundImage: `linear-gradient(145deg, color-mix(in oklch, ${product.accent[0]} 22%, white), color-mix(in oklch, ${product.accent[1]} 30%, white))`,
           }}
-          aria-label={`${product.name} product image`}
-          role="img"
-        />
+        >
+          <ProductImage product={product} className="size-[70%]" />
+        </div>
 
         {/* Buy box */}
         <div className="flex flex-col gap-6">
@@ -113,6 +119,13 @@ export default async function ProductPage({
             <InformedSportBadge className="self-start" />
             <h1 className="text-3xl font-bold tracking-tight">{product.name}</h1>
             <p className="text-muted-foreground">{product.tagline}</p>
+            <a
+              href="#reviews"
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <Stars rating={summary.rating} size="size-3.5" />
+              {summary.rating.toFixed(1)} ({summary.count})
+            </a>
           </div>
 
           <ProductPurchase product={product} />
@@ -168,6 +181,27 @@ export default async function ProductPage({
           </p>
         </section>
       </div>
+
+      {/* Subscribe & Save */}
+      <section className="mt-12 flex flex-col gap-4 rounded-2xl border bg-accent/40 p-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
+          <RefreshCw className="mt-0.5 size-6 shrink-0 text-primary" />
+          <div>
+            <h2 className="text-lg font-semibold">Subscribe &amp; Save 15%</h2>
+            <p className="text-sm text-muted-foreground">
+              Never run out. Choose your delivery frequency, save 15% on every
+              order, and skip, swap or cancel any time — no commitment.
+            </p>
+          </div>
+        </div>
+        <p className="shrink-0 text-sm text-muted-foreground">
+          Select <span className="font-medium text-foreground">Subscribe &amp; Save</span>{" "}
+          above to start.
+        </p>
+      </section>
+
+      {/* Reviews */}
+      <ProductReviews handle={product.handle} productName={product.name} />
 
       {/* Related */}
       {related.length > 0 && (

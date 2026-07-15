@@ -1,12 +1,16 @@
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
+import { fetchQuery } from "convex/nextjs"
 
+import { api } from "@convex/_generated/api"
 import { buttonVariants } from "@/components/ui/button-variants"
 import { TrustBar } from "@/components/trust-bar"
 import { ProductCard } from "@/components/product-card"
 import { InformedSportBadge } from "@/components/informed-sport-badge"
-import { bestsellers, collections } from "@/lib/products"
 import { cn } from "@/lib/utils"
+
+// Reads live Convex data — never prerender at build time.
+export const dynamic = "force-dynamic"
 
 const goals = [
   { label: "Build muscle", href: "/collections/protein" },
@@ -15,25 +19,13 @@ const goals = [
   { label: "Daily strength", href: "/collections/creatine" },
 ]
 
-const featuredArticles = [
-  {
-    title: "Whey vs Vegan Protein: Which Is Right for You?",
-    slug: "/learn",
-    cluster: "Protein",
-  },
-  {
-    title: "How to Take Creatine: Loading vs Maintenance",
-    slug: "/learn",
-    cluster: "Creatine",
-  },
-  {
-    title: "Best Supplements for GAA Players",
-    slug: "/learn",
-    cluster: "Performance",
-  },
-]
-
-export default function Home() {
+export default async function Home() {
+  const [featuredProducts, collections, allArticles] = await Promise.all([
+    fetchQuery(api.products.bestsellers, {}),
+    fetchQuery(api.collections.list, {}),
+    fetchQuery(api.articles.list, {}),
+  ])
+  const featuredArticles = allArticles.slice(0, 3)
   return (
     <>
       {/* Hero */}
@@ -93,7 +85,7 @@ export default function Home() {
           </Link>
         </div>
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {bestsellers().map((product) => (
+          {featuredProducts.map((product) => (
             <ProductCard key={product.handle} product={product} />
           ))}
         </div>
@@ -164,8 +156,8 @@ export default function Home() {
           <div className="grid gap-4 sm:grid-cols-3">
             {featuredArticles.map((article) => (
               <Link
-                key={article.title}
-                href={article.slug}
+                key={article.slug}
+                href={`/learn/${article.slug}`}
                 className="flex flex-col gap-2 rounded-xl border bg-card p-5 transition-shadow hover:shadow-md"
               >
                 <span className="text-xs font-medium text-primary">

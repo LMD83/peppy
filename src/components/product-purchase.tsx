@@ -1,21 +1,37 @@
 "use client"
 
 import { useState } from "react"
-import { Minus, Plus } from "lucide-react"
+import { Minus, Plus, Check } from "lucide-react"
 
+import type { Doc } from "@convex/_generated/dataModel"
 import { Button } from "@/components/ui/button"
-import { formatPrice, pricePerServing, type Product } from "@/lib/products"
+import { useCart } from "@/lib/cart-context"
+import { formatPrice, pricePerServing, SUBSCRIBE_DISCOUNT } from "@/lib/products"
 import { cn } from "@/lib/utils"
 
-const SUBSCRIBE_DISCOUNT = 0.85 // 15% off
-
-export function ProductPurchase({ product }: { product: Product }) {
+export function ProductPurchase({ product }: { product: Doc<"products"> }) {
+  const { add } = useCart()
   const [flavour, setFlavour] = useState(product.flavours[0])
   const [qty, setQty] = useState(1)
   const [subscribe, setSubscribe] = useState(false)
+  const [added, setAdded] = useState(false)
 
   const unit = subscribe ? product.price * SUBSCRIBE_DISCOUNT : product.price
   const total = unit * qty
+
+  function handleAdd() {
+    add({
+      handle: product.handle,
+      name: product.name,
+      flavour,
+      subscribe,
+      qty,
+      basePrice: product.price,
+      accent: product.accent,
+    })
+    setAdded(true)
+    setTimeout(() => setAdded(false), 2000)
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -100,8 +116,14 @@ export function ProductPurchase({ product }: { product: Product }) {
             <Plus />
           </Button>
         </div>
-        <Button size="lg" className="flex-1">
-          Add to cart · {formatPrice(total)}
+        <Button size="lg" className="flex-1" onClick={handleAdd}>
+          {added ? (
+            <>
+              <Check /> Added
+            </>
+          ) : (
+            <>Add to cart · {formatPrice(total)}</>
+          )}
         </Button>
       </div>
     </div>
