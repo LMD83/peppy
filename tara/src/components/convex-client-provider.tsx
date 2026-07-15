@@ -1,6 +1,7 @@
 "use client";
 
-import { ConvexProvider, ConvexReactClient } from "convex/react";
+import { ConvexAuthNextjsProvider } from "@convex-dev/auth/nextjs";
+import { ConvexReactClient } from "convex/react";
 
 // Falls back to a placeholder when NEXT_PUBLIC_CONVEX_URL isn't set (e.g. a
 // CI job that only lints/typechecks/builds and has no deployment configured)
@@ -11,5 +12,5 @@ const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL || "https://placeholder.con
 const convex = new ConvexReactClient(convexUrl);
 
 export function ConvexClientProvider({ children }: { children: React.ReactNode }) {
-  return <ConvexProvider client={convex}>{children}</ConvexProvider>;
+  return <ConvexAuthNextjsProvider client={convex}>{children}</ConvexAuthNextjsProvider>;
 }

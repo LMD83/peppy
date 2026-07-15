@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, useMotionValueEvent, useScroll } from "motion/react";
-import { ShoppingBag, ScanLine, Command } from "lucide-react";
+import { ShoppingBag, ScanLine, Command, User } from "lucide-react";
+import { Authenticated, Unauthenticated } from "convex/react";
 
 import { LogoMark } from "@/components/logo-mark";
 import { useCart } from "@/lib/cart-context";
@@ -103,6 +104,24 @@ export function SiteHeader() {
             <Command className="size-2.5" />K
           </span>
         </button>
+
+        <Authenticated>
+          <Link
+            href="/account"
+            className="hidden h-9 items-center gap-1.5 rounded-sm px-2 text-sm font-medium text-foreground hover:text-primary sm:inline-flex"
+          >
+            <User className="size-4" />
+            Account
+          </Link>
+        </Authenticated>
+        <Unauthenticated>
+          <Link
+            href="/signin"
+            className="hidden h-9 items-center px-2 text-sm font-medium text-foreground hover:text-primary sm:inline-flex"
+          >
+            Sign in
+          </Link>
+        </Unauthenticated>
 
         {count > 0 && (
           <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
