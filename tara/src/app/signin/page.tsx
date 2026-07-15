@@ -15,17 +15,6 @@ export default function SignInPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("signIn");
   const [submitting, setSubmitting] = useState(false);
-  const [googlePending, setGooglePending] = useState(false);
-
-  async function handleGoogle() {
-    setGooglePending(true);
-    try {
-      await signIn("google", { redirectTo: "/account" });
-    } catch {
-      toast.error("Couldn't start Google sign-in — please try again.");
-      setGooglePending(false);
-    }
-  }
 
   async function handlePasswordSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -76,16 +65,6 @@ export default function SignInPage() {
 
       {typeof step !== "object" && (
         <>
-          <Button variant="outline" size="lg" onClick={handleGoogle} disabled={googlePending}>
-            {googlePending ? "Redirecting…" : "Continue with Google"}
-          </Button>
-
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="h-px flex-1 bg-border" />
-            or
-            <span className="h-px flex-1 bg-border" />
-          </div>
-
           <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-3">
             <Input name="email" type="email" placeholder="Email" required autoComplete="email" />
             <Input
