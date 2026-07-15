@@ -7,19 +7,18 @@ import { motion, useMotionValueEvent, useScroll } from "motion/react";
 import { ShoppingBag, ScanLine, Command, User } from "lucide-react";
 import { Authenticated, Unauthenticated } from "convex/react";
 
-import { LogoMark } from "@/components/logo-mark";
+import { LogoLockup } from "@/components/logo-mark";
 import { useCart } from "@/lib/cart-context";
 import { useCommandPalette } from "@/components/command-palette";
 import { cn } from "@/lib/utils";
 
 const nav = [
   { href: "/catalogue", label: "Research Compounds" },
-  { href: "/finder", label: "Guided Finder" },
-  { href: "/stacks", label: "Stacks" },
   { href: "/verify", label: "Verify" },
+  { href: "/knowledge", label: "Knowledge" },
+  { href: "/documentation", label: "Documentation" },
+  { href: "/stacks", label: "Stacks" },
   { href: "/calculator", label: "Calculator" },
-  { href: "/schedule", label: "Schedule" },
-  { href: "/faq", label: "FAQ" },
 ];
 
 export function SiteHeader() {
@@ -58,20 +57,15 @@ export function SiteHeader() {
         scrolled ? "border-border shadow-[0_1px_0_0_rgba(0,0,0,0.02),0_8px_30px_-12px_rgba(13,27,42,0.15)]" : "border-transparent"
       )}
     >
-      <div className="mx-auto flex min-h-[72px] max-w-6xl flex-wrap items-center gap-5 px-4 py-2">
-        <Link href="/" className="flex items-center gap-3">
-          <LogoMark className="h-9 w-9 shrink-0" />
-          <span className="flex flex-col items-start leading-none">
-            <span className="font-serif text-lg font-semibold tracking-[0.22em] text-primary">
-              TARA
-            </span>
-            <span className="mt-0.5 text-[9px] font-semibold tracking-[0.32em] text-muted-foreground">
-              PEPTIDES
-            </span>
-          </span>
+      <div className="mx-auto flex min-h-[72px] max-w-6xl items-center gap-3 px-4 py-2">
+        <Link href="/" aria-label="TARA Peptides home" className="shrink-0">
+          <LogoLockup />
         </Link>
 
-        <nav ref={navRef} className="relative flex flex-1 items-center gap-1">
+        <nav
+          ref={navRef}
+          className="relative hidden flex-1 items-center justify-center gap-0.5 lg:flex"
+        >
           {nav.map((item) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
@@ -80,7 +74,7 @@ export function SiteHeader() {
                 href={item.href}
                 data-active={active}
                 className={cn(
-                  "flex h-10 items-center px-3 text-sm font-medium transition-colors",
+                  "flex h-10 items-center whitespace-nowrap px-2.5 text-[13.5px] font-medium transition-colors",
                   active ? "text-primary" : "text-foreground hover:text-primary"
                 )}
               >
@@ -97,15 +91,14 @@ export function SiteHeader() {
           )}
         </nav>
 
+        <div className="flex flex-1 items-center justify-end gap-2 lg:flex-none">
         <button
           type="button"
           onClick={openPalette}
-          className="hidden h-9 items-center gap-2 rounded-sm border border-input bg-muted/50 px-3 text-xs text-muted-foreground hover:border-primary hover:text-primary sm:inline-flex"
+          aria-label="Search compounds"
+          className="hidden size-9 items-center justify-center rounded-sm border border-input bg-muted/50 text-muted-foreground hover:border-primary hover:text-primary xl:inline-flex"
         >
-          Search compounds…
-          <span className="ml-1 inline-flex items-center gap-0.5 rounded border border-border bg-card px-1.5 py-0.5 font-mono text-[10px]">
-            <Command className="size-2.5" />K
-          </span>
+          <Command className="size-4" />
         </button>
 
         <Authenticated>
@@ -140,26 +133,27 @@ export function SiteHeader() {
 
         <form
           onSubmit={handleVerify}
-          className="flex h-11 items-stretch overflow-hidden rounded-sm border border-primary bg-card"
+          className="hidden h-10 items-stretch overflow-hidden rounded-sm border border-primary bg-card sm:flex"
         >
-          <span className="flex items-center pl-3 pr-1 text-primary">
+          <span className="flex items-center pl-2.5 pr-1 text-primary">
             <ScanLine className="size-4" />
           </span>
           <input
             value={verifyId}
             onChange={(e) => setVerifyId(e.target.value)}
-            placeholder="Verify a batch — TV-XXXX…"
+            placeholder="Verify a batch…"
             spellCheck={false}
             aria-label="Verify a batch by ID"
-            className="w-[180px] bg-transparent px-2 font-mono text-xs text-foreground outline-none"
+            className="w-[130px] bg-transparent px-2 font-mono text-xs text-foreground outline-none xl:w-[150px]"
           />
           <button
             type="submit"
-            className="bg-primary px-4 text-[13px] font-semibold text-primary-foreground hover:opacity-90"
+            className="bg-primary px-3.5 text-[13px] font-semibold text-primary-foreground hover:opacity-90"
           >
             Verify
           </button>
         </form>
+        </div>
       </div>
     </header>
   );

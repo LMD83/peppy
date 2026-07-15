@@ -2,37 +2,31 @@
 
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ShieldCheck, ShieldAlert } from "lucide-react";
+import { ShieldCheck, ShieldAlert, AlertTriangle } from "lucide-react";
 
-import { products } from "@/lib/products";
-import { verifyIdFromBatch } from "@/lib/pricing";
-import { mockBatch } from "@/lib/mock-batch";
+import { samples, lookupVerify, verifyProductName, type VerifyRecord } from "@/lib/verify";
 import { Button } from "@/components/ui/button";
 
-interface VerifyRecord {
-  productName: string;
-  batch: string;
-  verifyId: string;
-}
-
-// Every catalogue item x its variants has a deterministic mock batch, so any
-// of them can be "verified" here — standing in for the real verifications
-// table in the handoff's convex/verifications.ts.
-const REGISTRY: VerifyRecord[] = products.flatMap((p) =>
-  p.variants.map((v) => {
-    const batch = mockBatch(p.slug, v.label);
-    return { productName: `${p.name} (${v.label})`, batch, verifyId: verifyIdFromBatch(batch) };
-  })
-);
-
-function normalise(input: string): string {
-  return input.trim().toUpperCase().replace(/\s+/g, "");
-}
-
-function lookup(input: string): VerifyRecord | null {
-  const target = normalise(input);
-  return REGISTRY.find((r) => normalise(r.verifyId) === target) ?? null;
-}
+const STATUS_META: Record<
+  VerifyRecord["status"],
+  { label: string; className: string; Icon: typeof ShieldCheck }
+> = {
+  authentic: {
+    label: "ALL PASS",
+    className: "bg-secondary/20 text-secondary",
+    Icon: ShieldCheck,
+  },
+  recalled: {
+    label: "RECALLED",
+    className: "bg-destructive/20 text-destructive",
+    Icon: ShieldAlert,
+  },
+  reused: {
+    label: "ALREADY SCANNED",
+    className: "bg-[#7a531d]/25 text-[#e0b44a]",
+    Icon: AlertTriangle,
+  },
+};
 
 function VerifyForm() {
   const searchParams = useSearchParams();
@@ -41,8 +35,7 @@ function VerifyForm() {
   const [manualSubmit, setManualSubmit] = useState<string | null>(null);
 
   const submitted = manualSubmit ?? idFromUrl;
-  const result = submitted ? lookup(submitted) : null;
-  const samples = REGISTRY.slice(0, 3);
+  const result = submitted ? lookupVerify(submitted) : null;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -111,9 +104,16 @@ function VerifyForm() {
                 T A R A · V E R I F Y
               </span>
               {result ? (
-                <span className="inline-flex items-center gap-1.5 rounded-sm bg-secondary/20 px-3 py-1.5 text-[13px] font-bold tracking-wide text-secondary">
-                  <ShieldCheck className="size-4" /> ALL PASS
-                </span>
+                (() => {
+                  const meta = STATUS_META[result.status];
+                  return (
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-[13px] font-bold tracking-wide ${meta.className}`}
+                    >
+                      <meta.Icon className="size-4" /> {meta.label}
+                    </span>
+                  );
+                })()
               ) : (
                 <span className="inline-flex items-center gap-1.5 rounded-sm bg-destructive/20 px-3 py-1.5 text-[13px] font-bold tracking-wide text-destructive">
                   <ShieldAlert className="size-4" /> NOT FOUND
@@ -122,16 +122,32 @@ function VerifyForm() {
             </div>
 
             {result ? (
-              <table className="w-full border-collapse text-[14.5px]">
-                <tbody>
-                  <Row label="Product" value={result.productName} strong />
-                  <Row label="Batch" value={result.batch} mono shaded />
-                  <Row label="Verify ID" value={result.verifyId} mono />
-                  <Row label="Supplier origin" value="Germany" shaded />
-                  <Row label="Release status" value="Released — passed QC" />
-                  <Row label="Classification" value="Research use only" shaded />
-                </tbody>
-              </table>
+              <>
+                {result.status === "recalled" && (
+                  <p className="border-b border-panel-border bg-destructive/10 px-7 py-3 text-[13.5px] text-[#f2b8b8]">
+                    This batch has been quarantined under an active recall. Do not use — contact
+                    us with the verification ID.
+                  </p>
+                )}
+                {result.status === "reused" && (
+                  <p className="border-b border-panel-border bg-[#7a531d]/15 px-7 py-3 text-[13.5px] text-[#e0b44a]">
+                    This ID has been scanned before. A genuine vial is scanned once at first use —
+                    an earlier first-scan may indicate a re-sold or re-labelled vial.
+                  </p>
+                )}
+                <table className="w-full border-collapse text-[14.5px]">
+                  <tbody>
+                    <Row label="Product" value={verifyProductName(result)} strong />
+                    <Row label="Batch" value={result.batch} mono shaded />
+                    <Row label="Verify ID" value={result.verifyId} mono />
+                    <Row label="Serial" value={result.serial} mono shaded />
+                    <Row label="Supplier origin" value="Germany" />
+                    <Row label="Release status" value={result.release} shaded />
+                    <Row label="First scan" value={result.firstScan} mono />
+                    <Row label="Classification" value="Research use only" shaded />
+                  </tbody>
+                </table>
+              </>
             ) : (
               <div className="flex flex-col gap-3 p-7">
                 <p className="text-[15px] leading-relaxed">
@@ -142,8 +158,8 @@ function VerifyForm() {
                   Check the ID has four groups, like{" "}
                   <span className="font-mono text-panel-foreground">TV-XXXX-XXXX-XXXX</span>, or
                   email a photo of the label to{" "}
-                  <span className="text-secondary">verify@tarapeptides.example</span> and we will
-                  check it by hand.
+                  <span className="text-secondary">verify@tara.ie</span> and we will check it by
+                  hand.
                 </p>
               </div>
             )}

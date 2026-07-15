@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { HeartPulse, Flame, TrendingUp, Infinity as InfinityIcon, Brain, Sparkles } from "lucide-react";
 
 import { goals, getGoal, type Goal } from "@/lib/goals";
-import { getProduct, fromPriceCents } from "@/lib/products";
+import { getProductById, fromPriceCents, type Product } from "@/lib/products";
 import { formatCents } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 
@@ -24,8 +24,11 @@ function FinderView() {
   const [selectedKey, setSelectedKey] = useState<string | null>(searchParams.get("goal"));
 
   const selected: Goal | undefined = selectedKey ? getGoal(selectedKey) : undefined;
-  const results = useMemo(
-    () => (selected ? selected.slugs.map(getProduct).filter((p) => p != null) : []),
+  const results = useMemo<Product[]>(
+    () =>
+      selected
+        ? selected.ids.map(getProductById).filter((p): p is Product => Boolean(p))
+        : [],
     [selected]
   );
 

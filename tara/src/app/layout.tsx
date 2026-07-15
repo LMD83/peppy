@@ -3,6 +3,7 @@ import { Playfair_Display, Inter, JetBrains_Mono } from "next/font/google";
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
 import { Providers } from "@/components/providers";
 import { PageTransition } from "@/components/page-transition";
 
@@ -46,14 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <main className="flex-1">
               <PageTransition>{children}</PageTransition>
             </main>
-            <footer className="border-t border-border bg-card">
-              <div className="mx-auto max-w-6xl px-4 py-10 text-xs text-muted-foreground">
-                <p className="max-w-2xl font-medium">
-                  For laboratory research use only. Not for human or veterinary use.
-                </p>
-                <p className="mt-2">© 2026 TARA Peptides.</p>
-              </div>
-            </footer>
+            <SiteFooter />
           </Providers>
         </body>
       </html>
