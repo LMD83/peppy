@@ -72,7 +72,15 @@ export function MassChart({
           ))}
         {series.map((s, i) =>
           i % Math.ceil(series.length / 6) === 0 ? (
-            <text key={s.date} x={x(i)} y={H - 6} textAnchor="middle" fontSize="8.5" fill="#70747b" className="font-tm-mono">
+            <text
+              key={s.date}
+              x={x(i)}
+              y={H - 6}
+              textAnchor={i >= series.length - 1 ? "end" : i === 0 ? "start" : "middle"}
+              fontSize="8.5"
+              fill="#70747b"
+              className="font-tm-mono"
+            >
               {s.date.slice(5)}
             </text>
           ) : null,
