@@ -22,12 +22,20 @@ const modules = {
 // A Thursday — pull day in the session plan.
 const TODAY = "2026-08-13";
 
+type TestHarness = ReturnType<typeof convexTest>;
+
+async function loginOk(t: TestHarness, slug: string, passcode: string): Promise<string> {
+  const res = await t.mutation(api.tm.auth.login, { slug, passcode });
+  if (!res.ok) throw new Error(`login failed: ${res.code}`);
+  return res.token;
+}
+
 async function seeded() {
   const t = convexTest(schema, modules);
   await t.mutation(internal.tm.seed.run, { today: TODAY });
-  const liam = await t.mutation(api.tm.auth.login, { slug: "liam", passcode: "2580" });
-  const conor = await t.mutation(api.tm.auth.login, { slug: "conor", passcode: "1379" });
-  return { t, liam: liam.token, conor: conor.token };
+  const liam = await loginOk(t, "liam", "2580");
+  const conor = await loginOk(t, "conor", "1379");
+  return { t, liam, conor };
 }
 
 describe("auth", () => {
@@ -35,21 +43,41 @@ describe("auth", () => {
     const t = convexTest(schema, modules);
     await t.mutation(internal.tm.seed.run, { today: TODAY });
     const res = await t.mutation(api.tm.auth.login, { slug: "liam", passcode: "2580" });
-    expect(res.name).toBe("Liam");
-    expect(res.token).toHaveLength(64);
-    await expect(
-      t.mutation(api.tm.auth.login, { slug: "liam", passcode: "0000" }),
-    ).rejects.toThrow(/Wrong passcode/);
+    expect(res.ok && res.name).toBe("Liam");
+    expect(res.ok && res.token).toHaveLength(64);
+    const bad = await t.mutation(api.tm.auth.login, { slug: "liam", passcode: "0000" });
+    expect(bad).toEqual({ ok: false, code: "wrong-passcode" });
     await expect(t.query(api.tm.today.get, { token: "forged", date: TODAY })).rejects.toThrow(
-      /Not signed in/,
+      /not-signed-in/,
     );
+  });
+
+  it("locks a user out after five failed attempts", async () => {
+    const t = convexTest(schema, modules);
+    await t.mutation(internal.tm.seed.run, { today: TODAY });
+    for (let i = 0; i < 5; i++) {
+      const bad = await t.mutation(api.tm.auth.login, { slug: "liam", passcode: "0000" });
+      expect(bad).toEqual({ ok: false, code: "wrong-passcode" });
+    }
+    // Even the RIGHT passcode is refused during the lockout window.
+    const locked = await t.mutation(api.tm.auth.login, { slug: "liam", passcode: "2580" });
+    expect(locked).toEqual({ ok: false, code: "too-many-attempts" });
+  });
+
+  it("seed accepts passcode overrides so demo passcodes never reach production", async () => {
+    const t = convexTest(schema, modules);
+    await t.mutation(internal.tm.seed.run, { today: TODAY, passcodes: { liam: "907341" } });
+    const demoPass = await t.mutation(api.tm.auth.login, { slug: "liam", passcode: "2580" });
+    expect(demoPass).toEqual({ ok: false, code: "wrong-passcode" });
+    const res = await t.mutation(api.tm.auth.login, { slug: "liam", passcode: "907341" });
+    expect(res.ok && res.name).toBe("Liam");
   });
 
   it("logout invalidates the token", async () => {
     const { t, liam } = await seeded();
     await t.mutation(api.tm.auth.logout, { token: liam });
     await expect(t.query(api.tm.today.get, { token: liam, date: TODAY })).rejects.toThrow(
-      /Not signed in/,
+      /not-signed-in/,
     );
   });
 });
@@ -149,12 +177,35 @@ describe("mode engine", () => {
     const today = await t.query(api.tm.today.get, { token: liam, date: TODAY });
     expect(today.user.mode).toBe("survival");
     expect(today.checks).toHaveLength(3);
-    expect(today.user.ceilingKg).toBe(89); // goal 85 + 4
+    expect(today.user.ceilingKg).toBe(96); // configured ceiling survives by default
     expect(today.user.reviewDate).toBe("2026-11-01");
     const feed = await t.query(api.tm.crew.feed, { token: liam });
     const last = feed[feed.length - 1];
     expect(last.message).toMatch(/Executed as designed/);
     expect(last.message).not.toMatch(/fail/i);
+  });
+
+  it("explicit re-anchor applies for the survival stay only — ceiling restores on exit", async () => {
+    const { t, liam } = await seeded();
+    await t.mutation(api.tm.today.setMode, {
+      token: liam,
+      date: TODAY,
+      mode: "survival",
+      ceilingKg: 89, // hard-tripwire path: goal 85 + 4
+    });
+    const during = await t.query(api.tm.today.get, { token: liam, date: TODAY });
+    expect(during.user.ceilingKg).toBe(89);
+    await t.mutation(api.tm.today.setMode, { token: liam, date: TODAY, mode: "cut" });
+    const after = await t.query(api.tm.today.get, { token: liam, date: TODAY });
+    expect(after.user.ceilingKg).toBe(96); // round trip never destroys the configured ceiling
+  });
+
+  it("logState persists only the scalar that was tapped", async () => {
+    const { t, conor } = await seeded();
+    await t.mutation(api.tm.today.logState, { token: conor, date: TODAY, stress: 4 });
+    const today = await t.query(api.tm.today.get, { token: conor, date: TODAY });
+    expect(today.day.stress).toBe(4);
+    expect(today.day.energy).toBeNull(); // never fabricated
   });
 
   it("maintain tripwires: soft at goal +2, hard at goal +3.5", async () => {

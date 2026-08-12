@@ -52,6 +52,35 @@ function subscribeSession(cb: () => void) {
   return () => sessionListeners.delete(cb);
 }
 
+/** Drop the stored session (e.g. after the server rejects a stale token). */
+export function clearStoredSession() {
+  try {
+    window.localStorage.removeItem(SESSION_KEY);
+  } catch {
+    // storage unavailable — the in-memory cache below still clears
+  }
+  cachedRaw = null;
+  cachedSession = null;
+  sessionListeners.forEach((fn) => fn());
+}
+
+/* The local calendar date is external, ticking state — never freeze it at mount,
+   or a tab left open past midnight writes every log to yesterday. */
+function subscribeLocalDate(cb: () => void) {
+  const t = setInterval(cb, 30_000);
+  window.addEventListener("visibilitychange", cb);
+  window.addEventListener("focus", cb);
+  return () => {
+    clearInterval(t);
+    window.removeEventListener("visibilitychange", cb);
+    window.removeEventListener("focus", cb);
+  };
+}
+
+function useLocalDate(): string {
+  return useSyncExternalStore(subscribeLocalDate, localToday, localToday);
+}
+
 function useStoredSession() {
   const session = useSyncExternalStore(subscribeSession, readSession, () => null);
   // false during SSR/hydration, true once the client store is authoritative.
@@ -85,7 +114,7 @@ function getDemoDb(): DemoDb {
 function DemoBackend({ children }: { children: React.ReactNode }) {
   const db = getDemoDb();
   const { session, authReady, store } = useStoredSession();
-  const date = useMemo(() => localToday(), []);
+  const date = useLocalDate();
   useSyncExternalStore(
     db.subscribe,
     () => db.version,
@@ -103,7 +132,7 @@ function DemoBackend({ children }: { children: React.ReactNode }) {
       logout: () => store(null),
       toggleCheck: (key: string) => slug && db.toggleCheck(slug, date, key),
       logWeight: (kg: number) => slug && db.logWeight(slug, date, kg),
-      logState: (stress: number, energy: number) => slug && db.logState(slug, date, stress, energy),
+      logState: (patch: { stress?: number; energy?: number }) => slug && db.logState(slug, date, patch),
       markRitual: () => slug && db.markRitual(slug, date),
       logCraving: (entry: CravingEntry) => slug && db.logCraving(slug, date, entry),
       setMode: (mode, reason, reviewDate) => slug && db.setMode(slug, date, mode, reason, reviewDate),
@@ -137,7 +166,7 @@ function getConvexClient(): ConvexReactClient {
 
 function ConvexBackendInner({ children }: { children: React.ReactNode }) {
   const { session, authReady, store } = useStoredSession();
-  const date = useMemo(() => localToday(), []);
+  const date = useLocalDate();
   const token = session?.token;
   const args = token ? { token, date } : "skip";
 
@@ -162,11 +191,19 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
       login: async (slug: string, passcode: string) => {
         try {
           const res = await loginMut({ slug, passcode });
-          store(res);
+          if (!res.ok) {
+            const error =
+              res.code === "wrong-passcode"
+                ? "Wrong passcode"
+                : res.code === "too-many-attempts"
+                  ? "Too many attempts — try again in 15 minutes"
+                  : "Unknown user";
+            return { ok: false, error };
+          }
+          store({ token: res.token, slug: res.slug, name: res.name });
           return { ok: true };
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : "Login failed";
-          return { ok: false, error: msg.includes("passcode") ? "Wrong passcode" : "Sign-in error" };
+        } catch {
+          return { ok: false, error: "Sign-in error" };
         }
       },
       logout: () => {
@@ -175,7 +212,7 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
       },
       toggleCheck: (key: string) => token && void toggleMut({ token, date, key }),
       logWeight: (weightKg: number) => token && void weightMut({ token, date, weightKg }),
-      logState: (stress: number, energy: number) => token && void stateMut({ token, date, stress, energy }),
+      logState: (patch: { stress?: number; energy?: number }) => token && void stateMut({ token, date, ...patch }),
       markRitual: () => token && void ritualMut({ token, date }),
       logCraving: (entry: CravingEntry) => token && void cravingMut({ token, date, ...entry }),
       setMode: (mode, reason, reviewDate) => token && void modeMut({ token, date, mode, reason, reviewDate }),

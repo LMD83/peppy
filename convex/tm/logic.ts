@@ -16,7 +16,10 @@ import {
 export type WallDay = { date: string; done: number; total: number };
 
 export function computeStreakAndAdherence(wall: WallDay[], today: string) {
-  const last7 = wall.slice(-7);
+  // Adherence covers the last 7 COMPLETE days — today is still in play and
+  // must not count against you (same rule the streak follows).
+  const complete = wall.filter((d) => d.date !== today);
+  const last7 = complete.slice(-7);
   const adherence7 = Math.round(
     (last7.reduce((s, d) => s + d.done, 0) / Math.max(1, last7.reduce((s, d) => s + d.total, 0))) *
       100,

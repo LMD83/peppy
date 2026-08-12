@@ -1,16 +1,18 @@
+import { ConvexError } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import { MODE_CHECKS, addDays, type TmMode } from "./lib";
 import { computeStreakAndAdherence, type WallDay } from "./logic";
 
+// ConvexError so clients can recognise a dead session even with prod error redaction.
 export async function requireUser(ctx: QueryCtx, token: string): Promise<Doc<"tm_users">> {
   const session = await ctx.db
     .query("tm_sessions")
     .withIndex("by_token", (q) => q.eq("token", token))
     .unique();
-  if (!session) throw new Error("Not signed in");
+  if (!session) throw new ConvexError("not-signed-in");
   const user = await ctx.db.get("tm_users", session.userId);
-  if (!user) throw new Error("Not signed in");
+  if (!user) throw new ConvexError("not-signed-in");
   return user;
 }
 

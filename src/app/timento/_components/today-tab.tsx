@@ -165,8 +165,8 @@ function StateCheck() {
     <Card>
       <Eyebrow color="bg-tm-blue">State check — stress · energy</Eyebrow>
       <div className="flex flex-col gap-2">
-        <ScaleRow label="Stress" value={stress} onPick={(v) => actions.logState(v, energy ?? 3)} />
-        <ScaleRow label="Energy" value={energy} onPick={(v) => actions.logState(stress ?? 3, v)} />
+        <ScaleRow label="Stress" value={stress} onPick={(v) => actions.logState({ stress: v })} />
+        <ScaleRow label="Energy" value={energy} onPick={(v) => actions.logState({ energy: v })} />
       </div>
       <p className="mt-2 font-tm-mono text-[10px] text-tm-dim">
         Feeds the trigger map&apos;s emotion channel and the weekly review. Tracked, correlated — never diagnosed.

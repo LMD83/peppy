@@ -299,10 +299,10 @@ export class DemoDb {
     this.bump();
   }
 
-  logState(slug: string, date: string, stress: number, energy: number) {
+  logState(slug: string, date: string, patch: { stress?: number; energy?: number }) {
     const row = this.dayRow(slug, date);
-    row.stress = stress;
-    row.energy = energy;
+    if (patch.stress !== undefined) row.stress = patch.stress;
+    if (patch.energy !== undefined) row.energy = patch.energy;
     this.bump();
   }
 
@@ -322,7 +322,8 @@ export class DemoDb {
     user.modeMut = mode;
     user.modeSinceMut = date;
     user.reviewDateMut = reviewDate;
-    if (mode === "survival") user.ceilingMut = user.goalKg + 4;
+    // The configured ceiling survives a survival round trip (mirrors convex/tm/today.ts).
+    user.ceilingMut = user.ceilingKg;
     const message =
       mode === "survival"
         ? `Survival mode on — floor protocol active${reviewDate ? `, review ${reviewDate}` : ""}. Executed as designed.`

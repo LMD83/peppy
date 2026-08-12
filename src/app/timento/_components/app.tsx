@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Component, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import { TimentoProvider, useTimento } from "../_lib/backend";
+import { TimentoProvider, clearStoredSession, useTimento } from "../_lib/backend";
 import { Login } from "./login";
 import { Scoreboard } from "./scoreboard";
 import { TodayTab } from "./today-tab";
@@ -74,10 +74,49 @@ function Shell() {
   );
 }
 
+/**
+ * A stale stored token makes every query throw (e.g. after a server-side
+ * reseed wipes tm_sessions). Without this boundary the app would crash-loop
+ * with the sign-out button unreachable; instead we drop the dead session and
+ * land back on the login screen.
+ */
+class SessionRecoveryBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  componentDidCatch() {
+    clearStoredSession();
+  }
+
+  render() {
+    if (this.state.failed) {
+      return (
+        <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-tm-paper px-6 text-center">
+          <p className="font-tm-mono text-[11px] tracking-[0.15em] text-tm-dim uppercase">
+            Session expired — signed out
+          </p>
+          <button
+            onClick={() => this.setState({ failed: false })}
+            className="cursor-pointer rounded-[10px] bg-tm-ink px-5 py-2.5 font-tm-mono text-[11px] tracking-[0.15em] text-white uppercase"
+          >
+            Back to sign-in
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export function TimentoApp() {
   return (
-    <TimentoProvider>
-      <Shell />
-    </TimentoProvider>
+    <SessionRecoveryBoundary>
+      <TimentoProvider>
+        <Shell />
+      </TimentoProvider>
+    </SessionRecoveryBoundary>
   );
 }

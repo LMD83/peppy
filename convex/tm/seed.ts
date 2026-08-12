@@ -1,14 +1,17 @@
 // Seed the Timento demo crew. Run manually with:
 //   npx convex run tm/seed:run
 // Optionally pass a fixed date: npx convex run tm/seed:run '{"today": "2026-08-12"}'
+// On a REAL deployment, override the demo passcodes (they ship in the fixtures):
+//   npx convex run tm/seed:run '{"passcodes": {"liam": "…", "conor": "…"}}'
 import { v } from "convex/values";
 import { internalMutation } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
 import { buildFixtures } from "./fixtures";
-import { isoDate, sha256Hex } from "./lib";
+import { isoDate, randomToken, sha256Hex } from "./lib";
 
 const TM_TABLES = [
   "tm_sessions",
+  "tm_loginAttempts",
   "tm_days",
   "tm_checks",
   "tm_cravings",
@@ -22,22 +25,36 @@ const TM_TABLES = [
 ] as const;
 
 export const run = internalMutation({
-  args: { today: v.optional(v.string()) },
+  args: {
+    today: v.optional(v.string()),
+    passcodes: v.optional(v.record(v.string(), v.string())),
+  },
   handler: async (ctx, args) => {
     const today = args.today ?? isoDate(Date.now());
     for (const table of TM_TABLES) {
-      // Demo dataset is a few hundred rows — clears comfortably in one transaction.
-      const rows = await ctx.db.query(table).collect();
-      await Promise.all(rows.map((row) => ctx.db.delete(table, row._id)));
+      // Bounded batches; a dev/demo reset fits one transaction comfortably.
+      for (;;) {
+        const rows = await ctx.db.query(table).take(1024);
+        if (rows.length === 0) break;
+        await Promise.all(rows.map((row) => ctx.db.delete(table, row._id)));
+      }
     }
 
     const fx = buildFixtures(today);
     const idBySlug = new Map<string, Id<"tm_users">>();
     for (const u of fx.users) {
-      const passcodeSalt = `tm-${u.slug}`;
-      const passcodeHash = await sha256Hex(passcodeSalt + u.passcode);
-      const { passcode: _passcode, ...profile } = u;
-      const id = await ctx.db.insert("tm_users", { ...profile, passcodeSalt, passcodeHash });
+      const passcodeSalt = `tm-${u.slug}-${randomToken().slice(0, 8)}`;
+      const passcode = args.passcodes?.[u.slug] ?? u.passcode;
+      const passcodeHash = await sha256Hex(passcodeSalt + passcode);
+      const profile = Object.fromEntries(
+        Object.entries(u).filter(([key]) => key !== "passcode"),
+      ) as Omit<typeof u, "passcode">;
+      const id = await ctx.db.insert("tm_users", {
+        ...profile,
+        defaultCeilingKg: u.ceilingKg,
+        passcodeSalt,
+        passcodeHash,
+      });
       idBySlug.set(u.slug, id);
     }
     const uid = (slug: string) => {

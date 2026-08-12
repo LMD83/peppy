@@ -127,15 +127,25 @@ export const logWeight = mutation({
 });
 
 export const logState = mutation({
-  args: { token: v.string(), date: dateArg, stress: v.number(), energy: v.number() },
+  args: {
+    token: v.string(),
+    date: dateArg,
+    stress: v.optional(v.number()),
+    energy: v.optional(v.number()),
+  },
   handler: async (ctx, { token, date, stress, energy }) => {
     const user = await requireUser(ctx, token);
+    // Only persist the scalar that was actually tapped — never fabricate the other.
+    const patch: { stress?: number; energy?: number } = {};
+    if (stress !== undefined) patch.stress = stress;
+    if (energy !== undefined) patch.energy = energy;
+    if (Object.keys(patch).length === 0) return null;
     const day = await ctx.db
       .query("tm_days")
       .withIndex("by_userId_and_date", (q) => q.eq("userId", user._id).eq("date", date))
       .unique();
-    if (day) await ctx.db.patch("tm_days", day._id, { stress, energy });
-    else await ctx.db.insert("tm_days", { userId: user._id, date, stress, energy });
+    if (day) await ctx.db.patch("tm_days", day._id, patch);
+    else await ctx.db.insert("tm_days", { userId: user._id, date, ...patch });
     return null;
   },
 });
@@ -201,11 +211,14 @@ export const setMode = mutation({
     mode: v.union(v.literal("cut"), v.literal("maintain"), v.literal("survival")),
     reason: v.optional(v.string()),
     reviewDate: v.optional(v.string()),
+    ceilingKg: v.optional(v.number()),
   },
-  handler: async (ctx, { token, date, mode, reason, reviewDate }) => {
+  handler: async (ctx, { token, date, mode, reason, reviewDate, ceilingKg: reanchor }) => {
     const user = await requireUser(ctx, token);
     if (mode === user.mode) return null;
-    const ceilingKg = mode === "survival" ? user.goalKg + 4 : user.ceilingKg;
+    // The configured ceiling survives a survival round trip; a hard tripwire may
+    // pass an explicit re-anchor (goal +4 kg) for the survival stay only.
+    const ceilingKg = mode === "survival" ? (reanchor ?? user.defaultCeilingKg) : user.defaultCeilingKg;
     await ctx.db.patch("tm_users", user._id, {
       mode,
       modeSince: date,

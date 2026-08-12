@@ -26,6 +26,7 @@ export default defineSchema({
     modeReason: v.optional(v.string()),
     reviewDate: v.optional(v.string()),
     ceilingKg: v.number(),
+    defaultCeilingKg: v.number(),
     goalKg: v.number(),
     startKg: v.number(),
     startDate: v.string(),
@@ -39,6 +40,11 @@ export default defineSchema({
   })
     .index("by_token", ["token"])
     .index("by_userId", ["userId"]),
+
+  tm_loginAttempts: defineTable({
+    slug: v.string(),
+    at: v.number(),
+  }).index("by_slug", ["slug"]),
 
   tm_days: defineTable({
     userId: v.id("tm_users"),
