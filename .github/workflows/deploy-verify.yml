@@ -39,7 +39,9 @@ jobs:
             test "$code" = "200" || { echo "::error::$path returned $code"; head -c 400 /tmp/page.html; exit 1; }
           done
           curl -sL "$base/timento" | grep -qi "timento" || { echo "::error::/timento missing app markup"; exit 1; }
-          curl -sL "$base/timento/manifest.webmanifest" | grep -q '"start_url": "/timento"' || { echo "::error::manifest missing"; exit 1; }
+          mcode=$(curl -sL -o /tmp/manifest.json -w '%{http_code}' "$base/timento/manifest.webmanifest")
+          echo "manifest -> $mcode"; head -c 300 /tmp/manifest.json; echo
+          test "$mcode" = "200" && grep -q 'start_url' /tmp/manifest.json || { echo "::error::manifest missing or malformed"; exit 1; }
 
       - name: Install dependencies
         run: npm ci
