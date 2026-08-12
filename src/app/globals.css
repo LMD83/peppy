@@ -128,3 +128,30 @@
     @apply font-sans;
   }
 }
+/* ===== Timento (performance file) — /timento section tokens ===== */
+@theme inline {
+  --color-tm-paper: #fafaf8;
+  --color-tm-panel: #ffffff;
+  --color-tm-ink: #15171c;
+  --color-tm-ink2: #1e222a;
+  --color-tm-ink3: #232730;
+  --color-tm-inkrule: #2c313b;
+  --color-tm-dim: #70747b;
+  --color-tm-dim2: #9ba0a8;
+  --color-tm-rule: #e4e5e1;
+  --color-tm-grid: #eeefeb;
+  --color-tm-soft: #f3f3f0;
+  --color-tm-blue: #2b5fab;
+  --color-tm-red: #c7373f;
+  --color-tm-green: #2e7d4f;
+  --color-tm-green-mid: #9cc4a9;
+  --color-tm-green-faint: #dfeae2;
+  --color-tm-yellow: #b8860b;
+  --color-tm-amber: #c77d1f;
+  --color-tm-amber-bg: #fbf3e4;
+  --color-tm-amber-ink: #6b5a2e;
+  --color-tm-purple: #8a5a9e;
+  --font-tm-disp: var(--font-tm-disp-var), "Archivo Black", sans-serif;
+  --font-tm-mono: var(--font-tm-mono-var), "IBM Plex Mono", ui-monospace, monospace;
+  --font-tm-sans: var(--font-tm-sans-var), "IBM Plex Sans", system-ui, sans-serif;
+}
