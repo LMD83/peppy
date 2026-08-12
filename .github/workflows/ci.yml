@@ -32,6 +32,9 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
+      - name: Test
+        run: npm test
+
       - name: Build
         env:
           NEXT_PUBLIC_CONVEX_URL: https://dependable-vulture-853.eu-west-1.convex.cloud
