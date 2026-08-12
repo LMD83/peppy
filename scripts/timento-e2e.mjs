@@ -1,6 +1,6 @@
 // End-to-end click test for /timento against a running dev/prod server in
 // demo mode. Pushing a change to this file re-runs the "Deploy verify"
-// workflow, which probes the production URL anonymously (probe cadence is
+// workflow, which probes the production URL anonymously (probe cadence
 // managed by the deploy session). Usage:
 //   NEXT_PUBLIC_TIMENTO_DEMO=1 npm run dev:frontend  (separate terminal)
 //   node scripts/timento-e2e.mjs [baseUrl] [shotDir]
