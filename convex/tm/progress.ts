@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { query } from "../_generated/server";
-import { CUT_RATE_KG_PER_WEEK, adherenceStats, daysBetween, requireUser } from "./lib";
+import { adherenceStats, requireUser } from "./db";
+import { targetKgFor } from "./logic";
 
 export const get = query({
   args: { token: v.string(), date: v.string() },
@@ -20,10 +21,7 @@ export const get = query({
     const series = weighIns.map((w) => ({
       date: w.date,
       actual: w.kg,
-      target:
-        Math.round(
-          (user.startKg - (daysBetween(user.startDate, w.date) / 7) * CUT_RATE_KG_PER_WEEK) * 10,
-        ) / 10,
+      target: targetKgFor(user.startKg, user.startDate, w.date),
     }));
 
     const stats = await adherenceStats(ctx, user, date);

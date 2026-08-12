@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
-import { randomToken, requireUser, sha256Hex } from "./lib";
+import { randomToken, sha256Hex } from "./lib";
+import { requireUser } from "./db";
 
 export const login = mutation({
   args: { slug: v.string(), passcode: v.string() },

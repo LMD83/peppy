@@ -1,6 +1,3 @@
-import type { Doc, Id } from "../_generated/dataModel";
-import type { QueryCtx } from "../_generated/server";
-
 export type TmMode = "cut" | "maintain" | "survival";
 
 export const MODE_CHECKS: Record<TmMode, { key: string; label: string }[]> = {
@@ -91,17 +88,6 @@ export function randomToken(): string {
     .join("");
 }
 
-export async function requireUser(ctx: QueryCtx, token: string): Promise<Doc<"tm_users">> {
-  const session = await ctx.db
-    .query("tm_sessions")
-    .withIndex("by_token", (q) => q.eq("token", token))
-    .unique();
-  if (!session) throw new Error("Not signed in");
-  const user = await ctx.db.get("tm_users", session.userId);
-  if (!user) throw new Error("Not signed in");
-  return user;
-}
-
 export function isoDate(ms: number): string {
   return new Date(ms).toISOString().slice(0, 10);
 }
@@ -114,46 +100,4 @@ export function addDays(date: string, days: number): string {
 
 export function daysBetween(a: string, b: string): number {
   return Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000);
-}
-
-export async function checksForDate(
-  ctx: QueryCtx,
-  userId: Id<"tm_users">,
-  mode: TmMode,
-  date: string,
-): Promise<{ key: string; label: string; done: boolean }[]> {
-  const rows = await ctx.db
-    .query("tm_checks")
-    .withIndex("by_userId_and_date", (q) => q.eq("userId", userId).eq("date", date))
-    .take(16);
-  const doneByKey = new Map(rows.map((r) => [r.key, r.done]));
-  return MODE_CHECKS[mode].map((c) => ({ ...c, done: doneByKey.get(c.key) ?? false }));
-}
-
-/** Adherence + streak over the trailing window, computed from per-day check rows. */
-export async function adherenceStats(
-  ctx: QueryCtx,
-  user: Doc<"tm_users">,
-  today: string,
-): Promise<{ adherence7: number; streak: number; todayDone: number; todayTotal: number; wall: { date: string; done: number; total: number }[] }> {
-  const total = MODE_CHECKS[user.mode].length;
-  const wall: { date: string; done: number; total: number }[] = [];
-  for (let i = 13; i >= 0; i--) {
-    const date = addDays(today, -i);
-    const checks = await checksForDate(ctx, user._id, user.mode, date);
-    wall.push({ date, done: checks.filter((c) => c.done).length, total });
-  }
-  const last7 = wall.slice(-7);
-  const adherence7 = Math.round(
-    (last7.reduce((s, d) => s + d.done, 0) / Math.max(1, last7.reduce((s, d) => s + d.total, 0))) * 100,
-  );
-  let streak = 0;
-  for (let i = wall.length - 1; i >= 0; i--) {
-    const d = wall[i];
-    if (d.done >= d.total) streak++;
-    else if (d.date === today) continue; // today still in play — don't break the streak yet
-    else break;
-  }
-  const todayRow = wall[wall.length - 1];
-  return { adherence7, streak, todayDone: todayRow.done, todayTotal: todayRow.total, wall };
 }

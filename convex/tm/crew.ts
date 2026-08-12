@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
-import { adherenceStats, daysBetween, requireUser } from "./lib";
+import { daysBetween } from "./lib";
+import { adherenceStats, requireUser } from "./db";
 
 /**
  * The shared crew board. Privacy is enforced HERE, at the query level:

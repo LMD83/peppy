@@ -1,8 +1,8 @@
 import { v } from "convex/values";
 import { query } from "../_generated/server";
-import { addDays, requireUser } from "./lib";
-
-const SIGNALS = ["tired", "emotion", "cue", "bored", "hungry"] as const;
+import { addDays } from "./lib";
+import { requireUser } from "./db";
+import { buildTriggerMap, classifyEngine, findPeak, isWinterWindow } from "./logic";
 
 export const get = query({
   args: { token: v.string(), date: v.string() },
@@ -19,50 +19,10 @@ export const get = query({
         .take(50);
       cravings.push(...rows);
     }
-    const byHour = new Map<number, Record<string, number>>();
-    const bySignal: Record<string, number> = {};
-    for (const c of cravings) {
-      const hour = Number(c.time.slice(0, 2));
-      const bucket = byHour.get(hour) ?? {};
-      bucket[c.signal] = (bucket[c.signal] ?? 0) + 1;
-      byHour.set(hour, bucket);
-      bySignal[c.signal] = (bySignal[c.signal] ?? 0) + 1;
-    }
-    const triggerMap = Array.from(byHour.entries())
-      .sort((a, b) => a[0] - b[0])
-      .map(([hour, counts]) => ({ hour, counts }));
-
-    // Engine read-out: which craving engine dominates — the fix differs per engine.
+    const triggerMap = buildTriggerMap(cravings);
+    const engine = classifyEngine(cravings);
+    const peak = findPeak(triggerMap);
     const total = cravings.length;
-    let engine: "depletion" | "emotion" | "cue" | "mixed" | "insufficient" = "insufficient";
-    if (total >= 6) {
-      const depletion = bySignal["tired"] ?? 0;
-      const emotion = bySignal["emotion"] ?? 0;
-      const cue = (bySignal["cue"] ?? 0) + (bySignal["bored"] ?? 0);
-      const top = Math.max(depletion, emotion, cue);
-      if (top / total >= 0.5)
-        engine = top === depletion ? "depletion" : top === emotion ? "emotion" : "cue";
-      else engine = "mixed";
-    }
-
-    // Peak window finding.
-    let peak: { fromHour: number; share: number; signal: string } | null = null;
-    if (total > 0) {
-      const best = [...triggerMap].sort(
-        (a, b) =>
-          Object.values(b.counts).reduce((s, n) => s + n, 0) -
-          Object.values(a.counts).reduce((s, n) => s + n, 0),
-      )[0];
-      const hourTotal = Object.values(best.counts).reduce((s, n) => s + n, 0);
-      const topSignal = SIGNALS.reduce((acc, s) =>
-        (best.counts[s] ?? 0) > (best.counts[acc] ?? 0) ? s : acc,
-      );
-      peak = {
-        fromHour: best.hour,
-        share: Math.round(((best.counts[topSignal] ?? 0) / hourTotal) * 100),
-        signal: topSignal,
-      };
-    }
 
     const experiments = await ctx.db.query("tm_experiments").take(20);
     const visibleExperiments = experiments
@@ -112,8 +72,7 @@ export const get = query({
     }));
 
     // Seasonal layer (PER3 +/+): morning-light prompt Oct–Feb.
-    const month = Number(date.slice(5, 7));
-    const winterLayer = month >= 10 || month <= 2;
+    const winterLayer = isWinterWindow(date);
 
     return { triggerMap, engine, peak, totalCravings: total, experiments: visibleExperiments, markers, labs, winterLayer };
   },

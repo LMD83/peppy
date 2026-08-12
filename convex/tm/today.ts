@@ -1,17 +1,8 @@
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
-import {
-  HARD_TRIPWIRE_KG,
-  MODE_CHECKS,
-  OVERLOAD_INCREMENT_KG,
-  OVERLOAD_REPS,
-  SESSION_PLAN,
-  SOFT_TRIPWIRE_KG,
-  adherenceStats,
-  checksForDate,
-  daysBetween,
-  requireUser,
-} from "./lib";
+import { MODE_CHECKS, SESSION_PLAN, daysBetween } from "./lib";
+import { adherenceStats, checksForDate, requireUser } from "./db";
+import { overloadFlag, tripwireFor } from "./logic";
 
 const dateArg = v.string();
 
@@ -57,37 +48,17 @@ export const get = query({
                   )
                   .order("desc")
                   .take(2);
-                const overload =
-                  recent.length === 2 &&
-                  recent[0].topSetWeightKg === recent[1].topSetWeightKg &&
-                  recent[0].topSetReps >= OVERLOAD_REPS &&
-                  recent[1].topSetReps >= OVERLOAD_REPS;
                 return {
                   ...ex,
                   lastKg: recent[0]?.topSetWeightKg ?? null,
-                  flag: overload
-                    ? `+${OVERLOAD_INCREMENT_KG} kg → ${(recent[0].topSetWeightKg + OVERLOAD_INCREMENT_KG).toFixed(1)}`
-                    : null,
+                  flag: overloadFlag(recent),
                 };
               }),
             ),
           };
 
     // Maintain-mode tripwires with pre-written responses.
-    let tripwire: { level: "soft" | "hard"; message: string } | null = null;
-    if (user.mode === "maintain" && latestWeighed?.weightKg !== undefined) {
-      const over = latestWeighed.weightKg - user.goalKg;
-      if (over >= HARD_TRIPWIRE_KG)
-        tripwire = {
-          level: "hard",
-          message: `Hard tripwire: ${over.toFixed(1)} kg over goal. Survival mode is the pre-written response — ceiling re-anchors to goal +4 kg. Executing it is a decision. Zero guilt clause applies.`,
-        };
-      else if (over >= SOFT_TRIPWIRE_KG)
-        tripwire = {
-          level: "soft",
-          message: `Soft tripwire: ${over.toFixed(1)} kg over goal. The 14-day mini-cut sub-routine is ready — same checks, small deficit, review in two weeks.`,
-        };
-    }
+    const tripwire = tripwireFor(user.mode, user.goalKg, latestWeighed?.weightKg);
 
     return {
       user: {
