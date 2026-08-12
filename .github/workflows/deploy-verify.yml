@@ -35,10 +35,13 @@ jobs:
           echo "base=$base" >> "$GITHUB_ENV"
           for path in / /timento /timento/why; do
             code=$(curl -sL -o /tmp/page.html -w '%{http_code}' "$base$path")
-            echo "$path -> $code"
-            test "$code" = "200" || { echo "::error::$path returned $code"; head -c 400 /tmp/page.html; exit 1; }
+            echo "== $path -> $code"; head -c 300 /tmp/page.html; echo; echo
+            test "$code" = "200" || { echo "::error::$path returned $code"; exit 1; }
           done
-          curl -sL "$base/timento" | grep -qi "timento" || { echo "::error::/timento missing app markup"; exit 1; }
+          # Real app markup, not Vercel's SSO interstitial: store layout is en-IE,
+          # Timento layout carries the tm font classes.
+          curl -sL "$base/" | grep -q 'lang="en-IE"' || { echo "::error::/ serving non-app HTML (deployment protection?)"; exit 1; }
+          curl -sL "$base/timento" | grep -qi "performance file" || { echo "::error::/timento missing app markup"; exit 1; }
           mcode=$(curl -sL -o /tmp/manifest.json -w '%{http_code}' "$base/timento/manifest.webmanifest")
           echo "manifest -> $mcode"; head -c 300 /tmp/manifest.json; echo
           test "$mcode" = "200" && grep -q 'start_url' /tmp/manifest.json || { echo "::error::manifest missing or malformed"; exit 1; }
