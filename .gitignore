@@ -54,3 +54,6 @@ next-env.d.ts
 
 # Local temp files
 temp/
+
+# Local/CI e2e screenshot output
+e2e-shots/
