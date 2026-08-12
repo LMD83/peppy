@@ -7,6 +7,12 @@ on:
         description: Base URL of the deployment to verify
         required: false
         default: https://peppy-liams-projects-eb2f3bfa.vercel.app
+  push:
+    branches:
+      - claude/timento-workflow-nodejs-i16q2e
+    paths:
+      - .github/workflows/deploy-verify.yml
+      - scripts/timento-e2e.mjs
 
 jobs:
   smoke:
