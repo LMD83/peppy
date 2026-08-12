@@ -1,0 +1,55 @@
+name: Deploy verify
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: Base URL of the deployment to verify
+        required: false
+        default: https://peppy-liams-projects-eb2f3bfa.vercel.app
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Probe pages
+        run: |
+          base="${{ github.event.inputs.url || 'https://peppy-liams-projects-eb2f3bfa.vercel.app' }}"
+          echo "base=$base" >> "$GITHUB_ENV"
+          for path in / /timento /timento/why; do
+            code=$(curl -sL -o /tmp/page.html -w '%{http_code}' "$base$path")
+            echo "$path -> $code"
+            test "$code" = "200" || { echo "::error::$path returned $code"; head -c 400 /tmp/page.html; exit 1; }
+          done
+          curl -sL "$base/timento" | grep -qi "timento" || { echo "::error::/timento missing app markup"; exit 1; }
+          curl -sL "$base/timento/manifest.webmanifest" | grep -q '"start_url": "/timento"' || { echo "::error::manifest missing"; exit 1; }
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      # timento-e2e falls back to Playwright's own Chromium when the
+      # container path is absent (as on GitHub runners).
+      - name: E2E click-suite against deployment
+        run: node scripts/timento-e2e.mjs "$base" e2e-shots
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-verify-shots
+          path: e2e-shots/
+          if-no-files-found: ignore
