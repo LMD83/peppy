@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useMemo, useSyncExternalStore } from "react";
 import { ConvexProvider, ConvexReactClient, useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import { DemoDb } from "./demo-db";
 import {
   localToday,
@@ -137,6 +138,20 @@ function DemoBackend({ children }: { children: React.ReactNode }) {
       logCraving: (entry: CravingEntry) => slug && db.logCraving(slug, date, entry),
       setMode: (mode, reason, reviewDate) => slug && db.setMode(slug, date, mode, reason, reviewDate),
       nudge: (message: string) => slug && db.nudge(slug, message),
+      logFood: (slot, foodKey, grams) => slug && db.logFood(slug, date, slot, foodKey, grams),
+      setFoodEaten: (entryId, eaten) => db.setFoodEaten(entryId, eaten),
+      removeFood: (entryId) => db.removeFood(entryId),
+      generateMealPlan: () => slug && db.generateMealPlan(slug, date),
+      logSet: (exercise, setIndex, weightKg, reps, rir) =>
+        slug && db.logSet(slug, date, exercise, setIndex, weightKg, reps, rir),
+      startMesocycle: (goal) => slug && db.startMesocycle(slug, date, goal),
+      logDose: (itemId, timing, taken, site) => slug && db.logDose(slug, date, itemId, timing, taken, site),
+      setStackItemActive: (itemId, active) => db.setStackItemActive(itemId, active),
+      addLabPanel: (name, results, fasted) => slug && db.addLabPanel(slug, date, name, results, fasted),
+      submitAssessment: (instrument, answers) => slug && db.submitAssessment(slug, date, instrument, answers),
+      addIntention: (trigger, action) => slug && db.addIntention(slug, date, trigger, action),
+      markIntentionWin: (intentionId) => db.markIntentionWin(intentionId),
+      saveReflection: (prompt, response, win) => slug && db.saveReflection(slug, date, prompt, response, win),
     }),
     [db, slug, date, store],
   );
@@ -151,6 +166,11 @@ function DemoBackend({ children }: { children: React.ReactNode }) {
     feed: slug ? db.feed() : undefined,
     progress: slug ? db.progress(slug, date) : undefined,
     research: slug ? db.research(slug, date) : undefined,
+    fuel: slug ? db.fuel(slug, date) : undefined,
+    train: slug ? db.train(slug, date) : undefined,
+    stack: slug ? db.stack(slug, date) : undefined,
+    labs: slug ? db.labsView(slug, date) : undefined,
+    mind: slug ? db.mind(slug, date) : undefined,
     actions,
   };
   return <TimentoContext.Provider value={value}>{children}</TimentoContext.Provider>;
@@ -175,6 +195,11 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
   const feed = useQuery(api.tm.crew.feed, token ? { token } : "skip");
   const progress = useQuery(api.tm.progress.get, args);
   const research = useQuery(api.tm.research.get, args);
+  const fuel = useQuery(api.tm.fuel.get, args);
+  const train = useQuery(api.tm.train.get, args);
+  const stack = useQuery(api.tm.stack.get, args);
+  const labs = useQuery(api.tm.labs.get, args);
+  const mind = useQuery(api.tm.mind.get, args);
 
   const loginMut = useMutation(api.tm.auth.login);
   const logoutMut = useMutation(api.tm.auth.logout);
@@ -185,6 +210,19 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
   const cravingMut = useMutation(api.tm.today.logCraving);
   const modeMut = useMutation(api.tm.today.setMode);
   const nudgeMut = useMutation(api.tm.crew.nudge);
+  const logFoodMut = useMutation(api.tm.fuel.logFood);
+  const setFoodEatenMut = useMutation(api.tm.fuel.setFoodEaten);
+  const removeFoodMut = useMutation(api.tm.fuel.removeFood);
+  const generatePlanMut = useMutation(api.tm.fuel.generatePlan);
+  const logSetMut = useMutation(api.tm.train.logSet);
+  const startMesoMut = useMutation(api.tm.train.startMesocycle);
+  const logDoseMut = useMutation(api.tm.stack.logDose);
+  const setItemActiveMut = useMutation(api.tm.stack.setItemActive);
+  const addPanelMut = useMutation(api.tm.labs.addPanel);
+  const submitAssessmentMut = useMutation(api.tm.mind.submitAssessment);
+  const addIntentionMut = useMutation(api.tm.mind.addIntention);
+  const intentionWinMut = useMutation(api.tm.mind.markIntentionWin);
+  const saveReflectionMut = useMutation(api.tm.mind.saveReflection);
 
   const actions: TimentoActions = useMemo(
     () => ({
@@ -217,8 +255,55 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
       logCraving: (entry: CravingEntry) => token && void cravingMut({ token, date, ...entry }),
       setMode: (mode, reason, reviewDate) => token && void modeMut({ token, date, mode, reason, reviewDate }),
       nudge: (message: string) => token && void nudgeMut({ token, message }),
+      logFood: (slot, foodKey, grams) => token && void logFoodMut({ token, date, slot, foodKey, grams }),
+      setFoodEaten: (entryId, eaten) =>
+        token && void setFoodEatenMut({ token, entryId: entryId as Id<"tm_mealEntries">, eaten }),
+      removeFood: (entryId) =>
+        token && void removeFoodMut({ token, entryId: entryId as Id<"tm_mealEntries"> }),
+      generateMealPlan: () => token && void generatePlanMut({ token, date }),
+      logSet: (exercise, setIndex, weightKg, reps, rir) =>
+        token && void logSetMut({ token, date, exercise, setIndex, weightKg, reps, rir }),
+      startMesocycle: (goal) => token && void startMesoMut({ token, date, goal }),
+      logDose: (itemId, timing, taken, site) =>
+        token && void logDoseMut({ token, date, itemId: itemId as Id<"tm_protocolItems">, timing, taken, site }),
+      setStackItemActive: (itemId, active) =>
+        token && void setItemActiveMut({ token, itemId: itemId as Id<"tm_protocolItems">, active }),
+      addLabPanel: (name, results, fasted) => token && void addPanelMut({ token, date, name, results, fasted }),
+      submitAssessment: (instrument, answers) =>
+        token && void submitAssessmentMut({ token, date, instrument, answers }),
+      addIntention: (trigger, action) => token && void addIntentionMut({ token, date, trigger, action }),
+      markIntentionWin: (intentionId) =>
+        token && void intentionWinMut({ token, intentionId: intentionId as Id<"tm_intentions"> }),
+      saveReflection: (prompt, response, win) =>
+        token && void saveReflectionMut({ token, date, prompt, response, win }),
     }),
-    [token, date, store, loginMut, logoutMut, toggleMut, weightMut, stateMut, ritualMut, cravingMut, modeMut, nudgeMut],
+    [
+      token,
+      date,
+      store,
+      loginMut,
+      logoutMut,
+      toggleMut,
+      weightMut,
+      stateMut,
+      ritualMut,
+      cravingMut,
+      modeMut,
+      nudgeMut,
+      logFoodMut,
+      setFoodEatenMut,
+      removeFoodMut,
+      generatePlanMut,
+      logSetMut,
+      startMesoMut,
+      logDoseMut,
+      setItemActiveMut,
+      addPanelMut,
+      submitAssessmentMut,
+      addIntentionMut,
+      intentionWinMut,
+      saveReflectionMut,
+    ],
   );
 
   const value: TimentoState = {
@@ -231,6 +316,11 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
     feed,
     progress,
     research,
+    fuel,
+    train,
+    stack,
+    labs,
+    mind,
     actions,
   };
   return <TimentoContext.Provider value={value}>{children}</TimentoContext.Provider>;

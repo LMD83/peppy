@@ -6,6 +6,11 @@ import { cn } from "@/lib/utils";
 import { useTimento } from "../_lib/backend";
 import { Card, Eyebrow } from "./ui";
 import { CravingLogger } from "./craving";
+import { FuelTodayCard } from "./fuel-tab";
+import { TrainTodayCard } from "./train-tab";
+import { StackTodayCard } from "./stack-tab";
+import { LabsTodayCard } from "./labs-tab";
+import { MindTodayCard } from "./mind-tab";
 
 export function TodayTab() {
   const { today, actions, research } = useTimento();
@@ -51,35 +56,24 @@ export function TodayTab() {
         )}
       </Card>
 
-      <KitchenCard />
+      {/* Compact read-outs owned by each domain slice — the full surface lives in its own tab. */}
+      <StackTodayCard />
 
-      {today.session && (
-        <Card>
-          <Eyebrow color="bg-tm-green">Session — {today.session.name}</Eyebrow>
-          <ul>
-            {today.session.exercises.map((ex) => (
-              <li key={ex.name} className="flex items-center justify-between border-b border-tm-grid py-2 last:border-0">
-                <span className="text-[13.5px] font-medium">{ex.name}</span>
-                <span className="flex items-center gap-2">
-                  {ex.flag && (
-                    <span className="rounded bg-tm-green px-1.5 py-0.5 font-tm-mono text-[9.5px] text-white">{ex.flag}</span>
-                  )}
-                  <span className="font-tm-mono text-[10.5px] text-tm-dim">{ex.repRange}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-2 font-tm-mono text-[10px] text-tm-dim">
-            Top set ≥12 reps at the same load, two sessions running, earns the +2.5 kg flag.
-          </p>
-        </Card>
-      )}
+      <FuelTodayCard />
+
+      <TrainTodayCard />
+
+      <KitchenCard />
 
       <CravingLogger />
 
       <StateCheck />
 
       <WeighIn />
+
+      <MindTodayCard />
+
+      <LabsTodayCard />
 
       {research?.winterLayer && (
         <Card>

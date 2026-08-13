@@ -15,10 +15,38 @@ import type {
   CravingEntry,
   CrewData,
   FeedData,
+  FuelData,
+  LabResultInput,
+  LabsData,
+  MealSlot,
+  MindData,
   ProgressData,
   ResearchData,
+  StackData,
   TodayData,
+  TrainData,
 } from "./types";
+import type {
+  AssessmentRow,
+  DoseLogRow,
+  EnergyEstimateRow,
+  IntentionRow,
+  LabPanelRow,
+  LabResultRow,
+  MealEntryRow,
+  MesocycleRow,
+  NutritionTargetRow,
+  ProgramBlockRow,
+  ProtocolItemRow,
+  ReflectionRow,
+  SetLogRow,
+  VolumeLandmarkRow,
+} from "./demo/rows";
+import * as fuel from "./demo/fuel";
+import * as train from "./demo/train";
+import * as stack from "./demo/stack";
+import * as labsView from "./demo/labs";
+import * as mind from "./demo/mind";
 
 /**
  * In-memory demo backend. Serves the same view models as the Convex queries,
@@ -30,20 +58,58 @@ import type {
 type DemoUser = FixtureUser & { modeSinceMut: string; modeMut: TmMode; reviewDateMut?: string; ceilingMut: number };
 
 export class DemoDb {
-  private users: DemoUser[];
-  private days: Fixtures["days"];
-  private checks: Fixtures["checks"];
-  private cravings: Fixtures["cravings"];
-  private lifts: Fixtures["lifts"];
-  private labs: Fixtures["labs"];
-  private markers: Fixtures["markers"];
-  private experiments: Fixtures["experiments"];
-  private feedRows: { userSlug: string; name: string; message: string; at: number }[];
+  users: DemoUser[];
+  days: Fixtures["days"];
+  checks: Fixtures["checks"];
+  cravings: Fixtures["cravings"];
+  lifts: Fixtures["lifts"];
+  labs: Fixtures["labs"];
+  markers: Fixtures["markers"];
+  experiments: Fixtures["experiments"];
+  feedRows: { userSlug: string; name: string; message: string; at: number }[];
+
+  /* Domain tables — same shapes the Convex seed inserts. */
+  nutritionTargets: NutritionTargetRow[];
+  mealEntries: MealEntryRow[];
+  energyEstimates: EnergyEstimateRow[];
+  mesocycles: MesocycleRow[];
+  programBlocks: ProgramBlockRow[];
+  setLogs: SetLogRow[];
+  volumeLandmarks: VolumeLandmarkRow[];
+  protocolItems: ProtocolItemRow[];
+  doseLogs: DoseLogRow[];
+  labPanels: LabPanelRow[];
+  labResults: LabResultRow[];
+  assessments: AssessmentRow[];
+  intentions: IntentionRow[];
+  reflections: ReflectionRow[];
+
   private listeners = new Set<() => void>();
+  private idSeq = 0;
   version = 0;
+
+  /** Stable-per-session id for rows the demo creates at runtime. */
+  newId(prefix: string): string {
+    this.idSeq += 1;
+    return `${prefix}_${this.idSeq}`;
+  }
 
   constructor(today: string) {
     const fx = buildFixtures(today);
+    this.nutritionTargets = [...fx.nutritionTargets];
+    this.mealEntries = [...fx.mealEntries];
+    this.energyEstimates = [...fx.energyEstimates];
+    this.mesocycles = [...fx.mesocycles];
+    this.programBlocks = [...fx.programBlocks];
+    this.setLogs = [...fx.setLogs];
+    this.volumeLandmarks = [...fx.volumeLandmarks];
+    this.protocolItems = [...fx.protocolItems];
+    this.doseLogs = [...fx.doseLogs];
+    this.labPanels = [...fx.labPanels];
+    this.labResults = [...fx.labResults];
+    this.assessments = [...fx.assessments];
+    this.intentions = [...fx.intentions];
+    this.reflections = [...fx.reflections];
     this.users = fx.users.map((u) => ({
       ...u,
       modeMut: u.mode,
@@ -337,6 +403,82 @@ export class DemoDb {
     const trimmed = message.trim().slice(0, 200);
     if (!trimmed) return;
     this.feedRows.push({ userSlug: slug, name: user.name, message: trimmed, at: Date.now() });
+    this.bump();
+  }
+
+  /* ===== Domain slices — views and mutations live in ./demo/<domain>.ts,
+     mirroring the matching convex/tm/<domain>.ts handlers. ===== */
+
+  fuel(slug: string, date: string): FuelData {
+    return fuel.view(this, slug, date);
+  }
+  train(slug: string, date: string): TrainData {
+    return train.view(this, slug, date);
+  }
+  stack(slug: string, date: string): StackData {
+    return stack.view(this, slug, date);
+  }
+  labsView(slug: string, date: string): LabsData {
+    return labsView.view(this, slug, date);
+  }
+  mind(slug: string, date: string): MindData {
+    return mind.view(this, slug, date);
+  }
+
+  logFood(slug: string, date: string, slot: MealSlot, foodKey: string, grams: number) {
+    fuel.logFood(this, slug, date, slot, foodKey, grams);
+    this.bump();
+  }
+  setFoodEaten(entryId: string, eaten: boolean) {
+    fuel.setFoodEaten(this, entryId, eaten);
+    this.bump();
+  }
+  removeFood(entryId: string) {
+    fuel.removeFood(this, entryId);
+    this.bump();
+  }
+  generateMealPlan(slug: string, date: string) {
+    fuel.generatePlan(this, slug, date);
+    this.bump();
+  }
+
+  logSet(slug: string, date: string, exercise: string, setIndex: number, weightKg: number, reps: number, rir: number) {
+    train.logSet(this, slug, date, exercise, setIndex, weightKg, reps, rir);
+    this.bump();
+  }
+  startMesocycle(slug: string, date: string, goal: "hypertrophy" | "strength" | "recomp") {
+    train.startMesocycle(this, slug, date, goal);
+    this.bump();
+  }
+
+  logDose(slug: string, date: string, itemId: string, timing: string, taken: boolean, site?: string) {
+    stack.logDose(this, slug, date, itemId, timing, taken, site);
+    this.bump();
+  }
+  setStackItemActive(itemId: string, active: boolean) {
+    stack.setItemActive(this, itemId, active);
+    this.bump();
+  }
+
+  addLabPanel(slug: string, date: string, name: string, results: LabResultInput[], fasted?: boolean) {
+    labsView.addPanel(this, slug, date, name, results, fasted);
+    this.bump();
+  }
+
+  submitAssessment(slug: string, date: string, instrument: string, answers: number[]) {
+    mind.submitAssessment(this, slug, date, instrument, answers);
+    this.bump();
+  }
+  addIntention(slug: string, date: string, trigger: string, action: string) {
+    mind.addIntention(this, slug, date, trigger, action);
+    this.bump();
+  }
+  markIntentionWin(intentionId: string) {
+    mind.markIntentionWin(this, intentionId);
+    this.bump();
+  }
+  saveReflection(slug: string, date: string, prompt: string, response: string, win?: string) {
+    mind.saveReflection(this, slug, date, prompt, response, win);
     this.bump();
   }
 }

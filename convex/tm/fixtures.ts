@@ -1,4 +1,9 @@
 import { MODE_CHECKS, addDays, type TmMode } from "./lib";
+import { buildFuelFixtures, type FuelFixtures } from "./fixtures/fuel";
+import { buildTrainFixtures, type TrainFixtures } from "./fixtures/train";
+import { buildStackFixtures, type StackFixtures } from "./fixtures/stack";
+import { buildLabsFixtures, type LabsFixtures } from "./fixtures/labs";
+import { buildMindFixtures, type MindFixtures } from "./fixtures/mind";
 
 /**
  * Deterministic demo dataset for the two crew members, positioned relative to
@@ -57,7 +62,11 @@ export type Fixtures = {
   }[];
   crewFeed: { userSlug: string; message: string }[];
   modeEvents: { userSlug: string; date: string; mode: TmMode; label: string }[];
-};
+} & FuelFixtures &
+  TrainFixtures &
+  StackFixtures &
+  LabsFixtures &
+  MindFixtures;
 
 function wallChecks(userSlug: string, mode: TmMode, endDate: string, wall: number[]): Fixtures["checks"] {
   const keys = MODE_CHECKS[mode].map((c) => c.key);
@@ -245,5 +254,21 @@ export function buildFixtures(today: string): Fixtures {
     { userSlug: "conor", date: conorFloorSince, mode: "survival", label: "ACL rehab — executed as designed" },
   ];
 
-  return { users, days, checks, cravings, lifts, labs, markers, experiments, crewFeed, modeEvents };
+  return {
+    users,
+    days,
+    checks,
+    cravings,
+    lifts,
+    labs,
+    markers,
+    experiments,
+    crewFeed,
+    modeEvents,
+    ...buildFuelFixtures(today),
+    ...buildTrainFixtures(today),
+    ...buildStackFixtures(today),
+    ...buildLabsFixtures(today),
+    ...buildMindFixtures(today),
+  };
 }
