@@ -1,6 +1,7 @@
-// End-to-end click test for /timento against a running dev/prod server in
+// End-to-end click test for the Timento app against a running dev/prod server in
 // demo mode. Pushing a change to this file re-runs the "Deploy verify"
-// workflow, which probes the production URL anonymously. Usage:
+// workflow, which probes the production URL anonymously (probe cadence
+// managed by the deploy session). Usage:
 //   NEXT_PUBLIC_TIMENTO_DEMO=1 npm run dev:frontend  (separate terminal)
 //   node scripts/timento-e2e.mjs [baseUrl] [shotDir]
 import { chromium } from "playwright";
@@ -30,7 +31,7 @@ async function check(name, fn) {
 }
 
 async function login(page, slug, passcode) {
-  await page.goto(`${BASE}/timento`);
+  await page.goto(`${BASE}/`);
   await page.getByRole("button", { name: slug === "liam" ? "Liam" : "Conor", exact: true }).click();
   await page.getByPlaceholder("••••").fill(passcode);
   await page.getByRole("button", { name: /open the file/i }).click();
@@ -55,7 +56,7 @@ for (const [label, viewport] of [
   console.log(`\n=== ${label} ===`);
 
   await check("login screen renders", async () => {
-    await page.goto(`${BASE}/timento`);
+    await page.goto(`${BASE}/`);
     await page.getByText("Who's checking in").waitFor();
     await page.screenshot({ path: `${SHOTS}/${label}-0-login.png`, fullPage: true });
   });
@@ -150,11 +151,11 @@ for (const [label, viewport] of [
   });
 
   await check("why page renders the mechanism explainer", async () => {
-    await page.goto(`${BASE}/timento/why`);
+    await page.goto(`${BASE}/why`);
     await page.getByText(/AVE spiral/i).waitFor();
     await page.getByText(/ghrelin/i).first().waitFor();
     await page.screenshot({ path: `${SHOTS}/${label}-7-why.png`, fullPage: true });
-    await page.goto(`${BASE}/timento`);
+    await page.goto(`${BASE}/`);
   });
 
   await check("logout → conor sees survival file, not liam's data", async () => {
