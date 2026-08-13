@@ -19,6 +19,21 @@ const eslintConfig = defineConfig([
     // Design prototype runtime — not part of the Next.js app.
     "design-reference/**",
   ]),
+  {
+    rules: {
+      // `const { userSlug: _slug, ...row } = doc` is how we drop a field on the
+      // way between the demo store and a view model — the binding is deliberately unused.
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+          ignoreRestSiblings: true,
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

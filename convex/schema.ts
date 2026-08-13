@@ -3,6 +3,13 @@ import { v } from "convex/values";
 
 const tmMode = v.union(v.literal("cut"), v.literal("maintain"), v.literal("survival"));
 
+const mealSlot = v.union(
+  v.literal("breakfast"),
+  v.literal("lunch"),
+  v.literal("dinner"),
+  v.literal("snack"),
+);
+
 export default defineSchema({
   tm_users: defineTable({
     slug: v.string(),
@@ -132,5 +139,192 @@ export default defineSchema({
     date: v.string(),
     mode: tmMode,
     label: v.string(),
+  }).index("by_userId_and_date", ["userId", "date"]),
+
+  /* ===== Fuel — targets, meal plan, intake ===== */
+
+  tm_nutritionTargets: defineTable({
+    userId: v.id("tm_users"),
+    effectiveFrom: v.string(),
+    kcal: v.number(),
+    proteinG: v.number(),
+    carbsG: v.number(),
+    fatG: v.number(),
+    fiberG: v.number(),
+    sodiumMgMax: v.number(),
+    basis: v.union(v.literal("adaptive"), v.literal("manual")),
+  }).index("by_userId", ["userId"]),
+
+  tm_mealEntries: defineTable({
+    userId: v.id("tm_users"),
+    date: v.string(),
+    slot: mealSlot,
+    foodKey: v.string(),
+    grams: v.number(),
+    planned: v.boolean(),
+    eaten: v.boolean(),
+  }).index("by_userId_and_date", ["userId", "date"]),
+
+  /** Weekly adaptive-TDEE estimate: intake vs measured weight slope. */
+  tm_energyEstimates: defineTable({
+    userId: v.id("tm_users"),
+    weekStart: v.string(),
+    tdeeKcal: v.number(),
+    avgIntakeKcal: v.number(),
+    weightSlopeKgPerWeek: v.number(),
+  }).index("by_userId", ["userId"]),
+
+  /* ===== Train — mesocycle, programme, set logs ===== */
+
+  tm_mesocycles: defineTable({
+    userId: v.id("tm_users"),
+    name: v.string(),
+    startDate: v.string(),
+    weeks: v.number(),
+    deloadWeek: v.number(),
+    goal: v.union(v.literal("hypertrophy"), v.literal("strength"), v.literal("recomp")),
+    status: v.union(v.literal("planned"), v.literal("running"), v.literal("done")),
+  }).index("by_userId", ["userId"]),
+
+  tm_programBlocks: defineTable({
+    userId: v.id("tm_users"),
+    mesocycleId: v.id("tm_mesocycles"),
+    weekday: v.number(),
+    dayName: v.string(),
+    exercise: v.string(),
+    muscle: v.string(),
+    sets: v.number(),
+    repLow: v.number(),
+    repHigh: v.number(),
+    rirTarget: v.number(),
+    orderIndex: v.number(),
+  })
+    .index("by_userId_and_weekday", ["userId", "weekday"])
+    .index("by_mesocycleId", ["mesocycleId"]),
+
+  tm_setLogs: defineTable({
+    userId: v.id("tm_users"),
+    date: v.string(),
+    exercise: v.string(),
+    setIndex: v.number(),
+    weightKg: v.number(),
+    reps: v.number(),
+    rir: v.number(),
+  })
+    .index("by_userId_and_date", ["userId", "date"])
+    .index("by_userId_and_exercise", ["userId", "exercise"]),
+
+  tm_volumeLandmarks: defineTable({
+    userId: v.id("tm_users"),
+    muscle: v.string(),
+    mev: v.number(),
+    mav: v.number(),
+    mrv: v.number(),
+  }).index("by_userId", ["userId"]),
+
+  /* ===== Stack — meds, peptides, supplements ===== */
+
+  tm_protocolItems: defineTable({
+    userId: v.id("tm_users"),
+    name: v.string(),
+    kind: v.union(v.literal("med"), v.literal("peptide"), v.literal("supplement")),
+    dose: v.number(),
+    unit: v.string(),
+    route: v.union(
+      v.literal("oral"),
+      v.literal("subcut"),
+      v.literal("intramuscular"),
+      v.literal("topical"),
+      v.literal("nasal"),
+    ),
+    timings: v.array(v.string()),
+    scheduleType: v.union(
+      v.literal("daily"),
+      v.literal("weekdays"),
+      v.literal("interval"),
+      v.literal("cycle"),
+    ),
+    weekdays: v.optional(v.array(v.number())),
+    intervalDays: v.optional(v.number()),
+    cycleOnWeeks: v.optional(v.number()),
+    cycleOffWeeks: v.optional(v.number()),
+    startDate: v.string(),
+    endDate: v.optional(v.string()),
+    withFood: v.boolean(),
+    evidence: v.union(
+      v.literal("strong"),
+      v.literal("moderate"),
+      v.literal("limited"),
+      v.literal("anecdotal"),
+    ),
+    cautions: v.array(v.string()),
+    note: v.optional(v.string()),
+    /** Peptide reconstitution: vial strength, diluent volume, syringe graduation. */
+    recon: v.optional(
+      v.object({ vialMg: v.number(), bacMl: v.number(), syringeUnitsPerMl: v.number() }),
+    ),
+    active: v.boolean(),
+  }).index("by_userId", ["userId"]),
+
+  tm_doseLogs: defineTable({
+    userId: v.id("tm_users"),
+    date: v.string(),
+    itemId: v.id("tm_protocolItems"),
+    timing: v.string(),
+    taken: v.boolean(),
+    site: v.optional(v.string()),
+  }).index("by_userId_and_date", ["userId", "date"]),
+
+  /* ===== Labs — panels and results ===== */
+
+  tm_labPanels: defineTable({
+    userId: v.id("tm_users"),
+    date: v.string(),
+    name: v.string(),
+    lab: v.optional(v.string()),
+    fasted: v.optional(v.boolean()),
+  }).index("by_userId", ["userId"]),
+
+  tm_labResults: defineTable({
+    userId: v.id("tm_users"),
+    panelId: v.id("tm_labPanels"),
+    date: v.string(),
+    marker: v.string(),
+    value: v.number(),
+    unit: v.string(),
+    refLow: v.optional(v.number()),
+    refHigh: v.optional(v.number()),
+  })
+    .index("by_userId_and_marker", ["userId", "marker"])
+    .index("by_panelId", ["panelId"]),
+
+  /* ===== Mind — validated instruments, intentions, reflections ===== */
+
+  tm_assessments: defineTable({
+    userId: v.id("tm_users"),
+    date: v.string(),
+    instrument: v.string(),
+    answers: v.array(v.number()),
+    score: v.number(),
+    band: v.string(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_and_instrument", ["userId", "instrument"]),
+
+  tm_intentions: defineTable({
+    userId: v.id("tm_users"),
+    trigger: v.string(),
+    action: v.string(),
+    active: v.boolean(),
+    createdDate: v.string(),
+    wins: v.number(),
+  }).index("by_userId", ["userId"]),
+
+  tm_reflections: defineTable({
+    userId: v.id("tm_users"),
+    date: v.string(),
+    prompt: v.string(),
+    response: v.string(),
+    win: v.optional(v.string()),
   }).index("by_userId_and_date", ["userId", "date"]),
 });

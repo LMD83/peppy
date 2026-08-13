@@ -34,9 +34,17 @@ jobs:
           base="${{ github.event.inputs.url || 'https://peppy-liams-projects-eb2f3bfa.vercel.app' }}"
           echo "base=$base" >> "$GITHUB_ENV"
           for path in / /why; do
-            code=$(curl -sL -o /tmp/page.html -w '%{http_code}' "$base$path")
+            code=$(curl -sL -o /tmp/page.html -D /tmp/head.txt -w '%{http_code}' "$base$path")
             echo "== $path -> $code"; head -c 300 /tmp/page.html; echo; echo
-            test "$code" = "200" || { echo "::error::$path returned $code"; exit 1; }
+            if [ "$code" != "200" ]; then
+              # Vercel names the failure class in its own headers — without them a
+              # 500 here is indistinguishable from a bad build, a crashed function
+              # and a missing deployment.
+              echo "--- response headers"
+              grep -iE '^(x-vercel-error|x-vercel-id|x-vercel-cache|server|location|age):' /tmp/head.txt || cat /tmp/head.txt
+              echo "::error::$path returned $code"
+              exit 1
+            fi
           done
           # Real app markup, not Vercel's SSO interstitial.
           curl -sL "$base/" | grep -qi "performance file" || { echo "::error::/ serving non-app HTML (deployment protection?)"; exit 1; }

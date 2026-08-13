@@ -36,6 +36,15 @@ async function login(page, slug, passcode) {
   await page.getByPlaceholder("••••").fill(passcode);
   await page.getByRole("button", { name: /open the file/i }).click();
   await page.getByRole("heading", { level: 1 }).waitFor();
+  // The Next dev-tools badge overlaps the leftmost nav button at 390px — dev-only chrome.
+  await page.evaluate(() => document.querySelector("nextjs-portal")?.remove());
+}
+
+/** Bottom-nav tab, then an optional second-level tab inside it. */
+async function goTab(page, tab, sub) {
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.getByRole("button", { name: tab, exact: true }).click();
+  if (sub) await page.getByRole("tab", { name: sub, exact: true }).click();
 }
 
 const browser = await chromium.launch({ executablePath }).catch(() => chromium.launch());
@@ -77,13 +86,10 @@ for (const [label, viewport] of [
     await steps.click(); // leave state as seeded
   });
 
-  await check("session card shows +2.5 kg overload flag on pull day (if today is Thu)", async () => {
-    const flag = page.getByText("+2.5 kg →");
-    const sessionCard = page.getByText(/Session — /i);
-    if (await sessionCard.count()) {
-      // flag only present on pull/full-body days that include barbell row
-      void (await flag.count());
-    }
+  await check("today surfaces each slice's compact card", async () => {
+    await page.getByText(/kcal left|energy/i).first().waitFor();
+    await page.getByText(/doses|due/i).first().waitFor();
+    await page.getByText(/sets|rest day|floor/i).first().waitFor();
   });
 
   await check("craving flow: tired → relief → rode it out → breathing timer", async () => {
@@ -95,8 +101,90 @@ for (const [label, viewport] of [
     await page.getByRole("button", { name: /done early/i }).click();
   });
 
+  await check("fuel: macro targets, adaptive energy, plan and food picker", async () => {
+    await goTab(page, "Fuel");
+    await page.getByText(/kcal left/i).first().waitFor();
+    await page.getByText(/protein/i).first().waitFor();
+    await page.getByText(/energy out/i).first().waitFor();
+    await page.getByText(/adaptive|estimated/i).first().waitFor();
+    await page.getByRole("button", { name: /generate day/i }).waitFor();
+    await page.screenshot({ path: `${SHOTS}/${label}-9-fuel.png`, fullPage: true });
+  });
+
+  await check("fuel: tapping a planned row marks it eaten", async () => {
+    const row = page.getByRole("button", { name: /·\s?\d+(\.\d+)?p\s?[–—-]/ }).first();
+    if (!(await row.count())) return; // everything already eaten today
+    await row.click();
+    await page.waitForTimeout(200);
+  });
+
+  await check("train: mesocycle week, suggested load with a reason, volume landmarks", async () => {
+    await goTab(page, "Train");
+    await page.getByText(/hypertrophy|strength|recomp|floor/i).first().waitFor();
+    await page.getByText(/weekly hard sets|movement only/i).first().waitFor();
+    await page.screenshot({ path: `${SHOTS}/${label}-10-train.png`, fullPage: true });
+  });
+
+  await check("train: logging a set records it against the block", async () => {
+    const logBtn = page.getByRole("button", { name: /log set 1/i }).first();
+    if (!(await logBtn.count())) return; // rest day
+    const before = await page.getByText(/0\/\d+ sets/i).count();
+    await logBtn.click();
+    await page.waitForTimeout(250);
+    const after = await page.getByText(/0\/\d+ sets/i).count();
+    if (after > before) throw new Error("logging a set did not advance the session count");
+  });
+
+  await check("stack: due doses, cycle phase, evidence tiers, reconstitution maths", async () => {
+    await goTab(page, "Body", "Stack");
+    await page.getByText(/due today/i).first().waitFor();
+    await page.getByText(/reconstitution/i).first().waitFor();
+    await page.getByText(/syringe units/i).first().waitFor();
+    await page.getByText(/strong|moderate|limited|anecdotal/i).first().waitFor();
+    await page.getByText(/not a prescriber|clinical decisions/i).first().waitFor();
+    await page.screenshot({ path: `${SHOTS}/${label}-11-stack.png`, fullPage: true });
+  });
+
+  await check("stack: taking a dose moves the taken count", async () => {
+    const before = await page.getByText(/\d+\/\d+ taken/i).first().textContent();
+    const dose = page.getByRole("button", { name: /creatine|vitamin d3|omega-3|magnesium/i }).first();
+    if (!(await dose.count())) return;
+    await dose.click();
+    await page.waitForTimeout(250);
+    const after = await page.getByText(/\d+\/\d+ taken/i).first().textContent();
+    if (before === after) throw new Error(`taken count unchanged after logging a dose (${before})`);
+  });
+
+  await check("bloods: out-of-range first, ranges, deltas, rechecks, add-panel templates", async () => {
+    await goTab(page, "Body", "Bloods");
+    await page.getByText(/latest panel/i).first().waitFor();
+    await page.getByText(/outside range/i).first().waitFor();
+    await page.getByText(/add a panel/i).first().waitFor();
+    await page.getByText(/lipid panel/i).first().waitFor();
+    await page.screenshot({ path: `${SHOTS}/${label}-12-bloods.png`, fullPage: true });
+  });
+
+  await check("mind: encouragement, due instruments, if-then plans, reflection", async () => {
+    await goTab(page, "Mind", "Check-in");
+    await page.getByText(/check-ins due/i).first().waitFor();
+    await page.getByText(/if\s*[–—-]\s*then plans|if — then/i).first().waitFor();
+    await page.getByText(/tracked, correlated|never diagnosed/i).first().waitFor();
+    await page.getByText(/reflection/i).first().waitFor();
+    await page.screenshot({ path: `${SHOTS}/${label}-13-mind.png`, fullPage: true });
+  });
+
+  await check("mind: a due check-in opens its questionnaire", async () => {
+    const open = page.getByRole("button", { name: /^open$/i }).first();
+    if (!(await open.count())) return;
+    await open.click();
+    await page.waitForTimeout(300);
+    const radios = await page.getByRole("radio").count();
+    const chips = await page.getByRole("button", { name: /not at all|several days|never|rarely/i }).count();
+    if (radios === 0 && chips === 0) throw new Error("questionnaire did not open");
+  });
+
   await check("crew tab: partner card + nudge lands in feed", async () => {
-    await page.getByRole("button", { name: "Crew" }).click();
+    await goTab(page, "Crew");
     await page.getByText("Conor").first().waitFor();
     const shared = await page.getByLabel("Crew feed").textContent();
     await page.getByRole("button", { name: "Floor's holding" }).click();
@@ -115,7 +203,7 @@ for (const [label, viewport] of [
   });
 
   await check("progress tab: mass chart + ceiling + wall", async () => {
-    await page.getByRole("button", { name: "Progress" }).click();
+    await goTab(page, "Body", "Trend");
     await page.getByRole("img", { name: /Mass chart/i }).waitFor();
     await page.getByText("survival ceiling").first().waitFor();
     await page.getByRole("img", { name: /consistency wall/i }).waitFor();
@@ -123,7 +211,7 @@ for (const [label, viewport] of [
   });
 
   await check("research tab: trigger map, engine read-out, experiments, disputed markers", async () => {
-    await page.getByRole("button", { name: "Research" }).click();
+    await goTab(page, "Mind", "Craving");
     await page.getByText(/trigger map/i).first().waitFor();
     await page.getByText(/depletion-dominant/i).waitFor();
     await page.getByText("E1 · Caffeine curfew 14:00").waitFor();
@@ -133,10 +221,7 @@ for (const [label, viewport] of [
   });
 
   await check("mode switch to survival: 3 checks, amber, executed-decision feed line", async () => {
-    // The Next dev-tools badge overlaps the leftmost nav button at 390px — dev-only chrome.
-    await page.evaluate(() => document.querySelector("nextjs-portal")?.remove());
-    await page.getByRole("button", { name: "Today" }).click();
-    await page.evaluate(() => window.scrollTo(0, 0));
+    await goTab(page, "Today");
     await page.getByRole("button", { name: /cut mode ⇄/i }).click();
     await page.getByRole("dialog").getByRole("button", { name: /survival/i }).click();
     await page.getByText(/Floor protocol — hold/i).waitFor();

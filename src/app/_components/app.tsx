@@ -9,19 +9,72 @@ import { TodayTab } from "./today-tab";
 import { CrewTab } from "./crew-tab";
 import { ProgressTab } from "./progress-tab";
 import { ResearchTab } from "./research-tab";
+import { FuelTab } from "./fuel-tab";
+import { TrainTab } from "./train-tab";
+import { StackTab } from "./stack-tab";
+import { LabsTab } from "./labs-tab";
+import { MindTab } from "./mind-tab";
 
 const TABS = [
   { id: "today", label: "Today" },
+  { id: "fuel", label: "Fuel" },
+  { id: "train", label: "Train" },
+  { id: "body", label: "Body" },
+  { id: "mind", label: "Mind" },
   { id: "crew", label: "Crew" },
-  { id: "progress", label: "Progress" },
-  { id: "research", label: "Research" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
 
+/* Second-level views, so the bottom bar stays at six thumb-sized targets. */
+const SUB: Partial<Record<TabId, { id: string; label: string }[]>> = {
+  body: [
+    { id: "stack", label: "Stack" },
+    { id: "labs", label: "Bloods" },
+    { id: "trend", label: "Trend" },
+  ],
+  mind: [
+    { id: "checkin", label: "Check-in" },
+    { id: "craving", label: "Craving" },
+  ],
+};
+
+function SubNav({
+  items,
+  value,
+  onChange,
+}: {
+  items: { id: string; label: string }[];
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  return (
+    <div className="mb-3 flex gap-1.5" role="tablist">
+      {items.map((s) => (
+        <button
+          key={s.id}
+          role="tab"
+          aria-selected={value === s.id}
+          onClick={() => onChange(s.id)}
+          className={cn(
+            "cursor-pointer rounded-[8px] border px-3 py-1.5 font-tm-mono text-[10px] tracking-[0.12em] uppercase",
+            value === s.id
+              ? "border-tm-ink bg-tm-ink text-white"
+              : "border-tm-rule bg-tm-panel text-tm-dim",
+          )}
+        >
+          {s.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function Shell() {
   const { session, authReady, today, actions } = useTimento();
   const [tab, setTab] = useState<TabId>("today");
+  const [bodyView, setBodyView] = useState("stack");
+  const [mindView, setMindView] = useState("checkin");
 
   if (!authReady) return <div className="min-h-screen bg-tm-paper" aria-busy="true" />;
   if (!session) return <Login />;
@@ -34,15 +87,24 @@ function Shell() {
 
   const survival = today.user.mode === "survival";
   const accent = survival ? "bg-tm-amber" : "bg-tm-green";
+  const subItems = SUB[tab];
+  const subValue = tab === "body" ? bodyView : mindView;
+  const setSub = tab === "body" ? setBodyView : setMindView;
 
   return (
     <div className="min-h-screen pb-[84px]">
       <Scoreboard />
       <main className="mx-auto max-w-md px-4">
+        {subItems && <SubNav items={subItems} value={subValue} onChange={setSub} />}
         {tab === "today" && <TodayTab />}
+        {tab === "fuel" && <FuelTab />}
+        {tab === "train" && <TrainTab />}
+        {tab === "body" && bodyView === "stack" && <StackTab />}
+        {tab === "body" && bodyView === "labs" && <LabsTab />}
+        {tab === "body" && bodyView === "trend" && <ProgressTab />}
+        {tab === "mind" && mindView === "checkin" && <MindTab />}
+        {tab === "mind" && mindView === "craving" && <ResearchTab />}
         {tab === "crew" && <CrewTab />}
-        {tab === "progress" && <ProgressTab />}
-        {tab === "research" && <ResearchTab />}
       </main>
       <nav className="fixed inset-x-0 bottom-0 border-t border-tm-rule bg-tm-panel" aria-label="Sections">
         <div className="mx-auto flex max-w-md">
@@ -52,20 +114,20 @@ function Shell() {
               onClick={() => setTab(t.id)}
               aria-current={tab === t.id ? "page" : undefined}
               className={cn(
-                "flex-1 cursor-pointer pt-3.5 pb-4 font-tm-mono text-[10px] tracking-[0.12em] uppercase",
+                "flex-1 cursor-pointer pt-3.5 pb-4 font-tm-mono text-[9.5px] tracking-[0.08em] uppercase",
                 tab === t.id ? "text-tm-ink" : "text-tm-dim",
               )}
             >
-              <span className={cn("mx-auto mb-1.5 block h-[3px] w-8 rounded-full", tab === t.id ? accent : "bg-transparent")} />
+              <span className={cn("mx-auto mb-1.5 block h-[3px] w-6 rounded-full", tab === t.id ? accent : "bg-transparent")} />
               {t.label}
             </button>
           ))}
           <button
             onClick={() => actions.logout()}
-            className="cursor-pointer px-3 pt-3.5 pb-4 font-tm-mono text-[10px] tracking-[0.12em] text-tm-dim uppercase"
+            className="cursor-pointer px-2.5 pt-3.5 pb-4 font-tm-mono text-[9.5px] tracking-[0.08em] text-tm-dim uppercase"
             aria-label="Sign out"
           >
-            <span className="mx-auto mb-1.5 block h-[3px] w-8" />
+            <span className="mx-auto mb-1.5 block h-[3px] w-6" />
             Out
           </button>
         </div>

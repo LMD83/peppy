@@ -6,6 +6,11 @@ export type CrewData = FunctionReturnType<typeof api.tm.crew.board>;
 export type FeedData = FunctionReturnType<typeof api.tm.crew.feed>;
 export type ProgressData = FunctionReturnType<typeof api.tm.progress.get>;
 export type ResearchData = FunctionReturnType<typeof api.tm.research.get>;
+export type FuelData = FunctionReturnType<typeof api.tm.fuel.get>;
+export type TrainData = FunctionReturnType<typeof api.tm.train.get>;
+export type StackData = FunctionReturnType<typeof api.tm.stack.get>;
+export type LabsData = FunctionReturnType<typeof api.tm.labs.get>;
+export type MindData = FunctionReturnType<typeof api.tm.mind.get>;
 
 export type TmSession = { token: string; slug: string; name: string };
 
@@ -17,6 +22,10 @@ export type CravingEntry = {
   action?: "rode" | "substitute" | "ate";
 };
 
+export type MealSlot = "breakfast" | "lunch" | "dinner" | "snack";
+
+export type LabResultInput = { marker: string; value: number; unit: string };
+
 export type TimentoActions = {
   login: (slug: string, passcode: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => void;
@@ -27,6 +36,29 @@ export type TimentoActions = {
   logCraving: (entry: CravingEntry) => void;
   setMode: (mode: "cut" | "maintain" | "survival", reason?: string, reviewDate?: string) => void;
   nudge: (message: string) => void;
+
+  /* fuel */
+  logFood: (slot: MealSlot, foodKey: string, grams: number) => void;
+  setFoodEaten: (entryId: string, eaten: boolean) => void;
+  removeFood: (entryId: string) => void;
+  generateMealPlan: () => void;
+
+  /* train */
+  logSet: (exercise: string, setIndex: number, weightKg: number, reps: number, rir: number) => void;
+  startMesocycle: (goal: "hypertrophy" | "strength" | "recomp") => void;
+
+  /* stack */
+  logDose: (itemId: string, timing: string, taken: boolean, site?: string) => void;
+  setStackItemActive: (itemId: string, active: boolean) => void;
+
+  /* labs */
+  addLabPanel: (name: string, results: LabResultInput[], fasted?: boolean) => void;
+
+  /* mind */
+  submitAssessment: (instrument: string, answers: number[]) => void;
+  addIntention: (trigger: string, action: string) => void;
+  markIntentionWin: (intentionId: string) => void;
+  saveReflection: (prompt: string, response: string, win?: string) => void;
 };
 
 export type TimentoState = {
@@ -39,6 +71,11 @@ export type TimentoState = {
   feed: FeedData | undefined;
   progress: ProgressData | undefined;
   research: ResearchData | undefined;
+  fuel: FuelData | undefined;
+  train: TrainData | undefined;
+  stack: StackData | undefined;
+  labs: LabsData | undefined;
+  mind: MindData | undefined;
   actions: TimentoActions;
 };
 
