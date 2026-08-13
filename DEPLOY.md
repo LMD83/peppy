@@ -15,10 +15,22 @@ owner can mint).
   real app HTML (confirmed by a `deploy-verify` probe on 2026-08-13). It was
   previously behind Vercel Authentication, which is why earlier smoke runs saw
   the login interstitial.
-- **Production is serving a stale build**: the last deploy predates the move of
-  Timento to the site root, so `/` still renders the old storefront and `/why`
-  404s. Deploys here are manual file-tree uploads — the project has no Git
-  integration — so nothing redeploys on push or on merge.
+- **Production is serving a stale build, and it now returns 500.** As of
+  2026-08-13 the deployment answers `/` with a Next.js error page
+  (`id="__next_error__"`) and *no* `x-vercel-error` header, which rules out a
+  platform fault: the function ran and the application threw during server
+  render. Every probe since has reported the same deployment id
+  (`dpl_F7eMzNNvZUe7S2zAUqydt8u3kpbY`), so **nothing has been redeployed** —
+  deploys here are manual file-tree uploads and the project has no Git
+  integration, so neither a push nor a merge to `master` changes what is live.
+- The most likely cause was reproduced locally: with `NEXT_PUBLIC_TIMENTO_DEMO`
+  unset (or not `1`) and `NEXT_PUBLIC_CONVEX_URL` holding a placeholder or
+  otherwise unusable value, `new ConvexReactClient(url)` throws inside render
+  and `next build` exits with `Export encountered an error on /page: /`.
+  `src/app/_lib/backend.tsx` now validates the endpoint first and falls back to
+  the demo backend instead of taking the site down — but **that fix only helps
+  once something redeploys.** Setting `NEXT_PUBLIC_TIMENTO_DEMO=1` in the Vercel
+  project's environment variables fixes the same failure without a code change.
 - The Claude Vercel connector cannot see project `peppy` (it isn't in the
   connector's granted project list — `get_project` returns 404), and this
   container holds no Vercel token, so redeploys cannot be driven from a
