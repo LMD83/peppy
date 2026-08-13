@@ -1,70 +1,47 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Archivo_Black, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
-import { SiteHeader } from "@/components/site-header";
-import { SiteFooter } from "@/components/site-footer";
-import { Providers } from "@/components/providers";
-import { Analytics } from "@/components/analytics";
-import { CookieConsent } from "@/components/cookie-consent";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const disp = Archivo_Black({
+  weight: "400",
   subsets: ["latin"],
+  variable: "--font-tm-disp-var",
+  display: "swap",
 });
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const mono = IBM_Plex_Mono({
+  weight: ["400", "500"],
   subsets: ["latin"],
+  variable: "--font-tm-mono-var",
+  display: "swap",
+});
+const sans = IBM_Plex_Sans({
+  weight: ["400", "500", "600"],
+  subsets: ["latin"],
+  variable: "--font-tm-sans-var",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://peppy.ie"),
   title: {
-    default: "Peppy | Irish-Made Sports Nutrition, Informed-Sport Tested",
-    template: "%s | Peppy",
+    default: "Timento — performance file",
+    template: "%s | Timento",
   },
-  description:
-    "Irish-made sports nutrition delivered next-day across Ireland. Informed-Sport tested protein, creatine and pre-workout at honest, transparent prices. No customs, no waiting.",
-  keywords: [
-    "sports nutrition Ireland",
-    "protein powder Ireland",
-    "whey protein Ireland",
-    "creatine Ireland",
-    "pre workout Ireland",
-    "Informed Sport",
-  ],
-  openGraph: {
-    type: "website",
-    locale: "en_IE",
-    siteName: "Peppy",
-    title: "Peppy | Irish-Made Sports Nutrition",
-    description:
-      "Informed-Sport tested protein, creatine and pre-workout. Next-day delivery across Ireland.",
-  },
-  robots: { index: true, follow: true },
-  verification: process.env.GOOGLE_SITE_VERIFICATION
-    ? { google: process.env.GOOGLE_SITE_VERIFICATION }
-    : undefined,
+  description: "Two-person performance file: checks, modes, experiments, evidence.",
+  manifest: "/manifest.webmanifest",
+  icons: { icon: "/icon-192.png", apple: "/icon-192.png" },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#15171c",
+};
+
+export default function TimentoLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html
-      lang="en-IE"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">
-        <Providers>
-          <SiteHeader />
-          <main className="flex-1">{children}</main>
-          <SiteFooter />
-          <Analytics />
-          <CookieConsent />
-        </Providers>
+    <html lang="en-IE" className={`${disp.variable} ${mono.variable} ${sans.variable}`}>
+      <body className="min-h-screen bg-tm-paper font-tm-sans text-tm-ink antialiased">
+        {children}
       </body>
     </html>
   );

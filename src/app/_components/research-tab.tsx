@@ -1,0 +1,129 @@
+"use client";
+
+import { cn } from "@/lib/utils";
+import { useTimento } from "../_lib/backend";
+import { Card, Eyebrow } from "./ui";
+import { TriggerMap } from "./charts";
+
+const ENGINE_COPY: Record<string, string> = {
+  depletion: "Engine read-out: depletion-dominant. The fix is upstream — sleep and the caffeine curfew, not willpower at 21:30.",
+  emotion: "Engine read-out: emotion-dominant. The fix is naming the feeling and the substitute ritual, not a stricter plan.",
+  cue: "Engine read-out: cue-dominant. The fix is environment design — remove the cue, close the kitchen.",
+  mixed: "Engine read-out: mixed. Keep logging — the dominant channel usually declares itself by week three.",
+  insufficient: "Not enough logs yet for a read-out. Two taps per urge; the map does the rest.",
+};
+
+const STATUS_STYLE: Record<string, string> = {
+  running: "border-tm-green text-tm-green",
+  supported: "border-tm-green text-tm-green",
+  queued: "border-tm-dim text-tm-dim",
+  refuted: "border-tm-red text-tm-red",
+  unclear: "border-tm-yellow text-tm-yellow",
+};
+
+export function ResearchTab() {
+  const { research } = useTimento();
+  if (!research) return null;
+
+  return (
+    <div className="flex flex-col gap-3 pt-4">
+      <Card>
+        <Eyebrow color="bg-tm-red">Your trigger map — 14 days of craving logs</Eyebrow>
+        <TriggerMap triggerMap={research.triggerMap} />
+        {research.peak && (
+          <p className="mt-2 text-[12.5px]">
+            <b>Finding:</b> {research.peak.fromHour}:00–{research.peak.fromHour + 1}:00, trigger ={" "}
+            {research.peak.signal} ({research.peak.share}%). The enemy has a schedule. So does the
+            defence: 20:15 ritual + 20:30 close.
+          </p>
+        )}
+        <p className="mt-1.5 font-tm-mono text-[10.5px] text-tm-dim">{ENGINE_COPY[research.engine]}</p>
+      </Card>
+
+      <Card>
+        <Eyebrow color="bg-tm-yellow">Experiments — n=1 ×2</Eyebrow>
+        <ul>
+          {research.experiments.map((e) => (
+            <li key={e.code} className="border-b border-tm-grid py-2.5 last:border-0">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[13px] font-medium">
+                  {e.code} · {e.name}
+                </span>
+                <span className={cn("shrink-0 rounded border px-1.5 py-0.5 font-tm-mono text-[9px] uppercase", STATUS_STYLE[e.status])}>
+                  {e.status}
+                </span>
+              </div>
+              <p className="font-tm-mono text-[10px] text-tm-dim">{e.note ?? e.metric}</p>
+            </li>
+          ))}
+        </ul>
+      </Card>
+
+      <Card>
+        <Eyebrow color="bg-tm-yellow">Disputed markers — pending functional test</Eyebrow>
+        <ul>
+          {research.markers
+            .filter((m) => m.status === "disputed")
+            .map((m) => (
+              <li key={m.gene} className="border-b border-tm-grid py-2 opacity-75 last:border-0">
+                <div className="flex justify-between gap-2">
+                  <span className="font-tm-mono text-[12px] font-medium">{m.gene}</span>
+                  <span className="shrink-0 font-tm-mono text-[9.5px] text-tm-yellow">resolves: {m.resolvesVia}</span>
+                </div>
+                <p className="font-tm-mono text-[10px] text-tm-dim">
+                  CSV: {m.csvCall} · report: {m.reportCall}
+                </p>
+              </li>
+            ))}
+        </ul>
+        {research.markers.some((m) => m.status === "confirmed") && (
+          <details className="mt-2">
+            <summary className="cursor-pointer font-tm-mono text-[10px] tracking-[0.12em] text-tm-dim uppercase">
+              Confirmed markers
+            </summary>
+            <ul className="mt-1">
+              {research.markers
+                .filter((m) => m.status === "confirmed")
+                .map((m) => (
+                  <li key={m.gene} className="flex justify-between py-1 font-tm-mono text-[10.5px]">
+                    <span>{m.gene} {m.reportCall}</span>
+                    <span className="text-tm-dim">{m.resolvesVia}</span>
+                  </li>
+                ))}
+            </ul>
+          </details>
+        )}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 font-tm-mono text-[10px] text-tm-dim">
+          {research.labs
+            .filter((l) => l.recheckInDays !== null)
+            .map((l) => (
+              <span key={l.marker}>
+                {l.marker} recheck in <b className="text-tm-ink">{l.recheckInDays} days</b>
+                {l.note ? ` · ${l.note.split(".")[0]}` : ""}
+              </span>
+            ))}
+          <span>PER3 winter layer arms 1 Oct</span>
+        </div>
+      </Card>
+
+      <Card>
+        <Eyebrow color="bg-tm-yellow">Labs — owner-only</Eyebrow>
+        {research.labs.length === 0 ? (
+          <p className="text-[12.5px] text-tm-dim">No labs on file. Only you can ever see this panel — the crew board never carries it.</p>
+        ) : (
+          <ul>
+            {research.labs.map((l) => (
+              <li key={`${l.marker}-${l.date}`} className="flex items-baseline justify-between border-b border-tm-grid py-2 last:border-0">
+                <span className="text-[13px] font-medium">{l.marker}</span>
+                <span className="font-tm-mono text-[11px]">
+                  {l.value} <span className="text-tm-dim">{l.unit} · {l.date}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="mt-2 font-tm-mono text-[10px] text-tm-dim">Sat fat under 15 g stays lever #1 for the LDL line.</p>
+      </Card>
+    </div>
+  );
+}
