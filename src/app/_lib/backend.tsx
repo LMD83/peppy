@@ -14,8 +14,27 @@ import {
 } from "./types";
 
 const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL;
-const DEMO = process.env.NEXT_PUBLIC_TIMENTO_DEMO === "1" || !CONVEX_URL;
 const SESSION_KEY = "timento.session";
+
+/**
+ * A deployment env var is the one input we cannot test before it reaches
+ * production. `new ConvexReactClient(bad)` throws inside render, and a throw in
+ * render is a 500 on the very first paint — the whole app, not one card. A
+ * malformed backend URL must degrade to the demo backend instead: the file
+ * still opens, and the misconfiguration is visible rather than fatal.
+ */
+function usableConvexUrl(raw: string | undefined): string | null {
+  if (!raw) return null;
+  try {
+    const url = new URL(raw.trim());
+    return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+const CONVEX_ENDPOINT = usableConvexUrl(CONVEX_URL);
+const DEMO = process.env.NEXT_PUBLIC_TIMENTO_DEMO === "1" || !CONVEX_ENDPOINT;
 
 const TimentoContext = createContext<TimentoState | null>(null);
 
@@ -179,8 +198,15 @@ function DemoBackend({ children }: { children: React.ReactNode }) {
 /* ===== Convex backend ===== */
 
 let convexClient: ConvexReactClient | null = null;
-function getConvexClient(): ConvexReactClient {
-  if (!convexClient) convexClient = new ConvexReactClient(CONVEX_URL as string);
+function getConvexClient(): ConvexReactClient | null {
+  if (!CONVEX_ENDPOINT) return null;
+  if (!convexClient) {
+    try {
+      convexClient = new ConvexReactClient(CONVEX_ENDPOINT);
+    } catch {
+      return null;
+    }
+  }
   return convexClient;
 }
 
@@ -327,8 +353,10 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
 }
 
 function ConvexBackend({ children }: { children: React.ReactNode }) {
+  const client = getConvexClient();
+  if (!client) return <DemoBackend>{children}</DemoBackend>;
   return (
-    <ConvexProvider client={getConvexClient()}>
+    <ConvexProvider client={client}>
       <ConvexBackendInner>{children}</ConvexBackendInner>
     </ConvexProvider>
   );
