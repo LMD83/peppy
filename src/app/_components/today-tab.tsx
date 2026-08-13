@@ -91,7 +91,7 @@ export function TodayTab() {
       )}
 
       <p className="pb-2 text-center">
-        <Link href="/timento/why" className="font-tm-mono text-[10px] tracking-[0.12em] text-tm-dim underline uppercase">
+        <Link href="/why" className="font-tm-mono text-[10px] tracking-[0.12em] text-tm-dim underline uppercase">
           Why this design
         </Link>
       </p>

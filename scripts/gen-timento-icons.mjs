@@ -1,4 +1,4 @@
-// Generates public/timento/icon-192.png and icon-512.png from an inline SVG.
+// Generates public/icon-192.png and icon-512.png from an inline SVG.
 // Usage: node scripts/gen-timento-icons.mjs
 import { chromium } from "playwright";
 import { mkdir } from "node:fs/promises";
@@ -16,11 +16,11 @@ const svg = (size) => `<!doctype html><meta charset="utf-8">
 
 const executablePath = process.env.TIMENTO_CHROMIUM ?? "/opt/pw-browsers/chromium";
 const browser = await chromium.launch({ executablePath }).catch(() => chromium.launch());
-await mkdir("public/timento", { recursive: true });
+await mkdir("public", { recursive: true });
 for (const size of [192, 512]) {
   const page = await browser.newPage({ viewport: { width: size, height: size } });
   await page.setContent(svg(size));
-  await page.screenshot({ path: `public/timento/icon-${size}.png`, omitBackground: true });
+  await page.screenshot({ path: `public/icon-${size}.png`, omitBackground: true });
   await page.close();
 }
 await browser.close();

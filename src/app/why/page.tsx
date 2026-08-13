@@ -66,7 +66,7 @@ export default function WhyPage() {
       </ul>
 
       <p className="mt-6 text-center">
-        <Link href="/timento" className="font-tm-mono text-[10px] tracking-[0.12em] text-tm-dim underline uppercase">
+        <Link href="/" className="font-tm-mono text-[10px] tracking-[0.12em] text-tm-dim underline uppercase">
           ← Back to the file
         </Link>
       </p>

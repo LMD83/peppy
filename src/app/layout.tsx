@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo_Black, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
-import "../globals.css";
+import "./globals.css";
 
 const disp = Archivo_Black({
   weight: "400",
@@ -27,8 +27,8 @@ export const metadata: Metadata = {
     template: "%s | Timento",
   },
   description: "Two-person performance file: checks, modes, experiments, evidence.",
-  manifest: "/timento/manifest.webmanifest",
-  icons: { icon: "/timento/icon-192.png", apple: "/timento/icon-192.png" },
+  manifest: "/manifest.webmanifest",
+  icons: { icon: "/icon-192.png", apple: "/icon-192.png" },
 };
 
 export const viewport: Viewport = {

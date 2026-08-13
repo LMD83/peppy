@@ -128,7 +128,7 @@
     @apply font-sans;
   }
 }
-/* ===== Timento (performance file) — /timento section tokens ===== */
+/* ===== Timento (performance file) — design tokens ===== */
 @theme inline {
   --color-tm-paper: #fafaf8;
   --color-tm-panel: #ffffff;

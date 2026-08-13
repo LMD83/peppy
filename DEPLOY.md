@@ -1,4 +1,4 @@
-# Deploying peppy (store + Timento)
+# Deploying Timento
 
 Two halves: the **Next.js app on Vercel** (live now) and the **Convex production
 backend** (one owner-only step away — it needs a deploy key only the project
@@ -6,12 +6,11 @@ owner can mint).
 
 ## Current state
 
-- Vercel project `peppy` serves the app at
-  `https://peppy-liams-projects-eb2f3bfa.vercel.app`. The store talks to the
-  existing Convex **dev** deployment (`dependable-vulture-853`) as a fallback;
-  Timento runs in **demo mode** (in-memory backend, demo fixtures, passcodes
-  Liam 2580 / Conor 1379). Both come from the committed `.env.production`,
-  which holds public values only.
+- Vercel project `peppy` serves Timento at the site root
+  `https://peppy-liams-projects-eb2f3bfa.vercel.app` (`/` is the app, `/why`
+  the explainer). It runs in **demo mode** (in-memory backend, demo fixtures,
+  passcodes Liam 2580 / Conor 1379), configured by the committed
+  `.env.production`, which holds public values only.
 - **The URL is currently behind Vercel Authentication** (Deployment
   Protection): team members see the app after the Vercel login redirect;
   anonymous visitors and the `deploy-verify` smoke tests get the auth
@@ -72,7 +71,7 @@ All commands run from a checkout where you've done `npx convex login`
    - Env var `NEXT_PUBLIC_TIMENTO_DEMO=0` (Production) so Timento switches from
      the demo backend to Convex.
 
-6. **Redeploy** and check `/timento`: the login card should accept the real
+6. **Redeploy** and check `/`: the login card should accept the real
    passcodes from step 3, and a second browser signed in as the other user
    should see only the shared crew projection.
 
