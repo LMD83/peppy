@@ -45,6 +45,7 @@ website-clone template, which is where the scaffolding notes below come from.
 - **Survival mode is a floor, not a lite mode** — exactly three checks, no macro tracking. See `/why` for the mechanism behind each design choice.
 - **Demo mode must keep working** — `NEXT_PUBLIC_TIMENTO_DEMO=1` runs the app off an in-memory backend with fixtures, no Convex required. The e2e click-suite runs against it.
 - **Verify by running it** — `npx vitest run` for backend logic, `node scripts/timento-e2e.mjs` for the click-suite across mobile and desktop.
+- **Nothing here diagnoses or prescribes** — the stack tracks only what the user configured, assessments are scored server-side and framed as tracked-and-correlated, and evidence strength is labelled wherever a claim is made. A PHQ-9 self-harm answer surfaces real support (999/112, Samaritans 116 123); it is never presented as a risk assessment.
 
 ## Project Structure
 ```
@@ -63,10 +64,27 @@ src/
 convex/
   schema.ts         # tm_* tables
   tm/               # auth, today, crew, progress, research, seed
+    <slice>.ts      # query + mutations per domain slice
+    logic-<slice>.ts# pure domain logic, shared with the demo backend
+    data/           # static catalogues (foods, exercises, compounds, markers, instruments)
+    fixtures/       # per-slice fixture builder + seeder, composed by fixtures.ts
 tests/              # vitest suite (logic + cross-user privacy proofs)
 public/             # PWA manifest and icons
 scripts/            # e2e click-suite, icon generation, sync scripts
 ```
+
+## Domain slices
+Five verticals sit behind the Fuel, Train, Body (Stack/Bloods/Trend) and Mind tabs:
+**fuel** (adaptive TDEE, macro targets, meal plan), **train** (mesocycle, RIR progression,
+MEV/MAV/MRV volume), **stack** (meds/peptides/supplements, cycles, dose adherence,
+reconstitution), **labs** (panels, reference vs optimal bands, trends, rechecks) and
+**mind** (PHQ-9/GAD-7/PSS-10/WHO-5/ISI/AUDIT-C/PACS, implementation intentions, reflection).
+
+Each slice owns a fixed set of files and never edits another's. The rule that keeps the two
+backends honest: **all arithmetic lives in `logic-<slice>.ts`**, and both `convex/tm/<slice>.ts`
+and `src/app/_lib/demo/<slice>.ts` call it to build the same view model — the demo module
+imports its return type from the Convex query, so a drift is a compile error, not a bug.
+`src/app/_lib/demo/rows.ts` is the row-shape contract fixtures must match.
 
 ## MOST IMPORTANT NOTES
 - When launching Claude Code agent teams, ALWAYS have each teammate work in their own worktree branch and merge everyone's work at the end, resolving any merge conflicts smartly since you are basically serving the orchestrator role and have full context to our goals, work given, work achieved, and desired outcomes.

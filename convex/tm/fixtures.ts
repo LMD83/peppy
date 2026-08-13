@@ -113,14 +113,27 @@ export function buildFixtures(today: string): Fixtures {
     },
   ];
 
-  // Liam: weekly weigh-ins tracking slightly ahead of the 0.5 kg/wk line.
-  const liamWeights = [95.0, 94.4, 94.1, 93.4, 93.6, 92.8];
-  const days: Fixtures["days"] = liamWeights.map((kg, i) => ({
+  // Liam: weekly weigh-ins through the early cut, then daily for the trailing
+  // fortnight. That density is what lets adaptive TDEE separate a real trend
+  // from water noise — weekly points alone leave the estimate unidentifiable.
+  const liamWeekly = [95.0, 94.4, 94.1, 93.4];
+  const days: Fixtures["days"] = liamWeekly.map((kg, i) => ({
     userSlug: "liam",
     date: addDays(liamStart, i * 7),
     weightKg: kg,
   }));
-  days.push({ userSlug: "liam", date: addDays(today, -1), weightKg: 92.8, stress: 2, energy: 4 });
+  // 93.6 → 92.8 over 14 days (~0.4 kg/wk) with believable day-to-day scatter.
+  const scatter = [0.3, -0.1, 0.15, 0.0, 0.25, -0.2, 0.1, 0.35, -0.15, 0.05, 0.2, -0.1, 0.3, 0.0];
+  for (let back = 14; back >= 1; back--) {
+    const i = 14 - back;
+    const trend = 93.6 - (0.8 * i) / 13;
+    days.push({
+      userSlug: "liam",
+      date: addDays(today, -back),
+      weightKg: Math.round((trend + scatter[i]) * 10) / 10,
+      ...(back === 1 ? { stress: 2, energy: 4 } : {}),
+    });
+  }
   days.push({ userSlug: "liam", date: today, stress: 2, energy: 4 });
   // Conor: survival cadence — three weigh-ins a week, held under the ceiling.
   [8, 5, 3, 1].forEach((back, i) =>
