@@ -41,11 +41,19 @@ async function login(page, slug, passcode) {
   await page.evaluate(() => document.querySelector("nextjs-portal")?.remove());
 }
 
-/** Bottom-nav tab, then an optional second-level tab inside it. */
+/**
+ * Bottom-nav tab, then an optional second-level tab inside it.
+ *
+ * Short timeout on purpose: a tab that is missing is missing (a deployment
+ * serving an older bundle), not slow. The default 30 s turns one stale build
+ * into a ten-minute run that says nothing the first failure did not.
+ */
+const NAV_TIMEOUT = 8000;
+
 async function goTab(page, tab, sub) {
   await page.evaluate(() => window.scrollTo(0, 0));
-  await page.getByRole("button", { name: tab, exact: true }).click();
-  if (sub) await page.getByRole("tab", { name: sub, exact: true }).click();
+  await page.getByRole("button", { name: tab, exact: true }).click({ timeout: NAV_TIMEOUT });
+  if (sub) await page.getByRole("tab", { name: sub, exact: true }).click({ timeout: NAV_TIMEOUT });
 }
 
 const browser = await chromium.launch({ executablePath }).catch(() => chromium.launch());
@@ -88,9 +96,9 @@ for (const [label, viewport] of [
   });
 
   await check("today surfaces each slice's compact card", async () => {
-    await page.getByText(/kcal left|energy/i).first().waitFor();
-    await page.getByText(/doses|due/i).first().waitFor();
-    await page.getByText(/sets|rest day|floor/i).first().waitFor();
+    await page.getByText(/kcal left|energy/i).first().waitFor({ timeout: NAV_TIMEOUT });
+    await page.getByText(/doses|due/i).first().waitFor({ timeout: NAV_TIMEOUT });
+    await page.getByText(/sets|rest day|floor/i).first().waitFor({ timeout: NAV_TIMEOUT });
   });
 
   await check("craving flow: tired → relief → rode it out → breathing timer", async () => {
@@ -147,7 +155,7 @@ for (const [label, viewport] of [
   });
 
   await check("stack: taking a dose moves the taken count", async () => {
-    const before = await page.getByText(/\d+\/\d+ taken/i).first().textContent();
+    const before = await page.getByText(/\d+\/\d+ taken/i).first().textContent({ timeout: NAV_TIMEOUT });
     const dose = page.getByRole("button", { name: /creatine|vitamin d3|omega-3|magnesium/i }).first();
     if (!(await dose.count())) return;
     await dose.click();
