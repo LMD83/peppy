@@ -3,6 +3,8 @@
 // workflow, which probes the production URL anonymously. Usage:
 //   NEXT_PUBLIC_TIMENTO_DEMO=1 npm run dev:frontend  (separate terminal)
 //   node scripts/timento-e2e.mjs [baseUrl] [shotDir]
+// Against production, run it through the "Deploy verify" workflow — the URL is
+// not reachable from a Claude Code container.
 import { chromium } from "playwright";
 
 const BASE = process.argv[2] ?? "http://localhost:3000";
