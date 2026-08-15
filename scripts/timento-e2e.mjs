@@ -96,9 +96,14 @@ for (const [label, viewport] of [
   });
 
   await check("today surfaces each slice's compact card", async () => {
-    await page.getByText(/kcal left|energy/i).first().waitFor({ timeout: NAV_TIMEOUT });
-    await page.getByText(/doses|due/i).first().waitFor({ timeout: NAV_TIMEOUT });
-    await page.getByText(/sets|rest day|floor/i).first().waitFor({ timeout: NAV_TIMEOUT });
+    // Anchor on each card's own label, not on the copy inside it — the body text
+    // legitimately changes with the day (a Saturday reads "Rest — recovery is
+    // programmed", a survival day reads "Train — floor"), and asserting on prose
+    // makes the suite fail on a Saturday for no reason.
+    const main = page.locator("main");
+    for (const label of [/^Fuel/i, /^Train/i, /^Mind/i, /^Bloods/i]) {
+      await main.getByText(label).first().waitFor({ timeout: NAV_TIMEOUT });
+    }
   });
 
   await check("craving flow: tired → relief → rode it out → breathing timer", async () => {
