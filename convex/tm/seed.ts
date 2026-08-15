@@ -12,6 +12,8 @@ import { seedTrain } from "./fixtures/train";
 import { seedStack } from "./fixtures/stack";
 import { seedLabs } from "./fixtures/labs";
 import { seedMind } from "./fixtures/mind";
+import { seedConsent } from "./fixtures/consent";
+import { seedSupply } from "./fixtures/supply";
 import { isoDate, randomToken, sha256Hex } from "./lib";
 
 const TM_TABLES = [
@@ -40,6 +42,9 @@ const TM_TABLES = [
   "tm_assessments",
   "tm_intentions",
   "tm_reflections",
+  "tm_crewLinks",
+  "tm_supply",
+  "tm_contacts",
   "tm_users",
 ] as const;
 
@@ -108,6 +113,8 @@ export const run = internalMutation({
     await seedStack(ctx, uid, fx);
     await seedLabs(ctx, uid, fx);
     await seedMind(ctx, uid, fx);
+    await seedConsent(ctx, uid, fx);
+    await seedSupply(ctx, uid, fx);
 
     return null;
   },

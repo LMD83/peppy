@@ -171,6 +171,11 @@ function DemoBackend({ children }: { children: React.ReactNode }) {
       addIntention: (trigger, action) => slug && db.addIntention(slug, date, trigger, action),
       markIntentionWin: (intentionId) => db.markIntentionWin(intentionId),
       saveReflection: (prompt, response, win) => slug && db.saveReflection(slug, date, prompt, response, win),
+      inviteCrew: (target, scopes) => slug && db.inviteCrew(slug, date, target, scopes),
+      respondToCrewInvite: (linkId, accept) => slug && db.respondToCrewInvite(slug, date, linkId, accept),
+      revokeCrewLink: (linkId) => slug && db.revokeCrewLink(slug, date, linkId),
+      setSupplyCount: (itemId, onHand) => slug && db.setSupplyCount(slug, date, itemId, onHand),
+      saveContact: (kind, name, phone) => slug && db.saveContact(slug, kind, name, phone),
     }),
     [db, slug, date, store],
   );
@@ -190,6 +195,7 @@ function DemoBackend({ children }: { children: React.ReactNode }) {
     stack: slug ? db.stack(slug, date) : undefined,
     labs: slug ? db.labsView(slug, date) : undefined,
     mind: slug ? db.mind(slug, date) : undefined,
+    supply: slug ? db.supply(slug, date) : undefined,
     actions,
   };
   return <TimentoContext.Provider value={value}>{children}</TimentoContext.Provider>;
@@ -226,6 +232,7 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
   const stack = useQuery(api.tm.stack.get, args);
   const labs = useQuery(api.tm.labs.get, args);
   const mind = useQuery(api.tm.mind.get, args);
+  const supply = useQuery(api.tm.supply.get, args);
 
   const loginMut = useMutation(api.tm.auth.login);
   const logoutMut = useMutation(api.tm.auth.logout);
@@ -249,6 +256,11 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
   const addIntentionMut = useMutation(api.tm.mind.addIntention);
   const intentionWinMut = useMutation(api.tm.mind.markIntentionWin);
   const saveReflectionMut = useMutation(api.tm.mind.saveReflection);
+  const inviteCrewMut = useMutation(api.tm.crew.invite);
+  const respondCrewMut = useMutation(api.tm.crew.respondToInvite);
+  const revokeCrewMut = useMutation(api.tm.crew.revokeLink);
+  const setSupplyMut = useMutation(api.tm.supply.setCount);
+  const saveContactMut = useMutation(api.tm.supply.saveContact);
 
   const actions: TimentoActions = useMemo(
     () => ({
@@ -302,6 +314,14 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
         token && void intentionWinMut({ token, intentionId: intentionId as Id<"tm_intentions"> }),
       saveReflection: (prompt, response, win) =>
         token && void saveReflectionMut({ token, date, prompt, response, win }),
+      inviteCrew: (slug, scopes) => token && void inviteCrewMut({ token, date, slug, scopes }),
+      respondToCrewInvite: (linkId, accept) =>
+        token && void respondCrewMut({ token, date, linkId: linkId as Id<"tm_crewLinks">, accept }),
+      revokeCrewLink: (linkId) =>
+        token && void revokeCrewMut({ token, date, linkId: linkId as Id<"tm_crewLinks"> }),
+      setSupplyCount: (itemId, onHand) =>
+        token && void setSupplyMut({ token, date, itemId: itemId as Id<"tm_protocolItems">, onHand }),
+      saveContact: (kind, name, phone) => token && void saveContactMut({ token, kind, name, phone }),
     }),
     [
       token,
@@ -329,6 +349,11 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
       addIntentionMut,
       intentionWinMut,
       saveReflectionMut,
+      inviteCrewMut,
+      respondCrewMut,
+      revokeCrewMut,
+      setSupplyMut,
+      saveContactMut,
     ],
   );
 
@@ -347,6 +372,7 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
     stack,
     labs,
     mind,
+    supply,
     actions,
   };
   return <TimentoContext.Provider value={value}>{children}</TimentoContext.Provider>;

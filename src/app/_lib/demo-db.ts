@@ -23,6 +23,7 @@ import type {
   ProgressData,
   ResearchData,
   StackData,
+  SupplyData,
   TodayData,
   TrainData,
 } from "./types";
@@ -42,11 +43,14 @@ import type {
   SetLogRow,
   VolumeLandmarkRow,
 } from "./demo/rows";
+import type { ContactRow, CrewLinkRow, SupplyRow } from "./demo/rows-wave1";
 import * as fuel from "./demo/fuel";
 import * as train from "./demo/train";
 import * as stack from "./demo/stack";
 import * as labsView from "./demo/labs";
 import * as mind from "./demo/mind";
+import * as consent from "./demo/consent";
+import * as supply from "./demo/supply";
 
 /**
  * In-memory demo backend. Serves the same view models as the Convex queries,
@@ -83,6 +87,9 @@ export class DemoDb {
   assessments: AssessmentRow[];
   intentions: IntentionRow[];
   reflections: ReflectionRow[];
+  crewLinks: CrewLinkRow[];
+  supplyRows: SupplyRow[];
+  contacts: ContactRow[];
 
   private listeners = new Set<() => void>();
   private idSeq = 0;
@@ -110,6 +117,9 @@ export class DemoDb {
     this.assessments = [...fx.assessments];
     this.intentions = [...fx.intentions];
     this.reflections = [...fx.reflections];
+    this.crewLinks = [...fx.crewLinks];
+    this.supplyRows = [...fx.supplyRows];
+    this.contacts = [...fx.contacts];
     this.users = fx.users.map((u) => ({
       ...u,
       modeMut: u.mode,
@@ -479,6 +489,30 @@ export class DemoDb {
   }
   saveReflection(slug: string, date: string, prompt: string, response: string, win?: string) {
     mind.saveReflection(this, slug, date, prompt, response, win);
+    this.bump();
+  }
+
+  supply(slug: string, date: string): SupplyData {
+    return supply.view(this, slug, date);
+  }
+  setSupplyCount(slug: string, date: string, itemId: string, onHand: number) {
+    supply.setCount(this, slug, date, itemId, onHand);
+    this.bump();
+  }
+  saveContact(slug: string, kind: "gp" | "pharmacy", name: string, phone: string) {
+    supply.saveContact(this, slug, kind, name, phone);
+    this.bump();
+  }
+  inviteCrew(slug: string, date: string, targetSlug: string, scopes: string[]) {
+    consent.invite(this, slug, date, targetSlug, scopes);
+    this.bump();
+  }
+  respondToCrewInvite(slug: string, date: string, linkId: string, accept: boolean) {
+    consent.respond(this, slug, date, linkId, accept);
+    this.bump();
+  }
+  revokeCrewLink(slug: string, date: string, linkId: string) {
+    consent.revoke(this, slug, date, linkId);
     this.bump();
   }
 }

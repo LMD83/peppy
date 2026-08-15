@@ -141,6 +141,52 @@ export default defineSchema({
     label: v.string(),
   }).index("by_userId_and_date", ["userId", "date"]),
 
+  /* ===== Crew consent — who may see what, and revocably =====
+     Sharing adherence is sharing health data. It requires an explicit,
+     per-scope grant from the person whose data it is, and a way back out. */
+
+  tm_crewLinks: defineTable({
+    /** Whose file is being shared. */
+    ownerId: v.id("tm_users"),
+    /** Who may see the projection. */
+    viewerId: v.id("tm_users"),
+    /** Named projections only — never raw entries. */
+    scopes: v.array(v.string()),
+    status: v.union(v.literal("pending"), v.literal("active"), v.literal("revoked")),
+    invitedDate: v.string(),
+    respondedDate: v.optional(v.string()),
+    revokedDate: v.optional(v.string()),
+  })
+    .index("by_ownerId", ["ownerId"])
+    .index("by_viewerId", ["viewerId"]),
+
+  /* ===== Supply — never run out ===== */
+
+  tm_supply: defineTable({
+    userId: v.id("tm_users"),
+    itemId: v.id("tm_protocolItems"),
+    /** Units physically in the house at lastCountedDate. */
+    onHand: v.number(),
+    unitsPerDose: v.number(),
+    packSize: v.number(),
+    lastCountedDate: v.string(),
+    /** Days between asking for more and having it in hand. */
+    reorderLeadDays: v.number(),
+    scriptExpiryDate: v.optional(v.string()),
+    repeatsRemaining: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_and_itemId", ["userId", "itemId"]),
+
+  /** GP and pharmacy details, so a refill is one tap rather than a search. */
+  tm_contacts: defineTable({
+    userId: v.id("tm_users"),
+    kind: v.union(v.literal("gp"), v.literal("pharmacy")),
+    name: v.string(),
+    phone: v.string(),
+    note: v.optional(v.string()),
+  }).index("by_userId", ["userId"]),
+
   /* ===== Fuel — targets, meal plan, intake ===== */
 
   tm_nutritionTargets: defineTable({
