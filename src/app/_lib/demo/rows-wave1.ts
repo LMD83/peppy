@@ -11,6 +11,7 @@ export type CrewLinkRow = {
   ownerSlug: string;
   viewerSlug: string;
   scopes: string[];
+  relationship?: "crew" | "carer";
   status: "pending" | "active" | "revoked";
   invitedDate: string;
   respondedDate?: string;

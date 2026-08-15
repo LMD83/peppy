@@ -13,6 +13,7 @@ import { StackTodayCard } from "./stack-tab";
 import { SupplyTodayCard } from "./supply-tab";
 import { LabsTodayCard } from "./labs-tab";
 import { MindTodayCard } from "./mind-tab";
+import { CaptureTodayCard } from "./capture-tab";
 
 export function TodayTab() {
   const { today, actions, research } = useTimento();
@@ -53,6 +54,7 @@ export function TodayTab() {
     weigh: <WeighIn />,
     mind: <MindTodayCard />,
     labs: <LabsTodayCard />,
+    capture: <CaptureTodayCard />,
     winter: research?.winterLayer ? (
       <Card>
         <Eyebrow color="bg-tm-yellow">Winter layer — PER3 +/+</Eyebrow>

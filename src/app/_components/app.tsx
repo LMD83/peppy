@@ -19,6 +19,9 @@ import { LabsTab } from "./labs-tab";
 import { MindTab } from "./mind-tab";
 import { SettingsTab } from "./settings-tab";
 import { HandsFreePanel } from "./handsfree-tab";
+import { ShopPanel } from "./shop-tab";
+import { RemindPanel } from "./remind-tab";
+import { CapturePanel } from "./capture-tab";
 
 /*
   Bottom nav.
@@ -43,9 +46,19 @@ const TABS = [
   { id: "crew", label: "Crew" },
 ] as const;
 
-type TabId = (typeof TABS)[number]["id"] | "more" | "settings" | "handsfree";
+type TabId =
+  | (typeof TABS)[number]["id"]
+  | "more"
+  | "settings"
+  | "handsfree"
+  | "shop"
+  | "remind"
+  | "capture";
 
 const MORE_TAB = { id: "more", label: "More" } as const;
+
+/** Destinations the bottom nav already reaches, so the shelf need not repeat them. */
+const NAV_TAB_IDS: ReadonlySet<string> = new Set(TABS.map((t) => t.id));
 const NAV_STANDARD: readonly { id: TabId; label: string }[] = [...TABS, MORE_TAB];
 const NAV_EASY: readonly { id: TabId; label: string }[] = [{ id: "today", label: "Today" }, MORE_TAB];
 
@@ -76,7 +89,10 @@ const DESTINATIONS: Destination[] = [
   { key: "checkin", label: "Check-in", tab: "mind", sub: "checkin" },
   { key: "craving", label: "Craving", tab: "mind", sub: "craving" },
   { key: "crew", label: "Crew", tab: "crew" },
+  { key: "shop", label: "Shopping", tab: "shop" },
   { key: "handsfree", label: "Hands-free", tab: "handsfree" },
+  { key: "remind", label: "Reminders", tab: "remind" },
+  { key: "capture", label: "Photos", tab: "capture" },
 ];
 
 function SubNav({
@@ -155,10 +171,12 @@ function MoreShelf({
       <h2 className="font-tm-mono text-[11.5px] tracking-[0.15em] text-tm-dim uppercase">
         {easy ? "Everything else" : "More"}
       </h2>
-      {easy &&
-        DESTINATIONS.map((d) => (
-          <NavRow key={d.key} label={plain(d.label)} onClick={() => onGo(d)} />
-        ))}
+      {/* Easy mode flattens the whole app into this list. Standard mode already
+          reaches most of it from the bottom nav, so the shelf carries exactly
+          what the nav cannot — otherwise a destination has no route at all. */}
+      {(easy ? DESTINATIONS : DESTINATIONS.filter((d) => !NAV_TAB_IDS.has(d.tab))).map((d) => (
+        <NavRow key={d.key} label={easy ? plain(d.label) : d.label} onClick={() => onGo(d)} />
+      ))}
       <NavRow label="Settings" onClick={onSettings} />
       <p className="pt-1 pb-2 text-center">
         <Link
@@ -239,6 +257,9 @@ function Shell() {
         )}
         {tab === "settings" && <SettingsTab />}
         {tab === "handsfree" && <HandsFreePanel />}
+        {tab === "shop" && <ShopPanel />}
+        {tab === "remind" && <RemindPanel />}
+        {tab === "capture" && <CapturePanel />}
         {tab === "today" && <TodayTab />}
         {tab === "fuel" && <FuelTab />}
         {tab === "train" && <TrainTab />}

@@ -1,22 +1,39 @@
 import { describe, expect, it } from "vitest";
+import { convexTest } from "convex-test";
+import { api, internal } from "../convex/_generated/api";
+import schema from "../convex/schema";
 import {
+  ALLOWED_SCOPES,
+  CARER_NEVER,
+  CARER_SCOPES,
   IDENTITY_FIELDS,
   NEVER_SHARED,
   SCOPES,
   SCOPE_FIELDS,
   activeGrant,
+  activeRelationship,
   activeScopesFor,
+  allowedScopesFor,
   canSee,
+  carerSeatSentence,
+  carerSentence,
+  carerViewFrom,
   checkInvite,
   counterpartsFor,
   daysCover,
+  grantScopes,
+  isScope,
   linkStateFor,
   orderScopes,
   outgoingFor,
   parseScopes,
+  parseScopesFor,
   pendingFor,
   projectMember,
+  refusedScopes,
+  relationshipOf,
   sharedLine,
+  supersededGrantIds,
   supplyState,
   type ConsentLink,
   type MemberFacts,
@@ -223,6 +240,7 @@ describe("fixtures", () => {
     owner: r.ownerSlug,
     viewer: r.viewerSlug,
     scopes: r.scopes,
+    relationship: r.relationship,
     status: r.status,
     invitedDate: r.invitedDate,
   }));
@@ -249,5 +267,339 @@ describe("fixtures", () => {
     for (const banned of ["kcal", "weightKg", "dose", "value", "score", "marker"]) {
       expect(serialised).not.toContain(banned);
     }
+  });
+});
+
+/* ===== Wave 3: the carer seat ===== */
+
+/**
+ * The scope that must never exist. Cravings, assessment answers and anything
+ * else a person writes down have no scope today, and the machinery below has to
+ * refuse them anyway — a guard that only works while the list is short is not a
+ * guard, it is a coincidence.
+ */
+const FUTURE_SCOPE = "craving" as Scope;
+
+describe("a carer is not a peer", () => {
+  it("pins the carer allowlist, and does not let it track SCOPES", () => {
+    expect(allowedScopesFor("carer")).toEqual(["adherence", "mode", "supply"]);
+    expect([...CARER_SCOPES].every((s) => (SCOPES as readonly string[]).includes(s))).toBe(true);
+    // Crew follows the scope list; a carer's list is written out by hand, so a
+    // scope added tomorrow reaches peers and stops dead at the carer seat.
+    expect(ALLOWED_SCOPES.crew).toBe(SCOPES);
+    expect(ALLOWED_SCOPES.carer).not.toBe(SCOPES);
+  });
+
+  it("has no scope at all for cravings, assessments or anything written down", () => {
+    for (const banned of [
+      "craving",
+      "cravings",
+      "assessment",
+      "assessments",
+      "phq9",
+      "gad7",
+      "reflection",
+      "intentions",
+      "notes",
+      "entries",
+      "weight",
+      "labs",
+      "doses",
+    ]) {
+      expect(isScope(banned)).toBe(false);
+      expect(parseScopes([banned])).toBeNull();
+      expect(parseScopesFor("carer", [banned])).toBeNull();
+    }
+  });
+
+  it("refuses an over-broad carer invite even when the caller asks for it", () => {
+    // The caller asks for a scope outside the carer set. It is refused at the
+    // point of creation, so no over-broad carer row is ever written.
+    expect(checkInvite([], "conor", "mary", ["adherence", FUTURE_SCOPE], "carer")).toBe(
+      "scope-not-allowed",
+    );
+    expect(refusedScopes("carer", [FUTURE_SCOPE])).toEqual([FUTURE_SCOPE]);
+    expect(parseScopesFor("carer", ["adherence", FUTURE_SCOPE])).toBeNull();
+    // The same three, on the carer footing, are fine.
+    expect(checkInvite([], "conor", "mary", ["adherence", "mode", "supply"], "carer")).toBe("ok");
+  });
+
+  it("clamps a stored carer row that names more than a carer may hold", () => {
+    const rogue = link({
+      owner: "conor",
+      viewer: "mary",
+      relationship: "carer",
+      scopes: ["adherence", "mode", "supply", FUTURE_SCOPE],
+    });
+    expect(grantScopes(rogue)).toEqual(["adherence", "mode", "supply"]);
+    expect(activeScopesFor([rogue], "conor", "mary")).not.toContain(FUTURE_SCOPE);
+    expect(canSee([rogue], "conor", "mary", FUTURE_SCOPE)).toBe(false);
+  });
+
+  it("reads a link written before carers existed as a peer link", () => {
+    expect(relationshipOf(link())).toBe("crew");
+    expect(relationshipOf(link({ relationship: "carer" }))).toBe("carer");
+    expect(relationshipOf(link({ relationship: "auditor" }))).toBe("crew");
+    expect(activeRelationship([link({ relationship: "carer" })], "conor", "liam")).toBe("carer");
+    expect(activeRelationship([], "conor", "liam")).toBeNull();
+  });
+
+  it("treats a change of footing as a real offer, not a repeat", () => {
+    const held = [link({ owner: "liam", viewer: "conor", scopes: ["adherence", "mode"] })];
+    expect(checkInvite(held, "liam", "conor", ["adherence", "mode"], "crew")).toBe(
+      "duplicate-invite",
+    );
+    expect(checkInvite(held, "liam", "conor", ["adherence", "mode"], "carer")).toBe("ok");
+  });
+
+  it("replaces the old grant when a new one is accepted, so one revoke is the whole answer", () => {
+    const links = [
+      link({ id: "old", owner: "conor", viewer: "liam", scopes: ["adherence"] }),
+      link({ id: "new", owner: "conor", viewer: "liam", relationship: "carer" }),
+      link({ id: "other", owner: "liam", viewer: "conor" }),
+    ];
+    expect(supersededGrantIds(links, "conor", "liam", "new")).toEqual(["old"]);
+    expect(supersededGrantIds(links, "conor", "liam", "old")).toEqual(["new"]);
+  });
+});
+
+describe("the carer view", () => {
+  it("answers the three questions and carries nothing else", () => {
+    const view = carerViewFrom(projectMember(FACTS, ["adherence", "mode", "supply"]));
+    expect(Object.keys(view).sort()).toEqual(
+      ["supply", "checksDone", "checksTotal", "floorHeld", "mode", "daysInMode", "step"].sort(),
+    );
+    expect(view.supply).toBe("order-due");
+    expect(view.floorHeld).toBe(true);
+    expect(view.step).toBe("reorder-due");
+  });
+
+  it("is built from the projection, so an ungranted fact is not merely hidden", () => {
+    const supplyOnly = carerViewFrom(projectMember(FACTS, ["supply"]));
+    expect(supplyOnly.supply).toBe("order-due");
+    expect(supplyOnly.checksDone).toBeNull();
+    expect(supplyOnly.floorHeld).toBeNull();
+    expect(supplyOnly.mode).toBeNull();
+    expect(JSON.stringify(supplyOnly)).not.toContain("survival");
+
+    const adherenceOnly = carerViewFrom(projectMember(FACTS, ["adherence"]));
+    expect(adherenceOnly.supply).toBe("none");
+    expect(adherenceOnly.floorHeld).toBe(true);
+    expect(adherenceOnly.step).toBe("nothing-needed");
+
+    // Granted nothing: the view says so rather than implying all is well.
+    expect(carerViewFrom(projectMember(FACTS, [])).step).toBe("nothing-shared");
+  });
+
+  it("puts an unheld floor above a comfortable one, and a reorder above both", () => {
+    const short = { ...FACTS, todayDone: 1, todayTotal: 3, supplyState: "ok" as const };
+    expect(carerViewFrom(projectMember(short, ["adherence", "supply"])).step).toBe(
+      "checks-outstanding",
+    );
+    expect(carerViewFrom(projectMember(short, ["adherence"])).floorHeld).toBe(false);
+    expect(carerViewFrom(projectMember(FACTS, ["adherence", "supply"])).step).toBe("reorder-due");
+  });
+
+  it("rides on the link, and only for a carer", () => {
+    const projected = projectMember(FACTS, ["adherence", "mode", "supply"]);
+    const asCarer = [link({ relationship: "carer" })];
+    expect(linkStateFor(asCarer, "liam", "conor", projected).carerView).not.toBeNull();
+    expect(linkStateFor(asCarer, "liam", "conor", projected).youAre).toBe("carer");
+    expect(linkStateFor([link()], "liam", "conor", projected).carerView).toBeNull();
+    expect(linkStateFor(asCarer, "liam", "conor").carerView).toBeNull();
+  });
+});
+
+describe("carer copy", () => {
+  it("says what she will and will not see, in one breath each", () => {
+    expect(carerSentence("Mary", ["adherence", "supply"])).toBe(
+      "Mary will see whether today's checks got done and whether anything is running out. " +
+        `Mary will not see ${CARER_NEVER}.`,
+    );
+    expect(carerSentence("Mary", [])).toContain("Mary will see nothing at all.");
+    expect(CARER_NEVER).toMatch(/medicines/);
+    expect(CARER_NEVER).toMatch(/anything you write down/);
+  });
+
+  it("says the same thing from the carer's side of the table", () => {
+    const line = carerSeatSentence("Conor", ["adherence", "mode", "supply"]);
+    expect(line).toContain("You can see");
+    expect(line).toContain("which mode Conor is in");
+    expect(line).toContain("You cannot see which medicines, Conor's weight");
+  });
+});
+
+describe("the carer fixture", () => {
+  const fx = buildConsentFixtures(TODAY);
+  const links: ConsentLink[] = fx.crewLinks.map((r) => ({
+    id: r.id,
+    owner: r.ownerSlug,
+    viewer: r.viewerSlug,
+    scopes: r.scopes,
+    relationship: r.relationship,
+    status: r.status,
+    invitedDate: r.invitedDate,
+  }));
+
+  it("offers a carer seat that is pending, and therefore worth nothing", () => {
+    const invite = pendingFor(links, "liam")[0];
+    expect(relationshipOf(invite)).toBe("carer");
+    expect(activeRelationship(links, "conor", "liam")).toBe("crew");
+    expect(activeScopesFor(links, "conor", "liam")).toEqual(["adherence", "mode"]);
+    const state = linkStateFor(links, "liam", "conor", projectMember(FACTS, ["adherence", "mode"]));
+    expect(state.incoming?.relationship).toBe("carer");
+    expect(state.carerView).toBeNull();
+    expect(state.youSee).not.toContain("supply");
+  });
+
+  it("never offers a carer more than a carer may hold", () => {
+    for (const row of fx.crewLinks) {
+      if (row.relationship !== "carer") continue;
+      expect(refusedScopes("carer", row.scopes)).toEqual([]);
+    }
+  });
+});
+
+/* ===== at the query boundary ===== */
+
+const modules = {
+  "./_generated/api.js": () => import("../convex/_generated/api"),
+  "./_generated/server.js": () => import("../convex/_generated/server"),
+  "./tm/auth.ts": () => import("../convex/tm/auth"),
+  "./tm/crew.ts": () => import("../convex/tm/crew"),
+  "./tm/fixtures.ts": () => import("../convex/tm/fixtures"),
+  "./tm/db.ts": () => import("../convex/tm/db"),
+  "./tm/lib.ts": () => import("../convex/tm/lib"),
+  "./tm/logic.ts": () => import("../convex/tm/logic"),
+  "./tm/seed.ts": () => import("../convex/tm/seed"),
+};
+
+const SEED_DAY = "2026-08-13";
+
+type TestHarness = ReturnType<typeof convexTest>;
+
+async function login(t: TestHarness, slug: string, passcode: string): Promise<string> {
+  const res = await t.mutation(api.tm.auth.login, { slug, passcode });
+  if (!res.ok) throw new Error(`login failed: ${res.code}`);
+  return res.token;
+}
+
+async function seeded() {
+  const t = convexTest(schema, modules);
+  await t.mutation(internal.tm.seed.run, { today: SEED_DAY });
+  return { t, liam: await login(t, "liam", "2580"), conor: await login(t, "conor", "1379") };
+}
+
+/** Conor's row on Liam's board. */
+async function conorRow(t: TestHarness, liam: string) {
+  const board = await t.query(api.tm.crew.board, { token: liam, date: SEED_DAY });
+  const row = board.find((m) => !m.isYou);
+  if (!row) throw new Error("no counterpart on the board");
+  return row;
+}
+
+describe("the carer seat at the query boundary", () => {
+  it("discloses nothing while the invitation is pending", async () => {
+    const { t, liam } = await seeded();
+    const row = await conorRow(t, liam);
+    expect(row.link.incoming?.relationship).toBe("carer");
+    // A pending carer invite buys a name, a date and a sentence. No facts.
+    expect(row.link.carerView).toBeNull();
+    expect(row.link.youAre).toBe("crew");
+    expect("supplyState" in row).toBe(false);
+  });
+
+  it("hands the carer the coarse flag and never a medicine", async () => {
+    const { t, liam } = await seeded();
+    const pending = (await conorRow(t, liam)).link.incoming;
+    await t.mutation(api.tm.crew.respondToInvite, {
+      token: liam,
+      date: SEED_DAY,
+      linkId: pending!.linkId as never,
+      accept: true,
+    });
+
+    const row = await conorRow(t, liam);
+    expect(row.link.youAre).toBe("carer");
+    const view = row.link.carerView;
+    expect(view).not.toBeNull();
+    expect(["ok", "order-due"]).toContain(view!.supply);
+    expect(view!.checksTotal).toBeGreaterThan(0);
+
+    // Conor's file carries Levothyroxine and Vitamin D3 with doses and counts.
+    // None of it is nameable from here, because none of it is here.
+    const board = await t.query(api.tm.crew.board, { token: liam, date: SEED_DAY });
+    const serialised = JSON.stringify(board);
+    for (const banned of ["evothyrox", "itamin", "reatine", "onHand", "dose", "packSize", "mg"]) {
+      expect(serialised).not.toContain(banned);
+    }
+  });
+
+  it("replaces the peer grant rather than stacking a second one on it", async () => {
+    const { t, liam, conor } = await seeded();
+    const pending = (await conorRow(t, liam)).link.incoming;
+    await t.mutation(api.tm.crew.respondToInvite, {
+      token: liam,
+      date: SEED_DAY,
+      linkId: pending!.linkId as never,
+      accept: true,
+    });
+
+    // One tap on the owner's side, and the whole grant is gone — not one of two.
+    const grantId = (await conorRow(t, liam)).link.theirGrantId;
+    expect(grantId).toBe(pending!.linkId);
+    await t.mutation(api.tm.crew.revokeLink, {
+      token: conor,
+      date: SEED_DAY,
+      linkId: grantId as never,
+    });
+
+    const row = await conorRow(t, liam);
+    expect(row.link.youSee).toEqual([]);
+    expect(row.link.carerView).toBeNull();
+    expect(row.link.theirGrantId).toBeNull();
+    expect(Object.keys(row).sort()).toEqual(["slug", "name", "isYou", "link"].sort());
+  });
+
+  it("lets the carer hand the seat back, immediately, from their own side", async () => {
+    const { t, liam } = await seeded();
+    const pending = (await conorRow(t, liam)).link.incoming;
+    await t.mutation(api.tm.crew.respondToInvite, {
+      token: liam,
+      date: SEED_DAY,
+      linkId: pending!.linkId as never,
+      accept: true,
+    });
+    await t.mutation(api.tm.crew.revokeLink, {
+      token: liam,
+      date: SEED_DAY,
+      linkId: pending!.linkId as never,
+    });
+    const row = await conorRow(t, liam);
+    expect(row.link.carerView).toBeNull();
+    expect(row.link.youSee).toEqual([]);
+  });
+
+  it("refuses to write a carer grant naming anything outside the carer set", async () => {
+    const { t, liam } = await seeded();
+    await expect(
+      t.mutation(api.tm.crew.invite, {
+        token: liam,
+        date: SEED_DAY,
+        slug: "conor",
+        scopes: ["craving"],
+        relationship: "carer",
+      }),
+    ).rejects.toThrow(/unknown-scope/);
+    // And the same offer on a peer footing is refused too: there is no such
+    // scope for anyone. The carer allowlist is the second lock, not the first.
+    await expect(
+      t.mutation(api.tm.crew.invite, {
+        token: liam,
+        date: SEED_DAY,
+        slug: "conor",
+        scopes: ["assessment"],
+      }),
+    ).rejects.toThrow(/unknown-scope/);
   });
 });

@@ -91,10 +91,57 @@ All commands run from a checkout where you've done `npx convex login`
    passcodes from step 3, and a second browser signed in as the other user
    should see only the shared crew projection.
 
+## Reminders: what is needed before a push can actually be delivered
+
+The reminder schedule already runs — `convex/crons.ts` sweeps every 30 minutes
+and computes exactly what should go out, using the same pure module the
+Reminders tab previews from. What it cannot do yet is *send*, and the app says
+so rather than showing a switch that lies (`remind.get` returns
+`supported: false`, and the tab lists the reason).
+
+Three steps, in this order:
+
+1. `npm install web-push` — signing a VAPID JWT and encrypting the payload per
+   RFC 8291 is that package's job, and it is deliberately not a dependency yet.
+2. Move `sendPush`/`sweep` out of `convex/crons.ts` into their own module with
+   `"use node";` at the top. `web-push` needs Node built-ins, and Convex
+   analyses `crons.ts` in the default runtime, so it cannot carry that pragma.
+3. Set the keys on the deployment (see `.env.convex.example`):
+
+   ```sh
+   npx web-push generate-vapid-keys
+   npx convex env set VAPID_PUBLIC_KEY  <public>  --prod
+   npx convex env set VAPID_PRIVATE_KEY <private> --prod
+   npx convex env set VAPID_SUBJECT     mailto:you@example.com --prod
+   ```
+
+Until step 3, the sweep is a no-op that logs one clear line and leaves every
+subscription untouched — nothing is marked delivered and no device is penalised
+with a failure it did not earn.
+
+**iOS**: notifications only work once the app is added to the Home Screen
+(Safari → Share → Add to Home Screen). Apple allows no other route, and iOS has
+neither Background Sync nor Periodic Sync — which is why the schedule lives on
+the server and the device only receives.
+
 ## Docker path
 
 `next.config.ts` keeps `output: "standalone"` for Docker/self-hosted builds;
 the flag is skipped automatically on Vercel (`process.env.VERCEL`).
+
+## Known build fragility: fonts are fetched at build time
+
+`src/app/layout.tsx` uses `next/font/google`, which downloads Archivo Black and
+IBM Plex from `fonts.gstatic.com` **during the build**. A network blip on the
+runner therefore fails the whole build with a wall of
+`Module not found: Can't resolve '@vercel/turbopack-next/internal/font/google/font'`
+against generated `…module.css` files. Seen on CI 2026-08-15 on a commit that
+changed only workflow YAML, minutes after the same tree built clean.
+
+It is transient — re-run the job and it passes. The durable fix is to vendor the
+`.woff2` files into `public/` and switch to `next/font/local`, which removes the
+build-time network dependency from every CI run *and* every Vercel deploy. Worth
+doing the next time this costs anyone ten minutes.
 
 ## Redeploying the frontend from this repo
 

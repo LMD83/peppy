@@ -76,6 +76,19 @@ MEV/MAV/MRV volume), **stack** (meds/peptides/supplements, cycles, dose adherenc
 reconstitution), **labs** (panels, reference vs optimal bands, trends, rechecks) and
 **mind** (PHQ-9/GAD-7/PSS-10/WHO-5/ISI/AUDIT-C/PACS, implementation intentions, reflection).
 
+Four more reach their own screens from the More shelf: **supply** (counts, run-out dates,
+refill sheet), **shop** (aisle-ordered list, packs, retailer hand-off), **remind** (what is
+worth interrupting someone for — quiet hours, once-only, the survival floor) and **capture**
+(a photo as evidence, never as an identification). `remind` and `capture` share one Convex
+module, `convex/tm/remind.ts`, because backend.tsx wires their mutations together; the rules
+stay in their own `logic-remind.ts` / `logic-capture.ts`, and `remind.get` carries the whole
+capture view through under `capture`.
+
+Two things the reminder slice cannot do yet, deliberately: `web-push` is not a dependency, so
+`convex/crons.ts` computes the correct plan and logs instead of sending; and without
+`VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY` on the deployment, `remind.get` reports
+`supported: false` so the tab says so rather than showing a switch that lies.
+
 Each slice owns a fixed set of files and never edits another's. The rule that keeps the two
 backends honest: **all arithmetic lives in `logic-<slice>.ts`**, and both `convex/tm/<slice>.ts`
 and `src/app/_lib/demo/<slice>.ts` call it to build the same view model — the demo module

@@ -15,6 +15,8 @@ export type CrewLinkRow = {
   ownerSlug: string;
   viewerSlug: string;
   scopes: string[];
+  /** A peer in the crew, or someone helping from outside it. Absent reads as "crew". */
+  relationship?: "crew" | "carer";
   status: "pending" | "active" | "revoked";
   invitedDate: string;
   respondedDate?: string;
@@ -29,12 +31,13 @@ export function buildConsentFixtures(today: string): ConsentFixtures {
 
   return {
     crewLinks: [
-      // Liam shares everything with Conor.
+      // Liam shares everything with Conor, peer to peer.
       {
         id: "cl_liam_conor",
         ownerSlug: "liam",
         viewerSlug: "conor",
         scopes: ["adherence", "mode", "supply"],
+        relationship: "crew",
         status: "active",
         invitedDate: agreed,
         respondedDate: agreed,
@@ -46,17 +49,22 @@ export function buildConsentFixtures(today: string): ConsentFixtures {
         ownerSlug: "conor",
         viewerSlug: "liam",
         scopes: ["adherence", "mode"],
+        relationship: "crew",
         status: "active",
         invitedDate: agreed,
         respondedDate: agreed,
       },
-      // …and yesterday, on the floor and running low, he offered the supply
-      // flag as well. Liam has not answered: pending grants nothing.
+      // …and yesterday, on the floor and running low, he asked Liam to take a
+      // carer seat instead: the same checks and mode, plus the coarse "running
+      // out" flag, and nothing else — a carer cannot be offered more than that.
+      // Liam has not answered. A pending invitation discloses nothing: until he
+      // accepts, it buys a name, a date and a sentence, and no facts at all.
       {
-        id: "cl_conor_liam_supply",
+        id: "cl_conor_liam_carer",
         ownerSlug: "conor",
         viewerSlug: "liam",
         scopes: ["adherence", "mode", "supply"],
+        relationship: "carer",
         status: "pending",
         invitedDate: addDays(today, -1),
       },

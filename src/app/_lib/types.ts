@@ -13,6 +13,8 @@ export type LabsData = FunctionReturnType<typeof api.tm.labs.get>;
 export type MindData = FunctionReturnType<typeof api.tm.mind.get>;
 export type SupplyData = FunctionReturnType<typeof api.tm.supply.get>;
 export type HandsFreeData = FunctionReturnType<typeof api.tm.ingest.get>;
+export type ShopData = FunctionReturnType<typeof api.tm.shop.get>;
+export type RemindData = FunctionReturnType<typeof api.tm.remind.get>;
 
 export type TmSession = { token: string; slug: string; name: string };
 
@@ -69,9 +71,29 @@ export type TimentoActions = {
   revokeIngestToken: (tokenId: string) => void;
 
   /* crew consent — sharing adherence is sharing health data */
-  inviteCrew: (slug: string, scopes: string[]) => void;
+  inviteCrew: (slug: string, scopes: string[], relationship?: "crew" | "carer") => void;
   respondToCrewInvite: (linkId: string, accept: boolean) => void;
   revokeCrewLink: (linkId: string) => void;
+
+  /* reminders */
+  savePushSubscription: (sub: { endpoint: string; p256dh: string; auth: string; label: string }) => void;
+  removePushSubscription: (endpoint: string) => void;
+  setReminderPrefs: (prefs: {
+    enabled?: boolean;
+    quietFrom?: string;
+    quietTo?: string;
+    doses?: boolean;
+    supply?: boolean;
+    checkins?: boolean;
+  }) => void;
+
+  /* visual check-ins */
+  saveCapture: (kind: "dose" | "meal" | "organiser", storageId: string, note?: string) => void;
+  removeCapture: (captureId: string) => void;
+
+  /* shopping */
+  setPantry: (foodKey: string, grams: number) => void;
+  clearPantry: () => void;
 
   /* supply */
   setSupplyCount: (itemId: string, onHand: number) => void;
@@ -101,6 +123,8 @@ export type TimentoState = {
   mind: MindData | undefined;
   supply: SupplyData | undefined;
   handsFree: HandsFreeData | undefined;
+  shop: ShopData | undefined;
+  remind: RemindData | undefined;
   actions: TimentoActions;
 };
 
