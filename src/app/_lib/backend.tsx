@@ -176,6 +176,9 @@ function DemoBackend({ children }: { children: React.ReactNode }) {
       revokeCrewLink: (linkId) => slug && db.revokeCrewLink(slug, date, linkId),
       setSupplyCount: (itemId, onHand) => slug && db.setSupplyCount(slug, date, itemId, onHand),
       saveContact: (kind, name, phone) => slug && db.saveContact(slug, kind, name, phone),
+      setA11yProfile: (profile) => slug && db.setA11yProfile(slug, profile),
+      createIngestToken: (label) => slug && db.createIngestToken(slug, date, label),
+      revokeIngestToken: (tokenId) => db.revokeIngestToken(tokenId),
     }),
     [db, slug, date, store],
   );
@@ -196,6 +199,7 @@ function DemoBackend({ children }: { children: React.ReactNode }) {
     labs: slug ? db.labsView(slug, date) : undefined,
     mind: slug ? db.mind(slug, date) : undefined,
     supply: slug ? db.supply(slug, date) : undefined,
+    handsFree: slug ? db.handsFree(slug, date) : undefined,
     actions,
   };
   return <TimentoContext.Provider value={value}>{children}</TimentoContext.Provider>;
@@ -233,6 +237,7 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
   const labs = useQuery(api.tm.labs.get, args);
   const mind = useQuery(api.tm.mind.get, args);
   const supply = useQuery(api.tm.supply.get, args);
+  const handsFree = useQuery(api.tm.ingest.get, args);
 
   const loginMut = useMutation(api.tm.auth.login);
   const logoutMut = useMutation(api.tm.auth.logout);
@@ -261,6 +266,9 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
   const revokeCrewMut = useMutation(api.tm.crew.revokeLink);
   const setSupplyMut = useMutation(api.tm.supply.setCount);
   const saveContactMut = useMutation(api.tm.supply.saveContact);
+  const setProfileMut = useMutation(api.tm.today.setA11yProfile);
+  const createTokenMut = useMutation(api.tm.ingest.createToken);
+  const revokeTokenMut = useMutation(api.tm.ingest.revokeToken);
 
   const actions: TimentoActions = useMemo(
     () => ({
@@ -322,6 +330,10 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
       setSupplyCount: (itemId, onHand) =>
         token && void setSupplyMut({ token, date, itemId: itemId as Id<"tm_protocolItems">, onHand }),
       saveContact: (kind, name, phone) => token && void saveContactMut({ token, kind, name, phone }),
+      setA11yProfile: (profile) => token && void setProfileMut({ token, profile }),
+      createIngestToken: (label) => token && void createTokenMut({ token, date, label }),
+      revokeIngestToken: (tokenId) =>
+        token && void revokeTokenMut({ token, tokenId: tokenId as Id<"tm_ingestTokens"> }),
     }),
     [
       token,
@@ -354,6 +366,9 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
       revokeCrewMut,
       setSupplyMut,
       saveContactMut,
+      setProfileMut,
+      createTokenMut,
+      revokeTokenMut,
     ],
   );
 
@@ -373,6 +388,7 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
     labs,
     mind,
     supply,
+    handsFree,
     actions,
   };
   return <TimentoContext.Provider value={value}>{children}</TimentoContext.Provider>;

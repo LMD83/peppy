@@ -12,6 +12,7 @@ export type StackData = FunctionReturnType<typeof api.tm.stack.get>;
 export type LabsData = FunctionReturnType<typeof api.tm.labs.get>;
 export type MindData = FunctionReturnType<typeof api.tm.mind.get>;
 export type SupplyData = FunctionReturnType<typeof api.tm.supply.get>;
+export type HandsFreeData = FunctionReturnType<typeof api.tm.ingest.get>;
 
 export type TmSession = { token: string; slug: string; name: string };
 
@@ -55,6 +56,13 @@ export type TimentoActions = {
   /* labs */
   addLabPanel: (name: string, results: LabResultInput[], fasted?: boolean) => void;
 
+  /* accessibility — "easy" is a mode, not a preference toggle */
+  setA11yProfile: (profile: "standard" | "easy") => void;
+
+  /* hands-free */
+  createIngestToken: (label: string) => void;
+  revokeIngestToken: (tokenId: string) => void;
+
   /* crew consent — sharing adherence is sharing health data */
   inviteCrew: (slug: string, scopes: string[]) => void;
   respondToCrewInvite: (linkId: string, accept: boolean) => void;
@@ -87,6 +95,7 @@ export type TimentoState = {
   labs: LabsData | undefined;
   mind: MindData | undefined;
   supply: SupplyData | undefined;
+  handsFree: HandsFreeData | undefined;
   actions: TimentoActions;
 };
 

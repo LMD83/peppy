@@ -27,6 +27,8 @@ export default defineSchema({
     startDate: v.string(),
     kitchenClose: v.string(),
     protocolTitle: v.string(),
+    /** "easy" returns fewer objects, not smaller ones. Enforced at the query boundary. */
+    a11yProfile: v.optional(v.union(v.literal("standard"), v.literal("easy"))),
   }).index("by_slug", ["slug"]),
 
   tm_sessions: defineTable({
@@ -140,6 +142,18 @@ export default defineSchema({
     mode: tmMode,
     label: v.string(),
   }).index("by_userId_and_date", ["userId", "date"]),
+
+  /** Opaque per-user tokens so a phone Shortcut can log without a session. */
+  tm_ingestTokens: defineTable({
+    userId: v.id("tm_users"),
+    token: v.string(),
+    label: v.string(),
+    createdDate: v.string(),
+    lastUsedAt: v.optional(v.number()),
+    revoked: v.boolean(),
+  })
+    .index("by_token", ["token"])
+    .index("by_userId", ["userId"]),
 
   /* ===== Crew consent — who may see what, and revocably =====
      Sharing adherence is sharing health data. It requires an explicit,

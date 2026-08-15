@@ -23,6 +23,7 @@ import type {
   ProgressData,
   ResearchData,
   StackData,
+  HandsFreeData,
   SupplyData,
   TodayData,
   TrainData,
@@ -51,6 +52,7 @@ import * as labsView from "./demo/labs";
 import * as mind from "./demo/mind";
 import * as consent from "./demo/consent";
 import * as supply from "./demo/supply";
+import * as ingest from "./demo/ingest";
 
 /**
  * In-memory demo backend. Serves the same view models as the Convex queries,
@@ -59,7 +61,7 @@ import * as supply from "./demo/supply";
  * (NEXT_PUBLIC_TIMENTO_DEMO=1); state lives for the page session only.
  */
 
-type DemoUser = FixtureUser & { modeSinceMut: string; modeMut: TmMode; reviewDateMut?: string; ceilingMut: number };
+type DemoUser = FixtureUser & { a11yProfileMut?: "standard" | "easy" } & { modeSinceMut: string; modeMut: TmMode; reviewDateMut?: string; ceilingMut: number };
 
 export class DemoDb {
   users: DemoUser[];
@@ -90,6 +92,7 @@ export class DemoDb {
   crewLinks: CrewLinkRow[];
   supplyRows: SupplyRow[];
   contacts: ContactRow[];
+  ingestTokens: { id: string; userSlug: string; token: string; label: string; createdDate: string; lastUsedAt?: number; revoked: boolean }[];
 
   private listeners = new Set<() => void>();
   private idSeq = 0;
@@ -120,6 +123,7 @@ export class DemoDb {
     this.crewLinks = [...fx.crewLinks];
     this.supplyRows = [...fx.supplyRows];
     this.contacts = [...fx.contacts];
+    this.ingestTokens = [];
     this.users = fx.users.map((u) => ({
       ...u,
       modeMut: u.mode,
@@ -474,6 +478,22 @@ export class DemoDb {
   }
   saveReflection(slug: string, date: string, prompt: string, response: string, win?: string) {
     mind.saveReflection(this, slug, date, prompt, response, win);
+    this.bump();
+  }
+
+  handsFree(slug: string, date: string): HandsFreeData {
+    return ingest.view(this, slug, date);
+  }
+  createIngestToken(slug: string, date: string, label: string) {
+    ingest.createToken(this, slug, date, label);
+    this.bump();
+  }
+  revokeIngestToken(tokenId: string) {
+    ingest.revokeToken(this, tokenId);
+    this.bump();
+  }
+  setA11yProfile(slug: string, profile: "standard" | "easy") {
+    this.user(slug).a11yProfileMut = profile;
     this.bump();
   }
 
