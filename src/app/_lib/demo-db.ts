@@ -25,6 +25,7 @@ import type {
   ResearchData,
   StackData,
   HandsFreeData,
+  ShopData,
   SupplyData,
   TodayData,
   TrainData,
@@ -55,6 +56,7 @@ import * as mind from "./demo/mind";
 import * as consent from "./demo/consent";
 import * as supply from "./demo/supply";
 import * as ingest from "./demo/ingest";
+import * as shop from "./demo/shop";
 
 /**
  * In-memory demo backend. Serves the same view models as the Convex queries,
@@ -94,6 +96,7 @@ export class DemoDb {
   crewLinks: CrewLinkRow[];
   supplyRows: SupplyRow[];
   contacts: ContactRow[];
+  pantry: { id: string; userSlug: string; foodKey: string; grams: number; updatedDate: string }[];
   ingestTokens: { id: string; userSlug: string; token: string; label: string; createdDate: string; lastUsedAt?: number; revoked: boolean }[];
 
   private listeners = new Set<() => void>();
@@ -126,6 +129,7 @@ export class DemoDb {
     this.supplyRows = [...fx.supplyRows];
     this.contacts = [...fx.contacts];
     this.ingestTokens = [];
+    this.pantry = [];
     this.users = fx.users.map((u) => ({
       ...u,
       modeMut: u.mode,
@@ -492,6 +496,18 @@ export class DemoDb {
     this.bump();
   }
 
+  shop(slug: string, date: string): ShopData {
+    return shop.view(this, slug, date);
+  }
+  setPantry(slug: string, date: string, foodKey: string, grams: number) {
+    shop.setPantry(this, slug, date, foodKey, grams);
+    this.bump();
+  }
+  clearPantry(slug: string) {
+    shop.clearPantry(this, slug);
+    this.bump();
+  }
+
   handsFree(slug: string, date: string): HandsFreeData {
     return ingest.view(this, slug, date);
   }
@@ -519,8 +535,8 @@ export class DemoDb {
     supply.saveContact(this, slug, kind, name, phone);
     this.bump();
   }
-  inviteCrew(slug: string, date: string, targetSlug: string, scopes: string[]) {
-    consent.invite(this, slug, date, targetSlug, scopes);
+  inviteCrew(slug: string, date: string, targetSlug: string, scopes: string[], relationship?: "crew" | "carer") {
+    consent.invite(this, slug, date, targetSlug, scopes, relationship);
     this.bump();
   }
   respondToCrewInvite(slug: string, date: string, linkId: string, accept: boolean) {

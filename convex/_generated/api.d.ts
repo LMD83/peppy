@@ -25,6 +25,7 @@ import type * as tm_labs from "../tm/labs.js";
 import type * as tm_mind from "../tm/mind.js";
 import type * as tm_supply from "../tm/supply.js";
 import type * as tm_ingest from "../tm/ingest.js";
+import type * as tm_shop from "../tm/shop.js";
 import type * as tm_http from "../http.js";
 
 import type {
@@ -51,6 +52,7 @@ declare const fullApi: ApiFromModules<{
   "tm/mind": typeof tm_mind;
   "tm/supply": typeof tm_supply;
   "tm/ingest": typeof tm_ingest;
+  "tm/shop": typeof tm_shop;
   http: typeof tm_http;
 }>;
 

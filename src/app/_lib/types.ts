@@ -13,6 +13,7 @@ export type LabsData = FunctionReturnType<typeof api.tm.labs.get>;
 export type MindData = FunctionReturnType<typeof api.tm.mind.get>;
 export type SupplyData = FunctionReturnType<typeof api.tm.supply.get>;
 export type HandsFreeData = FunctionReturnType<typeof api.tm.ingest.get>;
+export type ShopData = FunctionReturnType<typeof api.tm.shop.get>;
 
 export type TmSession = { token: string; slug: string; name: string };
 
@@ -69,9 +70,13 @@ export type TimentoActions = {
   revokeIngestToken: (tokenId: string) => void;
 
   /* crew consent — sharing adherence is sharing health data */
-  inviteCrew: (slug: string, scopes: string[]) => void;
+  inviteCrew: (slug: string, scopes: string[], relationship?: "crew" | "carer") => void;
   respondToCrewInvite: (linkId: string, accept: boolean) => void;
   revokeCrewLink: (linkId: string) => void;
+
+  /* shopping */
+  setPantry: (foodKey: string, grams: number) => void;
+  clearPantry: () => void;
 
   /* supply */
   setSupplyCount: (itemId: string, onHand: number) => void;
@@ -101,6 +106,7 @@ export type TimentoState = {
   mind: MindData | undefined;
   supply: SupplyData | undefined;
   handsFree: HandsFreeData | undefined;
+  shop: ShopData | undefined;
   actions: TimentoActions;
 };
 

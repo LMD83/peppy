@@ -166,6 +166,8 @@ export default defineSchema({
     viewerId: v.id("tm_users"),
     /** Named projections only — never raw entries. */
     scopes: v.array(v.string()),
+    /** A peer in the crew, or someone helping from outside it. */
+    relationship: v.optional(v.union(v.literal("crew"), v.literal("carer"))),
     status: v.union(v.literal("pending"), v.literal("active"), v.literal("revoked")),
     invitedDate: v.string(),
     respondedDate: v.optional(v.string()),
@@ -199,6 +201,13 @@ export default defineSchema({
     name: v.string(),
     phone: v.string(),
     note: v.optional(v.string()),
+  }).index("by_userId", ["userId"]),
+
+  tm_pantry: defineTable({
+    userId: v.id("tm_users"),
+    foodKey: v.string(),
+    grams: v.number(),
+    updatedDate: v.string(),
   }).index("by_userId", ["userId"]),
 
   /* ===== Fuel — targets, meal plan, intake ===== */
