@@ -20,6 +20,8 @@ import { MindTab } from "./mind-tab";
 import { SettingsTab } from "./settings-tab";
 import { HandsFreePanel } from "./handsfree-tab";
 import { ShopPanel } from "./shop-tab";
+import { RemindPanel } from "./remind-tab";
+import { CapturePanel } from "./capture-tab";
 
 /*
   Bottom nav.
@@ -44,7 +46,14 @@ const TABS = [
   { id: "crew", label: "Crew" },
 ] as const;
 
-type TabId = (typeof TABS)[number]["id"] | "more" | "settings" | "handsfree" | "shop";
+type TabId =
+  | (typeof TABS)[number]["id"]
+  | "more"
+  | "settings"
+  | "handsfree"
+  | "shop"
+  | "remind"
+  | "capture";
 
 const MORE_TAB = { id: "more", label: "More" } as const;
 
@@ -82,6 +91,8 @@ const DESTINATIONS: Destination[] = [
   { key: "crew", label: "Crew", tab: "crew" },
   { key: "shop", label: "Shopping", tab: "shop" },
   { key: "handsfree", label: "Hands-free", tab: "handsfree" },
+  { key: "remind", label: "Reminders", tab: "remind" },
+  { key: "capture", label: "Photos", tab: "capture" },
 ];
 
 function SubNav({
@@ -247,6 +258,8 @@ function Shell() {
         {tab === "settings" && <SettingsTab />}
         {tab === "handsfree" && <HandsFreePanel />}
         {tab === "shop" && <ShopPanel />}
+        {tab === "remind" && <RemindPanel />}
+        {tab === "capture" && <CapturePanel />}
         {tab === "today" && <TodayTab />}
         {tab === "fuel" && <FuelTab />}
         {tab === "train" && <TrainTab />}

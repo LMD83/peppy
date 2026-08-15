@@ -220,6 +220,85 @@ for (const [label, viewport] of [
     await page.screenshot({ path: `${SHOTS}/${label}-14-shop.png`, fullPage: true });
   });
 
+  await check("reminders: previews honestly and never claims it can send", async () => {
+    await goTab(page, "More");
+    await page.getByRole("button", { name: /^Reminders/ }).first().click({ timeout: NAV_TIMEOUT });
+    await page.waitForFunction(
+      () => /reminder/i.test(document.querySelector("main")?.innerText ?? ""),
+      undefined,
+      { timeout: NAV_TIMEOUT },
+    );
+    const body = await page.locator("main").innerText();
+    // The demo has no server behind it. A switch that lies about delivery is
+    // worse than no switch, so the screen has to say so.
+    if (!/demo|cannot|no server|not.*sent/i.test(body)) {
+      throw new Error("reminders screen does not admit it cannot deliver");
+    }
+    await page.screenshot({ path: `${SHOTS}/${label}-16-remind.png`, fullPage: true });
+  });
+
+  await check("photos: offers a capture and states it never reads the picture", async () => {
+    await goTab(page, "More");
+    await page.getByRole("button", { name: /^Photos/ }).first().click({ timeout: NAV_TIMEOUT });
+    await page.waitForFunction(
+      () => /photo/i.test(document.querySelector("main")?.innerText ?? ""),
+      undefined,
+      { timeout: NAV_TIMEOUT },
+    );
+    const body = await page.locator("main").innerText();
+    if (!/never reads/i.test(body)) throw new Error("capture screen omits the no-classifier promise");
+    if (!/never.*(crew|carer|shared)/i.test(body)) {
+      throw new Error("capture screen does not say photos are never shared");
+    }
+    // No identification claim may ever appear on this screen.
+    if (/we (identified|detected|recognised|recognized)/i.test(body)) {
+      throw new Error("capture screen claims to identify what is in a photo");
+    }
+    // The control is a file input wearing a label, so assert on the text.
+    if (!/take a photo/i.test(body)) throw new Error("capture screen offers no way to take one");
+    await page.screenshot({ path: `${SHOTS}/${label}-17-capture.png`, fullPage: true });
+  });
+
+  await check("photos: a capture round-trips and can be deleted again", async () => {
+    // A 1×1 PNG. The app never looks at it, which is exactly the point — what
+    // is being proved here is the write path, not any reading of the image.
+    await page.locator('input[type="file"]').first().setInputFiles({
+      name: "organiser.png",
+      mimeType: "image/png",
+      buffer: Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+        "base64",
+      ),
+    });
+    // Say what it is: the kind first, then the label, both from the user's own
+    // file. Each step is a plain button, so whichever is on screen gets clicked.
+    for (const name of [/pill organiser/i, /^(morning|midday|evening|bedtime|pre-workout)/i]) {
+      const btn = page.getByRole("button", { name }).first();
+      if (await btn.count()) {
+        await btn.click({ timeout: NAV_TIMEOUT });
+        await page.waitForTimeout(200);
+      }
+    }
+    // No confirm list when nothing is scheduled — the escape hatch is the answer.
+    const escape = page.getByRole("button", { name: /something else/i }).first();
+    if (await escape.count()) await escape.click({ timeout: NAV_TIMEOUT });
+
+    await page.waitForFunction(
+      () => /delete this photo/i.test(document.querySelector("main")?.innerText ?? ""),
+      undefined,
+      { timeout: NAV_TIMEOUT },
+    );
+    await page.screenshot({ path: `${SHOTS}/${label}-18-capture-saved.png`, fullPage: true });
+
+    // One tap, immediate, no bin. A delete that leaves the row is not a delete.
+    await page.getByRole("button", { name: /delete this photo/i }).first().click();
+    await page.waitForFunction(
+      () => !/delete this photo/i.test(document.querySelector("main")?.innerText ?? ""),
+      undefined,
+      { timeout: NAV_TIMEOUT },
+    );
+  });
+
   await check("carer: a pending request states exactly what it shares", async () => {
     await goTab(page, "Crew");
     const request = page.getByText(/carer/i).first();

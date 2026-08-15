@@ -155,6 +155,46 @@ export default defineSchema({
     .index("by_token", ["token"])
     .index("by_userId", ["userId"]),
 
+  /* ===== Reminders — the promise the app has been making without a way to keep it ===== */
+
+  tm_pushSubscriptions: defineTable({
+    userId: v.id("tm_users"),
+    endpoint: v.string(),
+    p256dh: v.string(),
+    auth: v.string(),
+    label: v.string(),
+    createdDate: v.string(),
+    lastSuccessAt: v.optional(v.number()),
+    lastFailureAt: v.optional(v.number()),
+    /** Consecutive failures; a dead subscription is dropped rather than retried forever. */
+    failures: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_endpoint", ["endpoint"]),
+
+  tm_reminderPrefs: defineTable({
+    userId: v.id("tm_users"),
+    enabled: v.boolean(),
+    /** Nothing fires inside these hours, whatever is due. */
+    quietFrom: v.string(),
+    quietTo: v.string(),
+    doses: v.boolean(),
+    supply: v.boolean(),
+    checkins: v.boolean(),
+    /** A missed reminder is never repeated more than this in a day. */
+    maxPerDay: v.number(),
+  }).index("by_userId", ["userId"]),
+
+  /** A photo is evidence attached to something you logged — never an identification. */
+  tm_captures: defineTable({
+    userId: v.id("tm_users"),
+    date: v.string(),
+    kind: v.union(v.literal("dose"), v.literal("meal"), v.literal("organiser")),
+    storageId: v.id("_storage"),
+    note: v.optional(v.string()),
+    at: v.number(),
+  }).index("by_userId_and_date", ["userId", "date"]),
+
   /* ===== Crew consent — who may see what, and revocably =====
      Sharing adherence is sharing health data. It requires an explicit,
      per-scope grant from the person whose data it is, and a way back out. */

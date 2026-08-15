@@ -82,6 +82,9 @@ export const TODAY_CARDS = [
   "weigh",
   "mind",
   "labs",
+  // Silent unless a photo was actually taken today, and silent in the floor
+  // either way — see captureSummary. It never asks for anything.
+  "capture",
   "winter",
 ] as const;
 
