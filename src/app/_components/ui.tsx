@@ -36,7 +36,7 @@ export function Eyebrow({
   return (
     <div className={cn("mb-2 flex items-center gap-2", className)}>
       <span aria-hidden className={cn("inline-block h-1 w-[18px] rounded-[1px]", color)} />
-      <span className="font-tm-mono text-[10.5px] tracking-[0.15em] text-tm-dim uppercase">
+      <span className="font-tm-mono text-[11.5px] tracking-[0.15em] text-tm-dim uppercase">
         {children}
       </span>
     </div>
@@ -47,11 +47,15 @@ export function Stat({ value, label }: { value: string; label: string }) {
   return (
     <div>
       <div className="font-tm-disp text-2xl leading-tight">{value}</div>
-      <div className="font-tm-mono text-[9px] tracking-[0.16em] text-tm-dim uppercase">{label}</div>
+      <div className="font-tm-mono text-[11.5px] tracking-[0.14em] text-tm-dim uppercase">{label}</div>
     </div>
   );
 }
 
+/**
+ * Contrast on each pairing (see globals.css for the palette rationale):
+ * green on #e8f1eb 5.20:1 · blue on #e9eff8 5.46:1 · amber on amber-bg 5.23:1.
+ */
 export function ModeBadge({ mode }: { mode: "cut" | "maintain" | "survival" }) {
   const styles = {
     cut: "border-tm-green bg-[#e8f1eb] text-tm-green",
@@ -61,7 +65,7 @@ export function ModeBadge({ mode }: { mode: "cut" | "maintain" | "survival" }) {
   return (
     <span
       className={cn(
-        "rounded-xl border px-2.5 py-[3px] font-tm-mono text-[9px] tracking-[0.1em] uppercase",
+        "rounded-xl border px-2.5 py-[3px] font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
         styles[mode],
       )}
     >
