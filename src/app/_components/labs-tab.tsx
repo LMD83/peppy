@@ -428,7 +428,11 @@ function PanelHistory({ panels }: { panels: LabPanel[] }) {
           return (
             <li
               key={p.id}
-              className="flex items-center justify-between border-b border-tm-grid py-2 last:border-0"
+              // flex-wrap and no shrink-0: the panel name plus a ~30-character
+              // meta line does not fit across a 320px viewport, and shrink-0
+              // turned that into sideways scroll for the whole page rather than
+              // a second line (1.4.10). The meta drops under the name instead.
+              className="flex flex-wrap items-center justify-between gap-x-2 border-b border-tm-grid py-2 last:border-0"
             >
               <span className="text-[13px] font-medium">
                 {p.name}{" "}
@@ -436,7 +440,7 @@ function PanelHistory({ panels }: { panels: LabPanel[] }) {
                   {p.fasted === true ? "fasted" : p.fasted === false ? "non-fasted" : ""}
                 </span>
               </span>
-              <span className="shrink-0 font-tm-mono text-[10.5px] text-tm-dim">
+              <span className="font-tm-mono text-[10.5px] text-tm-dim">
                 {p.date} · {p.results.length} markers · {out} out
               </span>
             </li>

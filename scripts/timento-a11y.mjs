@@ -191,7 +191,18 @@ async function checkTargetSize(page, screen) {
   for (const s of soft) warnings.push(`${screen}: below the ${TARGET_HOUSE}px house standard — ${s}`);
 }
 
-/** 1.4.10 — nothing may scroll sideways at 320 CSS px. */
+/**
+ * 1.4.10 — nothing may scroll sideways at 320 CSS px.
+ *
+ * One known limit: text width depends on the font that actually loaded, and a
+ * CI runner does not always resolve the same one a dev container does. A labs
+ * row cleared 320px locally and overflowed to 327px on the deployed build. The
+ * run against the deployment is therefore the authority, not this one — which
+ * is why the sweep is wired into deploy-verify rather than only into a local
+ * script. (A "fits by only Npx" warning was tried here and removed: a
+ * full-width layout always fits by exactly 0px, so it flagged every screen and
+ * said nothing.)
+ */
 async function checkReflow(page, screen) {
   const overflow = await page.evaluate(() => {
     const doc = document.documentElement;
