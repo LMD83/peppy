@@ -87,25 +87,39 @@ describe("privacy split (query level)", () => {
     const { t, conor } = await seeded();
     const board = await t.query(api.tm.crew.board, { token: conor, date: TODAY });
     expect(board).toHaveLength(2);
+    // The board is an allow-list: a field only appears because a granted scope
+    // named it. `link` carries the consent state, `supplyState` is the coarse
+    // flag the "supply" scope permits — never a medicine, dose or count.
+    const allowed = [
+      "slug",
+      "name",
+      "isYou",
+      "mode",
+      "modeSince",
+      "reviewDate",
+      "daysInMode",
+      "streak",
+      "adherence7",
+      "todayDone",
+      "todayTotal",
+      "link",
+      "supplyState",
+    ].sort();
     for (const member of board) {
-      expect(Object.keys(member).sort()).toEqual(
-        [
-          "slug",
-          "name",
-          "isYou",
-          "mode",
-          "modeSince",
-          "reviewDate",
-          "daysInMode",
-          "streak",
-          "adherence7",
-          "todayDone",
-          "todayTotal",
-        ].sort(),
-      );
+      // Subset, not equality: a member with narrower scopes legitimately carries
+      // fewer fields, and that direction is never a leak.
+      const keys = Object.keys(member).sort();
+      expect(allowed).toEqual(expect.arrayContaining(keys));
+      if ("supplyState" in member) {
+        expect(["ok", "order-due", null]).toContain(
+          (member as { supplyState: string | null }).supplyState,
+        );
+      }
     }
     const serialized = JSON.stringify(board);
     expect(serialized).not.toMatch(/92\.8|weight|kg|ldl|lab/i);
+    // Nothing from the stack may cross, by name or by number.
+    expect(serialized).not.toMatch(/metformin|creatine|bpc|vitamin|mg\b|tablet/i);
   });
 
   it("partner session cannot read the owner's raw logs in either direction", async () => {

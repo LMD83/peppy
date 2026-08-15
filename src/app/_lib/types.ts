@@ -11,6 +11,8 @@ export type TrainData = FunctionReturnType<typeof api.tm.train.get>;
 export type StackData = FunctionReturnType<typeof api.tm.stack.get>;
 export type LabsData = FunctionReturnType<typeof api.tm.labs.get>;
 export type MindData = FunctionReturnType<typeof api.tm.mind.get>;
+export type SupplyData = FunctionReturnType<typeof api.tm.supply.get>;
+export type HandsFreeData = FunctionReturnType<typeof api.tm.ingest.get>;
 
 export type TmSession = { token: string; slug: string; name: string };
 
@@ -41,7 +43,12 @@ export type TimentoActions = {
   logFood: (slot: MealSlot, foodKey: string, grams: number) => void;
   setFoodEaten: (entryId: string, eaten: boolean) => void;
   removeFood: (entryId: string) => void;
-  generateMealPlan: () => void;
+  generateMealPlan: (today?: {
+    minutes?: number;
+    equipment?: "none" | "kettle" | "microwave" | "one-pan" | "oven";
+    oneHanded?: boolean;
+    canStand?: boolean;
+  }) => void;
 
   /* train */
   logSet: (exercise: string, setIndex: number, weightKg: number, reps: number, rir: number) => void;
@@ -53,6 +60,22 @@ export type TimentoActions = {
 
   /* labs */
   addLabPanel: (name: string, results: LabResultInput[], fasted?: boolean) => void;
+
+  /* accessibility — "easy" is a mode, not a preference toggle */
+  setA11yProfile: (profile: "standard" | "easy") => void;
+
+  /* hands-free */
+  createIngestToken: (label: string) => void;
+  revokeIngestToken: (tokenId: string) => void;
+
+  /* crew consent — sharing adherence is sharing health data */
+  inviteCrew: (slug: string, scopes: string[]) => void;
+  respondToCrewInvite: (linkId: string, accept: boolean) => void;
+  revokeCrewLink: (linkId: string) => void;
+
+  /* supply */
+  setSupplyCount: (itemId: string, onHand: number) => void;
+  saveContact: (kind: "gp" | "pharmacy", name: string, phone: string) => void;
 
   /* mind */
   submitAssessment: (instrument: string, answers: number[]) => void;
@@ -76,6 +99,8 @@ export type TimentoState = {
   stack: StackData | undefined;
   labs: LabsData | undefined;
   mind: MindData | undefined;
+  supply: SupplyData | undefined;
+  handsFree: HandsFreeData | undefined;
   actions: TimentoActions;
 };
 

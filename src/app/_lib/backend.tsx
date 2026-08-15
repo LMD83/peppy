@@ -160,7 +160,7 @@ function DemoBackend({ children }: { children: React.ReactNode }) {
       logFood: (slot, foodKey, grams) => slug && db.logFood(slug, date, slot, foodKey, grams),
       setFoodEaten: (entryId, eaten) => db.setFoodEaten(entryId, eaten),
       removeFood: (entryId) => db.removeFood(entryId),
-      generateMealPlan: () => slug && db.generateMealPlan(slug, date),
+      generateMealPlan: (today) => slug && db.generateMealPlan(slug, date, today),
       logSet: (exercise, setIndex, weightKg, reps, rir) =>
         slug && db.logSet(slug, date, exercise, setIndex, weightKg, reps, rir),
       startMesocycle: (goal) => slug && db.startMesocycle(slug, date, goal),
@@ -171,6 +171,14 @@ function DemoBackend({ children }: { children: React.ReactNode }) {
       addIntention: (trigger, action) => slug && db.addIntention(slug, date, trigger, action),
       markIntentionWin: (intentionId) => db.markIntentionWin(intentionId),
       saveReflection: (prompt, response, win) => slug && db.saveReflection(slug, date, prompt, response, win),
+      inviteCrew: (target, scopes) => slug && db.inviteCrew(slug, date, target, scopes),
+      respondToCrewInvite: (linkId, accept) => slug && db.respondToCrewInvite(slug, date, linkId, accept),
+      revokeCrewLink: (linkId) => slug && db.revokeCrewLink(slug, date, linkId),
+      setSupplyCount: (itemId, onHand) => slug && db.setSupplyCount(slug, date, itemId, onHand),
+      saveContact: (kind, name, phone) => slug && db.saveContact(slug, kind, name, phone),
+      setA11yProfile: (profile) => slug && db.setA11yProfile(slug, profile),
+      createIngestToken: (label) => slug && db.createIngestToken(slug, date, label),
+      revokeIngestToken: (tokenId) => db.revokeIngestToken(tokenId),
     }),
     [db, slug, date, store],
   );
@@ -190,6 +198,8 @@ function DemoBackend({ children }: { children: React.ReactNode }) {
     stack: slug ? db.stack(slug, date) : undefined,
     labs: slug ? db.labsView(slug, date) : undefined,
     mind: slug ? db.mind(slug, date) : undefined,
+    supply: slug ? db.supply(slug, date) : undefined,
+    handsFree: slug ? db.handsFree(slug, date) : undefined,
     actions,
   };
   return <TimentoContext.Provider value={value}>{children}</TimentoContext.Provider>;
@@ -226,6 +236,8 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
   const stack = useQuery(api.tm.stack.get, args);
   const labs = useQuery(api.tm.labs.get, args);
   const mind = useQuery(api.tm.mind.get, args);
+  const supply = useQuery(api.tm.supply.get, args);
+  const handsFree = useQuery(api.tm.ingest.get, args);
 
   const loginMut = useMutation(api.tm.auth.login);
   const logoutMut = useMutation(api.tm.auth.logout);
@@ -249,6 +261,14 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
   const addIntentionMut = useMutation(api.tm.mind.addIntention);
   const intentionWinMut = useMutation(api.tm.mind.markIntentionWin);
   const saveReflectionMut = useMutation(api.tm.mind.saveReflection);
+  const inviteCrewMut = useMutation(api.tm.crew.invite);
+  const respondCrewMut = useMutation(api.tm.crew.respondToInvite);
+  const revokeCrewMut = useMutation(api.tm.crew.revokeLink);
+  const setSupplyMut = useMutation(api.tm.supply.setCount);
+  const saveContactMut = useMutation(api.tm.supply.saveContact);
+  const setProfileMut = useMutation(api.tm.today.setA11yProfile);
+  const createTokenMut = useMutation(api.tm.ingest.createToken);
+  const revokeTokenMut = useMutation(api.tm.ingest.revokeToken);
 
   const actions: TimentoActions = useMemo(
     () => ({
@@ -286,7 +306,7 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
         token && void setFoodEatenMut({ token, entryId: entryId as Id<"tm_mealEntries">, eaten }),
       removeFood: (entryId) =>
         token && void removeFoodMut({ token, entryId: entryId as Id<"tm_mealEntries"> }),
-      generateMealPlan: () => token && void generatePlanMut({ token, date }),
+      generateMealPlan: (today) => token && void generatePlanMut({ token, date, ...(today ?? {}) }),
       logSet: (exercise, setIndex, weightKg, reps, rir) =>
         token && void logSetMut({ token, date, exercise, setIndex, weightKg, reps, rir }),
       startMesocycle: (goal) => token && void startMesoMut({ token, date, goal }),
@@ -302,6 +322,18 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
         token && void intentionWinMut({ token, intentionId: intentionId as Id<"tm_intentions"> }),
       saveReflection: (prompt, response, win) =>
         token && void saveReflectionMut({ token, date, prompt, response, win }),
+      inviteCrew: (slug, scopes) => token && void inviteCrewMut({ token, date, slug, scopes }),
+      respondToCrewInvite: (linkId, accept) =>
+        token && void respondCrewMut({ token, date, linkId: linkId as Id<"tm_crewLinks">, accept }),
+      revokeCrewLink: (linkId) =>
+        token && void revokeCrewMut({ token, date, linkId: linkId as Id<"tm_crewLinks"> }),
+      setSupplyCount: (itemId, onHand) =>
+        token && void setSupplyMut({ token, date, itemId: itemId as Id<"tm_protocolItems">, onHand }),
+      saveContact: (kind, name, phone) => token && void saveContactMut({ token, kind, name, phone }),
+      setA11yProfile: (profile) => token && void setProfileMut({ token, profile }),
+      createIngestToken: (label) => token && void createTokenMut({ token, date, label }),
+      revokeIngestToken: (tokenId) =>
+        token && void revokeTokenMut({ token, tokenId: tokenId as Id<"tm_ingestTokens"> }),
     }),
     [
       token,
@@ -329,6 +361,14 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
       addIntentionMut,
       intentionWinMut,
       saveReflectionMut,
+      inviteCrewMut,
+      respondCrewMut,
+      revokeCrewMut,
+      setSupplyMut,
+      saveContactMut,
+      setProfileMut,
+      createTokenMut,
+      revokeTokenMut,
     ],
   );
 
@@ -347,6 +387,8 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
     stack,
     labs,
     mind,
+    supply,
+    handsFree,
     actions,
   };
   return <TimentoContext.Provider value={value}>{children}</TimentoContext.Provider>;

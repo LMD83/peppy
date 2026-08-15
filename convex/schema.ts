@@ -27,6 +27,8 @@ export default defineSchema({
     startDate: v.string(),
     kitchenClose: v.string(),
     protocolTitle: v.string(),
+    /** "easy" returns fewer objects, not smaller ones. Enforced at the query boundary. */
+    a11yProfile: v.optional(v.union(v.literal("standard"), v.literal("easy"))),
   }).index("by_slug", ["slug"]),
 
   tm_sessions: defineTable({
@@ -140,6 +142,64 @@ export default defineSchema({
     mode: tmMode,
     label: v.string(),
   }).index("by_userId_and_date", ["userId", "date"]),
+
+  /** Opaque per-user tokens so a phone Shortcut can log without a session. */
+  tm_ingestTokens: defineTable({
+    userId: v.id("tm_users"),
+    token: v.string(),
+    label: v.string(),
+    createdDate: v.string(),
+    lastUsedAt: v.optional(v.number()),
+    revoked: v.boolean(),
+  })
+    .index("by_token", ["token"])
+    .index("by_userId", ["userId"]),
+
+  /* ===== Crew consent — who may see what, and revocably =====
+     Sharing adherence is sharing health data. It requires an explicit,
+     per-scope grant from the person whose data it is, and a way back out. */
+
+  tm_crewLinks: defineTable({
+    /** Whose file is being shared. */
+    ownerId: v.id("tm_users"),
+    /** Who may see the projection. */
+    viewerId: v.id("tm_users"),
+    /** Named projections only — never raw entries. */
+    scopes: v.array(v.string()),
+    status: v.union(v.literal("pending"), v.literal("active"), v.literal("revoked")),
+    invitedDate: v.string(),
+    respondedDate: v.optional(v.string()),
+    revokedDate: v.optional(v.string()),
+  })
+    .index("by_ownerId", ["ownerId"])
+    .index("by_viewerId", ["viewerId"]),
+
+  /* ===== Supply — never run out ===== */
+
+  tm_supply: defineTable({
+    userId: v.id("tm_users"),
+    itemId: v.id("tm_protocolItems"),
+    /** Units physically in the house at lastCountedDate. */
+    onHand: v.number(),
+    unitsPerDose: v.number(),
+    packSize: v.number(),
+    lastCountedDate: v.string(),
+    /** Days between asking for more and having it in hand. */
+    reorderLeadDays: v.number(),
+    scriptExpiryDate: v.optional(v.string()),
+    repeatsRemaining: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_and_itemId", ["userId", "itemId"]),
+
+  /** GP and pharmacy details, so a refill is one tap rather than a search. */
+  tm_contacts: defineTable({
+    userId: v.id("tm_users"),
+    kind: v.union(v.literal("gp"), v.literal("pharmacy")),
+    name: v.string(),
+    phone: v.string(),
+    note: v.optional(v.string()),
+  }).index("by_userId", ["userId"]),
 
   /* ===== Fuel — targets, meal plan, intake ===== */
 

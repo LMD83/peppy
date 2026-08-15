@@ -1,6 +1,7 @@
 import type { Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { addDays } from "../lib";
+import { DEFAULT_KITCHEN, type KitchenProfile } from "../logic-fuel";
 
 /**
  * Fuel fixtures — a fortnight of realistic intake for the two crew members.
@@ -43,11 +44,66 @@ export type EnergyEstimateRow = {
   weightSlopeKgPerWeek: number;
 };
 
+/**
+ * The kitchen someone actually has, per user.
+ *
+ * Seam note: this has no table yet. Until the schema carries `tm_kitchenProfile`
+ * the profile is static config keyed by slug, read identically by
+ * convex/tm/fuel.ts and src/app/_lib/demo/fuel.ts through `kitchenProfileFor`,
+ * so the two backends cannot drift. Nothing else in the fixture set depends on
+ * it, so promoting it to a table is an additive change.
+ */
+export type KitchenProfileRow = { userSlug: string } & KitchenProfile;
+
 export type FuelFixtures = {
   nutritionTargets: NutritionTargetRow[];
   mealEntries: MealEntryRow[];
   energyEstimates: EnergyEstimateRow[];
+  kitchenProfiles: KitchenProfileRow[];
 };
+
+/**
+ * Liam: a pinned breakfast (the same skyr every morning is a working system),
+ * two safe foods, one allergen exclusion and one never-again. Twenty-five
+ * minutes and one pan — a real weeknight, not a cookery show.
+ *
+ * Conor: on the floor. Ten minutes, a microwave, one hand, and the four things
+ * he actually eats sitting at the top of every list.
+ */
+export const KITCHEN_PROFILES: KitchenProfileRow[] = [
+  {
+    userSlug: "liam",
+    minutes: 25,
+    equipment: "one-pan",
+    hands: 2,
+    canStand: true,
+    excludeAllergens: ["crustaceans"],
+    safeFoodsOnly: false,
+    pinnedBreakfast: "skyr",
+    safeFoods: ["oats", "chicken_breast"],
+    neverAgain: ["tempeh"],
+  },
+  {
+    userSlug: "conor",
+    minutes: 10,
+    equipment: "microwave",
+    hands: 1,
+    canStand: true,
+    excludeAllergens: [],
+    safeFoodsOnly: false,
+    pinnedBreakfast: "skyr",
+    safeFoods: ["skyr", "oats", "potato", "chicken_breast"],
+    neverAgain: [],
+  },
+];
+
+/** The kitchen for a user, or a full one for anybody the file does not know. */
+export function kitchenProfileFor(slug: string): KitchenProfile {
+  const row = KITCHEN_PROFILES.find((p) => p.userSlug === slug);
+  if (!row) return DEFAULT_KITCHEN;
+  const { userSlug: _slug, ...profile } = row;
+  return profile;
+}
 
 type MenuItem = [MealSlot, string, number];
 
@@ -202,10 +258,16 @@ export function buildFuelFixtures(today: string): FuelFixtures {
     },
   ];
 
-  return { nutritionTargets, mealEntries, energyEstimates };
+  return { nutritionTargets, mealEntries, energyEstimates, kitchenProfiles: KITCHEN_PROFILES };
 }
 
-/** Insert the fixtures, dropping the demo-only string ids. */
+/**
+ * Insert the fixtures, dropping the demo-only string ids.
+ *
+ * Kitchen profiles are deliberately not inserted: they have no table yet (see
+ * KitchenProfileRow). Both backends read them from this module, so seeding is a
+ * no-op for them rather than a silent half-state.
+ */
 export async function seedFuel(
   ctx: MutationCtx,
   uid: (slug: string) => Id<"tm_users">,

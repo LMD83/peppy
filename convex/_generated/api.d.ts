@@ -23,6 +23,9 @@ import type * as tm_train from "../tm/train.js";
 import type * as tm_stack from "../tm/stack.js";
 import type * as tm_labs from "../tm/labs.js";
 import type * as tm_mind from "../tm/mind.js";
+import type * as tm_supply from "../tm/supply.js";
+import type * as tm_ingest from "../tm/ingest.js";
+import type * as tm_http from "../http.js";
 
 import type {
   ApiFromModules,
@@ -46,6 +49,9 @@ declare const fullApi: ApiFromModules<{
   "tm/stack": typeof tm_stack;
   "tm/labs": typeof tm_labs;
   "tm/mind": typeof tm_mind;
+  "tm/supply": typeof tm_supply;
+  "tm/ingest": typeof tm_ingest;
+  http: typeof tm_http;
 }>;
 
 /**

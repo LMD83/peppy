@@ -13,11 +13,13 @@ export function Scoreboard() {
   const survival = user.mode === "survival";
   const title = survival ? `Floor protocol — hold < ${user.ceilingKg}` : user.protocolTitle;
 
+  // Swatches are aria-hidden decoration, but they still have to be visible:
+  // tm-onink replaces tm-dim2 here because dim2 is now a dark-on-light grey.
   const cells: [string, string, string, string][] = [
     ["Mass", `${latestKg.toFixed(1)} kg`, survival ? `ceiling ${user.ceilingKg.toFixed(1)}` : `Δ ${deltaKg > 0 ? "+" : ""}${deltaKg.toFixed(1)} kg`, "bg-tm-blue"],
-    ["Day", `${dayNumber}`, `week ${Math.ceil(dayNumber / 7)}`, "bg-tm-dim2"],
+    ["Day", `${dayNumber}`, `week ${Math.ceil(dayNumber / 7)}`, "bg-tm-onink"],
     survival
-      ? ["Floor", `${stats.todayDone}/${stats.todayTotal}`, "today's checks", "bg-tm-amber"]
+      ? ["Floor", `${stats.todayDone}/${stats.todayTotal}`, "today's checks", "bg-tm-amber-lift"]
       : ["Adherence", `${stats.adherence7}%`, `${stats.streak}-day streak`, "bg-tm-green"],
   ];
 
@@ -25,33 +27,46 @@ export function Scoreboard() {
     <header className="bg-tm-ink px-4 pt-[18px] pb-4">
       <div className="mx-auto max-w-md">
         <div className="flex items-center justify-between gap-2">
-          <div className="font-tm-mono text-[10px] tracking-[0.2em] text-tm-dim2 uppercase">
+          <p className="font-tm-mono text-[11.5px] tracking-[0.16em] text-tm-onink uppercase">
             Performance file · {user.name}
-          </div>
+          </p>
+          {/*
+            Sign-out lives here, not in the bottom nav where it used to sit one
+            thumb-width from "Crew". 44px target, out of the navigation zone.
+            The accessible name stays "Sign out" — the e2e suite finds it by name.
+          */}
           <button
-            onClick={() => setConfirmMode(true)}
-            className={cn(
-              "cursor-pointer rounded-[20px] border px-2.5 py-[5px] font-tm-mono text-[10px] tracking-[0.1em] uppercase",
-              survival ? "border-tm-amber bg-tm-amber text-[#1a1205]" : "border-tm-inkrule bg-tm-ink3 text-[#c9cdd4]",
-            )}
+            onClick={() => actions.logout()}
+            className="-mr-2 inline-flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center rounded-[8px] px-2 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-onink uppercase"
           >
-            {user.mode} mode ⇄
+            Sign out
           </button>
         </div>
-        <h1 className="mt-1.5 font-tm-disp text-2xl leading-tight text-white uppercase">{title}</h1>
+        <h1 className="mt-1 font-tm-disp text-2xl leading-tight text-white uppercase">{title}</h1>
         {survival && (
-          <p className="mt-1 font-tm-mono text-[10.5px] text-tm-amber">
+          <p className="mt-1.5 text-[14px] leading-relaxed text-tm-amber-lift">
             Executing as designed.{user.reviewDate ? ` Review prompt: ${user.reviewDate}.` : ""} Zero guilt clause active.
           </p>
         )}
-        <dl className="mt-4 flex overflow-hidden rounded-lg border border-tm-inkrule bg-tm-ink2">
+        <button
+          onClick={() => setConfirmMode(true)}
+          aria-expanded={confirmMode}
+          className={cn(
+            "mt-3 inline-flex min-h-11 cursor-pointer items-center rounded-[22px] border px-4 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
+            // ink on amber-lift 8.13:1 · #c9cdd4 on ink3 9.38:1
+            survival ? "border-tm-amber-lift bg-tm-amber-lift text-tm-ink" : "border-tm-inkrule bg-tm-ink3 text-[#c9cdd4]",
+          )}
+        >
+          {user.mode} mode ⇄
+        </button>
+        <dl className="mt-3 flex overflow-hidden rounded-lg border border-tm-inkrule bg-tm-ink2">
           {cells.map(([label, value, sub, color], i) => (
-            <div key={label} className={cn("flex-1 px-3 py-3", i > 0 && "border-l border-tm-inkrule")}>
-              <dt className="font-tm-mono text-[9px] tracking-[0.16em] text-tm-dim2 uppercase">{label}</dt>
+            <div key={label} className={cn("min-w-0 flex-1 px-3 py-3", i > 0 && "border-l border-tm-inkrule")}>
+              <dt className="font-tm-mono text-[11.5px] tracking-[0.08em] text-tm-onink uppercase">{label}</dt>
               <dd className="my-0.5 font-tm-disp text-[22px] text-white">{value}</dd>
               <dd className="flex items-center gap-1.5">
-                <span aria-hidden className={cn("inline-block h-[3px] w-3", color)} />
-                <span className="font-tm-mono text-[9px] text-tm-dim2">{sub}</span>
+                <span aria-hidden className={cn("inline-block h-[3px] w-3 shrink-0", color)} />
+                <span className="font-tm-mono text-[11.5px] leading-tight text-tm-onink">{sub}</span>
               </dd>
             </div>
           ))}
@@ -86,7 +101,7 @@ function ModeSwitcher({
   const defaultReview = `${Number(date.slice(0, 4))}-${date.slice(5, 7)}-${date.slice(8, 10)}`;
   return (
     <div role="dialog" aria-label="Switch mode" className="mt-3 rounded-lg border border-tm-inkrule bg-tm-ink3 p-3">
-      <p className="mb-2 font-tm-mono text-[10px] tracking-[0.12em] text-tm-dim2 uppercase">Switch mode — takes effect now</p>
+      <p className="mb-2 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-onink uppercase">Switch mode — takes effect now</p>
       <div className="flex flex-col gap-1.5">
         {options.map((o) => (
           <button
@@ -94,16 +109,16 @@ function ModeSwitcher({
             disabled={o.mode === current}
             onClick={() => onPick(o.mode, o.mode === "survival" ? nextReview(defaultReview) : undefined)}
             className={cn(
-              "cursor-pointer rounded-md border border-tm-inkrule px-3 py-2 text-left disabled:opacity-40",
-              "bg-tm-ink2 text-[12.5px] text-[#e6e8ec]",
+              "min-h-11 cursor-pointer rounded-md border border-tm-inkrule px-3 py-2.5 text-left disabled:opacity-40",
+              "bg-tm-ink2 text-[14px] text-[#e6e8ec]",
             )}
           >
-            <span className="font-tm-mono text-[10px] tracking-[0.12em] uppercase">{o.mode}</span>
-            <span className="block text-[11.5px] text-tm-dim2">{o.blurb}</span>
+            <span className="font-tm-mono text-[11.5px] tracking-[0.12em] uppercase">{o.mode}</span>
+            <span className="mt-0.5 block text-[14px] leading-snug text-tm-onink">{o.blurb}</span>
           </button>
         ))}
       </div>
-      <button onClick={onClose} className="mt-2 w-full cursor-pointer rounded-md py-1.5 font-tm-mono text-[10px] tracking-[0.12em] text-tm-dim2 uppercase">
+      <button onClick={onClose} className="mt-2 min-h-11 w-full cursor-pointer rounded-md font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-onink uppercase">
         Keep {current}
       </button>
     </div>

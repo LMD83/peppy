@@ -1,5 +1,17 @@
 import { addDays, daysBetween, type TmMode } from "./lib";
-import { GROUP_ORDER, foodByKey, type FoodDef, type FoodGroup } from "./data/foods";
+import {
+  EQUIPMENT_LABELS,
+  EQUIPMENT_RANK,
+  GROUP_ORDER,
+  foodByKey,
+  reachableWith,
+  type Allergen,
+  type FoodDef,
+  type FoodEffort,
+  type FoodEquipment,
+  type FoodGroup,
+  type FoodShelf,
+} from "./data/foods";
 
 /**
  * Pure fuel logic — energy balance, macro targets, meal-plan generation.
@@ -8,6 +20,15 @@ import { GROUP_ORDER, foodByKey, type FoodDef, type FoodGroup } from "./data/foo
  *
  * Deterministic by construction: no Date.now(), no Math.random(). Every date
  * comes in as an argument.
+ *
+ * The arithmetic below (Mifflin-St Jeor, the adaptive fit, the macro split) is
+ * unchanged from the day it shipped — it works. What changed is what the
+ * planner optimises for. Macros against a salt ceiling quietly assume a capable
+ * cook with a full kitchen and executive function to spare; on a bad day the
+ * binding constraint is minutes, pans, hands and standing time. Those are
+ * first-class inputs here (PlanConstraints), and repetition — the same
+ * breakfast every day, a short list of safe foods — is treated as a working
+ * system rather than a failure to rotate.
  *
  * Evidence note: the equations here are population-level estimates. Mifflin-St
  * Jeor predicts resting energy within roughly +/-10% for most people (moderate
@@ -305,6 +326,121 @@ export function totalsFor(entries: SimpleEntry[], foods: FoodDef[]): FuelTotals 
   return round(acc);
 }
 
+/* ===== effort: what a plan costs before you commit to it ===== */
+
+/**
+ * What you have today, not what a kitchen ideally contains.
+ *
+ * `minutes` is a budget of hands-on minutes, spent once per distinct food — the
+ * wall clock an oven runs for is not yours. `equipment` is the most capable
+ * appliance available, and a food is reachable when its requirement ranks at or
+ * below it. `hands: 1` means one-handed only. `canStand: false` admits only
+ * foods that cost no time on your feet.
+ */
+export type PlanConstraints = {
+  minutes: number;
+  equipment: FoodEquipment;
+  hands: 1 | 2;
+  canStand: boolean;
+  excludeAllergens: Allergen[];
+  safeFoodsOnly: boolean;
+};
+
+/**
+ * Repetition as a feature. A pinned breakfast is a decision already made; safe
+ * foods are the short list someone always tolerates; never-again is a hard
+ * exclusion the generator may never argue with.
+ */
+export type FoodPrefs = {
+  pinnedBreakfast: string | null;
+  safeFoods: string[];
+  neverAgain: string[];
+};
+
+export type KitchenProfile = PlanConstraints & FoodPrefs;
+
+/** A full kitchen and a good day — the assumption the planner used to make. */
+export const DEFAULT_KITCHEN: KitchenProfile = {
+  minutes: 45,
+  equipment: "oven",
+  hands: 2,
+  canStand: true,
+  excludeAllergens: [],
+  safeFoodsOnly: false,
+  pinnedBreakfast: null,
+  safeFoods: [],
+  neverAgain: [],
+};
+
+/** The bad day, fixed: nothing to cook, nothing to stand for, one hand. */
+export const FLOOR_CONSTRAINTS: PlanConstraints = {
+  minutes: 5,
+  equipment: "none",
+  hands: 1,
+  canStand: false,
+  excludeAllergens: [],
+  safeFoodsOnly: false,
+};
+
+export type EffortProfile = {
+  /** Hands-on minutes for the whole plan, counted once per distinct food. */
+  minutes: number;
+  /** The most capable appliance the plan needs. */
+  equipment: FoodEquipment;
+  /** 2 if any item needs both hands. */
+  hands: 1 | 2;
+  /** The hardest thing the plan asks for. */
+  effort: FoodEffort;
+  /** "5 min · one pan · one-handed" — the cost, stated up front. */
+  summary: string;
+};
+
+const EFFORT_RANK: Record<FoodEffort, number> = { none: 0, assemble: 1, heat: 2, cook: 3 };
+
+/** Cost of a set of plan items. Distinct foods only — you boil a kettle once. */
+export function effortFor(items: PlanItem[], foods: FoodDef[]): EffortProfile {
+  const byKey = new Map(foods.map((f) => [f.key, f]));
+  const seen = new Set<string>();
+  let minutes = 0;
+  let equipment: FoodEquipment = "none";
+  let hands: 1 | 2 = 1;
+  let effort: FoodEffort = "none";
+  for (const item of items) {
+    const food = byKey.get(item.foodKey);
+    if (!food || seen.has(food.key)) continue;
+    seen.add(food.key);
+    minutes += food.standingMinutes;
+    if (EQUIPMENT_RANK[food.equipment] > EQUIPMENT_RANK[equipment]) equipment = food.equipment;
+    if (food.hands === 2) hands = 2;
+    if (EFFORT_RANK[food.effort] > EFFORT_RANK[effort]) effort = food.effort;
+  }
+  return { minutes, equipment, hands, effort, summary: effortSummary(minutes, equipment, hands) };
+}
+
+/** The sentence a card leads with. Three facts, in the order people ask them. */
+export function effortSummary(
+  minutes: number,
+  equipment: FoodEquipment,
+  hands: 1 | 2,
+): string {
+  const time = minutes <= 0 ? "no prep" : `${minutes} min`;
+  return `${time} · ${EQUIPMENT_LABELS[equipment]} · ${hands === 1 ? "one-handed" : "two hands"}`;
+}
+
+/**
+ * Portion without scales: "1 palm", and "1 palm × 2" when the plan wants more.
+ * Kitchen scales are a barrier, not a standard — grams stay available behind a
+ * toggle, they just stop being the only way to read a plan.
+ */
+export function handPortionLabel(food: FoodDef, grams: number): string {
+  const mult = food.portionG > 0 && grams > 0 ? grams / food.portionG : 1;
+  const n = Math.max(0.5, Math.round(mult * 2) / 2);
+  if (n === 1) return food.handPortion;
+  const whole = Math.floor(n);
+  const shown = n === whole ? String(whole) : `${whole === 0 ? "" : whole}½`;
+  return `${food.handPortion} × ${shown}`;
+}
+
 /* ===== plan generation ===== */
 
 export type PlanItem = { slot: MealSlot; foodKey: string; grams: number };
@@ -318,6 +454,28 @@ const PROTEIN_SHARE: Record<MealSlot, number> = {
 const CARB_SLOTS: MealSlot[] = ["breakfast", "lunch", "dinner"];
 /** Never overshoot the energy target by more than this. */
 export const KCAL_OVERSHOOT = 1.03;
+
+/** Does today's kitchen admit this food at all? */
+export function foodAllowed(food: FoodDef, kitchen: KitchenProfile): boolean {
+  if (kitchen.neverAgain.includes(food.key)) return false;
+  if (food.allergens.some((a) => kitchen.excludeAllergens.includes(a))) return false;
+  if (!reachableWith(food, kitchen.equipment)) return false;
+  if (food.hands > kitchen.hands) return false;
+  if (!kitchen.canStand && food.standingMinutes > 0) return false;
+  if (food.standingMinutes > kitchen.minutes) return false;
+  if (
+    kitchen.safeFoodsOnly &&
+    !kitchen.safeFoods.includes(food.key) &&
+    kitchen.pinnedBreakfast !== food.key
+  )
+    return false;
+  return true;
+}
+
+/** The catalogue as today's kitchen sees it. */
+export function allowedFoods(foods: FoodDef[], kitchen: KitchenProfile): FoodDef[] {
+  return foods.filter((f) => foodAllowed(f, kitchen));
+}
 
 /** Stable index from a date string — rotation only, never randomness. */
 function seedIndex(seed: string): number {
@@ -334,12 +492,24 @@ function clampRound5(value: number, min: number, max: number): number {
 /**
  * Deterministic greedy day plan: protein across all four slots first, then
  * volume, then energy from carbs and fat. Same date + same catalogue + same
- * targets always produce the same plan.
+ * targets + same kitchen always produce the same plan.
+ *
+ * The kitchen is a filter and an ordering, never an apology. A five-minute,
+ * one-pan, one-handed day yields a real plan built out of what that day can
+ * actually reach — tinned, frozen and ready-made included — and protein is
+ * still filled first. Pinned and safe foods are offered *before* the rotation,
+ * so a working routine is reinforced rather than rotated away.
  */
-export function planDay(targets: FuelTargets, foods: FoodDef[], seed: string): PlanItem[] {
-  const sorted = [...foods].sort((a, b) => a.key.localeCompare(b.key));
+export function planDay(
+  targets: FuelTargets,
+  foods: FoodDef[],
+  seed: string,
+  kitchen: KitchenProfile = DEFAULT_KITCHEN,
+): PlanItem[] {
+  const sorted = allowedFoods(foods, kitchen).sort((a, b) => a.key.localeCompare(b.key));
   if (sorted.length === 0) return [];
   const rot = seedIndex(seed);
+  const safe = new Set(kitchen.safeFoods);
   const proteinPool = sorted.filter(
     (f) => f.tags.includes("high-protein") && f.per100.proteinG >= 10,
   );
@@ -350,32 +520,63 @@ export function planDay(targets: FuelTargets, foods: FoodDef[], seed: string): P
 
   const items: PlanItem[] = [];
   let sodium = 0;
+  let spentMinutes = 0;
+  const used = new Set<string>();
 
   const push = (slot: MealSlot, food: FoodDef, grams: number): boolean => {
     if (!(grams >= 5)) return false;
     const added = (food.per100.sodiumMg * grams) / 100;
     if (sodium + added > targets.sodiumMgMax) return false;
+    // Minutes are spent once per distinct food: a second helping of the same
+    // thing costs nothing extra to make.
+    const cost = used.has(food.key) ? 0 : food.standingMinutes;
+    if (spentMinutes + cost > kitchen.minutes) return false;
     sodium += added;
+    spentMinutes += cost;
+    used.add(food.key);
     items.push({ slot, foodKey: food.key, grams });
     return true;
   };
 
-  /** Try each candidate in rotation until one fits under the salt ceiling. */
+  /**
+   * Safe foods first, in a stable order — the same reliable thing again is the
+   * point. Everything else rotates on the date seed as it always did.
+   */
+  const candidates = (pool: FoodDef[], spin: number): FoodDef[] => {
+    const preferred = pool.filter((f) => safe.has(f.key));
+    const rest = pool.filter((f) => !safe.has(f.key));
+    const rotated =
+      rest.length === 0 ? [] : rest.map((_, k) => rest[(rot + spin + k) % rest.length]);
+    return [...preferred, ...rotated];
+  };
+
+  /** Try each candidate in turn until one fits the salt and minute budgets. */
   const fill = (
     pool: FoodDef[],
     slot: MealSlot,
     spin: number,
     gramsFor: (food: FoodDef) => number,
   ): void => {
-    for (let k = 0; k < pool.length; k++) {
-      const food = pool[(rot + spin + k) % pool.length];
+    for (const food of candidates(pool, spin)) {
       if (push(slot, food, gramsFor(food))) return;
     }
   };
 
-  // 1 — protein across every slot.
+  // 0 — the pinned breakfast, if the day can reach it. A decision already made
+  // is not re-litigated every morning.
+  const pinned = kitchen.pinnedBreakfast
+    ? sorted.find((f) => f.key === kitchen.pinnedBreakfast)
+    : undefined;
+  if (pinned) push("breakfast", pinned, pinned.portionG);
+
+  // 1 — protein across every slot, net of anything the pin already put there.
   MEAL_SLOTS.forEach((slot, i) => {
-    const need = targets.proteinG * PROTEIN_SHARE[slot];
+    const placed = totalsFor(
+      items.filter((it) => it.slot === slot),
+      sorted,
+    ).proteinG;
+    const need = targets.proteinG * PROTEIN_SHARE[slot] - placed;
+    if (need <= 0) return;
     fill(proteinPool, slot, i * 7, (food) => {
       const density = food.per100.proteinG / 100;
       return density > 0 ? clampRound5(need / density, 20, 350) : 0;
@@ -419,6 +620,8 @@ export function planDay(targets: FuelTargets, foods: FoodDef[], seed: string): P
     items.forEach((item, i) => {
       const food = byKey.get(item.foodKey);
       if (!food || food.group === "protein" || food.group === "dairy") return;
+      // The pinned breakfast is not a variable to trim.
+      if (food.key === kitchen.pinnedBreakfast) return;
       const kcal = (food.per100.kcal * item.grams) / 100;
       if (kcal > worstKcal) {
         worstKcal = kcal;
@@ -434,6 +637,82 @@ export function planDay(targets: FuelTargets, foods: FoodDef[], seed: string): P
   return items.sort(
     (a, b) => slotRank(a.slot) - slotRank(b.slot) || a.foodKey.localeCompare(b.foodKey),
   );
+}
+
+/** How many items the floor plan is allowed to ask for. Three. Not four. */
+export const FLOOR_ITEMS = 3;
+const FLOOR_SLOTS: MealSlot[] = ["breakfast", "lunch", "dinner"];
+
+/**
+ * The bad-day plan: three items, nothing to cook, nothing to stand for, one
+ * hand, no decision left to make. It hits protein and nothing else — the floor
+ * adds no obligation, it only stops the drift.
+ *
+ * Deliberately not seeded: the same three every day is the feature. Only the
+ * user's own exclusions (allergens, never-again) and preferences (pinned, safe
+ * foods) shape it; equipment, hands and standing are pinned to the worst day
+ * rather than to today's profile, because that is what the floor is for.
+ */
+export function planFloor(
+  targets: FuelTargets,
+  foods: FoodDef[],
+  kitchen: KitchenProfile = DEFAULT_KITCHEN,
+): PlanItem[] {
+  const floorKitchen: KitchenProfile = {
+    ...FLOOR_CONSTRAINTS,
+    excludeAllergens: kitchen.excludeAllergens,
+    // A tolerance list is not a preference to be overridden on the worst day:
+    // if someone only eats six things, the floor offers those six or nothing.
+    safeFoodsOnly: kitchen.safeFoodsOnly,
+    pinnedBreakfast: kitchen.pinnedBreakfast,
+    safeFoods: kitchen.safeFoods,
+    neverAgain: kitchen.neverAgain,
+  };
+  const safe = new Set(kitchen.safeFoods);
+  const rank = (f: FoodDef): number =>
+    (f.key === kitchen.pinnedBreakfast ? 0 : safe.has(f.key) ? 1 : 2);
+  /**
+   * Protein you can actually fit under the salt ceiling. Sorting on density
+   * alone spends the whole salt allowance on the first two items and leaves the
+   * third with nothing to give; this discounts a food by how much of the
+   * ceiling it eats on the way.
+   */
+  const score = (f: FoodDef): number => f.per100.proteinG / (1 + f.per100.sodiumMg / 200);
+
+  const pool = allowedFoods(foods, floorKitchen)
+    // Nothing to do at all — not "assemble", not "drain the tin". And a normal
+    // portion has to be a meal's worth of protein, so the floor never proposes
+    // a spoon of seeds as one of somebody's three things.
+    .filter((f) => f.effort === "none" && (f.per100.proteinG * f.portionG) / 100 >= 8)
+    .sort((a, b) => rank(a) - rank(b) || score(b) - score(a) || a.key.localeCompare(b.key));
+  if (pool.length === 0) return [];
+
+  const items: PlanItem[] = [];
+  let sodium = 0;
+  let proteinLeft = targets.proteinG;
+
+  for (const food of pool) {
+    if (items.length >= FLOOR_ITEMS) break;
+    const slot = FLOOR_SLOTS[items.length];
+    const need = proteinLeft / (FLOOR_ITEMS - items.length);
+    const density = food.per100.proteinG / 100;
+    if (!(density > 0)) continue;
+    // A realistic serving, never a heroic one: two normal portions at most.
+    let grams = clampRound5(need / density, 20, Math.max(20, food.portionG * 2));
+    // Salt is trimmed, not used as an excuse to drop the food. Under the
+    // ceiling with less of it beats a floor that returns nothing.
+    const perGram = food.per100.sodiumMg / 100;
+    if (perGram > 0) {
+      const affordable = Math.floor((targets.sodiumMgMax - sodium) / perGram / 5) * 5;
+      grams = Math.min(grams, affordable);
+    }
+    if (!(grams >= 20)) continue;
+    sodium += perGram * grams;
+    proteinLeft = Math.max(0, proteinLeft - density * grams);
+    items.push({ slot, foodKey: food.key, grams });
+  }
+
+  return items;
 }
 
 /* ===== shopping ===== */
@@ -490,6 +769,8 @@ export type FuelEntryView = {
   foodKey: string;
   name: string;
   grams: number;
+  /** Hand portion — what the row says before anyone asks for grams. */
+  portion: string;
   kcal: number;
   proteinG: number;
   carbsG: number;
@@ -516,10 +797,19 @@ export type FoodOption = {
   group: FoodGroup;
   portionG: number;
   portionLabel: string;
+  handPortion: string;
   kcalPer100: number;
   proteinPer100G: number;
   sodiumPer100Mg: number;
   tags: string[];
+  effort: FoodEffort;
+  equipment: FoodEquipment;
+  hands: 1 | 2;
+  standingMinutes: number;
+  shelf: FoodShelf;
+  allergens: Allergen[];
+  /** False when today's kitchen or the user's exclusions rule it out. */
+  allowed: boolean;
 };
 
 export type FuelWeek = {
@@ -527,6 +817,50 @@ export type FuelWeek = {
   avgProteinG: number;
   daysLogged: number;
   days: { date: string; kcal: number; proteinG: number }[];
+};
+
+export type PlanItemView = {
+  slot: MealSlot;
+  slotLabel: string;
+  foodKey: string;
+  name: string;
+  grams: number;
+  portion: string;
+  kcal: number;
+  proteinG: number;
+  effort: FoodEffort;
+  equipment: FoodEquipment;
+  hands: 1 | 2;
+  standingMinutes: number;
+  shelf: FoodShelf;
+};
+
+export type PlanView = {
+  items: PlanItemView[];
+  effort: EffortProfile;
+  /** "5 min · one pan · one-handed" — stated before anyone commits. */
+  effortSummary: string;
+  kcal: number;
+  proteinG: number;
+};
+
+export type NamedFood = { key: string; name: string };
+
+export type KitchenView = {
+  minutes: number;
+  equipment: FoodEquipment;
+  hands: 1 | 2;
+  canStand: boolean;
+  excludeAllergens: Allergen[];
+  safeFoodsOnly: boolean;
+  pinnedBreakfast: NamedFood | null;
+  safeFoods: NamedFood[];
+  neverAgain: NamedFood[];
+  /** The profile in one line, same grammar as a plan's cost. */
+  summary: string;
+  /** How much of the catalogue this profile can reach, out of how much there is. */
+  reachableFoods: number;
+  catalogueSize: number;
 };
 
 export type FuelView = {
@@ -541,6 +875,13 @@ export type FuelView = {
   shoppingList: ShoppingItem[];
   foods: FoodOption[];
   survival: boolean;
+  kitchen: KitchenView;
+  /** What "generate a day" would write, priced up front. Null on the floor. */
+  proposal: PlanView | null;
+  /** The bad-day plan. Always available, in every mode. */
+  floor: PlanView;
+  /** What today's rows actually cost to make. */
+  todayEffort: EffortProfile;
 };
 
 export type FuelViewInput = {
@@ -554,7 +895,53 @@ export type FuelViewInput = {
   manualTarget: FuelTargets | null;
   lastWeekly: { weekStart: string; tdeeKcal: number } | null;
   foods: FoodDef[];
+  /** Minutes, pans, hands, standing, exclusions. Omitted means a full kitchen. */
+  kitchen?: KitchenProfile;
 };
+
+/** Plan items, priced and named, with the effort line the UI leads with. */
+export function buildPlanView(items: PlanItem[], foods: FoodDef[]): PlanView {
+  const byKey = new Map(foods.map((f) => [f.key, f]));
+  const rows: PlanItemView[] = [];
+  for (const item of items) {
+    const food = byKey.get(item.foodKey);
+    if (!food) continue;
+    const n = nutrientsFor(food, item.grams);
+    rows.push({
+      slot: item.slot,
+      slotLabel: SLOT_LABELS[item.slot],
+      foodKey: food.key,
+      name: food.name,
+      grams: item.grams,
+      portion: handPortionLabel(food, item.grams),
+      kcal: n.kcal,
+      proteinG: n.proteinG,
+      effort: food.effort,
+      equipment: food.equipment,
+      hands: food.hands,
+      standingMinutes: food.standingMinutes,
+      shelf: food.shelf,
+    });
+  }
+  const effort = effortFor(items, foods);
+  const totals = totalsFor(items, foods);
+  return {
+    items: rows,
+    effort,
+    effortSummary: effort.summary,
+    kcal: totals.kcal,
+    proteinG: totals.proteinG,
+  };
+}
+
+function namedFoods(keys: string[], byKey: Map<string, FoodDef>): NamedFood[] {
+  const out: NamedFood[] = [];
+  for (const key of keys) {
+    const food = byKey.get(key);
+    if (food) out.push({ key: food.key, name: food.name });
+  }
+  return out;
+}
 
 /** Per-date eaten totals across the window — the input to the adaptive fit. */
 function intakeIndex(
@@ -595,6 +982,8 @@ export function resolveTargets(input: FuelViewInput): { targets: FuelTargets; td
 export function buildFuelView(input: FuelViewInput): FuelView {
   const { targets, tdee } = resolveTargets(input);
   const byKey = new Map(input.foods.map((f) => [f.key, f]));
+  const kitchen = input.kitchen ?? DEFAULT_KITCHEN;
+  const survival = input.mode === "survival";
 
   const today = input.windowEntries.filter((e) => e.date === input.date);
   const entries: FuelEntryView[] = [];
@@ -608,6 +997,7 @@ export function buildFuelView(input: FuelViewInput): FuelView {
       foodKey: e.foodKey,
       name: food.name,
       grams: e.grams,
+      portion: handPortionLabel(food, e.grams),
       kcal: n.kcal,
       proteinG: n.proteinG,
       carbsG: n.carbsG,
@@ -673,11 +1063,43 @@ export function buildFuelView(input: FuelViewInput): FuelView {
       group: f.group,
       portionG: f.portionG,
       portionLabel: f.portionLabel,
+      handPortion: f.handPortion,
       kcalPer100: f.per100.kcal,
       proteinPer100G: f.per100.proteinG,
       sodiumPer100Mg: f.per100.sodiumMg,
       tags: [...f.tags],
+      effort: f.effort,
+      equipment: f.equipment,
+      hands: f.hands,
+      standingMinutes: f.standingMinutes,
+      shelf: f.shelf,
+      allergens: [...f.allergens],
+      allowed: foodAllowed(f, kitchen),
     }));
+
+  const reachable = foods.filter((f) => f.allowed).length;
+  const kitchenView: KitchenView = {
+    minutes: kitchen.minutes,
+    equipment: kitchen.equipment,
+    hands: kitchen.hands,
+    canStand: kitchen.canStand,
+    excludeAllergens: [...kitchen.excludeAllergens],
+    safeFoodsOnly: kitchen.safeFoodsOnly,
+    pinnedBreakfast: kitchen.pinnedBreakfast
+      ? (namedFoods([kitchen.pinnedBreakfast], byKey)[0] ?? null)
+      : null,
+    safeFoods: namedFoods(kitchen.safeFoods, byKey),
+    neverAgain: namedFoods(kitchen.neverAgain, byKey),
+    summary: effortSummary(kitchen.minutes, kitchen.equipment, kitchen.hands),
+    reachableFoods: reachable,
+    catalogueSize: foods.length,
+  };
+
+  // Survival is a floor, not a lite mode: the floor plan and nothing else. No
+  // proposal to weigh up, no shopping list, no new obligation.
+  const proposal = survival
+    ? null
+    : buildPlanView(planDay(targets, input.foods, input.date, kitchen), input.foods);
 
   return {
     targets,
@@ -688,12 +1110,21 @@ export function buildFuelView(input: FuelViewInput): FuelView {
     slots,
     sodiumUsedMg: totals.sodiumMg,
     week,
-    shoppingList: shoppingList(
-      today.filter((e) => e.planned && !e.eaten),
+    shoppingList: survival
+      ? []
+      : shoppingList(
+          today.filter((e) => e.planned && !e.eaten),
+          input.foods,
+        ),
+    foods,
+    survival,
+    kitchen: kitchenView,
+    proposal,
+    floor: buildPlanView(planFloor(targets, input.foods, kitchen), input.foods),
+    todayEffort: effortFor(
+      today.map((e) => ({ slot: e.slot, foodKey: e.foodKey, grams: e.grams })),
       input.foods,
     ),
-    foods,
-    survival: input.mode === "survival",
   };
 }
 

@@ -1,4 +1,5 @@
 import { buildFixtures, type Fixtures, type FixtureUser } from "@convex/tm/fixtures";
+import { projectToday } from "@convex/tm/logic-easy";
 import { MODE_CHECKS, SESSION_PLAN, addDays, daysBetween, type TmMode } from "@convex/tm/lib";
 import {
   buildTriggerMap,
@@ -23,9 +24,12 @@ import type {
   ProgressData,
   ResearchData,
   StackData,
+  HandsFreeData,
+  SupplyData,
   TodayData,
   TrainData,
 } from "./types";
+import type { FoodEquipment } from "@convex/tm/data/foods";
 import type {
   AssessmentRow,
   DoseLogRow,
@@ -42,11 +46,15 @@ import type {
   SetLogRow,
   VolumeLandmarkRow,
 } from "./demo/rows";
+import type { ContactRow, CrewLinkRow, SupplyRow } from "./demo/rows-wave1";
 import * as fuel from "./demo/fuel";
 import * as train from "./demo/train";
 import * as stack from "./demo/stack";
 import * as labsView from "./demo/labs";
 import * as mind from "./demo/mind";
+import * as consent from "./demo/consent";
+import * as supply from "./demo/supply";
+import * as ingest from "./demo/ingest";
 
 /**
  * In-memory demo backend. Serves the same view models as the Convex queries,
@@ -55,7 +63,7 @@ import * as mind from "./demo/mind";
  * (NEXT_PUBLIC_TIMENTO_DEMO=1); state lives for the page session only.
  */
 
-type DemoUser = FixtureUser & { modeSinceMut: string; modeMut: TmMode; reviewDateMut?: string; ceilingMut: number };
+type DemoUser = FixtureUser & { a11yProfileMut?: "standard" | "easy" } & { modeSinceMut: string; modeMut: TmMode; reviewDateMut?: string; ceilingMut: number };
 
 export class DemoDb {
   users: DemoUser[];
@@ -83,6 +91,10 @@ export class DemoDb {
   assessments: AssessmentRow[];
   intentions: IntentionRow[];
   reflections: ReflectionRow[];
+  crewLinks: CrewLinkRow[];
+  supplyRows: SupplyRow[];
+  contacts: ContactRow[];
+  ingestTokens: { id: string; userSlug: string; token: string; label: string; createdDate: string; lastUsedAt?: number; revoked: boolean }[];
 
   private listeners = new Set<() => void>();
   private idSeq = 0;
@@ -110,6 +122,10 @@ export class DemoDb {
     this.assessments = [...fx.assessments];
     this.intentions = [...fx.intentions];
     this.reflections = [...fx.reflections];
+    this.crewLinks = [...fx.crewLinks];
+    this.supplyRows = [...fx.supplyRows];
+    this.contacts = [...fx.contacts];
+    this.ingestTokens = [];
     this.users = fx.users.map((u) => ({
       ...u,
       modeMut: u.mode,
@@ -203,7 +219,9 @@ export class DemoDb {
             }),
           };
 
-    return {
+    return projectToday(
+      {
+
       user: {
         slug: user.slug,
         name: user.name,
@@ -235,28 +253,16 @@ export class DemoDb {
       },
       session,
       tripwire: tripwireFor(user.modeMut, user.goalKg, weighed[0]?.weightKg),
-    };
+      },
+      user.a11yProfileMut ?? "standard",
+    );
+
   }
 
   crew(viewerSlug: string, date: string): CrewData {
-    const members = this.users.map((u) => {
-      const stats = computeStreakAndAdherence(this.wallFor(u, date), date);
-      return {
-        slug: u.slug,
-        name: u.name,
-        isYou: u.slug === viewerSlug,
-        mode: u.modeMut,
-        modeSince: u.modeSinceMut,
-        reviewDate: u.reviewDateMut ?? null,
-        daysInMode: daysBetween(u.modeSinceMut, date),
-        streak: stats.streak,
-        adherence7: stats.adherence7,
-        todayDone: stats.todayDone,
-        todayTotal: stats.todayTotal,
-      };
-    });
-    members.sort((a, b) => (a.isYou === b.isYou ? 0 : a.isYou ? -1 : 1));
-    return members;
+    // Projection and scope enforcement live in the consent slice, so the demo
+    // and Convex backends can only ever disclose the same fields.
+    return consent.view(this, viewerSlug, date);
   }
 
   feed(): FeedData {
@@ -437,8 +443,12 @@ export class DemoDb {
     fuel.removeFood(this, entryId);
     this.bump();
   }
-  generateMealPlan(slug: string, date: string) {
-    fuel.generatePlan(this, slug, date);
+  generateMealPlan(
+    slug: string,
+    date: string,
+    today?: { minutes?: number; equipment?: FoodEquipment; oneHanded?: boolean; canStand?: boolean },
+  ) {
+    fuel.generatePlan(this, slug, date, today);
     this.bump();
   }
 
@@ -479,6 +489,46 @@ export class DemoDb {
   }
   saveReflection(slug: string, date: string, prompt: string, response: string, win?: string) {
     mind.saveReflection(this, slug, date, prompt, response, win);
+    this.bump();
+  }
+
+  handsFree(slug: string, date: string): HandsFreeData {
+    return ingest.view(this, slug, date);
+  }
+  createIngestToken(slug: string, date: string, label: string) {
+    ingest.createToken(this, slug, date, label);
+    this.bump();
+  }
+  revokeIngestToken(tokenId: string) {
+    ingest.revokeToken(this, tokenId);
+    this.bump();
+  }
+  setA11yProfile(slug: string, profile: "standard" | "easy") {
+    this.user(slug).a11yProfileMut = profile;
+    this.bump();
+  }
+
+  supply(slug: string, date: string): SupplyData {
+    return supply.view(this, slug, date);
+  }
+  setSupplyCount(slug: string, date: string, itemId: string, onHand: number) {
+    supply.setCount(this, slug, date, itemId, onHand);
+    this.bump();
+  }
+  saveContact(slug: string, kind: "gp" | "pharmacy", name: string, phone: string) {
+    supply.saveContact(this, slug, kind, name, phone);
+    this.bump();
+  }
+  inviteCrew(slug: string, date: string, targetSlug: string, scopes: string[]) {
+    consent.invite(this, slug, date, targetSlug, scopes);
+    this.bump();
+  }
+  respondToCrewInvite(slug: string, date: string, linkId: string, accept: boolean) {
+    consent.respond(this, slug, date, linkId, accept);
+    this.bump();
+  }
+  revokeCrewLink(slug: string, date: string, linkId: string) {
+    consent.revoke(this, slug, date, linkId);
     this.bump();
   }
 }

@@ -66,7 +66,7 @@ export function MassChart({
         {gridLines
           .filter((v) => v % 2 === 0)
           .map((v) => (
-            <text key={v} x={pad.l - 6} y={y(v) + 3} textAnchor="end" fontSize="9" fill="#70747b" className="font-tm-mono">
+            <text key={v} x={pad.l - 6} y={y(v) + 3} textAnchor="end" fontSize="11.5" fill="var(--color-tm-dim)" className="font-tm-mono">
               {v}
             </text>
           ))}
@@ -78,7 +78,7 @@ export function MassChart({
               y={H - 6}
               textAnchor={i >= series.length - 1 ? "end" : i === 0 ? "start" : "middle"}
               fontSize="8.5"
-              fill="#70747b"
+              fill="var(--color-tm-dim)"
               className="font-tm-mono"
             >
               {s.date.slice(5)}
@@ -87,7 +87,7 @@ export function MassChart({
         )}
         <g clipPath={`url(#${clipId})`}>
           <line x1={pad.l} x2={W - pad.r} y1={y(ceilingKg)} y2={y(ceilingKg)} stroke="#c77d1f" strokeWidth="1.5" strokeDasharray="4 4" />
-          <path d={path("target")} fill="none" stroke="#70747b" strokeWidth="1.5" strokeDasharray="5 4" />
+          <path d={path("target")} fill="none" stroke="var(--color-tm-dim)" strokeWidth="1.5" strokeDasharray="5 4" />
           <path d={path("actual")} fill="none" stroke="#2b5fab" strokeWidth="2" />
         </g>
         {series.map((s, i) => (
@@ -98,9 +98,9 @@ export function MassChart({
             <line x1={x(hover)} x2={x(hover)} y1={pad.t} y2={H - pad.b} stroke="#15171c" strokeWidth="1" strokeDasharray="2 3" opacity="0.4" />
             <g transform={`translate(${Math.min(x(hover) + 8, W - 108)}, ${pad.t + 4})`}>
               <rect width="100" height="44" rx="6" fill="#15171c" />
-              <text x="8" y="15" fontSize="9" fill="#9ba0a8" className="font-tm-mono">{hovered.date}</text>
-              <text x="8" y="27" fontSize="9.5" fill="#ffffff" className="font-tm-mono">actual {hovered.actual.toFixed(1)} kg</text>
-              <text x="8" y="38" fontSize="9.5" fill="#c9cdd4" className="font-tm-mono">target {hovered.target.toFixed(1)} kg</text>
+              <text x="8" y="15" fontSize="11.5" fill="var(--color-tm-onink)" className="font-tm-mono">{hovered.date}</text>
+              <text x="8" y="27" fontSize="11.5" fill="#ffffff" className="font-tm-mono">actual {hovered.actual.toFixed(1)} kg</text>
+              <text x="8" y="38" fontSize="11.5" fill="var(--color-tm-onink)" className="font-tm-mono">target {hovered.target.toFixed(1)} kg</text>
             </g>
           </g>
         )}
