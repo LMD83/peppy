@@ -160,7 +160,7 @@ function DemoBackend({ children }: { children: React.ReactNode }) {
       logFood: (slot, foodKey, grams) => slug && db.logFood(slug, date, slot, foodKey, grams),
       setFoodEaten: (entryId, eaten) => db.setFoodEaten(entryId, eaten),
       removeFood: (entryId) => db.removeFood(entryId),
-      generateMealPlan: () => slug && db.generateMealPlan(slug, date),
+      generateMealPlan: (today) => slug && db.generateMealPlan(slug, date, today),
       logSet: (exercise, setIndex, weightKg, reps, rir) =>
         slug && db.logSet(slug, date, exercise, setIndex, weightKg, reps, rir),
       startMesocycle: (goal) => slug && db.startMesocycle(slug, date, goal),
@@ -306,7 +306,7 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
         token && void setFoodEatenMut({ token, entryId: entryId as Id<"tm_mealEntries">, eaten }),
       removeFood: (entryId) =>
         token && void removeFoodMut({ token, entryId: entryId as Id<"tm_mealEntries"> }),
-      generateMealPlan: () => token && void generatePlanMut({ token, date }),
+      generateMealPlan: (today) => token && void generatePlanMut({ token, date, ...(today ?? {}) }),
       logSet: (exercise, setIndex, weightKg, reps, rir) =>
         token && void logSetMut({ token, date, exercise, setIndex, weightKg, reps, rir }),
       startMesocycle: (goal) => token && void startMesoMut({ token, date, goal }),

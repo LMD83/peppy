@@ -1,4 +1,5 @@
 import { buildFixtures, type Fixtures, type FixtureUser } from "@convex/tm/fixtures";
+import { projectToday } from "@convex/tm/logic-easy";
 import { MODE_CHECKS, SESSION_PLAN, addDays, daysBetween, type TmMode } from "@convex/tm/lib";
 import {
   buildTriggerMap,
@@ -28,6 +29,7 @@ import type {
   TodayData,
   TrainData,
 } from "./types";
+import type { FoodEquipment } from "@convex/tm/data/foods";
 import type {
   AssessmentRow,
   DoseLogRow,
@@ -217,7 +219,9 @@ export class DemoDb {
             }),
           };
 
-    return {
+    return projectToday(
+      {
+
       user: {
         slug: user.slug,
         name: user.name,
@@ -249,7 +253,10 @@ export class DemoDb {
       },
       session,
       tripwire: tripwireFor(user.modeMut, user.goalKg, weighed[0]?.weightKg),
-    };
+      },
+      user.a11yProfileMut ?? "standard",
+    );
+
   }
 
   crew(viewerSlug: string, date: string): CrewData {
@@ -436,8 +443,12 @@ export class DemoDb {
     fuel.removeFood(this, entryId);
     this.bump();
   }
-  generateMealPlan(slug: string, date: string) {
-    fuel.generatePlan(this, slug, date);
+  generateMealPlan(
+    slug: string,
+    date: string,
+    today?: { minutes?: number; equipment?: FoodEquipment; oneHanded?: boolean; canStand?: boolean },
+  ) {
+    fuel.generatePlan(this, slug, date, today);
     this.bump();
   }
 

@@ -43,7 +43,12 @@ export type TimentoActions = {
   logFood: (slot: MealSlot, foodKey: string, grams: number) => void;
   setFoodEaten: (entryId: string, eaten: boolean) => void;
   removeFood: (entryId: string) => void;
-  generateMealPlan: () => void;
+  generateMealPlan: (today?: {
+    minutes?: number;
+    equipment?: "none" | "kettle" | "microwave" | "one-pan" | "oven";
+    oneHanded?: boolean;
+    canStand?: boolean;
+  }) => void;
 
   /* train */
   logSet: (exercise: string, setIndex: number, weightKg: number, reps: number, rir: number) => void;

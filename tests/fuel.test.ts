@@ -1,25 +1,42 @@
 import { describe, expect, it } from "vitest";
-import { FOODS, GROUP_ORDER, foodByKey, type FoodDef } from "../convex/tm/data/foods";
+import {
+  ALLERGENS,
+  EQUIPMENT_RANK,
+  FOODS,
+  GROUP_ORDER,
+  foodByKey,
+  type FoodDef,
+} from "../convex/tm/data/foods";
 import {
   ACTIVITY_MULTIPLIERS,
+  DEFAULT_KITCHEN,
+  FLOOR_ITEMS,
   KCAL_OVERSHOOT,
   MEAL_SLOTS,
   SODIUM_MG_MAX,
   adaptiveTdee,
+  allowedFoods,
   buildFuelView,
+  effortFor,
+  effortSummary,
   estimatedTdee,
+  foodAllowed,
+  handPortionLabel,
   macroTargets,
   mifflinStJeor,
   nutrientsFor,
   planDay,
+  planFloor,
   shoppingList,
   totalsFor,
   weightSlopeKgPerWeek,
   type BodyProfile,
+  type KitchenProfile,
+  type PlanItem,
   type RawMealEntry,
 } from "../convex/tm/logic-fuel";
 import { addDays } from "../convex/tm/lib";
-import { buildFuelFixtures } from "../convex/tm/fixtures/fuel";
+import { buildFuelFixtures, kitchenProfileFor } from "../convex/tm/fixtures/fuel";
 
 const TODAY = "2026-08-13";
 const PROFILE: BodyProfile = {
@@ -471,5 +488,464 @@ describe("fixtures", () => {
     // Only two weigh-ins in the window: the fit stays honest instead of guessing.
     expect(view.tdee.basis).toBe("estimated");
     expect(view.tdee.intakeDays).toBeGreaterThanOrEqual(10);
+  });
+});
+
+/* ===== effort, equipment, hands, standing — the bad-day inputs ===== */
+
+const KITCHEN = (patch: Partial<KitchenProfile> = {}): KitchenProfile => ({
+  ...DEFAULT_KITCHEN,
+  ...patch,
+});
+
+/** The day the app is actually for: five minutes, one pan, one hand. */
+const BAD_DAY = KITCHEN({ minutes: 5, equipment: "one-pan", hands: 1, canStand: true });
+
+const TARGETS = macroTargets("cut", 92.8, 2800);
+
+function keysOf(items: PlanItem[]): string[] {
+  return items.map((i) => i.foodKey);
+}
+
+function food(key: string): FoodDef {
+  const f = foodByKey(key);
+  if (!f) throw new Error(`fixture expects ${key} in the catalogue`);
+  return f;
+}
+
+describe("the catalogue carries what it costs to make", () => {
+  it("gives every food an effort, a kitchen, hands, standing, a shelf and a hand portion", () => {
+    for (const f of FOODS) {
+      expect(["none", "assemble", "heat", "cook"], f.key).toContain(f.effort);
+      expect(Object.keys(EQUIPMENT_RANK), f.key).toContain(f.equipment);
+      expect([1, 2], f.key).toContain(f.hands);
+      expect(f.standingMinutes, f.key).toBeGreaterThanOrEqual(0);
+      expect(f.standingMinutes, f.key).toBeLessThanOrEqual(30);
+      expect(["fresh", "fridge", "freezer", "cupboard"], f.key).toContain(f.shelf);
+      // "1 palm", "2 eggs" — a count and a body part, never a weight.
+      expect(f.handPortion, f.key).toMatch(/^\d+ \S/);
+    }
+  });
+
+  it("only names allergens the EU actually lists, and never twice", () => {
+    for (const f of FOODS) {
+      for (const a of f.allergens) expect(ALLERGENS, `${f.key}: ${a}`).toContain(a);
+      expect(new Set(f.allergens).size, f.key).toBe(f.allergens.length);
+    }
+    // The obvious ones are present, so an exclusion is not silently a no-op.
+    expect(food("salmon_fillet").allergens).toContain("fish");
+    expect(food("skyr").allergens).toContain("milk");
+    expect(food("almonds").allergens).toContain("nuts");
+    expect(food("hummus").allergens).toContain("sesame");
+    expect(food("prawns_cooked").allergens).toContain("crustaceans");
+  });
+
+  it("keeps effort and equipment honest against each other", () => {
+    for (const f of FOODS) {
+      // Nothing to do means nothing to stand for and no appliance.
+      if (f.effort === "none") {
+        expect(f.equipment, f.key).toBe("none");
+        expect(f.standingMinutes, f.key).toBe(0);
+      }
+      if (f.effort === "cook") expect(EQUIPMENT_RANK[f.equipment], f.key).toBeGreaterThanOrEqual(3);
+      if (f.equipment === "none") expect(["none", "assemble"], f.key).toContain(f.effort);
+    }
+  });
+
+  it("treats tinned, frozen and ready-made as first-class, not as a fallback", () => {
+    const byShelf = (shelf: string) => FOODS.filter((f) => f.shelf === shelf);
+    expect(byShelf("freezer").length).toBeGreaterThanOrEqual(5);
+    expect(byShelf("cupboard").length).toBeGreaterThanOrEqual(20);
+    // A week nobody planned for: protein that needs no fridge and no cooking.
+    const survivesTheWeek = FOODS.filter(
+      (f) => (f.shelf === "cupboard" || f.shelf === "freezer") && f.per100.proteinG >= 8,
+    );
+    expect(survivesTheWeek.length).toBeGreaterThanOrEqual(6);
+  });
+
+  it("offers enough one-handed, no-standing protein for a floor to exist", () => {
+    const oneHanded = FOODS.filter(
+      (f) => f.hands === 1 && f.standingMinutes === 0 && f.per100.proteinG >= 8,
+    );
+    expect(oneHanded.length).toBeGreaterThanOrEqual(FLOOR_ITEMS);
+  });
+});
+
+describe("what today's kitchen can reach", () => {
+  it("rules out anything above the equipment you have", () => {
+    const kettleOnly = KITCHEN({ equipment: "kettle" });
+    expect(foodAllowed(food("chicken_breast"), kettleOnly)).toBe(false);
+    expect(foodAllowed(food("couscous"), kettleOnly)).toBe(true);
+    expect(foodAllowed(food("skyr"), kettleOnly)).toBe(true);
+  });
+
+  it("rules out two-handed jobs when one hand is what there is", () => {
+    const oneHand = KITCHEN({ hands: 1 });
+    expect(foodAllowed(food("avocado"), oneHand)).toBe(false);
+    expect(foodAllowed(food("banana"), oneHand)).toBe(true);
+  });
+
+  it("rules out standing when standing is not on offer", () => {
+    const seated = KITCHEN({ canStand: false });
+    expect(allowedFoods(FOODS, seated).every((f) => f.standingMinutes === 0)).toBe(true);
+    expect(allowedFoods(FOODS, seated).length).toBeGreaterThan(10);
+  });
+
+  it("honours allergens, never-again and safe-foods-only", () => {
+    expect(foodAllowed(food("salmon_fillet"), KITCHEN({ excludeAllergens: ["fish"] }))).toBe(false);
+    expect(foodAllowed(food("banana"), KITCHEN({ neverAgain: ["banana"] }))).toBe(false);
+    const onlySafe = KITCHEN({ safeFoodsOnly: true, safeFoods: ["skyr"], pinnedBreakfast: "oats" });
+    expect(allowedFoods(FOODS, onlySafe).map((f) => f.key).sort()).toEqual(["oats", "skyr"]);
+  });
+
+  it("drops a food whose own prep already busts the whole minute budget", () => {
+    expect(foodAllowed(food("chicken_breast"), KITCHEN({ minutes: 5 }))).toBe(false);
+    expect(foodAllowed(food("frozen_peas"), KITCHEN({ minutes: 5 }))).toBe(true);
+  });
+});
+
+describe("a five-minute, one-pan, one-handed day is a real plan", () => {
+  const plan = planDay(TARGETS, FOODS, TODAY, BAD_DAY);
+
+  it("produces a plan rather than an apology", () => {
+    expect(plan.length).toBeGreaterThanOrEqual(4);
+    expect(new Set(plan.map((i) => i.slot)).size).toBeGreaterThanOrEqual(3);
+  });
+
+  it("stays inside every constraint it was given", () => {
+    const cost = effortFor(plan, FOODS);
+    expect(cost.minutes).toBeLessThanOrEqual(BAD_DAY.minutes);
+    expect(cost.hands).toBe(1);
+    for (const item of plan) {
+      const f = food(item.foodKey);
+      expect(f.hands, f.key).toBe(1);
+      expect(EQUIPMENT_RANK[f.equipment], f.key).toBeLessThanOrEqual(EQUIPMENT_RANK["one-pan"]);
+    }
+  });
+
+  it("still puts protein first", () => {
+    const got = totalsFor(plan, FOODS).proteinG;
+    expect(got).toBeGreaterThan(TARGETS.proteinG * 0.6);
+    expect(totalsFor(plan, FOODS).kcal).toBeLessThanOrEqual(TARGETS.kcal * KCAL_OVERSHOOT);
+  });
+
+  it("is deterministic for the same day and the same kitchen", () => {
+    expect(planDay(TARGETS, FOODS, TODAY, BAD_DAY)).toEqual(plan);
+  });
+
+  it("keeps the salt ceiling it always kept", () => {
+    expect(totalsFor(plan, FOODS).sodiumMg).toBeLessThanOrEqual(TARGETS.sodiumMgMax);
+  });
+
+  it("cannot stand, and still eats", () => {
+    const seated = planDay(TARGETS, FOODS, TODAY, KITCHEN({ canStand: false, hands: 1 }));
+    expect(seated.length).toBeGreaterThan(0);
+    expect(seated.every((i) => food(i.foodKey).standingMinutes === 0)).toBe(true);
+    expect(totalsFor(seated, FOODS).proteinG).toBeGreaterThan(TARGETS.proteinG * 0.5);
+  });
+});
+
+describe("exclusions and repetition", () => {
+  it("never plans an excluded allergen or a never-again food", () => {
+    const kitchen = KITCHEN({ excludeAllergens: ["milk", "fish"], neverAgain: ["eggs"] });
+    const plan = planDay(TARGETS, FOODS, TODAY, kitchen);
+    expect(plan.length).toBeGreaterThan(0);
+    for (const item of plan) {
+      const f = food(item.foodKey);
+      expect(f.allergens, f.key).not.toContain("milk");
+      expect(f.allergens, f.key).not.toContain("fish");
+      expect(f.key).not.toBe("eggs");
+    }
+  });
+
+  it("puts the pinned breakfast on the plan, every day, at breakfast", () => {
+    const kitchen = KITCHEN({ pinnedBreakfast: "skyr" });
+    for (const date of [TODAY, addDays(TODAY, 1), addDays(TODAY, 2)]) {
+      const plan = planDay(TARGETS, FOODS, date, kitchen);
+      const pinned = plan.filter((i) => i.foodKey === "skyr");
+      expect(pinned.length, date).toBe(1);
+      expect(pinned[0].slot, date).toBe("breakfast");
+    }
+  });
+
+  it("prefers safe foods instead of rotating away from them", () => {
+    const kitchen = KITCHEN({ safeFoods: ["chicken_breast", "oats"] });
+    for (const date of [TODAY, addDays(TODAY, 1), addDays(TODAY, 3)]) {
+      const keys = keysOf(planDay(TARGETS, FOODS, date, kitchen));
+      expect(keys, date).toContain("chicken_breast");
+      expect(keys, date).toContain("oats");
+    }
+    // Without the preference, the rotation is free to wander off them.
+    const plain = keysOf(planDay(TARGETS, FOODS, TODAY, DEFAULT_KITCHEN));
+    expect(plain).not.toEqual(keysOf(planDay(TARGETS, FOODS, TODAY, kitchen)));
+  });
+
+  it("builds a plan out of the safe list alone when that is all there is", () => {
+    const kitchen = KITCHEN({
+      safeFoodsOnly: true,
+      safeFoods: ["skyr", "oats", "chicken_slices", "banana"],
+    });
+    const plan = planDay(TARGETS, FOODS, TODAY, kitchen);
+    expect(plan.length).toBeGreaterThan(0);
+    for (const item of plan) expect(kitchen.safeFoods).toContain(item.foodKey);
+  });
+
+  it("returns nothing rather than inventing food when the rules exclude everything", () => {
+    const kitchen = KITCHEN({ safeFoodsOnly: true, safeFoods: [] });
+    expect(planDay(TARGETS, FOODS, TODAY, kitchen)).toEqual([]);
+  });
+});
+
+describe("the floor plan — three things on the worst day", () => {
+  const floor = planFloor(TARGETS, FOODS);
+
+  it("is exactly three items, in three slots, with no repeats", () => {
+    expect(floor).toHaveLength(FLOOR_ITEMS);
+    expect(new Set(keysOf(floor)).size).toBe(FLOOR_ITEMS);
+    expect(floor.map((i) => i.slot)).toEqual(["breakfast", "lunch", "dinner"]);
+  });
+
+  it("asks for no cooking, no standing and one hand", () => {
+    for (const item of floor) {
+      const f = food(item.foodKey);
+      expect(f.effort, f.key).toBe("none");
+      expect(f.equipment, f.key).toBe("none");
+      expect(f.hands, f.key).toBe(1);
+      expect(f.standingMinutes, f.key).toBe(0);
+    }
+    const cost = effortFor(floor, FOODS);
+    expect(cost.minutes).toBe(0);
+    expect(cost.summary).toBe("no prep · no equipment · one-handed");
+  });
+
+  it("hits protein and stays under the salt ceiling", () => {
+    const totals = totalsFor(floor, FOODS);
+    expect(totals.proteinG).toBeGreaterThan(TARGETS.proteinG * 0.6);
+    expect(totals.sodiumMg).toBeLessThanOrEqual(TARGETS.sodiumMgMax);
+  });
+
+  it("is the same three every day — repetition is the point", () => {
+    expect(planFloor(TARGETS, FOODS)).toEqual(floor);
+  });
+
+  it("still respects allergens and never-again", () => {
+    const kitchen = KITCHEN({ excludeAllergens: ["milk"], neverAgain: ["chicken_slices"] });
+    const items = planFloor(TARGETS, FOODS, kitchen);
+    expect(items.length).toBeGreaterThan(0);
+    for (const item of items) {
+      expect(food(item.foodKey).allergens).not.toContain("milk");
+      expect(item.foodKey).not.toBe("chicken_slices");
+    }
+  });
+
+  it("will not override a tolerance list on the worst day", () => {
+    const kitchen = KITCHEN({ safeFoodsOnly: true, safeFoods: ["skyr", "protein_bar"] });
+    const items = planFloor(TARGETS, FOODS, kitchen);
+    expect(items.length).toBeGreaterThan(0);
+    for (const item of items) expect(kitchen.safeFoods).toContain(item.foodKey);
+    // Safe foods that all need cooking leave a floor with nothing honest to say.
+    expect(planFloor(TARGETS, FOODS, KITCHEN({ safeFoodsOnly: true, safeFoods: ["potato"] })))
+      .toEqual([]);
+  });
+
+  it("leads with the pinned breakfast when there is one", () => {
+    const items = planFloor(TARGETS, FOODS, KITCHEN({ pinnedBreakfast: "skyr" }));
+    expect(items[0].foodKey).toBe("skyr");
+    expect(items[0].slot).toBe("breakfast");
+  });
+});
+
+describe("effort, stated before anyone commits", () => {
+  it("reads the way someone asks: time, kitchen, hands", () => {
+    expect(effortSummary(5, "one-pan", 1)).toBe("5 min · one pan · one-handed");
+    expect(effortSummary(0, "none", 1)).toBe("no prep · no equipment · one-handed");
+    expect(effortSummary(25, "oven", 2)).toBe("25 min · oven · two hands");
+  });
+
+  it("counts a food's minutes once, however many times it is on the plan", () => {
+    const twice: PlanItem[] = [
+      { slot: "lunch", foodKey: "chicken_breast", grams: 150 },
+      { slot: "dinner", foodKey: "chicken_breast", grams: 150 },
+    ];
+    expect(effortFor(twice, FOODS).minutes).toBe(food("chicken_breast").standingMinutes);
+  });
+
+  it("reports the hardest thing the plan asks for", () => {
+    const mixed: PlanItem[] = [
+      { slot: "breakfast", foodKey: "skyr", grams: 170 },
+      { slot: "dinner", foodKey: "salmon_fillet", grams: 130 },
+    ];
+    const cost = effortFor(mixed, FOODS);
+    expect(cost.equipment).toBe("oven");
+    expect(cost.hands).toBe(2);
+    expect(cost.effort).toBe("cook");
+  });
+
+  it("costs an empty plan at nothing", () => {
+    expect(effortFor([], FOODS).minutes).toBe(0);
+  });
+});
+
+describe("hand portions", () => {
+  it("says the portion, not the weight", () => {
+    expect(handPortionLabel(food("chicken_breast"), 150)).toBe("1 palm");
+    expect(handPortionLabel(food("skyr"), 170)).toBe("1 pot");
+  });
+
+  it("scales in halves rather than pretending to be a scale", () => {
+    expect(handPortionLabel(food("chicken_breast"), 300)).toBe("1 palm × 2");
+    expect(handPortionLabel(food("chicken_breast"), 225)).toBe("1 palm × 1½");
+    expect(handPortionLabel(food("chicken_breast"), 70)).toBe("1 palm × ½");
+    // Never zero: a portion someone was told to eat is at least half of one.
+    expect(handPortionLabel(food("chicken_breast"), 5)).toBe("1 palm × ½");
+  });
+});
+
+describe("the fuel view, with a kitchen attached", () => {
+  const base = {
+    date: TODAY,
+    windowEntries: [] as RawMealEntry[],
+    weighIns: [{ date: addDays(TODAY, -1), weightKg: 92.8 }],
+    latestWeightKg: 92.8,
+    manualTarget: null,
+    lastWeekly: null,
+    foods: FOODS,
+  };
+
+  it("resolves the kitchen into names the UI can print", () => {
+    const view = buildFuelView({
+      ...base,
+      mode: "cut",
+      kitchen: KITCHEN({
+        minutes: 25,
+        equipment: "one-pan",
+        pinnedBreakfast: "skyr",
+        safeFoods: ["oats", "chicken_breast"],
+        neverAgain: ["tempeh"],
+        excludeAllergens: ["crustaceans"],
+      }),
+    });
+    expect(view.kitchen.summary).toBe("25 min · one pan · two hands");
+    expect(view.kitchen.pinnedBreakfast).toEqual({ key: "skyr", name: "Skyr, natural" });
+    expect(view.kitchen.safeFoods.map((f) => f.key)).toEqual(["oats", "chicken_breast"]);
+    expect(view.kitchen.neverAgain.map((f) => f.key)).toEqual(["tempeh"]);
+    expect(view.kitchen.catalogueSize).toBe(FOODS.length);
+    expect(view.kitchen.reachableFoods).toBeLessThan(FOODS.length);
+    expect(view.foods.find((f) => f.key === "prawns_cooked")?.allowed).toBe(false);
+    expect(view.foods.find((f) => f.key === "skyr")?.allowed).toBe(true);
+  });
+
+  it("prices the proposal before anyone taps generate", () => {
+    const view = buildFuelView({ ...base, mode: "cut", kitchen: BAD_DAY });
+    expect(view.proposal).not.toBeNull();
+    expect(view.proposal?.effortSummary).toMatch(/^(no prep|\d+ min) · .+ · one-handed$/);
+    expect(view.proposal?.effort.minutes).toBeLessThanOrEqual(BAD_DAY.minutes);
+    expect(view.proposal?.proteinG).toBeGreaterThan(0);
+    for (const item of view.proposal?.items ?? []) {
+      expect(item.portion.length).toBeGreaterThan(0);
+      expect(item.slotLabel.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("collapses to the floor in survival — no proposal, no shopping list", () => {
+    const view = buildFuelView({
+      ...base,
+      mode: "survival",
+      windowEntries: [
+        {
+          id: "me_1",
+          date: TODAY,
+          slot: "dinner",
+          foodKey: "chicken_breast",
+          grams: 200,
+          planned: true,
+          eaten: false,
+        },
+      ],
+    });
+    expect(view.survival).toBe(true);
+    expect(view.proposal).toBeNull();
+    expect(view.shoppingList).toEqual([]);
+    expect(view.floor.items).toHaveLength(FLOOR_ITEMS);
+    expect(view.floor.effort.minutes).toBe(0);
+    expect(view.floor.proteinG).toBeGreaterThan(0);
+  });
+
+  it("keeps the floor available on a good day too", () => {
+    const view = buildFuelView({ ...base, mode: "cut" });
+    expect(view.floor.items).toHaveLength(FLOOR_ITEMS);
+    expect(view.floor.effortSummary).toBe("no prep · no equipment · one-handed");
+  });
+
+  it("prices what today's rows actually cost, and names every portion by hand", () => {
+    const view = buildFuelView({
+      ...base,
+      mode: "cut",
+      windowEntries: [
+        {
+          id: "me_1",
+          date: TODAY,
+          slot: "breakfast",
+          foodKey: "skyr",
+          grams: 170,
+          planned: false,
+          eaten: true,
+        },
+        {
+          id: "me_2",
+          date: TODAY,
+          slot: "dinner",
+          foodKey: "chicken_breast",
+          grams: 300,
+          planned: true,
+          eaten: false,
+        },
+      ],
+    });
+    expect(view.todayEffort.minutes).toBe(food("chicken_breast").standingMinutes);
+    expect(view.todayEffort.hands).toBe(2);
+    expect(view.entries.map((e) => e.portion)).toEqual(["1 pot", "1 palm × 2"]);
+  });
+});
+
+describe("kitchen fixtures", () => {
+  const fx = buildFuelFixtures(TODAY);
+
+  it("gives liam a pinned breakfast, two safe foods and an allergen exclusion", () => {
+    const liam = kitchenProfileFor("liam");
+    expect(liam.pinnedBreakfast).toBe("skyr");
+    expect(liam.safeFoods).toHaveLength(2);
+    expect(liam.excludeAllergens).toHaveLength(1);
+    expect(liam.neverAgain.length).toBeGreaterThan(0);
+    // Every key a profile names has to exist, or the UI renders a blank.
+    for (const key of [liam.pinnedBreakfast, ...liam.safeFoods, ...liam.neverAgain]) {
+      expect(foodByKey(key as string), key as string).toBeDefined();
+    }
+  });
+
+  it("keeps conor's kitchen to the one he can use on the floor", () => {
+    const conor = kitchenProfileFor("conor");
+    expect(conor.hands).toBe(1);
+    expect(EQUIPMENT_RANK[conor.equipment]).toBeLessThanOrEqual(EQUIPMENT_RANK.microwave);
+    expect(conor.minutes).toBeLessThanOrEqual(10);
+  });
+
+  it("hands anybody it does not know a full kitchen rather than a locked one", () => {
+    expect(kitchenProfileFor("a-stranger")).toEqual(DEFAULT_KITCHEN);
+  });
+
+  it("ships the profiles with the rest of the fixtures", () => {
+    expect(fx.kitchenProfiles.map((p) => p.userSlug).sort()).toEqual(["conor", "liam"]);
+  });
+
+  it("plans liam a day his own exclusions allow", () => {
+    const plan = planDay(TARGETS, FOODS, TODAY, kitchenProfileFor("liam"));
+    expect(plan.length).toBeGreaterThan(0);
+    expect(keysOf(plan)).toContain("skyr");
+    for (const item of plan) {
+      expect(food(item.foodKey).allergens).not.toContain("crustaceans");
+      expect(item.foodKey).not.toBe("tempeh");
+    }
+    expect(effortFor(plan, FOODS).minutes).toBeLessThanOrEqual(25);
   });
 });

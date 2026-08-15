@@ -1,4 +1,5 @@
-import { FOODS } from "@convex/tm/data/foods";
+import { FOODS, lesserEquipment, type FoodEquipment } from "@convex/tm/data/foods";
+import { kitchenProfileFor } from "@convex/tm/fixtures/fuel";
 import { addDays } from "@convex/tm/lib";
 import {
   WINDOW_DAYS,
@@ -8,6 +9,7 @@ import {
   resolveTargets,
   type FuelTargets,
   type FuelViewInput,
+  type KitchenProfile,
   type MealSlot,
   type RawMealEntry,
   type WeighIn,
@@ -72,6 +74,7 @@ function gather(db: DemoDb, slug: string, date: string): FuelViewInput {
     manualTarget,
     lastWeekly: weekly ? { weekStart: weekly.weekStart, tdeeKcal: weekly.tdeeKcal } : null,
     foods: FOODS,
+    kitchen: kitchenProfileFor(slug),
   };
 }
 
@@ -112,7 +115,21 @@ export function removeFood(db: DemoDb, entryId: string): void {
   if (i >= 0) db.mealEntries.splice(i, 1);
 }
 
-export function generatePlan(db: DemoDb, slug: string, date: string): void {
+/**
+ * Mirrors convex/tm/fuel.ts:generatePlan, including the rule that today's
+ * stated limits may only tighten the stored kitchen, never widen it.
+ */
+export function generatePlan(
+  db: DemoDb,
+  slug: string,
+  date: string,
+  today: {
+    minutes?: number;
+    equipment?: FoodEquipment;
+    oneHanded?: boolean;
+    canStand?: boolean;
+  } = {},
+): void {
   const user = db.users.find((u) => u.slug === slug);
   if (!user) return;
   // Survival is a floor, not a lite mode: no plan, no new obligations.
@@ -124,8 +141,23 @@ export function generatePlan(db: DemoDb, slug: string, date: string): void {
       db.mealEntries.splice(i, 1);
   }
 
-  const { targets } = resolveTargets(gather(db, slug, date));
-  for (const item of planDay(targets, FOODS, date)) {
+  const input = gather(db, slug, date);
+  const { targets } = resolveTargets(input);
+  const stored = input.kitchen ?? kitchenProfileFor(slug);
+  const kitchen: KitchenProfile = {
+    ...stored,
+    minutes:
+      today.minutes === undefined || !Number.isFinite(today.minutes)
+        ? stored.minutes
+        : Math.min(stored.minutes, Math.max(0, today.minutes)),
+    equipment:
+      today.equipment === undefined
+        ? stored.equipment
+        : lesserEquipment(stored.equipment, today.equipment),
+    hands: today.oneHanded === true ? 1 : stored.hands,
+    canStand: today.canStand === false ? false : stored.canStand,
+  };
+  for (const item of planDay(targets, FOODS, date, kitchen)) {
     db.mealEntries.push({
       id: db.newId("me"),
       userSlug: slug,

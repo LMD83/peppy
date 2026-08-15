@@ -3,7 +3,8 @@ import type { Doc } from "../_generated/dataModel";
 import { mutation, query, type QueryCtx } from "../_generated/server";
 import { addDays } from "./lib";
 import { requireUser } from "./db";
-import { FOODS } from "./data/foods";
+import { FOODS, lesserEquipment } from "./data/foods";
+import { kitchenProfileFor } from "./fixtures/fuel";
 import {
   WINDOW_DAYS,
   buildFuelView,
@@ -13,6 +14,7 @@ import {
   type FuelTargets,
   type FuelView,
   type FuelViewInput,
+  type KitchenProfile,
   type RawMealEntry,
   type WeighIn,
 } from "./logic-fuel";
@@ -35,6 +37,15 @@ const slotArg = v.union(
 );
 
 const MAX_GRAMS = 3000;
+const MAX_PLAN_MINUTES = 240;
+
+const equipmentArg = v.union(
+  v.literal("none"),
+  v.literal("kettle"),
+  v.literal("microwave"),
+  v.literal("one-pan"),
+  v.literal("oven"),
+);
 
 /** Gather everything the view and the planner both need. One pass, bounded. */
 async function gather(
@@ -109,6 +120,7 @@ async function gather(
     manualTarget,
     lastWeekly: weekly ? { weekStart: weekly.weekStart, tdeeKcal: weekly.tdeeKcal } : null,
     foods: FOODS,
+    kitchen: kitchenProfileFor(user.slug),
   };
 }
 
@@ -170,9 +182,24 @@ export const removeFood = mutation({
   },
 });
 
+/**
+ * Generate a day.
+ *
+ * The optional arguments say what today can actually take — five minutes, one
+ * pan, one hand, no standing. They only ever *tighten* the stored profile: a
+ * bad day can never widen what the kitchen has in it. Omit them and the stored
+ * profile stands, so the existing caller keeps working unchanged.
+ */
 export const generatePlan = mutation({
-  args: { token: v.string(), date: dateArg },
-  handler: async (ctx, { token, date }) => {
+  args: {
+    token: v.string(),
+    date: dateArg,
+    minutes: v.optional(v.number()),
+    equipment: v.optional(equipmentArg),
+    oneHanded: v.optional(v.boolean()),
+    canStand: v.optional(v.boolean()),
+  },
+  handler: async (ctx, { token, date, minutes, equipment, oneHanded, canStand }) => {
     const user = await requireUser(ctx, token);
     // Survival is a floor, not a lite mode: no plan, no new obligations.
     if (user.mode === "survival") return null;
@@ -187,7 +214,18 @@ export const generatePlan = mutation({
 
     const input = await gather(ctx, user, date);
     const { targets } = resolveTargets(input);
-    for (const item of planDay(targets, FOODS, date)) {
+    const stored = input.kitchen ?? kitchenProfileFor(user.slug);
+    const kitchen: KitchenProfile = {
+      ...stored,
+      minutes:
+        minutes === undefined || !Number.isFinite(minutes)
+          ? stored.minutes
+          : Math.min(stored.minutes, Math.max(0, Math.min(MAX_PLAN_MINUTES, minutes))),
+      equipment: equipment === undefined ? stored.equipment : lesserEquipment(stored.equipment, equipment),
+      hands: oneHanded === true ? 1 : stored.hands,
+      canStand: canStand === false ? false : stored.canStand,
+    };
+    for (const item of planDay(targets, FOODS, date, kitchen)) {
       await ctx.db.insert("tm_mealEntries", {
         userId: user._id,
         date,

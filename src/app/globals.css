@@ -252,6 +252,115 @@
   font-size: var(--tm-type-floor);
 }
 
+/* ---- Easy mode — [data-easy="1"] on <html> ---------------------------------
+ * Set by src/app/_components/app.tsx from today.a11y.profile, which comes from
+ * the query, which reads the setting the person chose. Nothing infers it.
+ *
+ * READ THIS BEFORE ADDING A RULE HERE: easy mode's actual work happens in
+ * convex/tm/logic-easy.ts — it returns FEWER OBJECTS. This block only makes
+ * what survives readable and hittable. Do not try to hide a card from here.
+ * A `display: none` in a stylesheet is not one-thing-per-screen; it is the same
+ * screen with something invisible on it, still in the tab order, still in the
+ * accessibility tree, and back the moment a media query disagrees.
+ *
+ * Unlayered on purpose, same reason as the type floor above: unlayered
+ * declarations beat everything Tailwind emits inside @layer utilities, so
+ * density arrives through tokens rather than a forked component tree.
+ *
+ * The root font-size is the lever. rem-based Tailwind utilities all scale with
+ * it, so 16px → 18px widens spacing and grows min-h-11 (2.75rem) from 44px to
+ * 49.5px on its own — past the 48px target floor without a single !important.
+ * Only the px-pinned type classes need saying out loud. */
+[data-easy="1"] {
+  font-size: 18px;
+  /* The type floor rises with the profile; the rules above read this token. */
+  --tm-type-floor: 16px;
+  --tm-easy-target: 48px;
+}
+
+[data-easy="1"] body {
+  line-height: 1.6;
+}
+
+[data-easy="1"] :is(p, li, dd, button, label) {
+  line-height: 1.6;
+}
+
+/* px-pinned type does not scale with the root, so restate it. Labels to 16px,
+   body copy to 18px — the 11.5px/14px floors are Wave 1's minimum for everyone,
+   not a target to sit on when someone has asked for bigger. */
+[data-easy="1"] :is(
+    .text-\[8\.5px\],
+    .text-\[9px\],
+    .text-\[9\.5px\],
+    .text-\[10px\],
+    .text-\[10\.5px\],
+    .text-\[11px\],
+    .text-\[11\.5px\],
+    .text-\[12px\],
+    .text-\[12\.5px\],
+    .text-\[13px\]
+  ) {
+  font-size: var(--tm-type-floor);
+}
+
+[data-easy="1"] :is(.text-\[14px\], .text-\[15px\], .text-\[16px\], .text-\[17px\]) {
+  font-size: 18px;
+}
+
+/* 48px minimum on everything you can hit (2.5.5 Target Size (Enhanced) is
+   44px; easy mode takes the AAA number and rounds up). */
+[data-easy="1"]
+  :is(
+    button,
+    [role="button"],
+    [role="tab"],
+    [role="radio"],
+    [role="switch"],
+    select,
+    summary,
+    input:not([type="hidden"])
+  ) {
+  min-height: var(--tm-easy-target);
+}
+
+/* Square controls — the 1–5 scales — get width too, or they stay thin slivers. */
+[data-easy="1"] :is(.size-11, .min-w-11) {
+  min-width: var(--tm-easy-target);
+}
+
+/* Air between things, so two targets are never one thumb apart. */
+[data-easy="1"] .gap-1 {
+  gap: 0.5rem;
+}
+[data-easy="1"] .gap-1\.5 {
+  gap: 0.625rem;
+}
+[data-easy="1"] .gap-2 {
+  gap: 0.75rem;
+}
+[data-easy="1"] .gap-3 {
+  gap: 1rem;
+}
+
+/* Focus has to be unmissable at this size, not proportionally the same. */
+[data-easy="1"]
+  :is(a[href], button, input, select, textarea, [role="tab"], [role="radio"]):focus-visible {
+  outline-width: 4px;
+}
+
+/* No auto-starting timers. A countdown nobody asked for is a demand, and this
+   mode's contract is that it adds none — so easy mode's card list (logic-easy.ts)
+   contains no card that starts one, and anything animated that does survive is
+   stilled here rather than left ticking in the corner. */
+[data-easy="1"] .animate-pulse {
+  animation: none;
+  opacity: 1;
+}
+[data-easy="1"] [role="timer"] .transition-all {
+  transition-duration: 0ms;
+}
+
 /* ---- Focus visibility (2.4.7 / 1.4.11) ------------------------------------
  * There was not one :focus-visible rule in the app. Ring colour is a token and
  * clears 3:1 on both the light page and the dark header; the 2px offset means

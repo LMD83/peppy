@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { Fragment, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
+import { plain } from "@convex/tm/logic-easy";
 import { cn } from "@/lib/utils";
 import { useTimento } from "../_lib/backend";
-import { Card, Eyebrow } from "./ui";
+import { BigChoice, Card, Eyebrow } from "./ui";
 import { CravingLogger } from "./craving";
 import { FuelTodayCard } from "./fuel-tab";
 import { TrainTodayCard } from "./train-tab";
@@ -20,8 +21,47 @@ export function TodayTab() {
   const [checkStatus, setCheckStatus] = useState("");
   if (!today) return null;
   const survival = today.user.mode === "survival";
+  const easy = today.a11y.profile === "easy";
   const accent = survival ? "bg-tm-amber" : "bg-tm-green";
   const { todayDone, todayTotal } = today.stats;
+
+  function tickCheck(c: { key: string; label: string; done: boolean }) {
+    actions.toggleCheck(c.key);
+    // c.done is the value before this click.
+    const next = c.done ? todayDone - 1 : todayDone + 1;
+    setCheckStatus(`${c.label} ${c.done ? "cleared" : "done"} — ${next} of ${todayTotal} today.`);
+  }
+
+  const allChecksDone = today.checks.every((c) => c.done);
+
+  /*
+    Which cards exist is the query's decision, not this component's — see
+    convex/tm/logic-easy.ts. Standard mode gets every id in TODAY_CARDS, so the
+    rendered order below is byte-for-byte the order that shipped; easy mode gets
+    a short list and the rest are never built. Nothing here filters, so nothing
+    here can be wrong about what easy mode means.
+  */
+  const cards: Record<string, ReactNode> = {
+    // Compact read-outs owned by each domain slice — the full surface lives in its own tab.
+    supply: <SupplyTodayCard />,
+    stack: <StackTodayCard />,
+    fuel: <FuelTodayCard />,
+    train: <TrainTodayCard />,
+    kitchen: <KitchenCard />,
+    craving: <CravingLogger />,
+    state: <StateCheck />,
+    weigh: <WeighIn />,
+    mind: <MindTodayCard />,
+    labs: <LabsTodayCard />,
+    winter: research?.winterLayer ? (
+      <Card>
+        <Eyebrow color="bg-tm-yellow">Winter layer — PER3 +/+</Eyebrow>
+        <p className="text-[14px]">
+          Morning light within an hour of waking — daylight walk or the 10k-lux lamp. Sleep checks weigh heavier this season.
+        </p>
+      </Card>
+    ) : null,
+  };
 
   return (
     <div className="flex flex-col gap-3 pt-4">
@@ -30,76 +70,77 @@ export function TodayTab() {
       </p>
       {today.tripwire && (
         <Card tone="amber">
-          <Eyebrow color="bg-tm-amber">{today.tripwire.level === "hard" ? "Hard tripwire" : "Soft tripwire"}</Eyebrow>
+          <Eyebrow color="bg-tm-amber">
+            {easy
+              ? plain("Tripwire")
+              : today.tripwire.level === "hard"
+                ? "Hard tripwire"
+                : "Soft tripwire"}
+          </Eyebrow>
           <p className="text-[14px] text-tm-amber-ink">{today.tripwire.message}</p>
         </Card>
       )}
 
       <Card tone={survival ? "amber" : "default"}>
         <Eyebrow color={accent}>
-          {survival ? "Floor checks — only these three exist" : "Today's checks"}
+          {easy ? "Today" : survival ? "Floor checks — only these three exist" : "Today's checks"}
         </Eyebrow>
-        <div className="flex flex-col gap-2">
-          {today.checks.map((c) => (
-            <button
-              key={c.key}
-              onClick={() => {
-                actions.toggleCheck(c.key);
-                // c.done is the value before this click.
-                const next = c.done ? todayDone - 1 : todayDone + 1;
-                setCheckStatus(`${c.label} ${c.done ? "cleared" : "done"} — ${next} of ${todayTotal} today.`);
-              }}
-              aria-pressed={c.done}
-              className={cn(
-                "flex min-h-11 cursor-pointer items-center justify-between rounded-lg border px-3.5 py-3 text-left text-[15px] font-medium",
-                // white on tm-amber 5.77:1 — it was 3.29:1, so a ticked check on
-                // the survival screen was unreadable. white on tm-green 5.99:1.
-                c.done
-                  ? cn("text-white", survival ? "border-tm-amber bg-tm-amber" : "border-tm-green bg-tm-green")
-                  : "border-tm-rule-strong bg-tm-panel text-tm-ink",
-              )}
-            >
-              <span>{c.label}</span>
-              <span aria-hidden className="font-tm-mono text-[14px]">{c.done ? "✓" : "—"}</span>
-            </button>
-          ))}
-        </div>
+        {easy ? (
+          <>
+            {/* The one next action, as a sentence. Not a control — the controls
+                are the answers below, and saying it twice is two decisions. */}
+            <p className="mb-3 text-[15px]">{today.nextAction.label}</p>
+            <BigChoice
+              question={
+                allChecksDone ? "All done. Tap one to undo it." : "Which one have you done?"
+              }
+              options={today.checks.map((c) => ({
+                id: c.key,
+                label: c.label,
+                detail: c.done ? "Done" : undefined,
+                selected: c.done,
+                onSelect: () => tickCheck(c),
+              }))}
+            />
+          </>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {today.checks.map((c) => (
+              <button
+                key={c.key}
+                onClick={() => tickCheck(c)}
+                aria-pressed={c.done}
+                className={cn(
+                  "flex min-h-11 cursor-pointer items-center justify-between rounded-lg border px-3.5 py-3 text-left text-[15px] font-medium",
+                  // white on tm-amber 5.77:1 — it was 3.29:1, so a ticked check on
+                  // the survival screen was unreadable. white on tm-green 5.99:1.
+                  c.done
+                    ? cn("text-white", survival ? "border-tm-amber bg-tm-amber" : "border-tm-green bg-tm-green")
+                    : "border-tm-rule-strong bg-tm-panel text-tm-ink",
+                )}
+              >
+                <span>{c.label}</span>
+                <span aria-hidden className="font-tm-mono text-[14px]">{c.done ? "✓" : "—"}</span>
+              </button>
+            ))}
+          </div>
+        )}
         {survival && (
           <p className="mt-2.5 text-[14px] text-tm-amber-ink">
-            No tracking. No macros. No make-up sessions. Holding the floor <i>is</i> the win this season.
+            {easy ? (
+              "Three things. That is the whole day. Holding this is the win."
+            ) : (
+              <>
+                No tracking. No macros. No make-up sessions. Holding the floor <i>is</i> the win this season.
+              </>
+            )}
           </p>
         )}
       </Card>
 
-      {/* Compact read-outs owned by each domain slice — the full surface lives in its own tab. */}
-      <SupplyTodayCard />
-
-      <StackTodayCard />
-
-      <FuelTodayCard />
-
-      <TrainTodayCard />
-
-      <KitchenCard />
-
-      <CravingLogger />
-
-      <StateCheck />
-
-      <WeighIn />
-
-      <MindTodayCard />
-
-      <LabsTodayCard />
-
-      {research?.winterLayer && (
-        <Card>
-          <Eyebrow color="bg-tm-yellow">Winter layer — PER3 +/+</Eyebrow>
-          <p className="text-[14px]">
-            Morning light within an hour of waking — daylight walk or the 10k-lux lamp. Sleep checks weigh heavier this season.
-          </p>
-        </Card>
-      )}
+      {today.a11y.cards.map((id) => (
+        <Fragment key={id}>{cards[id] ?? null}</Fragment>
+      ))}
 
       <p className="pb-2 text-center">
         <Link
