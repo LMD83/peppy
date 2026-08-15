@@ -13,11 +13,19 @@ on:
     paths:
       - .github/workflows/deploy-verify.yml
       - scripts/timento-e2e.mjs
+  # Now that the Vercel project builds from Git, every deployment announces
+  # itself here — so every preview and every production build gets the same
+  # click-suite, against the URL that was actually deployed.
+  deployment_status:
 
 jobs:
   smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # deployment_status fires for pending/error too; only verify a live one.
+    if: >-
+      github.event_name != 'deployment_status' ||
+      github.event.deployment_status.state == 'success'
 
     steps:
       - name: Checkout
@@ -31,7 +39,9 @@ jobs:
 
       - name: Probe pages
         run: |
-          base="${{ github.event.inputs.url || 'https://peppy-liams-projects-eb2f3bfa.vercel.app' }}"
+          base="${{ github.event.deployment_status.environment_url || github.event.inputs.url || 'https://peppy-liams-projects-eb2f3bfa.vercel.app' }}"
+          base="${base%/}"
+          echo "Verifying $base (event: ${{ github.event_name }})"
           echo "base=$base" >> "$GITHUB_ENV"
           for path in / /why; do
             code=$(curl -sL -o /tmp/page.html -D /tmp/head.txt -w '%{http_code}' "$base$path")
