@@ -249,24 +249,9 @@ export class DemoDb {
   }
 
   crew(viewerSlug: string, date: string): CrewData {
-    const members = this.users.map((u) => {
-      const stats = computeStreakAndAdherence(this.wallFor(u, date), date);
-      return {
-        slug: u.slug,
-        name: u.name,
-        isYou: u.slug === viewerSlug,
-        mode: u.modeMut,
-        modeSince: u.modeSinceMut,
-        reviewDate: u.reviewDateMut ?? null,
-        daysInMode: daysBetween(u.modeSinceMut, date),
-        streak: stats.streak,
-        adherence7: stats.adherence7,
-        todayDone: stats.todayDone,
-        todayTotal: stats.todayTotal,
-      };
-    });
-    members.sort((a, b) => (a.isYou === b.isYou ? 0 : a.isYou ? -1 : 1));
-    return members;
+    // Projection and scope enforcement live in the consent slice, so the demo
+    // and Convex backends can only ever disclose the same fields.
+    return consent.view(this, viewerSlug, date);
   }
 
   feed(): FeedData {
