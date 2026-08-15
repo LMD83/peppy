@@ -105,7 +105,9 @@ function SubNav({
   onChange: (id: string) => void;
 }) {
   return (
-    <div className="mb-3 flex gap-1.5" role="tablist">
+    // flex-wrap: four chips at 44px tall overflow a 320px viewport (1.4.10).
+    // They wrap onto a second row instead of scrolling the page sideways.
+    <div className="mb-3 flex flex-wrap gap-1.5" role="tablist">
       {items.map((s) => (
         <button
           key={s.id}

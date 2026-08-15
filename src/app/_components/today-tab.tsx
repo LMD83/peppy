@@ -236,7 +236,11 @@ function StateCheck() {
 
 function ScaleRow({ label, value, onPick }: { label: string; value: number | null; onPick: (v: number) => void }) {
   return (
-    <div className="flex items-center justify-between gap-2">
+    /* flex-wrap, because five 44px targets plus a label do not fit across a
+       320px viewport (1.4.10 Reflow). The label drops to its own line rather
+       than the page scrolling sideways — the targets never shrink to make
+       room, which is the trade this app always makes. */
+    <div className="flex flex-wrap items-center justify-between gap-2">
       <span className="text-[14px] font-medium">{label}</span>
       {/* size-11 = 44×44 (2.5.8). Was size-8. */}
       <div className="flex gap-1" role="radiogroup" aria-label={label}>

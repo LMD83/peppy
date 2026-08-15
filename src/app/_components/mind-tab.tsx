@@ -139,13 +139,13 @@ function SafetyCard({ text }: { text: string }) {
       <div className="mt-2.5 flex gap-2">
         <a
           href="tel:116123"
-          className="flex min-h-10 flex-1 items-center justify-center rounded-lg border border-tm-amber bg-tm-panel px-3 font-tm-mono text-[11px] tracking-[0.1em] text-tm-amber uppercase"
+          className="flex min-h-11 flex-1 items-center justify-center rounded-lg border border-tm-amber bg-tm-panel px-3 font-tm-mono text-[11px] tracking-[0.1em] text-tm-amber uppercase"
         >
           Samaritans 116 123
         </a>
         <a
           href="tel:112"
-          className="flex min-h-10 flex-1 items-center justify-center rounded-lg border border-tm-amber bg-tm-panel px-3 font-tm-mono text-[11px] tracking-[0.1em] text-tm-amber uppercase"
+          className="flex min-h-11 flex-1 items-center justify-center rounded-lg border border-tm-amber bg-tm-panel px-3 font-tm-mono text-[11px] tracking-[0.1em] text-tm-amber uppercase"
         >
           Emergency 112
         </a>
@@ -207,7 +207,7 @@ function DueCard({
             <button
               key={d.key}
               onClick={() => setOpen(d.key)}
-              className="flex min-h-10 cursor-pointer items-center justify-between rounded-lg border border-tm-rule bg-tm-panel px-3.5 py-2.5 text-left"
+              className="flex min-h-11 cursor-pointer items-center justify-between rounded-lg border border-tm-rule bg-tm-panel px-3.5 py-2.5 text-left"
             >
               <span>
                 <span className="block text-[13px] font-medium">{d.name}</span>
@@ -305,7 +305,7 @@ function Questionnaire({ instrument, onClose }: { instrument: InstrumentView; on
           onClick={submit}
           disabled={!complete}
           className={cn(
-            "min-h-10 flex-1 cursor-pointer rounded-lg px-4 font-tm-mono text-[11px] tracking-[0.12em] uppercase",
+            "min-h-11 flex-1 cursor-pointer rounded-lg px-4 font-tm-mono text-[11px] tracking-[0.12em] uppercase",
             complete ? "bg-tm-ink text-white" : "bg-tm-soft text-tm-dim2",
           )}
         >
@@ -313,7 +313,7 @@ function Questionnaire({ instrument, onClose }: { instrument: InstrumentView; on
         </button>
         <button
           onClick={onClose}
-          className="min-h-10 cursor-pointer rounded-lg border border-tm-rule px-4 font-tm-mono text-[11px] tracking-[0.12em] text-tm-dim uppercase"
+          className="min-h-11 cursor-pointer rounded-lg border border-tm-rule px-4 font-tm-mono text-[11px] tracking-[0.12em] text-tm-dim uppercase"
         >
           Close
         </button>
@@ -454,7 +454,7 @@ function IntentionRow({ intention }: { intention: IntentionView }) {
         <button
           onClick={() => actions.markIntentionWin(intention.id)}
           aria-label={`Log a win for: if ${intention.trigger} then ${intention.action}`}
-          className="min-h-10 cursor-pointer rounded-lg border border-tm-green px-3 font-tm-mono text-[10px] tracking-[0.12em] text-tm-green uppercase"
+          className="min-h-11 cursor-pointer rounded-lg border border-tm-green px-3 font-tm-mono text-[10px] tracking-[0.12em] text-tm-green uppercase"
         >
           Ran it
         </button>
@@ -499,7 +499,7 @@ function IntentionBuilder({ suggestions }: { suggestions: Suggestion[] }) {
             onChange={(e) => setTrigger(e.target.value)}
             placeholder="it's 21:00 and I'm tired"
             aria-label="If — the situation"
-            className="min-h-10 flex-1 rounded-lg border border-tm-rule bg-tm-panel px-3 text-[12.5px] outline-none focus:border-tm-ink"
+            className="min-h-11 flex-1 rounded-lg border border-tm-rule bg-tm-panel px-3 text-[12.5px] outline-none focus:border-tm-ink"
           />
         </label>
         <label className="flex items-center gap-2">
@@ -509,7 +509,7 @@ function IntentionBuilder({ suggestions }: { suggestions: Suggestion[] }) {
             onChange={(e) => setAction(e.target.value)}
             placeholder="run the close-out ritual, then go up"
             aria-label="Then — the pre-decided action"
-            className="min-h-10 flex-1 rounded-lg border border-tm-rule bg-tm-panel px-3 text-[12.5px] outline-none focus:border-tm-ink"
+            className="min-h-11 flex-1 rounded-lg border border-tm-rule bg-tm-panel px-3 text-[12.5px] outline-none focus:border-tm-ink"
           />
         </label>
       </div>
@@ -529,7 +529,7 @@ function IntentionBuilder({ suggestions }: { suggestions: Suggestion[] }) {
                   setAction(s.action);
                 }}
                 aria-label={`Use suggestion: if ${s.trigger} then ${s.action}`}
-                className="min-h-10 cursor-pointer rounded-lg bg-tm-soft px-3 py-2 text-left text-[12px] leading-snug"
+                className="min-h-11 cursor-pointer rounded-lg bg-tm-soft px-3 py-2 text-left text-[12px] leading-snug"
               >
                 <span className="font-tm-mono text-[9.5px] tracking-[0.1em] text-tm-dim uppercase">
                   {s.signal}{" "}
@@ -545,7 +545,7 @@ function IntentionBuilder({ suggestions }: { suggestions: Suggestion[] }) {
         type="submit"
         disabled={!ready}
         className={cn(
-          "mt-2.5 min-h-10 w-full cursor-pointer rounded-lg px-4 font-tm-mono text-[11px] tracking-[0.12em] uppercase",
+          "mt-2.5 min-h-11 w-full cursor-pointer rounded-lg px-4 font-tm-mono text-[11px] tracking-[0.12em] uppercase",
           ready ? "bg-tm-ink text-white" : "bg-tm-soft text-tm-dim2",
         )}
       >
@@ -586,7 +586,7 @@ function ReflectionCard({
       {!todays && (
         <button
           onClick={swap}
-          className="mt-1.5 min-h-10 cursor-pointer font-tm-mono text-[10px] tracking-[0.12em] text-tm-dim uppercase underline"
+          className="mt-1.5 min-h-11 cursor-pointer font-tm-mono text-[10px] tracking-[0.12em] text-tm-dim uppercase underline"
         >
           Another angle
         </button>
@@ -624,13 +624,13 @@ function ReflectionCard({
             onChange={(e) => setWin(e.target.value)}
             placeholder="one win today (optional)"
             aria-label="One win today, optional"
-            className="mt-1.5 min-h-10 w-full rounded-lg border border-tm-rule bg-tm-panel px-3 text-[12.5px] outline-none focus:border-tm-ink"
+            className="mt-1.5 min-h-11 w-full rounded-lg border border-tm-rule bg-tm-panel px-3 text-[12.5px] outline-none focus:border-tm-ink"
           />
           <button
             type="submit"
             disabled={!ready}
             className={cn(
-              "mt-2 min-h-10 w-full cursor-pointer rounded-lg px-4 font-tm-mono text-[11px] tracking-[0.12em] uppercase",
+              "mt-2 min-h-11 w-full cursor-pointer rounded-lg px-4 font-tm-mono text-[11px] tracking-[0.12em] uppercase",
               ready ? "bg-tm-ink text-white" : "bg-tm-soft text-tm-dim2",
             )}
           >

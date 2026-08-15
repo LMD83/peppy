@@ -65,10 +65,17 @@ export function ResearchTab() {
           {research.markers
             .filter((m) => m.status === "disputed")
             .map((m) => (
-              <li key={m.gene} className="border-b border-tm-grid py-2 opacity-75 last:border-0">
+              /* No opacity here. Fading a whole row is the cheapest way to say
+                 "this one is less certain" and it silently multiplies every
+                 contrast ratio inside it — 75% took this text under 4.5:1. The
+                 card's own heading already says these are disputed, so the
+                 uncertainty is carried in words rather than in legibility. */
+              <li key={m.gene} className="border-b border-tm-grid py-2 last:border-0">
                 <div className="flex justify-between gap-2">
                   <span className="font-tm-mono text-[12px] font-medium">{m.gene}</span>
-                  <span className="shrink-0 font-tm-mono text-[9.5px] text-tm-yellow">resolves: {m.resolvesVia}</span>
+                  {/* Yellow is a surface colour in this palette, never a text
+                      colour — it cannot clear 4.5:1 on panel at any size. */}
+                  <span className="shrink-0 font-tm-mono text-[9.5px] text-tm-dim">resolves: {m.resolvesVia}</span>
                 </div>
                 <p className="font-tm-mono text-[10px] text-tm-dim">
                   CSV: {m.csvCall} · report: {m.reportCall}

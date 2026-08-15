@@ -66,7 +66,13 @@ export default function WhyPage() {
       </ul>
 
       <p className="mt-6 text-center">
-        <Link href="/" className="font-tm-mono text-[10px] tracking-[0.12em] text-tm-dim underline uppercase">
+        {/* The only way back from this page, standing on its own line — so the
+            2.5.8 exception for links inside a sentence does not apply to it and
+            it needs a real 44px target rather than a 15px one. */}
+        <Link
+          href="/"
+          className="inline-flex min-h-11 items-center justify-center px-4 font-tm-mono text-[10px] tracking-[0.12em] text-tm-dim underline uppercase"
+        >
           ← Back to the file
         </Link>
       </p>
