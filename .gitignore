@@ -57,3 +57,4 @@ temp/
 
 # Local/CI e2e screenshot output
 e2e-shots/
+a11y-shots/

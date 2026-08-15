@@ -316,7 +316,15 @@ function RefillCard({ supply }: { supply: SupplyData }) {
   return (
     <Card>
       <Eyebrow color="bg-tm-blue">The call — ready to read out</Eyebrow>
-      <pre className="max-h-56 overflow-auto rounded-lg border border-tm-rule bg-tm-soft px-3 py-2.5 font-tm-mono text-[11px] whitespace-pre-wrap">
+      {/* A scrollable box has to be reachable by keyboard, or its content is
+          only readable by people who can use a mouse or a finger (WCAG 2.1.1).
+          tabIndex makes it a stop; the label says what the stop is for. */}
+      <pre
+        tabIndex={0}
+        role="group"
+        aria-label="The message to read out to the pharmacy"
+        className="max-h-56 overflow-auto rounded-lg border border-tm-rule bg-tm-soft px-3 py-2.5 font-tm-mono text-[11px] whitespace-pre-wrap"
+      >
         {supply.refillMessage}
       </pre>
       <button

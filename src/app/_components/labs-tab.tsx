@@ -268,7 +268,7 @@ function GroupCard({
       <button
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex min-h-10 w-full cursor-pointer items-center justify-between text-left"
+        className="flex min-h-11 w-full cursor-pointer items-center justify-between text-left"
       >
         <Eyebrow color={flagged ? "bg-tm-red" : "bg-tm-dim2"} className="mb-0">
           {label}
@@ -297,7 +297,7 @@ function MarkerRow({ result, trend }: { result: LabResult; trend: LabTrend | nul
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-label={`${result.name}: ${fmt(result.value)} ${result.unit}, ${FLAG_LABEL[result.flag]}`}
-        className="flex min-h-10 w-full cursor-pointer flex-col gap-1 py-2 text-left"
+        className="flex min-h-11 w-full cursor-pointer flex-col gap-1 py-2 text-left"
       >
         <div className="flex items-baseline justify-between gap-2">
           <span className="text-[13px] font-medium">{result.name}</span>
@@ -428,7 +428,11 @@ function PanelHistory({ panels }: { panels: LabPanel[] }) {
           return (
             <li
               key={p.id}
-              className="flex items-center justify-between border-b border-tm-grid py-2 last:border-0"
+              // flex-wrap and no shrink-0: the panel name plus a ~30-character
+              // meta line does not fit across a 320px viewport, and shrink-0
+              // turned that into sideways scroll for the whole page rather than
+              // a second line (1.4.10). The meta drops under the name instead.
+              className="flex flex-wrap items-center justify-between gap-x-2 border-b border-tm-grid py-2 last:border-0"
             >
               <span className="text-[13px] font-medium">
                 {p.name}{" "}
@@ -436,7 +440,7 @@ function PanelHistory({ panels }: { panels: LabPanel[] }) {
                   {p.fasted === true ? "fasted" : p.fasted === false ? "non-fasted" : ""}
                 </span>
               </span>
-              <span className="shrink-0 font-tm-mono text-[10.5px] text-tm-dim">
+              <span className="font-tm-mono text-[10.5px] text-tm-dim">
                 {p.date} · {p.results.length} markers · {out} out
               </span>
             </li>
@@ -483,7 +487,7 @@ function AddPanel({ templates }: { templates: LabTemplate[] }) {
               <button
                 key={t.key}
                 onClick={() => setTemplateKey(t.key)}
-                className="min-h-10 cursor-pointer rounded-lg border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[9.5px] tracking-[0.1em] uppercase"
+                className="min-h-11 cursor-pointer rounded-lg border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[9.5px] tracking-[0.1em] uppercase"
               >
                 {t.name}
               </button>
@@ -500,7 +504,7 @@ function AddPanel({ templates }: { templates: LabTemplate[] }) {
             <span className="text-[13px] font-semibold">{template.name}</span>
             <button
               onClick={() => setTemplateKey(null)}
-              className="min-h-10 cursor-pointer font-tm-mono text-[10px] tracking-[0.12em] text-tm-dim uppercase"
+              className="min-h-11 cursor-pointer font-tm-mono text-[10px] tracking-[0.12em] text-tm-dim uppercase"
             >
               Change
             </button>
@@ -522,7 +526,7 @@ function AddPanel({ templates }: { templates: LabTemplate[] }) {
                     onChange={(e) => setValues((v) => ({ ...v, [m.key]: e.target.value }))}
                     inputMode="decimal"
                     placeholder="—"
-                    className="min-h-10 w-20 rounded-lg border border-tm-rule bg-tm-panel px-2 py-2 text-right font-tm-mono text-sm outline-none focus:border-tm-ink"
+                    className="min-h-11 w-20 rounded-lg border border-tm-rule bg-tm-panel px-2 py-2 text-right font-tm-mono text-sm outline-none focus:border-tm-ink"
                   />
                   <span className="w-16 font-tm-mono text-[10px] text-tm-dim">{m.unit}</span>
                 </div>
@@ -541,7 +545,7 @@ function AddPanel({ templates }: { templates: LabTemplate[] }) {
                 aria-checked={fasted === opt.on}
                 onClick={() => setFasted(opt.on)}
                 className={cn(
-                  "min-h-10 flex-1 cursor-pointer rounded-lg border font-tm-mono text-[9.5px] tracking-[0.1em] uppercase",
+                  "min-h-11 flex-1 cursor-pointer rounded-lg border font-tm-mono text-[9.5px] tracking-[0.1em] uppercase",
                   fasted === opt.on
                     ? "border-tm-ink bg-tm-ink text-white"
                     : "border-tm-rule bg-tm-panel text-tm-dim",
@@ -556,7 +560,7 @@ function AddPanel({ templates }: { templates: LabTemplate[] }) {
             onClick={save}
             disabled={filled.length === 0}
             className={cn(
-              "mt-2 min-h-10 w-full cursor-pointer rounded-lg px-4 font-tm-mono text-[10px] tracking-[0.12em] uppercase",
+              "mt-2 min-h-11 w-full cursor-pointer rounded-lg px-4 font-tm-mono text-[10px] tracking-[0.12em] uppercase",
               filled.length === 0 ? "bg-tm-soft text-tm-dim" : "bg-tm-ink text-white",
             )}
           >

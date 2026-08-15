@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useTimento } from "../_lib/backend";
 import type { FuelData, MealSlot } from "../_lib/types";
 import { Card, Eyebrow, Stat } from "./ui";
+import { axisFontSize } from "./charts";
 
 type FoodOption = FuelData["foods"][number];
 type SlotView = FuelData["slots"][number];
@@ -761,7 +762,7 @@ function WeekStrip({ week, targetKcal }: { week: FuelData["week"]; targetKcal: n
             x={i * 20 + 10}
             y={45}
             textAnchor="middle"
-            fontSize="6"
+            fontSize={axisFontSize(W)}
             className="fill-tm-dim font-tm-mono"
           >
             {d.date.slice(8)}

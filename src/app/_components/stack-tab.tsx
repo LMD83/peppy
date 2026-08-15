@@ -401,7 +401,7 @@ function ProtocolList({ stack }: { stack: StackData }) {
                       <button
                         onClick={() => actions.setStackItemActive(item.id, !item.active)}
                         aria-pressed={!item.active}
-                        className="mt-2 min-h-10 w-full cursor-pointer rounded-lg border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[10px] tracking-[0.12em] text-tm-dim uppercase"
+                        className="mt-2 min-h-11 w-full cursor-pointer rounded-lg border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[10px] tracking-[0.12em] text-tm-dim uppercase"
                       >
                         {item.active ? "Pause this item" : "Resume this item"}
                       </button>
@@ -471,7 +471,7 @@ function ReconCalculator({ items }: { items: ItemView[] }) {
               aria-checked={i.id === picked.id}
               onClick={() => select(i.id)}
               className={cn(
-                "min-h-10 cursor-pointer rounded-lg border px-3 font-tm-mono text-[9.5px] tracking-[0.1em] uppercase",
+                "min-h-11 cursor-pointer rounded-lg border px-3 font-tm-mono text-[9.5px] tracking-[0.1em] uppercase",
                 i.id === picked.id
                   ? "border-tm-ink bg-tm-ink text-white"
                   : "border-tm-rule bg-tm-panel text-tm-dim",
@@ -537,7 +537,7 @@ function NumField({
         onChange={(e) => onChange(e.target.value)}
         inputMode="decimal"
         placeholder={placeholder}
-        className="min-h-10 w-full rounded-lg border border-tm-rule bg-tm-panel px-3 py-2 font-tm-mono text-sm outline-none focus:border-tm-ink"
+        className="min-h-11 w-full rounded-lg border border-tm-rule bg-tm-panel px-3 py-2 font-tm-mono text-sm outline-none focus:border-tm-ink"
       />
     </label>
   );

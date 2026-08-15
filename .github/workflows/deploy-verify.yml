@@ -69,10 +69,20 @@ jobs:
       - name: E2E click-suite against deployment
         run: node scripts/timento-e2e.mjs "$base" e2e-shots
 
+      # Runs against the deployed build rather than a dev server, because the
+      # thing that has to be accessible is the thing people actually load. Walks
+      # every screen at 320/390/1280, in both accessibility profiles and in the
+      # survival floor, and fails on any WCAG 2.2 AA violation, any text under
+      # the type floor, or any sideways scroll at 320px.
+      - name: Accessibility sweep against deployment
+        run: node scripts/timento-a11y.mjs "$base" a11y-shots
+
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: deploy-verify-shots
-          path: e2e-shots/
+          path: |
+            e2e-shots/
+            a11y-shots/
           if-no-files-found: ignore

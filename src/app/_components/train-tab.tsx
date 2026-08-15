@@ -6,6 +6,7 @@ import { MESO_DELOAD_WEEK, exerciseName, type MesoGoal } from "@convex/tm/data/e
 import { useTimento } from "../_lib/backend";
 import type { TrainData } from "../_lib/types";
 import { Card, Eyebrow, Stat } from "./ui";
+import { axisFontSize } from "./charts";
 
 type Block = TrainData["today"]["blocks"][number];
 type VolumeRow = TrainData["weeklyVolume"][number];
@@ -233,7 +234,7 @@ function StartMesoCard() {
           <button
             key={g.goal}
             onClick={() => actions.startMesocycle(g.goal)}
-            className="min-h-10 cursor-pointer rounded-lg border border-tm-rule bg-tm-panel px-3 py-2 text-left"
+            className="min-h-11 cursor-pointer rounded-lg border border-tm-rule bg-tm-panel px-3 py-2 text-left"
           >
             <span className="font-tm-mono text-[10px] tracking-[0.12em] uppercase">{g.goal}</span>
             <span className="block text-[11.5px] text-tm-dim">{g.blurb}</span>
@@ -321,7 +322,7 @@ function BlockCard({ block, logged }: { block: Block; logged: TrainData["loggedS
         <button
           type="submit"
           className={cn(
-            "min-h-10 flex-1 cursor-pointer rounded-lg px-2 font-tm-mono text-[10px] tracking-[0.1em] uppercase",
+            "min-h-11 flex-1 cursor-pointer rounded-lg px-2 font-tm-mono text-[10px] tracking-[0.1em] uppercase",
             done ? "bg-tm-soft text-tm-dim" : "bg-tm-ink text-white",
           )}
         >
@@ -355,7 +356,7 @@ function NumField({
       inputMode="decimal"
       aria-label={label}
       placeholder={placeholder}
-      className="min-h-10 w-14 rounded-lg border border-tm-rule bg-tm-panel px-2 text-center font-tm-mono text-[12px] outline-none focus:border-tm-ink"
+      className="min-h-11 w-14 rounded-lg border border-tm-rule bg-tm-panel px-2 text-center font-tm-mono text-[12px] outline-none focus:border-tm-ink"
     />
   );
 }
@@ -388,10 +389,15 @@ function VolumeCard({ rows }: { rows: VolumeRow[] }) {
 
 function VolumeBars({ rows }: { rows: VolumeRow[] }) {
   const W = 340;
-  const ROW = 20;
+  // Every length here is derived from the label size, because the label is the
+  // part with a floor. "hamstrings" in uppercase mono with tracking is ~7em
+  // wide, so the gutter is sized to hold it rather than to a number that
+  // happened to look right at one width.
+  const ts = axisFontSize(W);
+  const ROW = Math.round(ts * 1.6);
   const H = rows.length * ROW + 4;
-  const barX = 74;
-  const barW = 226;
+  const barX = Math.round(ts * 7.2);
+  const barW = W - barX - Math.round(ts * 1.6);
   const summary = rows.map((r) => `${r.muscle} ${r.sets} sets, ${r.verdict}`).join("; ");
 
   return (
@@ -409,8 +415,9 @@ function VolumeBars({ rows }: { rows: VolumeRow[] }) {
           <g key={r.muscle}>
             <text
               x={0}
-              y={y + 9}
-              className="fill-tm-dim font-tm-mono text-[9px] tracking-[0.08em] uppercase"
+              y={y + ts * 0.75}
+              fontSize={ts}
+              className="fill-tm-dim font-tm-mono tracking-[0.08em] uppercase"
             >
               {r.muscle}
             </text>
@@ -426,7 +433,7 @@ function VolumeBars({ rows }: { rows: VolumeRow[] }) {
             <rect x={x(r.mev)} y={y} width={1} height={13} className="fill-tm-dim2" />
             <rect x={x(r.mav)} y={y} width={1} height={13} className="fill-tm-dim2" />
             <rect x={x(r.mrv)} y={y} width={1} height={13} className="fill-tm-dim" />
-            <text x={W} y={y + 9} textAnchor="end" className="fill-tm-ink font-tm-mono text-[9.5px]">
+            <text x={W} y={y + ts * 0.75} textAnchor="end" fontSize={ts} className="fill-tm-ink font-tm-mono">
               {r.sets}
             </text>
           </g>
