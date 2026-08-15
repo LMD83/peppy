@@ -96,6 +96,20 @@ All commands run from a checkout where you've done `npx convex login`
 `next.config.ts` keeps `output: "standalone"` for Docker/self-hosted builds;
 the flag is skipped automatically on Vercel (`process.env.VERCEL`).
 
+## Known build fragility: fonts are fetched at build time
+
+`src/app/layout.tsx` uses `next/font/google`, which downloads Archivo Black and
+IBM Plex from `fonts.gstatic.com` **during the build**. A network blip on the
+runner therefore fails the whole build with a wall of
+`Module not found: Can't resolve '@vercel/turbopack-next/internal/font/google/font'`
+against generated `…module.css` files. Seen on CI 2026-08-15 on a commit that
+changed only workflow YAML, minutes after the same tree built clean.
+
+It is transient — re-run the job and it passes. The durable fix is to vendor the
+`.woff2` files into `public/` and switch to `next/font/local`, which removes the
+build-time network dependency from every CI run *and* every Vercel deploy. Worth
+doing the next time this costs anyone ten minutes.
+
 ## Redeploying the frontend from this repo
 
 Simplest path from a checkout with `npx vercel login` done:
