@@ -13,10 +13,12 @@ import {
   parseScopes,
   projectMember,
   sortBoard,
+  supersededGrantIds,
   supplyState,
   type ConsentLink,
   type CrewBoard,
   type MemberFacts,
+  type Relationship,
   type Scope,
   type SupplyCover,
 } from "./logic-consent";
@@ -56,6 +58,7 @@ function toLink(row: Doc<"tm_crewLinks">): ConsentLink {
     status: row.status,
     invitedDate: row.invitedDate,
   };
+  if (row.relationship !== undefined) link.relationship = row.relationship;
   if (row.respondedDate !== undefined) link.respondedDate = row.respondedDate;
   if (row.revokedDate !== undefined) link.revokedDate = row.revokedDate;
   return link;
@@ -165,10 +168,10 @@ export const board = query({
       const other = await ctx.db.get("tm_users", otherId as Id<"tm_users">);
       if (!other) continue;
       const scopes = activeScopesFor(links, other._id, viewer._id);
-      rows.push({
-        ...projectMember(await factsFor(ctx, other, false, scopes, date), scopes),
-        link: linkStateFor(links, viewer._id, other._id),
-      });
+      // The carer view is built from `projected`, never from the facts — a
+      // carer seat is a narrower reading of an already-consented projection.
+      const projected = projectMember(await factsFor(ctx, other, false, scopes, date), scopes);
+      rows.push({ ...projected, link: linkStateFor(links, viewer._id, other._id, projected) });
     }
 
     return sortBoard(rows);
@@ -213,15 +216,26 @@ export const nudge = mutation({
 /* ===== consent: offer, answer, withdraw ===== */
 
 /**
- * Offer *your own* file to someone else. The caller is always the owner: there
- * is no way to invite yourself to somebody else's data.
+ * Offer *your own* file to someone else, as a peer or as a carer. The caller is
+ * always the owner: there is no way to invite yourself to somebody else's data.
+ *
+ * The relationship is not decoration. `checkInvite` refuses a carer invitation
+ * naming anything outside `CARER_SCOPES`, so an over-broad carer grant is never
+ * written — not written and then filtered, not written and then apologised for.
  */
 export const invite = mutation({
-  args: { token: v.string(), date: v.string(), slug: v.string(), scopes: v.array(v.string()) },
-  handler: async (ctx, { token, date, slug, scopes }) => {
+  args: {
+    token: v.string(),
+    date: v.string(),
+    slug: v.string(),
+    scopes: v.array(v.string()),
+    relationship: v.optional(v.union(v.literal("crew"), v.literal("carer"))),
+  },
+  handler: async (ctx, { token, date, slug, scopes, relationship }) => {
     const owner = await requireUser(ctx, token);
     const parsed = parseScopes(scopes);
     if (!parsed) throw new ConvexError("unknown-scope");
+    const rel: Relationship = relationship ?? "crew";
 
     const target = await ctx.db
       .query("tm_users")
@@ -230,13 +244,14 @@ export const invite = mutation({
     if (!target) throw new ConvexError("unknown-user");
 
     const links = await linksFor(ctx, owner._id);
-    const verdict = checkInvite(links, owner._id, target._id, parsed);
+    const verdict = checkInvite(links, owner._id, target._id, parsed, rel);
     if (verdict !== "ok") throw new ConvexError(verdict);
 
     await ctx.db.insert("tm_crewLinks", {
       ownerId: owner._id,
       viewerId: target._id,
       scopes: parsed,
+      relationship: rel,
       status: "pending",
       invitedDate: date,
     });
@@ -264,6 +279,17 @@ export const respondToInvite = mutation({
     };
     if (!accept) patch.revokedDate = date;
     await ctx.db.patch("tm_crewLinks", linkId, patch);
+    // An accepted grant replaces whatever that person held before, so one
+    // "stop sharing" is always the whole answer.
+    if (accept) {
+      const links = await linksFor(ctx, user._id);
+      for (const id of supersededGrantIds(links, link.ownerId, link.viewerId, linkId)) {
+        await ctx.db.patch("tm_crewLinks", id as Id<"tm_crewLinks">, {
+          status: "revoked",
+          revokedDate: date,
+        });
+      }
+    }
     return null;
   },
 });

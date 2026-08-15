@@ -6,6 +6,7 @@ import { buildLabsFixtures, type LabsFixtures } from "./fixtures/labs";
 import { buildMindFixtures, type MindFixtures } from "./fixtures/mind";
 import { buildConsentFixtures, type ConsentFixtures } from "./fixtures/consent";
 import { buildSupplyFixtures, type SupplyFixtures } from "./fixtures/supply";
+import { buildShopFixtures, type ShopFixtures } from "./fixtures/shop";
 
 /**
  * Deterministic demo dataset for the two crew members, positioned relative to
@@ -70,7 +71,8 @@ export type Fixtures = {
   LabsFixtures &
   MindFixtures &
   ConsentFixtures &
-  SupplyFixtures;
+  SupplyFixtures &
+  ShopFixtures;
 
 function wallChecks(userSlug: string, mode: TmMode, endDate: string, wall: number[]): Fixtures["checks"] {
   const keys = MODE_CHECKS[mode].map((c) => c.key);
@@ -289,5 +291,6 @@ export function buildFixtures(today: string): Fixtures {
     ...buildMindFixtures(today),
     ...buildConsentFixtures(today),
     ...buildSupplyFixtures(today),
+    ...buildShopFixtures(today),
   };
 }

@@ -197,6 +197,42 @@ for (const [label, viewport] of [
     if (radios === 0 && chips === 0) throw new Error("questionnaire did not open");
   });
 
+  await check("shopping: aisle-ordered list, packs, retailer hand-off", async () => {
+    await goTab(page, "More");
+    await page.getByRole("button", { name: /^Shopping/ }).first().click({ timeout: NAV_TIMEOUT });
+    // Assert on text, not on a locator: the screen carries a print-only copy of
+    // the list, so the first match for an aisle name is hidden and waiting for it
+    // to become visible times out while the real list is on screen.
+    await page.waitForFunction(
+      () => /shopping list/i.test(document.querySelector("main")?.innerText ?? ""),
+      undefined,
+      { timeout: NAV_TIMEOUT },
+    );
+    const body = await page.locator("main").innerText();
+    if (!/fruit & veg|chilled|meat & fish|frozen|cupboard|nothing to buy/i.test(body)) {
+      throw new Error("shop screen shows no aisles");
+    }
+    if (!/to carry|to buy/i.test(body)) throw new Error("shop screen shows no totals");
+    // The hand-off must never claim to place an order for you.
+    if (/we will order|ordering for you|checkout for you/i.test(body)) {
+      throw new Error("shop screen implies autonomous ordering");
+    }
+    await page.screenshot({ path: `${SHOTS}/${label}-14-shop.png`, fullPage: true });
+  });
+
+  await check("carer: a pending request states exactly what it shares", async () => {
+    await goTab(page, "Crew");
+    const request = page.getByText(/carer/i).first();
+    if (!(await request.count())) return; // no pending invite in this fixture state
+    await request.waitFor({ timeout: NAV_TIMEOUT });
+    const crewText = await page.locator("main").innerText();
+    // A carer offer must spell out the limits, not just the grant.
+    if (!/will not see|cannot see|never see/i.test(crewText)) {
+      throw new Error("carer request does not state what stays private");
+    }
+    await page.screenshot({ path: `${SHOTS}/${label}-15-carer.png`, fullPage: true });
+  });
+
   await check("crew tab: partner card + nudge lands in feed", async () => {
     await goTab(page, "Crew");
     await page.getByText("Conor").first().waitFor();

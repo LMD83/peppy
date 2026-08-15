@@ -10,10 +10,12 @@ import {
   parseScopes,
   projectMember,
   sortBoard,
+  supersededGrantIds,
   supplyState,
   type ConsentLink,
   type MemberFacts,
   type ProjectedMember,
+  type Relationship,
   type Scope,
   type SupplyCover,
 } from "@convex/tm/logic-consent";
@@ -31,9 +33,18 @@ import type { CrewData } from "../types";
 
 type DemoUser = DemoDb["users"][number];
 
+/**
+ * The stored row plus its relationship. The row contract in demo/rows-wave1.ts
+ * mirrors the table, where `relationship` is optional; reading it through this
+ * type keeps a pre-carer row (no field at all) working as "crew" rather than
+ * failing, which is exactly how the Convex side reads it.
+ */
+type StoredLink = DemoDb["crewLinks"][number] & { relationship?: Relationship };
+
 /** Every link in the demo store, in the shape the pure logic expects. */
 export function allLinks(db: DemoDb): ConsentLink[] {
-  return db.crewLinks.map((r) => {
+  return db.crewLinks.map((row) => {
+    const r = row as StoredLink;
     const link: ConsentLink = {
       id: r.id,
       owner: r.ownerSlug,
@@ -42,6 +53,7 @@ export function allLinks(db: DemoDb): ConsentLink[] {
       status: r.status,
       invitedDate: r.invitedDate,
     };
+    if (r.relationship !== undefined) link.relationship = r.relationship;
     if (r.respondedDate !== undefined) link.respondedDate = r.respondedDate;
     if (r.revokedDate !== undefined) link.revokedDate = r.revokedDate;
     return link;
@@ -147,10 +159,10 @@ export function view(db: DemoDb, viewerSlug: string, date: string): CrewData {
   ];
   for (const otherSlug of counterpartsFor(links, viewerSlug)) {
     if (!db.users.some((u) => u.slug === otherSlug)) continue;
-    rows.push({
-      ...projectFor(db, viewerSlug, otherSlug, date),
-      link: linkStateFor(links, viewerSlug, otherSlug),
-    });
+    // Same order as Convex: project first, then hand the *projected* member to
+    // the link state, which is all a carer view is ever built from.
+    const projected = projectFor(db, viewerSlug, otherSlug, date);
+    rows.push({ ...projected, link: linkStateFor(links, viewerSlug, otherSlug, projected) });
   }
   return sortBoard(rows);
 }
@@ -163,20 +175,25 @@ export function invite(
   date: string,
   targetSlug: string,
   scopes: string[],
+  relationship: Relationship = "crew",
 ): void {
   const parsed = parseScopes(scopes);
   if (!parsed) throw new Error("unknown-scope");
   if (!db.users.some((u) => u.slug === targetSlug)) throw new Error("unknown-user");
-  const verdict = checkInvite(allLinks(db), slug, targetSlug, parsed);
+  // Same verdict function as Convex, so an over-broad carer invite is refused
+  // in demo mode too — not merely hidden by a shorter checkbox list.
+  const verdict = checkInvite(allLinks(db), slug, targetSlug, parsed, relationship);
   if (verdict !== "ok") throw new Error(verdict);
-  db.crewLinks.push({
+  const row: StoredLink = {
     id: db.newId("cl"),
     ownerSlug: slug,
     viewerSlug: targetSlug,
     scopes: parsed,
+    relationship,
     status: "pending",
     invitedDate: date,
-  });
+  };
+  db.crewLinks.push(row);
 }
 
 export function respond(
@@ -193,6 +210,15 @@ export function respond(
   row.status = accept ? "active" : "revoked";
   row.respondedDate = date;
   if (!accept) row.revokedDate = date;
+  if (!accept) return;
+  // Accepting replaces what that person held before — one grant per direction,
+  // so one "stop sharing" is always the whole answer.
+  const superseded = supersededGrantIds(allLinks(db), row.ownerSlug, row.viewerSlug, row.id);
+  for (const old of db.crewLinks) {
+    if (!superseded.includes(old.id)) continue;
+    old.status = "revoked";
+    old.revokedDate = date;
+  }
 }
 
 export function revoke(db: DemoDb, slug: string, date: string, linkId: string): void {

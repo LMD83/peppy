@@ -129,7 +129,7 @@ export class DemoDb {
     this.supplyRows = [...fx.supplyRows];
     this.contacts = [...fx.contacts];
     this.ingestTokens = [];
-    this.pantry = [];
+    this.pantry = [...fx.pantry];
     this.users = fx.users.map((u) => ({
       ...u,
       modeMut: u.mode,
