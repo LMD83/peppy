@@ -75,7 +75,13 @@ export function TrainTab() {
             </span>
           </div>
           {train.today.blocks.map((block) => (
-            <BlockCard key={block.exercise} block={block} logged={train.loggedSets} />
+            <BlockCard
+              key={block.exercise}
+              block={block}
+              logged={train.loggedSets}
+              focused={focus?.exercise === block.exercise}
+              voice={train.voice}
+            />
           ))}
         </>
       ) : (
@@ -90,9 +96,9 @@ export function TrainTab() {
         )
       )}
 
-      {train.weeklyVolume.length > 0 && <VolumeCard rows={train.weeklyVolume} />}
+      {train.weeklyVolume.length > 0 && <VolumeCard rows={train.weeklyVolume} voice={train.voice} />}
 
-      {train.prs.length > 0 && (
+      {train.voice === "standard" && train.prs.length > 0 && (
         <Card>
           <Eyebrow color="bg-tm-purple">Best estimated 1RM</Eyebrow>
           <ul>
@@ -113,9 +119,9 @@ export function TrainTab() {
       )}
 
       <p className="px-1 pb-2 font-tm-mono text-[10px] leading-relaxed text-tm-dim">
-        Evidence: moderate. Double progression and MEV/MAV/MRV are planning heuristics, not measured
-        thresholds for you. e1RM is Epley arithmetic over your own reps and RIR — an estimate, never
-        a tested max. Loads here are suggestions from the block you configured.
+        Evidence: moderate. The session is filtered from the block you configured — setting, kit and
+        stated limits, not a diagnosis. Double progression and volume landmarks are planning
+        heuristics. e1RM is Epley arithmetic over your own reps, never a tested max.
       </p>
     </div>
   );
@@ -277,14 +283,34 @@ function StartMesoCard() {
   );
 }
 
-function BlockCard({ block, logged }: { block: Block; logged: TrainData["loggedSets"] }) {
+function BlockCard({
+  block,
+  logged,
+  focused,
+  voice,
+}: {
+  block: Block;
+  logged: TrainData["loggedSets"];
+  focused: boolean;
+  voice: TrainData["voice"];
+}) {
   const { actions } = useTimento();
   const sets = logged.filter((s) => s.exercise === block.exercise).sort((a, b) => a.setIndex - b.setIndex);
   const nextIndex = sets.length;
   const done = nextIndex >= block.sets;
-  const [kg, setKg] = useState(block.suggestionKg > 0 ? String(block.suggestionKg) : "");
-  const [reps, setReps] = useState("");
+  const last = block.lastTopSet;
+  const [kg, setKg] = useState(
+    block.suggestionKg > 0 ? String(block.suggestionKg) : last ? String(last.weightKg) : "",
+  );
+  const [reps, setReps] = useState(last ? String(last.reps) : "");
   const [rir, setRir] = useState(String(block.rirTarget));
+  const [rest, setRest] = useState(0);
+
+  useEffect(() => {
+    if (rest <= 0) return;
+    const id = window.setTimeout(() => setRest((s) => s - 1), 1000);
+    return () => window.clearTimeout(id);
+  }, [rest]);
 
   const submit = () => {
     const weightKg = Number(kg);
@@ -294,8 +320,21 @@ function BlockCard({ block, logged }: { block: Block; logged: TrainData["loggedS
     if (!Number.isFinite(repCount) || repCount < 1 || repCount > 100) return;
     if (!Number.isFinite(rirValue) || rirValue < 0 || rirValue > 10) return;
     actions.logSet(block.exercise, nextIndex, weightKg, repCount, rirValue);
-    setReps("");
+    setRest(90);
   };
+
+  if (!focused && !done) {
+    return (
+      <Card>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[13px] font-medium">{exerciseName(block.exercise)}</p>
+          <span className="font-tm-mono text-[10px] text-tm-dim">
+            {sets.length}/{block.sets} · {block.targetLine}
+          </span>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -303,13 +342,14 @@ function BlockCard({ block, logged }: { block: Block; logged: TrainData["loggedS
         <div>
           <h3 className="text-[14px] font-semibold">{exerciseName(block.exercise)}</h3>
           <p className="font-tm-mono text-[10px] tracking-[0.1em] text-tm-dim uppercase">
-            {block.muscle} · {block.sets} × {block.repLow}–{block.repHigh} @ {block.rirTarget} RIR
+            {block.muscle} · {block.targetLine}
           </p>
         </div>
         <span className="font-tm-mono text-[10px] text-tm-dim">
           {sets.length}/{block.sets}
         </span>
       </div>
+      <p className="mt-1.5 text-[12.5px] text-tm-ink">{block.cue}</p>
 
       <div className="mt-2.5 flex items-baseline gap-3">
         <span className="font-tm-disp text-[26px] leading-none">
@@ -323,6 +363,20 @@ function BlockCard({ block, logged }: { block: Block; logged: TrainData["loggedS
         </span>
       </div>
       <p className="mt-1 text-[12px] text-tm-ink">{block.why}</p>
+      {block.swaps.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {block.swaps.map((swap) => (
+            <button
+              key={swap.key}
+              type="button"
+              onClick={() => actions.swapTrainBlock(block.exercise, swap.key)}
+              className="min-h-11 cursor-pointer rounded-lg border border-tm-rule bg-tm-panel px-2.5 font-tm-mono text-[10px] tracking-[0.08em] uppercase"
+            >
+              Swap · {swap.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {sets.length > 0 && (
         <ul className="mt-2">
@@ -335,7 +389,7 @@ function BlockCard({ block, logged }: { block: Block; logged: TrainData["loggedS
               <span>
                 {s.weightKg.toFixed(1)} × {s.reps} @ {s.rir} RIR
               </span>
-              <span className="text-tm-dim">e1rm {s.e1rm.toFixed(1)}</span>
+              {voice === "standard" && <span className="text-tm-dim">e1rm {s.e1rm.toFixed(1)}</span>}
             </li>
           ))}
         </ul>
@@ -361,6 +415,15 @@ function BlockCard({ block, logged }: { block: Block; logged: TrainData["loggedS
           Log set {nextIndex + 1}
         </button>
       </form>
+      {rest > 0 && (
+        <button
+          type="button"
+          onClick={() => setRest(0)}
+          className="mt-1.5 min-h-11 w-full cursor-pointer rounded-lg border border-tm-rule font-tm-mono text-[10px] tracking-[0.1em] uppercase text-tm-dim"
+        >
+          Rest {rest}s · skip
+        </button>
+      )}
       {done && (
         <p className="mt-1.5 font-tm-mono text-[10px] text-tm-green">
           Target sets done. Extra sets are logged, not required.
@@ -393,7 +456,7 @@ function NumField({
   );
 }
 
-function VolumeCard({ rows }: { rows: VolumeRow[] }) {
+function VolumeCard({ rows, voice }: { rows: VolumeRow[]; voice: TrainData["voice"] }) {
   const flagged = rows.filter((r) => r.verdict !== "productive");
   return (
     <Card>
@@ -404,7 +467,7 @@ function VolumeCard({ rows }: { rows: VolumeRow[] }) {
           {flagged.map((r) => (
             <li key={r.muscle} className="text-[12px]">
               <span className="font-tm-mono text-[10px] tracking-[0.1em] text-tm-dim uppercase">
-                {r.muscle} · {r.verdict}
+                {r.muscle} · {voice === "easy" ? r.verdictLabel : r.verdict}
               </span>
               <span className="block text-tm-ink">{r.note}</span>
             </li>
@@ -475,7 +538,12 @@ function VolumeBars({ rows }: { rows: VolumeRow[] }) {
   );
 }
 
-function LoggedTodayCard({ sets }: { sets: TrainData["loggedSets"] }) {
+function LoggedTodayCard({
+  sets,
+}: {
+  sets: TrainData["loggedSets"];
+  hideE1rm?: boolean;
+}) {
   return (
     <Card>
       <Eyebrow color="bg-tm-blue">Logged today</Eyebrow>
@@ -493,5 +561,207 @@ function LoggedTodayCard({ sets }: { sets: TrainData["loggedSets"] }) {
         ))}
       </ul>
     </Card>
+  );
+}
+
+const SETTINGS: { id: Setting; label: string }[] = [
+  { id: "home", label: "Home" },
+  { id: "gym", label: "Gym" },
+  { id: "box", label: "Box" },
+];
+const EXPERIENCES: { id: Experience; label: string }[] = [
+  { id: "new", label: "New" },
+  { id: "returning", label: "Returning" },
+  { id: "trained", label: "Trained" },
+];
+const AGE_BANDS: { id: AgeBand; label: string }[] = [
+  { id: "under-40", label: "Under 40" },
+  { id: "40-59", label: "40–59" },
+  { id: "60-plus", label: "60+" },
+];
+const KITS: { id: Kit; label: string }[] = [
+  { id: "none", label: "Bodyweight" },
+  { id: "dumbbell", label: "Dumbbells" },
+  { id: "band", label: "Bands" },
+  { id: "kettlebell", label: "Kettlebell" },
+  { id: "barbell", label: "Barbell" },
+  { id: "machine", label: "Machines" },
+  { id: "cable", label: "Cables" },
+  { id: "bench", label: "Bench" },
+  { id: "pull-up-bar", label: "Pull-up bar" },
+  { id: "box", label: "Box" },
+  { id: "rower", label: "Rower" },
+  { id: "bike", label: "Bike" },
+  { id: "jump-rope", label: "Rope" },
+  { id: "rings", label: "Rings" },
+  { id: "wall-ball", label: "Wall ball" },
+];
+const LIMITS: { id: Constraint; label: string }[] = [
+  { id: "knees", label: "Knees" },
+  { id: "shoulders", label: "Shoulders" },
+  { id: "floor", label: "No floor work" },
+  { id: "impact", label: "No impact" },
+  { id: "overhead", label: "No overhead" },
+];
+
+function ProfileCard({ profile }: { profile: TrainingProfile }) {
+  const { actions } = useTimento();
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(profile);
+
+  const save = () => {
+    actions.saveTrainProfile(draft);
+    setOpen(false);
+  };
+
+  const toggle = <T extends string>(list: T[], id: T): T[] =>
+    list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
+
+  return (
+    <Card>
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <Eyebrow color="bg-tm-blue" className="mb-0">
+            This session
+          </Eyebrow>
+          <p className="mt-1 text-[12.5px]">
+            {SETTINGS.find((s) => s.id === profile.setting)?.label} ·{" "}
+            {EXPERIENCES.find((s) => s.id === profile.experience)?.label} · {profile.minutes} min
+            {profile.constraints.length > 0 ? ` · ${profile.constraints.join(", ")}` : ""}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setDraft(profile);
+            setOpen((v) => !v);
+          }}
+          className="min-h-11 cursor-pointer rounded-lg border border-tm-rule px-3 font-tm-mono text-[10px] tracking-[0.1em] uppercase"
+        >
+          {open ? "Close" : "Edit"}
+        </button>
+      </div>
+      {open && (
+        <div className="mt-3 flex flex-col gap-3">
+          <ChipRow
+            label="Where"
+            options={SETTINGS}
+            value={draft.setting}
+            onChange={(setting) => setDraft({ ...draft, setting })}
+          />
+          <ChipRow
+            label="Experience"
+            options={EXPERIENCES}
+            value={draft.experience}
+            onChange={(experience) => setDraft({ ...draft, experience })}
+          />
+          <ChipRow
+            label="Age band"
+            options={AGE_BANDS}
+            value={draft.ageBand}
+            onChange={(ageBand) => setDraft({ ...draft, ageBand })}
+          />
+          <label className="flex flex-col gap-1">
+            <span className="font-tm-mono text-[10px] tracking-[0.1em] text-tm-dim uppercase">Minutes</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              aria-label="Session minutes"
+              value={draft.minutes}
+              onChange={(e) => setDraft({ ...draft, minutes: Number(e.target.value) || 20 })}
+              className="min-h-11 w-24 rounded-lg border border-tm-rule bg-tm-panel px-2 font-tm-mono text-[12px] outline-none focus:border-tm-ink"
+            />
+          </label>
+          <ChipMulti
+            label="Kit"
+            options={KITS}
+            value={draft.kit}
+            onChange={(kit) => setDraft({ ...draft, kit })}
+          />
+          <ChipMulti
+            label="Stated limits"
+            options={LIMITS}
+            value={draft.constraints}
+            onChange={(constraints) => setDraft({ ...draft, constraints })}
+          />
+          <button
+            type="button"
+            onClick={save}
+            className="min-h-11 cursor-pointer rounded-lg bg-tm-ink font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase"
+          >
+            Save profile
+          </button>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function ChipRow<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: { id: T; label: string }[];
+  value: T;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <fieldset>
+      <legend className="font-tm-mono text-[10px] tracking-[0.1em] text-tm-dim uppercase">{label}</legend>
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
+        {options.map((opt) => (
+          <button
+            key={opt.id}
+            type="button"
+            onClick={() => onChange(opt.id)}
+            className={cn(
+              "min-h-11 cursor-pointer rounded-lg border px-3 font-tm-mono text-[10px] tracking-[0.08em] uppercase",
+              value === opt.id ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule bg-tm-panel",
+            )}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
+function ChipMulti<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: { id: T; label: string }[];
+  value: T[];
+  onChange: (v: T[]) => void;
+}) {
+  return (
+    <fieldset>
+      <legend className="font-tm-mono text-[10px] tracking-[0.1em] text-tm-dim uppercase">{label}</legend>
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
+        {options.map((opt) => {
+          const on = value.includes(opt.id);
+          return (
+            <button
+              key={opt.id}
+              type="button"
+              onClick={() => onChange(on ? value.filter((x) => x !== opt.id) : [...value, opt.id])}
+              className={cn(
+                "min-h-11 cursor-pointer rounded-lg border px-3 font-tm-mono text-[10px] tracking-[0.08em] uppercase",
+                on ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule bg-tm-panel",
+              )}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+    </fieldset>
   );
 }
