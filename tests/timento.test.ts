@@ -106,6 +106,7 @@ describe("privacy split (query level)", () => {
     }
     const serialized = JSON.stringify(board);
     expect(serialized).not.toMatch(/92\.8|weight|kg|ldl|lab/i);
+    expect(serialized).not.toMatch(/tired|emotion|cue|bored|hungry|sessionDone/i);
   });
 
   it("partner session cannot read the owner's raw logs in either direction", async () => {
@@ -250,6 +251,43 @@ describe("research engine", () => {
     const research = await t.query(api.tm.research.get, { token: conor, date: TODAY });
     expect(research.totalCravings).toBe(1);
     expect(research.engine).toBe("insufficient"); // needs ≥6 logs for a read-out
+  });
+
+  it("undoCraving removes only the owner's row", async () => {
+    const { t, liam, conor } = await seeded();
+    await t.mutation(api.tm.today.logCraving, {
+      token: liam,
+      date: TODAY,
+      time: "21:00",
+      signal: "tired",
+      action: "rode",
+    });
+    const liamToday = await t.query(api.tm.today.get, { token: liam, date: TODAY });
+    expect(liamToday.cravingsToday.length).toBeGreaterThan(0);
+    const last = liamToday.cravingsToday[liamToday.cravingsToday.length - 1];
+    await expect(
+      t.mutation(api.tm.today.undoCraving, { token: conor, id: last.id }),
+    ).rejects.toThrow(/Not found/);
+    await t.mutation(api.tm.today.undoCraving, { token: liam, id: last.id });
+    const after = await t.query(api.tm.today.get, { token: liam, date: TODAY });
+    expect(after.cravingsToday.find((c) => c.id === last.id)).toBeUndefined();
+  });
+
+  it("markSessionDone is owner-only and never appears on the crew board", async () => {
+    const { t, liam, conor } = await seeded();
+    await t.mutation(api.tm.today.markSessionDone, { token: liam, date: TODAY });
+    const today = await t.query(api.tm.today.get, { token: liam, date: TODAY });
+    expect(today.day.sessionDone).toBe(true);
+    const board = await t.query(api.tm.crew.board, { token: conor, date: TODAY });
+    expect(JSON.stringify(board)).not.toMatch(/sessionDone/);
+  });
+
+  it("logWeight overwrites today's weigh-in", async () => {
+    const { t, liam } = await seeded();
+    await t.mutation(api.tm.today.logWeight, { token: liam, date: TODAY, weightKg: 91.5 });
+    await t.mutation(api.tm.today.logWeight, { token: liam, date: TODAY, weightKg: 91.1 });
+    const today = await t.query(api.tm.today.get, { token: liam, date: TODAY });
+    expect(today.day.weightKg).toBe(91.1);
   });
 });
 

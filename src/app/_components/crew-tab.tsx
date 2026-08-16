@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useTimento } from "../_lib/backend";
-import { Card, Eyebrow, ModeBadge, Stat } from "./ui";
+import { Card, Eyebrow, ModeBadge, Stat, TmChip, TmButton } from "./ui";
 
 const NUDGES: Record<string, string[]> = {
   cut: ["On it", "Strong week", "Kitchen closed?", "Proud of the boring days"],
@@ -14,15 +14,28 @@ const NUDGES: Record<string, string[]> = {
 export function CrewTab() {
   const { crew, feed, actions, today } = useTimento();
   const [sent, setSent] = useState<string | null>(null);
+  const [custom, setCustom] = useState("");
   if (!crew || !today) return null;
 
   const partner = crew.find((m) => !m.isYou);
   const presets = NUDGES[partner?.mode ?? "cut"];
 
+  const send = (message: string) => {
+    const trimmed = message.trim();
+    if (!trimmed) return;
+    actions.nudge(trimmed);
+    setSent(trimmed);
+    setCustom("");
+    setTimeout(() => setSent(null), 1500);
+  };
+
   return (
     <div className="flex flex-col gap-3 pt-4">
       {crew.map((m) => (
-        <Card key={m.slug} className={cn(m.isYou && (m.mode === "survival" ? "border-tm-amber" : "border-tm-green"))}>
+        <Card
+          key={m.slug}
+          className={cn(m.isYou && (m.mode === "survival" ? "border-tm-amber" : "border-tm-green"))}
+        >
           <div className="flex items-center justify-between">
             <span className="font-tm-mono text-[13px] font-medium">
               {m.name}
@@ -46,28 +59,39 @@ export function CrewTab() {
       ))}
 
       <Card>
-        <Eyebrow color="bg-tm-green">Nudges — mode-aware</Eyebrow>
+        <Eyebrow color="bg-tm-green">Nudges, mode-aware</Eyebrow>
         <div className="mb-3 flex flex-wrap gap-2">
           {presets.map((n) => (
-            <button
-              key={n}
-              onClick={() => {
-                actions.nudge(n);
-                setSent(n);
-                setTimeout(() => setSent(null), 1500);
-              }}
-              className={cn(
-                "cursor-pointer rounded-lg border px-3 py-2 font-tm-mono text-[11px]",
-                sent === n ? "border-tm-green bg-tm-green text-white" : "border-tm-green text-tm-green",
-              )}
-            >
+            <TmChip key={n} tone="green" active={sent === n} onClick={() => send(n)}>
               {n}
-            </button>
+            </TmChip>
           ))}
         </div>
+        <form
+          className="mb-3 flex gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            send(custom);
+          }}
+        >
+          <input
+            value={custom}
+            onChange={(e) => setCustom(e.target.value.slice(0, 200))}
+            placeholder="Custom message"
+            aria-label="Custom crew message"
+            maxLength={200}
+            className="min-h-11 flex-1 rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2 text-sm text-tm-ink outline-none focus:border-tm-ink focus-visible:ring-2 focus-visible:ring-tm-ink/25"
+          />
+          <TmButton type="submit" disabled={custom.trim().length === 0}>
+            Send
+          </TmButton>
+        </form>
         <ul aria-label="Crew feed">
           {(feed ?? []).slice(-8).map((f, i) => (
-            <li key={`${f.at}-${i}`} className="flex justify-between gap-3 border-b border-tm-grid py-1.5 font-tm-mono text-[11px] last:border-0">
+            <li
+              key={`${f.at}-${i}`}
+              className="flex justify-between gap-3 border-b border-tm-grid py-1.5 font-tm-mono text-[11px] last:border-0"
+            >
               <span>
                 <b>{f.name}</b> · {f.message}
               </span>

@@ -6,10 +6,10 @@ import { Card, Eyebrow } from "./ui";
 import { TriggerMap } from "./charts";
 
 const ENGINE_COPY: Record<string, string> = {
-  depletion: "Engine read-out: depletion-dominant. The fix is upstream — sleep and the caffeine curfew, not willpower at 21:30.",
+  depletion: "Engine read-out: depletion-dominant. The fix is upstream: sleep and the caffeine curfew, not willpower at 21:30.",
   emotion: "Engine read-out: emotion-dominant. The fix is naming the feeling and the substitute ritual, not a stricter plan.",
-  cue: "Engine read-out: cue-dominant. The fix is environment design — remove the cue, close the kitchen.",
-  mixed: "Engine read-out: mixed. Keep logging — the dominant channel usually declares itself by week three.",
+  cue: "Engine read-out: cue-dominant. The fix is environment design: remove the cue, close the kitchen.",
+  mixed: "Engine read-out: mixed. Keep logging. The dominant channel usually declares itself by week three.",
   insufficient: "Not enough logs yet for a read-out. Two taps per urge; the map does the rest.",
 };
 
@@ -28,11 +28,11 @@ export function ResearchTab() {
   return (
     <div className="flex flex-col gap-3 pt-4">
       <Card>
-        <Eyebrow color="bg-tm-red">Your trigger map — 14 days of craving logs</Eyebrow>
+        <Eyebrow color="bg-tm-red">Your trigger map, 14 days of craving logs</Eyebrow>
         <TriggerMap triggerMap={research.triggerMap} />
         {research.peak && (
           <p className="mt-2 text-[12.5px]">
-            <b>Finding:</b> {research.peak.fromHour}:00–{research.peak.fromHour + 1}:00, trigger ={" "}
+            <b>Finding:</b> {research.peak.fromHour}:00-{research.peak.fromHour + 1}:00, trigger ={" "}
             {research.peak.signal} ({research.peak.share}%). The enemy has a schedule. So does the
             defence: 20:15 ritual + 20:30 close.
           </p>
@@ -41,7 +41,7 @@ export function ResearchTab() {
       </Card>
 
       <Card>
-        <Eyebrow color="bg-tm-yellow">Experiments — n=1 ×2</Eyebrow>
+        <Eyebrow color="bg-tm-yellow">Experiments, n=1 ×2</Eyebrow>
         <ul>
           {research.experiments.map((e) => (
             <li key={e.code} className="border-b border-tm-grid py-2.5 last:border-0">
@@ -60,7 +60,7 @@ export function ResearchTab() {
       </Card>
 
       <Card>
-        <Eyebrow color="bg-tm-yellow">Disputed markers — pending functional test</Eyebrow>
+        <Eyebrow color="bg-tm-yellow">Disputed markers, pending functional test</Eyebrow>
         <ul>
           {research.markers
             .filter((m) => m.status === "disputed")
@@ -107,9 +107,9 @@ export function ResearchTab() {
       </Card>
 
       <Card>
-        <Eyebrow color="bg-tm-yellow">Labs — owner-only</Eyebrow>
+        <Eyebrow color="bg-tm-yellow">Labs, owner-only</Eyebrow>
         {research.labs.length === 0 ? (
-          <p className="text-[12.5px] text-tm-dim">No labs on file. Only you can ever see this panel — the crew board never carries it.</p>
+          <p className="text-[12.5px] text-tm-dim">No labs on file. Only you can ever see this panel. The crew board never carries it.</p>
         ) : (
           <ul>
             {research.labs.map((l) => (

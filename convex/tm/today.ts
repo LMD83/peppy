@@ -15,10 +15,16 @@ export const get = query({
       .query("tm_days")
       .withIndex("by_userId_and_date", (q) => q.eq("userId", user._id).eq("date", date))
       .unique();
-    const cravingsToday = await ctx.db
+    const cravingRows = await ctx.db
       .query("tm_cravings")
       .withIndex("by_userId_and_date", (q) => q.eq("userId", user._id).eq("date", date))
       .take(50);
+    const cravingsToday = cravingRows.map((c) => ({
+      id: c._id,
+      time: c.time,
+      signal: c.signal,
+      action: c.action ?? null,
+    }));
 
     // Latest weight for the scoreboard (owner's own data — never crosses users).
     const days = await ctx.db
@@ -79,11 +85,12 @@ export const get = query({
         stress: day?.stress ?? null,
         energy: day?.energy ?? null,
         ritualDone: day?.ritualDone ?? false,
+        sessionDone: day?.sessionDone ?? false,
       },
       latestKg,
       deltaKg: Math.round((latestKg - user.startKg) * 10) / 10,
       dayNumber: daysBetween(user.startDate, date) + 1,
-      cravingsToday: cravingsToday.length,
+      cravingsToday,
       stats: {
         adherence7: stats.adherence7,
         streak: stats.streak,
@@ -189,6 +196,32 @@ export const logCraving = mutation({
   },
 });
 
+export const undoCraving = mutation({
+  args: { token: v.string(), id: v.id("tm_cravings") },
+  handler: async (ctx, { token, id }) => {
+    const user = await requireUser(ctx, token);
+    const row = await ctx.db.get(id);
+    if (!row || row.userId !== user._id) throw new Error("Not found");
+    await ctx.db.delete(id);
+    return null;
+  },
+});
+
+export const markSessionDone = mutation({
+  args: { token: v.string(), date: dateArg },
+  handler: async (ctx, { token, date }) => {
+    const user = await requireUser(ctx, token);
+    if (user.mode === "survival") return null;
+    const day = await ctx.db
+      .query("tm_days")
+      .withIndex("by_userId_and_date", (q) => q.eq("userId", user._id).eq("date", date))
+      .unique();
+    if (day) await ctx.db.patch("tm_days", day._id, { sessionDone: true });
+    else await ctx.db.insert("tm_days", { userId: user._id, date, sessionDone: true });
+    return null;
+  },
+});
+
 export const logLift = mutation({
   args: {
     token: v.string(),
@@ -235,7 +268,7 @@ export const setMode = mutation({
     // Entering survival is logged as an executed decision, never a failure state.
     const message =
       mode === "survival"
-        ? `Survival mode on — floor protocol active${reviewDate ? `, review ${reviewDate}` : ""}. Executed as designed.`
+        ? `Survival mode on. Floor protocol active${reviewDate ? `, review ${reviewDate}` : ""}. Executed as designed.`
         : `Mode → ${mode}.`;
     await ctx.db.insert("tm_crewFeed", { userId: user._id, name: user.name, message });
     return null;

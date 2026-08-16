@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useMemo, useSyncExternalStore } from "react";
 import { ConvexProvider, ConvexReactClient, useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import { DemoDb } from "./demo-db";
 import {
   localToday,
@@ -135,6 +136,8 @@ function DemoBackend({ children }: { children: React.ReactNode }) {
       logState: (patch: { stress?: number; energy?: number }) => slug && db.logState(slug, date, patch),
       markRitual: () => slug && db.markRitual(slug, date),
       logCraving: (entry: CravingEntry) => slug && db.logCraving(slug, date, entry),
+      undoCraving: (id: string) => slug && db.undoCraving(slug, id),
+      markSessionDone: () => slug && db.markSessionDone(slug, date),
       setMode: (mode, reason, reviewDate) => slug && db.setMode(slug, date, mode, reason, reviewDate),
       nudge: (message: string) => slug && db.nudge(slug, message),
     }),
@@ -183,6 +186,8 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
   const stateMut = useMutation(api.tm.today.logState);
   const ritualMut = useMutation(api.tm.today.markRitual);
   const cravingMut = useMutation(api.tm.today.logCraving);
+  const undoCravingMut = useMutation(api.tm.today.undoCraving);
+  const sessionDoneMut = useMutation(api.tm.today.markSessionDone);
   const modeMut = useMutation(api.tm.today.setMode);
   const nudgeMut = useMutation(api.tm.crew.nudge);
 
@@ -196,7 +201,7 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
               res.code === "wrong-passcode"
                 ? "Wrong passcode"
                 : res.code === "too-many-attempts"
-                  ? "Too many attempts — try again in 15 minutes"
+                  ? "Too many attempts. Try again in 15 minutes."
                   : "Unknown user";
             return { ok: false, error };
           }
@@ -215,10 +220,27 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
       logState: (patch: { stress?: number; energy?: number }) => token && void stateMut({ token, date, ...patch }),
       markRitual: () => token && void ritualMut({ token, date }),
       logCraving: (entry: CravingEntry) => token && void cravingMut({ token, date, ...entry }),
+      undoCraving: (id: string) => token && void undoCravingMut({ token, id: id as Id<"tm_cravings"> }),
+      markSessionDone: () => token && void sessionDoneMut({ token, date }),
       setMode: (mode, reason, reviewDate) => token && void modeMut({ token, date, mode, reason, reviewDate }),
       nudge: (message: string) => token && void nudgeMut({ token, message }),
     }),
-    [token, date, store, loginMut, logoutMut, toggleMut, weightMut, stateMut, ritualMut, cravingMut, modeMut, nudgeMut],
+    [
+      token,
+      date,
+      store,
+      loginMut,
+      logoutMut,
+      toggleMut,
+      weightMut,
+      stateMut,
+      ritualMut,
+      cravingMut,
+      undoCravingMut,
+      sessionDoneMut,
+      modeMut,
+      nudgeMut,
+    ],
   );
 
   const value: TimentoState = {

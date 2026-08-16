@@ -29,17 +29,20 @@ import type {
 
 type DemoUser = FixtureUser & { modeSinceMut: string; modeMut: TmMode; reviewDateMut?: string; ceilingMut: number };
 
+type DemoCraving = Fixtures["cravings"][number] & { id: string };
+
 export class DemoDb {
   private users: DemoUser[];
   private days: Fixtures["days"];
   private checks: Fixtures["checks"];
-  private cravings: Fixtures["cravings"];
+  private cravings: DemoCraving[];
   private lifts: Fixtures["lifts"];
   private labs: Fixtures["labs"];
   private markers: Fixtures["markers"];
   private experiments: Fixtures["experiments"];
   private feedRows: { userSlug: string; name: string; message: string; at: number }[];
   private listeners = new Set<() => void>();
+  private cravingSeq = 0;
   version = 0;
 
   constructor(today: string) {
@@ -53,7 +56,7 @@ export class DemoDb {
     }));
     this.days = [...fx.days];
     this.checks = [...fx.checks];
-    this.cravings = [...fx.cravings];
+    this.cravings = fx.cravings.map((c) => ({ ...c, id: `demo-c-${++this.cravingSeq}` }));
     this.lifts = [...fx.lifts];
     this.labs = [...fx.labs];
     this.markers = [...fx.markers];
@@ -156,11 +159,19 @@ export class DemoDb {
         stress: day?.stress ?? null,
         energy: day?.energy ?? null,
         ritualDone: day?.ritualDone ?? false,
+        sessionDone: day?.sessionDone ?? false,
       },
       latestKg,
       deltaKg: Math.round((latestKg - user.startKg) * 10) / 10,
       dayNumber: daysBetween(user.startDate, date) + 1,
-      cravingsToday: this.cravings.filter((c) => c.userSlug === slug && c.date === date).length,
+      cravingsToday: this.cravings
+        .filter((c) => c.userSlug === slug && c.date === date)
+        .map((c) => ({
+          id: c.id as TodayData["cravingsToday"][number]["id"],
+          time: c.time,
+          signal: c.signal,
+          action: c.action ?? null,
+        })),
       stats: {
         adherence7: stats.adherence7,
         streak: stats.streak,
@@ -312,7 +323,21 @@ export class DemoDb {
   }
 
   logCraving(slug: string, date: string, entry: CravingEntry) {
-    this.cravings.push({ userSlug: slug, date, ...entry });
+    this.cravings.push({ userSlug: slug, date, id: `demo-c-${++this.cravingSeq}`, ...entry });
+    this.bump();
+  }
+
+  undoCraving(slug: string, id: string) {
+    const idx = this.cravings.findIndex((c) => c.id === id && c.userSlug === slug);
+    if (idx < 0) return;
+    this.cravings.splice(idx, 1);
+    this.bump();
+  }
+
+  markSessionDone(slug: string, date: string) {
+    const user = this.user(slug);
+    if (user.modeMut === "survival") return;
+    this.dayRow(slug, date).sessionDone = true;
     this.bump();
   }
 
@@ -326,7 +351,7 @@ export class DemoDb {
     user.ceilingMut = user.ceilingKg;
     const message =
       mode === "survival"
-        ? `Survival mode on — floor protocol active${reviewDate ? `, review ${reviewDate}` : ""}. Executed as designed.`
+        ? `Survival mode on. Floor protocol active${reviewDate ? `, review ${reviewDate}` : ""}. Executed as designed.`
         : `Mode → ${mode}.`;
     this.feedRows.push({ userSlug: slug, name: user.name, message, at: Date.now() });
     this.bump();

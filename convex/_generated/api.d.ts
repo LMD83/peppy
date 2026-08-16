@@ -8,18 +8,10 @@
  * @module
  */
 
-import type * as articles from "../articles.js";
-import type * as cart from "../cart.js";
-import type * as collections from "../collections.js";
-import type * as orders from "../orders.js";
-import type * as pages from "../pages.js";
-import type * as products from "../products.js";
-import type * as reviews from "../reviews.js";
-import type * as seed from "../seed.js";
 import type * as tm_auth from "../tm/auth.js";
 import type * as tm_crew from "../tm/crew.js";
-import type * as tm_fixtures from "../tm/fixtures.js";
 import type * as tm_db from "../tm/db.js";
+import type * as tm_fixtures from "../tm/fixtures.js";
 import type * as tm_lib from "../tm/lib.js";
 import type * as tm_logic from "../tm/logic.js";
 import type * as tm_progress from "../tm/progress.js";
@@ -34,18 +26,10 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  articles: typeof articles;
-  cart: typeof cart;
-  collections: typeof collections;
-  orders: typeof orders;
-  pages: typeof pages;
-  products: typeof products;
-  reviews: typeof reviews;
-  seed: typeof seed;
   "tm/auth": typeof tm_auth;
   "tm/crew": typeof tm_crew;
-  "tm/fixtures": typeof tm_fixtures;
   "tm/db": typeof tm_db;
+  "tm/fixtures": typeof tm_fixtures;
   "tm/lib": typeof tm_lib;
   "tm/logic": typeof tm_logic;
   "tm/progress": typeof tm_progress;
