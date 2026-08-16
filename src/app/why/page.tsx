@@ -75,7 +75,7 @@ export default function WhyPage() {
           <Link href="/" className="font-tm-disp text-lg uppercase tracking-tight">
             Timento
           </Link>
-          <OpenFileLink className="inline-flex min-h-10 items-center justify-center rounded-[10px] bg-tm-ink px-4 text-[13px] font-medium text-tm-paper transition-transform duration-200 active:scale-[0.98]" />
+          <OpenFileLink className="inline-flex min-h-11 items-center justify-center rounded-[10px] bg-tm-ink px-4 text-[13px] font-medium text-tm-paper transition-transform duration-200 active:scale-[0.98]" />
         </div>
       </header>
 
