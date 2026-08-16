@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
+  MAX_ACTIONS,
+  MAX_ACTION_TITLE,
+  actionsFor,
   blockedLog,
   blockedReport,
   classifyError,
@@ -11,6 +14,7 @@ import {
   nothingDue,
   sentReport,
   type Notification,
+  type TakenPost,
 } from "../convex/tm/logicPush";
 
 /**
@@ -25,7 +29,17 @@ function note(over: Partial<Notification> = {}): Notification {
     body: "Metformin. Tap it off when it's done.",
     tab: "stack",
     tag: "dose:stack",
+    kind: "dose",
     ...over,
+  };
+}
+
+function takenPost(): TakenPost {
+  return {
+    url: "https://x.convex.site/ingest/dose-taken",
+    token: "tmk_secret",
+    date: "2026-08-16",
+    doses: [{ itemId: "item1", timing: "am" }],
   };
 }
 
@@ -34,24 +48,31 @@ function note(over: Partial<Notification> = {}): Notification {
 describe("the payload matches what public/sw.js actually reads", () => {
   const sw = readFileSync(join(process.cwd(), "public", "sw.js"), "utf8");
 
-  it("sends exactly the four keys the worker looks for", () => {
-    expect(Object.keys(notificationPayload(note())).sort()).toEqual(["body", "tab", "tag", "title"]);
+  it("sends exactly the five keys the worker looks for", () => {
+    expect(Object.keys(notificationPayload(note())).sort()).toEqual([
+      "actions",
+      "body",
+      "tab",
+      "tag",
+      "title",
+    ]);
   });
 
   it("names each key the same way the worker does", () => {
     // Nothing validates these two files against each other at build time. Rename
     // a key here and the worker silently shows "A reminder from your file." — a
     // notification that fires, says nothing, and looks perfectly healthy.
-    for (const key of Object.keys(notificationPayload(note()))) {
+    for (const key of Object.keys(notificationPayload(note({ taken: takenPost() })))) {
       expect(sw, `sw.js never reads payload.${key}`).toContain(`payload.${key}`);
     }
   });
 
   it("carries no key the worker would ignore", () => {
     // `key` is the sweep's own idempotency handle and has no business on a lock
-    // screen; it stays server-side.
+    // screen; it stays server-side. `kind` collapses into the actions list.
     const payload = notificationPayload(note()) as Record<string, unknown>;
     expect(payload.key).toBeUndefined();
+    expect(payload.kind).toBeUndefined();
   });
 
   it("encodes to JSON the worker can parse", () => {
@@ -61,12 +82,72 @@ describe("the payload matches what public/sw.js actually reads", () => {
       body: "Metformin. Tap it off when it's done.",
       tab: "stack",
       tag: "dose:stack",
+      actions: [
+        { action: "taken", title: "Taken" },
+        { action: "open", title: "Open" },
+      ],
     });
   });
 
   it("puts the person's own words through unchanged", () => {
     const words = "Nortriptyline — about 3 days left";
     expect(encodePayload(note({ body: words }))).toContain(words);
+  });
+});
+
+/* ===== lock-screen buttons ===== */
+
+describe("what a lock screen may offer", () => {
+  const sw = readFileSync(join(process.cwd(), "public", "sw.js"), "utf8");
+
+  it("gives a dose an answer and an open, and everything else an open only", () => {
+    expect(actionsFor("dose").map((a) => a.action)).toEqual(["taken", "open"]);
+    for (const kind of ["supply", "checkin", "recheck", "script", undefined]) {
+      expect(actionsFor(kind).map((a) => a.action)).toEqual(["open"]);
+    }
+  });
+
+  it("never exceeds the two buttons Chromium will actually draw", () => {
+    // iOS draws zero and Android draws two; a third button is a button that
+    // silently vanishes on every platform there is.
+    expect(MAX_ACTIONS).toBe(2);
+    for (const kind of ["dose", "supply", "checkin", "recheck", "script", undefined]) {
+      expect(actionsFor(kind).length).toBeLessThanOrEqual(MAX_ACTIONS);
+    }
+  });
+
+  it("keeps every title short enough for a lock-screen button", () => {
+    for (const kind of ["dose", "supply", "checkin", "recheck", "script", undefined]) {
+      for (const a of actionsFor(kind)) {
+        expect(a.title.length).toBeGreaterThan(0);
+        expect(a.title.length).toBeLessThanOrEqual(MAX_ACTION_TITLE);
+      }
+    }
+  });
+
+  it("lets the worker defer to the platform's own ceiling", () => {
+    // sw.js slices to Notification.maxActions — 0 on iOS, 2 on Android — so a
+    // platform that draws fewer buttons is never handed more.
+    expect(sw).toContain("maxActions");
+  });
+
+  it("rides the taken hand-off only on a dose", () => {
+    const dose = notificationPayload(note({ taken: takenPost() }));
+    expect(dose.taken).toEqual(takenPost());
+    const supply = notificationPayload(note({ kind: "supply", taken: takenPost() }));
+    expect(supply.taken).toBeUndefined();
+    const bare = notificationPayload(note());
+    expect(bare.taken).toBeUndefined();
+  });
+
+  it("has the worker POST the hand-off and fall back to opening the app", () => {
+    // The click path: action "taken" fetches the exact doses to the ingest
+    // endpoint, and anything short of res.ok lands on the app instead. A tap
+    // is never silently lost.
+    expect(sw).toContain('event.action === "taken"');
+    expect(sw).toContain("fetch(data.taken.url");
+    expect(sw).toContain("res.ok ? undefined : focusOrOpen(data)");
+    expect(sw).toContain(".catch(() => focusOrOpen(data))");
   });
 });
 

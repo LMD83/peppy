@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   MESO_DELOAD_WEEK,
@@ -57,12 +57,38 @@ export function TrainTab() {
 
   const blocks = train.today.blocks;
   const planned = plannedSets(blocks);
-  const focusIndex = blocks.findIndex((b) => {
-    const done = train.loggedSets.filter((s) => s.exercise === b.exercise).length;
-    return done < b.sets;
-  });
-  const focus = focusIndex >= 0 ? blocks[focusIndex] : undefined;
-  const upcoming = focusIndex >= 0 ? blocks[focusIndex + 1] : undefined;
+  return <SessionRunner blocks={blocks} planned={planned} train={train} />;
+}
+
+/**
+ * The session, one exercise at a time. "Next exercise" is a real button, not
+ * an implication: the rack is taken, the shoulder says no, you move on. A
+ * deferred block goes to the back of the queue, never off it — the day's work
+ * does not shrink because it was reordered.
+ */
+function SessionRunner({
+  blocks,
+  planned,
+  train,
+}: {
+  blocks: Block[];
+  planned: number;
+  train: TrainData;
+}) {
+  const [deferred, setDeferred] = useState<string[]>([]);
+
+  const queue = useMemo(() => {
+    const back = deferred
+      .map((key) => blocks.find((b) => b.exercise === key))
+      .filter((b): b is Block => b !== undefined);
+    return [...blocks.filter((b) => !deferred.includes(b.exercise)), ...back];
+  }, [blocks, deferred]);
+
+  const unfinished = (b: Block) =>
+    train.loggedSets.filter((s) => s.exercise === b.exercise).length < b.sets;
+  const focusIndex = queue.findIndex(unfinished);
+  const focus = focusIndex >= 0 ? queue[focusIndex] : undefined;
+  const upcoming = focus ? queue.slice(focusIndex + 1).find(unfinished) : undefined;
 
   return (
     <div className="flex flex-col gap-4 pt-5">
@@ -93,10 +119,29 @@ export function TrainTab() {
           ) : (
             <SessionDoneCard logged={train.loggedSets.length} planned={planned} />
           )}
-          {upcoming && (
-            <p className="px-1 font-tm-mono text-[11.5px] text-tm-dim">
-              Next: {exerciseName(upcoming.exercise)}
-            </p>
+          {focus && upcoming && (
+            <button
+              type="button"
+              onClick={() =>
+                setDeferred((prev) => [
+                  ...prev.filter((key) => key !== focus.exercise),
+                  focus.exercise,
+                ])
+              }
+              className="flex min-h-11 w-full cursor-pointer items-center justify-between gap-3 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 py-2 text-left transition-transform duration-150 active:scale-[0.98]"
+            >
+              <span className="min-w-0">
+                <span className="block font-tm-mono text-[11.5px] tracking-[0.15em] text-tm-dim uppercase">
+                  Next exercise
+                </span>
+                <span className="block text-[14px]">
+                  {exerciseName(upcoming.exercise)} — switch now, this one goes to the back
+                </span>
+              </span>
+              <span aria-hidden className="shrink-0 font-tm-mono text-[15px]">
+                →
+              </span>
+            </button>
           )}
         </>
       ) : (

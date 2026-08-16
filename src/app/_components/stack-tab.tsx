@@ -51,14 +51,14 @@ export function StackTab() {
       <div className="flex flex-col gap-4 pt-5">
         <Card tone="amber">
           <Eyebrow color="bg-tm-amber">Stack, floor</Eyebrow>
-          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-amber bg-tm-amber">
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-amber bg-tm-amber">
             <div className="bg-tm-amber-bg px-3 py-3">
               <Stat value={`${stack.takenCount}/${stack.dueCount}`} label="doses taken today" />
             </div>
             <div className="bg-tm-amber-bg px-3 py-3">
               <Stat value={`${stack.adherence30.pct}%`} label="30-day adherence" />
             </div>
-          </dl>
+          </div>
           <div className="mt-4">
             <DoseList doses={floor} />
           </div>
@@ -501,7 +501,7 @@ function ReconCalculator({ items }: { items: ItemView[] }) {
       </div>
 
       {result ? (
-        <dl className="mt-3 grid grid-cols-3 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
+        <div className="mt-3 grid grid-cols-3 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
           <div className="bg-tm-soft px-3 py-2.5">
             <Stat value={`${fmt(result.syringeUnits)}`} label="syringe units" />
           </div>
@@ -511,7 +511,7 @@ function ReconCalculator({ items }: { items: ItemView[] }) {
           <div className="bg-tm-soft px-3 py-2.5">
             <Stat value={`${fmt(result.mgPerMl)}`} label="mg per mL" />
           </div>
-        </dl>
+        </div>
       ) : (
         <p className="mt-3 rounded-[10px] bg-tm-amber-bg px-3 py-2.5 text-[12.5px] text-tm-amber-ink">
           {error}

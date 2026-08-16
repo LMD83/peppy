@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
 import { MINDSET_PROMPTS, type BandTone } from "@convex/tm/data/instruments";
 import { mindsetPromptForDate } from "@convex/tm/logicMind";
 import { useTimento } from "../_lib/backend";
 import type { MindData } from "../_lib/types";
-import { Card, Eyebrow, Stat } from "./ui";
+import { Card, Eyebrow, Stat, TmButton } from "./ui";
 
 /**
  * Mind — validated self-report instruments, implementation intentions and
@@ -53,6 +53,51 @@ function dueLabel(d: DueItem): string {
   return `${d.daysSince} days since · every ${d.cadenceDays}`;
 }
 
+/* ===== the quiet-check acknowledgement =====
+ *
+ * "I'm ok" is UI state, not health data — it lives in localStorage, never the
+ * backend (same store, same pattern as tm.shop.ticked). Keyed by date: an ok
+ * covers the day it was tapped, and a new quiet day asks the question fresh.
+ */
+
+const QUIET_ACK_KEY = "tm.mind.quietAck";
+
+const quietAckListeners = new Set<() => void>();
+
+function readQuietAck(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(QUIET_ACK_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeQuietAck(date: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(QUIET_ACK_KEY, date);
+  } catch {
+    // A blocked store forgets the answer; the card simply asks again.
+  }
+  for (const listener of quietAckListeners) listener();
+}
+
+function subscribeQuietAck(onChange: () => void): () => void {
+  quietAckListeners.add(onChange);
+  if (typeof window !== "undefined") window.addEventListener("storage", onChange);
+  return () => {
+    quietAckListeners.delete(onChange);
+    if (typeof window !== "undefined") window.removeEventListener("storage", onChange);
+  };
+}
+
+function useQuietAck(date: string) {
+  const stored = useSyncExternalStore(subscribeQuietAck, readQuietAck, () => null);
+  const ack = useCallback(() => writeQuietAck(date), [date]);
+  return { acked: stored === date, ack };
+}
+
 /* ===== the tab ===== */
 
 export function MindTab() {
@@ -64,6 +109,7 @@ export function MindTab() {
     return (
       <div className="flex flex-col gap-4 pt-5">
         {mind.safetyNotice.active && <SafetyCard text={mind.safetyNotice.text} />}
+        {mind.quietCheck && <QuietCard quiet={mind.quietCheck} />}
         <EncouragementCard encouragement={mind.encouragement} survival />
         <DueCard due={mind.due} instruments={mind.instruments} survival />
         {top && <IntentionCard intention={top} survival />}
@@ -81,6 +127,7 @@ export function MindTab() {
     <div className="flex flex-col gap-4 pt-5 lg:grid lg:grid-cols-12 lg:items-start lg:gap-6">
       <div className="flex flex-col gap-3 lg:col-span-7">
       {mind.safetyNotice.active && <SafetyCard text={mind.safetyNotice.text} />}
+      {mind.quietCheck && <QuietCard quiet={mind.quietCheck} />}
       <EncouragementCard encouragement={mind.encouragement} survival={false} />
       <DueCard due={mind.due} instruments={mind.instruments} survival={false} />
       <HistoryCard history={mind.history} />
@@ -104,22 +151,27 @@ export function MindTodayCard() {
   const wins = mind.intentions.reduce((s, i) => s + i.wins, 0);
 
   return (
-    <Card tone={mind.survival ? "amber" : "default"}>
-      <Eyebrow color={mind.survival ? "bg-tm-amber" : "bg-tm-purple"}>
-        {mind.survival ? "Mind — floor" : "Mind"}
-      </Eyebrow>
-      <p className="text-[13px] font-semibold">{mind.encouragement.headline}</p>
-      <div className="mt-2 flex items-end justify-between gap-2">
-        <Stat value={`${mind.due.length}`} label="check-ins due" />
-        <Stat value={`${mind.intentions.length}`} label="plans active" />
-        <Stat value={`${wins}`} label="plan wins" />
-      </div>
-      {top && (
-        <p className="mt-2 font-tm-mono text-[10px] text-tm-dim">
-          if {top.trigger.toLowerCase()} → {top.action.toLowerCase()}
-        </p>
-      )}
-    </Card>
+    <>
+      {/* The quiet check rides with the compact card so it is seen on the
+          screen a returning person actually lands on, not only in this tab. */}
+      {mind.quietCheck && <QuietCard quiet={mind.quietCheck} />}
+      <Card tone={mind.survival ? "amber" : "default"}>
+        <Eyebrow color={mind.survival ? "bg-tm-amber" : "bg-tm-purple"}>
+          {mind.survival ? "Mind — floor" : "Mind"}
+        </Eyebrow>
+        <p className="text-[13px] font-semibold">{mind.encouragement.headline}</p>
+        <div className="mt-2 flex items-end justify-between gap-2">
+          <Stat value={`${mind.due.length}`} label="check-ins due" />
+          <Stat value={`${mind.intentions.length}`} label="plans active" />
+          <Stat value={`${wins}`} label="plan wins" />
+        </div>
+        {top && (
+          <p className="mt-2 font-tm-mono text-[10px] text-tm-dim">
+            if {top.trigger.toLowerCase()} → {top.action.toLowerCase()}
+          </p>
+        )}
+      </Card>
+    </>
   );
 }
 
@@ -132,6 +184,57 @@ function MindSkeleton() {
         <div key={i} className="h-28 rounded-[10px] border border-tm-rule bg-tm-panel" />
       ))}
     </div>
+  );
+}
+
+/**
+ * Three-plus days of nothing logged surface one question, not a scoreboard.
+ * Same non-negotiable as the safety card: this is support, never an assessment
+ * — no streak arithmetic, no penance, and the support lines are the real ones.
+ */
+function QuietCard({ quiet }: { quiet: NonNullable<MindData["quietCheck"]> }) {
+  const { date } = useTimento();
+  const { acked, ack } = useQuietAck(date);
+  const [supportOpen, setSupportOpen] = useState(false);
+  if (acked) return null;
+
+  return (
+    <Card tone="amber">
+      <Eyebrow color="bg-tm-amber">Checking in</Eyebrow>
+      <p className="font-tm-disp text-2xl leading-[1.15] tracking-tight">{quiet.heading}</p>
+      <p className="mt-2 max-w-[65ch] text-[14px] leading-relaxed text-tm-amber-ink">{quiet.body}</p>
+      <div className="mt-2.5 flex gap-2">
+        <TmButton className="flex-1" onClick={ack}>
+          {"I'm ok"}
+        </TmButton>
+        <button
+          onClick={() => setSupportOpen((open) => !open)}
+          aria-expanded={supportOpen}
+          className="min-h-11 flex-1 cursor-pointer rounded-[10px] border border-tm-amber bg-tm-panel px-4 font-tm-mono text-[11.5px] tracking-[0.15em] text-tm-amber uppercase transition-transform duration-150 active:scale-[0.98]"
+        >
+          Support options
+        </button>
+      </div>
+      {supportOpen && (
+        <div className="mt-2.5 border-t border-tm-amber pt-2.5">
+          <p className="text-[14px] text-tm-amber-ink">{quiet.support}</p>
+          <div className="mt-2.5 flex gap-2">
+            <a
+              href="tel:116123"
+              className="flex min-h-11 flex-1 items-center justify-center rounded-[10px] border border-tm-amber bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-amber uppercase"
+            >
+              Samaritans 116 123
+            </a>
+            <a
+              href="tel:112"
+              className="flex min-h-11 flex-1 items-center justify-center rounded-[10px] border border-tm-amber bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-amber uppercase"
+            >
+              Emergency 112
+            </a>
+          </div>
+        </div>
+      )}
+    </Card>
   );
 }
 

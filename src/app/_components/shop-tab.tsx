@@ -98,6 +98,47 @@ function subscribeTicks(onChange: () => void): () => void {
   };
 }
 
+/* ===== the chosen shop, kept for good =====
+ *
+ * Same store, same pattern as the ticks, but no date on it: which supermarket
+ * you use is not a fact about today. Answer it once and the chooser stays
+ * answered — re-asking a settled question every visit is exactly the kind of
+ * friction this app exists to remove.
+ */
+
+const RETAILER_KEY = "tm.shop.retailer";
+
+const retailerListeners = new Set<() => void>();
+
+function readRetailer(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(RETAILER_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeRetailer(key: string | null): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (key === null) window.localStorage.removeItem(RETAILER_KEY);
+    else window.localStorage.setItem(RETAILER_KEY, key);
+  } catch {
+    // A blocked store forgets the choice, never the list.
+  }
+  for (const listener of retailerListeners) listener();
+}
+
+function subscribeRetailer(onChange: () => void): () => void {
+  retailerListeners.add(onChange);
+  if (typeof window !== "undefined") window.addEventListener("storage", onChange);
+  return () => {
+    retailerListeners.delete(onChange);
+    if (typeof window !== "undefined") window.removeEventListener("storage", onChange);
+  };
+}
+
 function useTicks(date: string) {
   const keys = useSyncExternalStore(
     subscribeTicks,
@@ -127,7 +168,7 @@ export function ShopPanel() {
 function ShopBody({ shop, date, easy }: { shop: ShopData; date: string; easy: boolean }) {
   const { actions } = useTimento();
   const ticks = useTicks(date);
-  const [retailerKey, setRetailerKey] = useState<string | null>(null);
+  const retailerKey = useSyncExternalStore(subscribeRetailer, readRetailer, () => null);
   const [step, setStep] = useState(0);
 
   const retailer = useMemo(
@@ -250,7 +291,7 @@ function ShopBody({ shop, date, easy }: { shop: ShopData; date: string; easy: bo
                 {shop.days === 1 ? "today" : `${shop.days} days`}
               </span>
             </div>
-            <dl className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
+            <div className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
               <div className="bg-tm-panel px-3 py-3">
                 <Stat value={String(shop.totals.toBuy)} label="to buy" />
               </div>
@@ -260,7 +301,7 @@ function ShopBody({ shop, date, easy }: { shop: ShopData; date: string; easy: bo
               <div className="bg-tm-panel px-3 py-3">
                 <Stat value={`${shop.totals.weightKg.toFixed(1)} kg`} label="to carry" />
               </div>
-            </dl>
+            </div>
             <p className="mt-2 text-[14px] text-tm-dim">
               Walk it in this order and it is one lap. {shop.totals.packs} pack
               {shop.totals.packs === 1 ? "" : "s"} into the trolley.
@@ -299,7 +340,7 @@ function ShopBody({ shop, date, easy }: { shop: ShopData; date: string; easy: bo
             <RetailerCard
               retailers={shop.retailers}
               selected={retailerKey}
-              onSelect={(key) => setRetailerKey(key === retailerKey ? null : key)}
+              onSelect={(key) => writeRetailer(key === retailerKey ? null : key)}
               handoff={shop.handoffNote}
             />
           )}

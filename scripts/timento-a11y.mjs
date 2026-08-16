@@ -278,7 +278,9 @@ for (const [label, viewport, reflow] of [
   ["390", { width: 390, height: 844 }, false],
   ["1280", { width: 1280, height: 800 }, false],
 ]) {
-  const context = await browser.newContext({ viewport });
+  // reducedMotion keeps the sweep deterministic: axe must never grade text
+  // mid-fade, where a transient opacity fails contrast the settled page passes.
+  const context = await browser.newContext({ viewport, reducedMotion: "reduce" });
   const page = await context.newPage();
   console.log(`\n=== ${label}px ===`);
 

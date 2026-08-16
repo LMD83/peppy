@@ -13,6 +13,7 @@ import {
   type IntentionTemplate,
 } from "./data/instruments";
 import { daysBetween, type TmMode } from "./lib";
+import type { WallDay } from "./logic";
 
 /**
  * Pure Mind logic — scoring, cadence, trend framing, encouragement and
@@ -296,6 +297,55 @@ export function mindsetPromptForDate(date: string): string {
   return MINDSET_PROMPTS[dateIndex(date, MINDSET_PROMPTS.length)];
 }
 
+/* ===== the quiet check ===== */
+
+export const QUIET_THRESHOLD_DAYS = 3;
+
+export type QuietCheck = {
+  days: number;
+  heading: string;
+  body: string;
+  support: string;
+};
+
+/**
+ * Consecutive days before today with nothing logged, read off the same 14-day
+ * check wall the streak uses. Today is still in play and cannot be quiet yet —
+ * the same rule the streak follows. A single logged check ends the run.
+ */
+export function quietStreak(wall: readonly WallDay[], today: string): number {
+  let run = 0;
+  for (let i = wall.length - 1; i >= 0; i--) {
+    const day = wall[i];
+    if (day.date >= today) continue; // today is still in play — it cannot be quiet yet
+    if (day.done > 0) break;
+    run++;
+  }
+  return run;
+}
+
+/**
+ * Three-plus quiet days surface a question, not a verdict. The file cannot be
+ * quieter than it is old — a brand-new file has not gone quiet, it has just
+ * started — so the run is capped at the file's age. This card is support in
+ * the REFRAMES voice: no streak arithmetic, no penance, one question.
+ */
+export function quietCheckFor(input: {
+  wall: readonly WallDay[];
+  startDate: string;
+  date: string;
+}): QuietCheck | null {
+  const age = Math.max(0, daysBetween(input.startDate, input.date));
+  const days = Math.min(quietStreak(input.wall, input.date), age);
+  if (days < QUIET_THRESHOLD_DAYS) return null;
+  return {
+    days,
+    heading: "You've gone quiet.",
+    body: `Nothing logged in ${days} days. No streak guilt — the file is a tool, not a judge. Are you ok?`,
+    support: SUPPORT_LINES,
+  };
+}
+
 /* ===== implementation intentions ===== */
 
 export type TriggerBucket = { hour: number; counts: Record<string, number> };
@@ -366,10 +416,14 @@ export type RawReflection = {
 export type MindViewInput = {
   mode: TmMode;
   date: string;
+  /** The day the file started — the quiet check cannot predate it. */
+  startDate: string;
   assessments: RawAssessment[];
   intentions: RawIntention[];
   reflections: RawReflection[];
   triggerMap: TriggerBucket[];
+  /** The same 14-day check wall the streak and adherence numbers come from. */
+  wall: WallDay[];
   streak: number;
   adherence7: number;
   missedYesterday: boolean;
@@ -418,6 +472,8 @@ export type MindView = {
   instruments: InstrumentView[];
   history: HistoryEntry[];
   safetyNotice: SafetyNotice;
+  /** Null until three-plus consecutive quiet days. Support, never assessment. */
+  quietCheck: QuietCheck | null;
   intentions: IntentionView[];
   suggestions: MindSuggestion[];
   reflections: ReflectionView[];
@@ -427,12 +483,18 @@ export type MindView = {
 };
 
 /**
+ * The support lines every support card shares — real numbers a person in
+ * Ireland can actually ring, and a task small enough to be done tonight.
+ */
+export const SUPPORT_LINES =
+  "If you are in immediate danger, contact emergency services (999 or 112). Samaritans are free, 24/7, on 116 123. Telling one person tonight — your GP, the crew, anyone — counts as the whole task.";
+
+/**
  * Support surfaced by a self-report answer. It is not a risk assessment, and it
  * must not read like one: no severity language, no "you are", real numbers that
  * a person in Ireland can actually ring. It stays up while the flag stands.
  */
-export const SAFETY_TEXT =
-  "You answered above zero on the last PHQ-9 item, about thoughts of being better off dead or of hurting yourself. That answer surfaces this card — it is support, not an assessment of you. If you are in immediate danger, contact emergency services (999 or 112). Samaritans are free, 24/7, on 116 123. Telling one person tonight — your GP, the crew, anyone — counts as the whole task.";
+export const SAFETY_TEXT = `You answered above zero on the last PHQ-9 item, about thoughts of being better off dead or of hurting yourself. That answer surfaces this card — it is support, not an assessment of you. ${SUPPORT_LINES}`;
 
 export const MAX_TREND_POINTS = 12;
 
@@ -508,6 +570,7 @@ export function buildMindView(input: MindViewInput): MindView {
     instruments: offered.map(toInstrumentView),
     history,
     safetyNotice: { active: safetyFlagged(input.assessments), text: SAFETY_TEXT },
+    quietCheck: quietCheckFor({ wall: input.wall, startDate: input.startDate, date: input.date }),
     intentions,
     suggestions,
     reflections,

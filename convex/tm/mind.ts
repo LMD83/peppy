@@ -103,10 +103,12 @@ async function gather(ctx: QueryCtx, user: Doc<"tm_users">, date: string): Promi
   return {
     mode: user.mode,
     date,
+    startDate: user.startDate,
     assessments,
     intentions,
     reflections,
     triggerMap: buildTriggerMap(cravingRows),
+    wall: stats.wall,
     streak: stats.streak,
     adherence7: stats.adherence7,
     missedYesterday,

@@ -106,14 +106,14 @@ export function SupplyPanel() {
       ) : (
         <Card>
           <Eyebrow color="bg-tm-green">Supply</Eyebrow>
-          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
             <div className="bg-tm-panel px-3 py-3">
               <Stat value={String(supply.okCount)} label="items covered" />
             </div>
             <div className="bg-tm-panel px-3 py-3">
               <Stat value="0" label="need ordering" />
             </div>
-          </dl>
+          </div>
           <p className="mt-3 text-[14px]">Nothing runs out soon. Recount when you open a box.</p>
         </Card>
       )}
@@ -300,6 +300,13 @@ function CountControl({ row }: { row: Row }) {
           ? `counted today · ${fmt(row.countedOnHand)} in the box`
           : `counted ${row.countAgeDays} day${row.countAgeDays === 1 ? "" : "s"} ago. ${fmt(row.countedOnHand)} then, about ${fmt(row.onHand)} now`}
       </p>
+      {/* Only when the logbook outran the schedule — that is the one case where
+          the logged doses, not the schedule, set the number above. */}
+      {row.logsLead && (
+        <p className="mt-0.5 font-tm-mono text-[10px] text-tm-dim">
+          {row.loggedSinceCount} logged since your count.
+        </p>
+      )}
     </div>
   );
 }

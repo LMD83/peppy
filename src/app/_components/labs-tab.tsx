@@ -64,14 +64,14 @@ export function LabsTab() {
       <div className="flex flex-col gap-4 pt-5">
         <Card tone="amber">
           <Eyebrow color="bg-tm-amber">Bloods, floor</Eyebrow>
-          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-amber bg-tm-amber">
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-amber bg-tm-amber">
             <div className="bg-tm-amber-bg px-3 py-3">
               <Stat value={String(labs.outOfRange.length)} label="outside range" />
             </div>
             <div className="bg-tm-amber-bg px-3 py-3">
               <Stat value={String(labs.dueRechecks.length)} label="rechecks overdue" />
             </div>
-          </dl>
+          </div>
           <p className="mt-3 text-[14px] text-tm-amber-ink">
             Only what is already outside range and already owed. No panel history, no browsing, no
             new draw to book. The floor holds the line, it does not add work.
@@ -219,7 +219,7 @@ function LatestPanelCard({ panel, results }: { panel: LabPanel | null; results: 
         </span>
       </div>
       <h2 className="mt-2 font-tm-disp text-2xl leading-[1.1] tracking-tight uppercase">{panel.name}</h2>
-      <dl className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule sm:grid-cols-4">
+      <div className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule sm:grid-cols-4">
         <div className="bg-tm-panel px-3 py-3">
           <Stat value={String(counts.out)} label="outside range" />
         </div>
@@ -232,7 +232,7 @@ function LatestPanelCard({ panel, results }: { panel: LabPanel | null; results: 
         <div className="bg-tm-panel px-3 py-3">
           <Stat value={String(results.length)} label="markers on file" />
         </div>
-      </dl>
+      </div>
       <p className="mt-2 font-tm-mono text-[10px] text-tm-dim">
         drawn {panel.date}
         {panel.lab ? ` · ${panel.lab}` : ""} · {panel.results.length} results this panel

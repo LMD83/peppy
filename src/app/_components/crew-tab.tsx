@@ -129,7 +129,7 @@ export function CrewTab() {
           </div>
 
           {m.link.youSee.length > 0 ? (
-            <dl className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule sm:grid-cols-3">
+            <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule sm:grid-cols-3">
               {m.streak !== undefined && (
                 <div className="bg-tm-panel px-3 py-3">
                   <Stat value={`${m.streak}`} label="Streak" />
@@ -155,7 +155,7 @@ export function CrewTab() {
                   <Stat value={SUPPLY_COPY[m.supplyState]} label="Supply" />
                 </div>
               )}
-            </dl>
+            </div>
           ) : (
             <p className="mt-3 text-[14px] text-tm-dim">
               {m.name} shares nothing with you. That is their call, and it stays theirs.
@@ -328,7 +328,7 @@ export function CrewTab() {
             placeholder="Custom message"
             aria-label="Custom crew message"
             maxLength={200}
-            className="min-h-11 flex-1 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 py-2 text-[15px] text-tm-ink focus:border-tm-ink"
+            className="min-h-11 min-w-0 flex-1 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 py-2 text-[15px] text-tm-ink focus:border-tm-ink"
           />
           <button
             type="submit"
