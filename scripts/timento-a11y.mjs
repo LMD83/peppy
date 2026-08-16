@@ -57,7 +57,7 @@ function record(screen, rule, impact, detail) {
 
 async function login(page, slug, passcode) {
   await page.goto(`${BASE}/`);
-  await page.getByRole("button", { name: slug === "liam" ? "Liam" : "Conor", exact: true }).click();
+  await page.getByRole("button", { name: slug === "liam" ? "Liam" : "Artur", exact: true }).click();
   await page.getByPlaceholder("••••").fill(passcode);
   await page.getByRole("button", { name: /open the file/i }).click();
   await page.getByRole("heading", { level: 1 }).waitFor();

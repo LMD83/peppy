@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { plain } from "@convex/tm/logicEasy";
 import { cn } from "@/lib/utils";
@@ -57,16 +58,16 @@ export function TodayTab() {
     capture: <CaptureTodayCard />,
     winter: research?.winterLayer ? (
       <Card>
-        <Eyebrow color="bg-tm-yellow">Winter layer — PER3 +/+</Eyebrow>
+        <Eyebrow color="bg-tm-yellow">Winter layer: PER3 +/+</Eyebrow>
         <p className="text-[14px]">
-          Morning light within an hour of waking — daylight walk or the 10k-lux lamp. Sleep checks weigh heavier this season.
+          Morning light within an hour of waking: daylight walk or the 10k-lux lamp. Sleep checks weigh heavier this season.
         </p>
       </Card>
     ) : null,
   };
 
   return (
-    <div className="flex flex-col gap-3 pt-4">
+    <div className="flex flex-col gap-3 pt-5">
       <p role="status" className="sr-only">
         {checkStatus}
       </p>
@@ -113,7 +114,7 @@ export function TodayTab() {
                 onClick={() => tickCheck(c)}
                 aria-pressed={c.done}
                 className={cn(
-                  "flex min-h-11 cursor-pointer items-center justify-between rounded-lg border px-3.5 py-3 text-left text-[15px] font-medium",
+                  "flex min-h-11 cursor-pointer items-center justify-between rounded-[10px] border px-3.5 py-3 text-left text-[15px] font-medium transition-[transform,opacity] duration-150 active:scale-[0.99]",
                   // white on tm-amber 5.77:1 — it was 3.29:1, so a ticked check on
                   // the survival screen was unreadable. white on tm-green 5.99:1.
                   c.done
@@ -140,9 +141,11 @@ export function TodayTab() {
         )}
       </Card>
 
-      {today.a11y.cards.map((id) => (
-        <Fragment key={id}>{cards[id] ?? null}</Fragment>
-      ))}
+      <div className={cn(easy ? "flex flex-col gap-3" : "flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4")}>
+        {today.a11y.cards.map((id) => (
+          <Fragment key={id}>{cards[id] ?? null}</Fragment>
+        ))}
+      </div>
 
       <p className="pb-2 text-center">
         <Link
@@ -183,13 +186,22 @@ function KitchenCard() {
   const kitchenStreak = countStreak(today);
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
+      <div className="relative -mx-4 -mt-4 mb-3 h-28">
+        <Image
+          src="/why/evening-window.png"
+          alt="Night kitchen window at the evening hour"
+          fill
+          sizes="(min-width: 1024px) 40vw, 100vw"
+          className="object-cover"
+        />
+      </div>
       <div className="flex items-center justify-between">
         <Eyebrow color="bg-tm-red" className="mb-0">Kitchen closes</Eyebrow>
         {kitchenStreak !== null && <span className="font-tm-mono text-[11.5px] text-tm-dim">streak {kitchenStreak}</span>}
       </div>
       <div className="mt-1 flex items-baseline gap-3">
-        <span className="font-tm-disp text-[34px] leading-none">{close}</span>
+        <span className="font-tm-disp text-[40px] leading-none tracking-tight">{close}</span>
         {countdown && <span className="font-tm-mono text-[11.5px] text-tm-dim">{countdown}</span>}
       </div>
       <button
@@ -197,11 +209,10 @@ function KitchenCard() {
         disabled={today.day.ritualDone}
         className={cn(
           "mt-2.5 min-h-11 w-full cursor-pointer rounded-lg px-3 py-2.5 text-left text-[14px]",
-          // tm-green on #e8f1eb is 5.20:1 after the retune (was 4.38:1).
-          today.day.ritualDone ? "bg-[#e8f1eb] text-tm-green" : "bg-tm-soft text-tm-ink",
+          today.day.ritualDone ? "bg-tm-green-faint text-tm-green" : "bg-tm-soft text-tm-ink",
         )}
       >
-        <b>20:15 close-out ritual:</b> skyr · 2 squares dark · decaf. Same cue, same reward — swapped routine.
+        <b>20:15 close-out ritual:</b> skyr · 2 squares dark · decaf. Same cue, same reward, swapped routine.
         <span className="mt-1 block font-tm-mono text-[11.5px] text-tm-dim">
           {today.day.ritualDone ? "✓ done tonight" : "tap when done"}
         </span>
@@ -221,13 +232,13 @@ function StateCheck() {
 
   return (
     <Card>
-      <Eyebrow color="bg-tm-blue">State check — stress · energy</Eyebrow>
+      <Eyebrow color="bg-tm-blue">State check: stress · energy</Eyebrow>
       <div className="flex flex-col gap-2">
         <ScaleRow label="Stress" value={stress} onPick={(v) => actions.logState({ stress: v })} />
         <ScaleRow label="Energy" value={energy} onPick={(v) => actions.logState({ energy: v })} />
       </div>
       <p className="mt-2 font-tm-mono text-[11.5px] leading-relaxed text-tm-dim">
-        Feeds the trigger map&apos;s emotion channel and the weekly review. Tracked, correlated — never diagnosed.
+        Feeds the trigger map&apos;s emotion channel and the weekly review. Tracked and correlated, never diagnosed.
       </p>
       {stress !== null && stress >= 4 && <BreathePrompt />}
     </Card>

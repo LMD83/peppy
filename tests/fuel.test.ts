@@ -7,6 +7,8 @@ import {
   foodByKey,
   type FoodDef,
 } from "../convex/tm/data/foods";
+import { MENUS, menuByKey } from "../convex/tm/data/menus";
+import { PRODUCTS, RETAILERS, productByKey } from "../convex/tm/data/products";
 import {
   ACTIVITY_MULTIPLIERS,
   DEFAULT_KITCHEN,
@@ -21,14 +23,22 @@ import {
   effortSummary,
   estimatedTdee,
   foodAllowed,
+  frequentFoodKeys,
   handPortionLabel,
   macroTargets,
+  menuAllowed,
+  menuTotals,
   mifflinStJeor,
   nutrientsFor,
   planDay,
   planFloor,
+  planWeek,
+  recentFoodKeys,
+  remainingAfter,
   shoppingList,
+  swapGrams,
   totalsFor,
+  weeklyLeftoverKcal,
   weightSlopeKgPerWeek,
   type BodyProfile,
   type KitchenProfile,
@@ -48,8 +58,8 @@ const PROFILE: BodyProfile = {
 };
 
 describe("food catalogue", () => {
-  it("carries at least 45 staples with unique keys", () => {
-    expect(FOODS.length).toBeGreaterThanOrEqual(45);
+  it("carries at least 150 staples with unique keys", () => {
+    expect(FOODS.length).toBeGreaterThanOrEqual(150);
     expect(new Set(FOODS.map((f) => f.key)).size).toBe(FOODS.length);
   });
 
@@ -89,6 +99,37 @@ describe("food catalogue", () => {
   it("looks up by key and returns undefined for a stranger", () => {
     expect(foodByKey("skyr")?.name).toBe("Skyr, natural");
     expect(foodByKey("unicorn_steak")).toBeUndefined();
+  });
+});
+
+describe("product catalogue", () => {
+  it("stocks a full trolley with unique keys", () => {
+    expect(PRODUCTS.length).toBeGreaterThanOrEqual(280);
+    expect(PRODUCTS.length).toBeLessThanOrEqual(420);
+    expect(new Set(PRODUCTS.map((p) => p.key)).size).toBe(PRODUCTS.length);
+  });
+
+  it("points every product at a known food, with a real pack", () => {
+    const foodKeys = new Set(FOODS.map((f) => f.key));
+    for (const p of PRODUCTS) {
+      expect(foodKeys.has(p.foodKey), p.key).toBe(true);
+      expect(p.packG, p.key).toBeGreaterThan(0);
+      expect(p.name.length, p.key).toBeGreaterThan(0);
+      expect(p.brand.length, p.key).toBeGreaterThan(0);
+      expect(p.packLabel.length, p.key).toBeGreaterThan(0);
+      expect(RETAILERS, p.key).toContain(p.retailer);
+    }
+  });
+
+  it("covers every staple with at least one pack", () => {
+    const stocked = new Set(PRODUCTS.map((p) => p.foodKey));
+    for (const f of FOODS) expect(stocked.has(f.key), f.key).toBe(true);
+  });
+
+  it("looks up by key and returns undefined for a stranger", () => {
+    const first = PRODUCTS[0];
+    expect(productByKey(first.key)?.foodKey).toBe(first.foodKey);
+    expect(productByKey("unicorn_steak_300")).toBeUndefined();
   });
 });
 
@@ -440,15 +481,15 @@ describe("fixtures", () => {
     expect(todayRows.some((r) => r.planned && !r.eaten)).toBe(true);
   });
 
-  it("keeps conor on the floor — no plan rows, protein-forward", () => {
-    const conor = fx.mealEntries.filter((r) => r.userSlug === "conor");
-    expect(conor.length).toBeGreaterThan(0);
-    expect(conor.every((r) => !r.planned)).toBe(true);
-    expect(conor.some((r) => r.date === TODAY && r.eaten)).toBe(true);
+  it("keeps artur on the floor — no plan rows, protein-forward", () => {
+    const artur = fx.mealEntries.filter((r) => r.userSlug === "artur");
+    expect(artur.length).toBeGreaterThan(0);
+    expect(artur.every((r) => !r.planned)).toBe(true);
+    expect(artur.some((r) => r.date === TODAY && r.eaten)).toBe(true);
   });
 
   it("seeds targets and weekly estimates for both users", () => {
-    expect(new Set(fx.nutritionTargets.map((t) => t.userSlug))).toEqual(new Set(["liam", "conor"]));
+    expect(new Set(fx.nutritionTargets.map((t) => t.userSlug))).toEqual(new Set(["liam", "artur"]));
     expect(fx.energyEstimates.length).toBeGreaterThanOrEqual(2);
     for (const t of fx.nutritionTargets) expect(t.sodiumMgMax).toBe(SODIUM_MG_MAX);
   });
@@ -923,11 +964,11 @@ describe("kitchen fixtures", () => {
     }
   });
 
-  it("keeps conor's kitchen to the one he can use on the floor", () => {
-    const conor = kitchenProfileFor("conor");
-    expect(conor.hands).toBe(1);
-    expect(EQUIPMENT_RANK[conor.equipment]).toBeLessThanOrEqual(EQUIPMENT_RANK.microwave);
-    expect(conor.minutes).toBeLessThanOrEqual(10);
+  it("keeps artur's kitchen to the one he can use on the floor", () => {
+    const artur = kitchenProfileFor("artur");
+    expect(artur.hands).toBe(1);
+    expect(EQUIPMENT_RANK[artur.equipment]).toBeLessThanOrEqual(EQUIPMENT_RANK.microwave);
+    expect(artur.minutes).toBeLessThanOrEqual(10);
   });
 
   it("hands anybody it does not know a full kitchen rather than a locked one", () => {
@@ -935,7 +976,7 @@ describe("kitchen fixtures", () => {
   });
 
   it("ships the profiles with the rest of the fixtures", () => {
-    expect(fx.kitchenProfiles.map((p) => p.userSlug).sort()).toEqual(["conor", "liam"]);
+    expect(fx.kitchenProfiles.map((p) => p.userSlug).sort()).toEqual(["artur", "liam"]);
   });
 
   it("plans liam a day his own exclusions allow", () => {
@@ -947,5 +988,183 @@ describe("kitchen fixtures", () => {
       expect(item.foodKey).not.toBe("tempeh");
     }
     expect(effortFor(plan, FOODS).minutes).toBeLessThanOrEqual(25);
+  });
+});
+
+describe("menu catalogue", () => {
+  it("ships at least 20 named slot menus with unique keys", () => {
+    expect(MENUS.length).toBeGreaterThanOrEqual(20);
+    expect(new Set(MENUS.map((m) => m.key)).size).toBe(MENUS.length);
+  });
+
+  it("only names foods that are in the bank", () => {
+    for (const menu of MENUS) {
+      expect(MEAL_SLOTS.includes(menu.slot), menu.key).toBe(true);
+      expect(menu.items.length, menu.key).toBeGreaterThanOrEqual(2);
+      for (const item of menu.items) {
+        expect(foodByKey(item.foodKey), `${menu.key}:${item.foodKey}`).toBeDefined();
+        expect(item.grams, `${menu.key}:${item.foodKey}`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("prices a menu as the sum of its parts", () => {
+    const menu = menuByKey("skyr_oats_berries");
+    expect(menu).toBeDefined();
+    const priced = menuTotals(menu!, FOODS);
+    expect(priced.kcal).toBe(
+      totalsFor(
+        menu!.items.map((i) => ({ foodKey: i.foodKey, grams: i.grams })),
+        FOODS,
+      ).kcal,
+    );
+    expect(priced.proteinG).toBeGreaterThan(20);
+  });
+
+  it("rejects a menu the kitchen cannot reach", () => {
+    const ovenKitchen: KitchenProfile = { ...DEFAULT_KITCHEN, equipment: "none", minutes: 5 };
+    const salmon = menuByKey("salmon_potato_greens");
+    expect(salmon).toBeDefined();
+    expect(menuAllowed(salmon!, FOODS, DEFAULT_KITCHEN)).toBe(true);
+    expect(menuAllowed(salmon!, FOODS, ovenKitchen)).toBe(false);
+  });
+});
+
+describe("calorie control helpers", () => {
+  it("subtracts a portion from what is left", () => {
+    const left = remainingAfter(
+      { kcal: 900, proteinG: 80, carbsG: 100, fatG: 30, fiberG: 20, sodiumMg: 1000 },
+      { kcal: 340, proteinG: 32, carbsG: 20, fatG: 10, fiberG: 4, sodiumMg: 80 },
+    );
+    expect(left.kcal).toBe(560);
+    expect(left.proteinG).toBe(48);
+  });
+
+  it("banks unused kcal from logged days only", () => {
+    expect(
+      weeklyLeftoverKcal(
+        [
+          { kcal: 2000 },
+          { kcal: 0 },
+          { kcal: 2400 },
+        ],
+        2300,
+      ),
+    ).toBe(300);
+  });
+
+  it("lists recent foods newest-first without repeats", () => {
+    const rows: RawMealEntry[] = [
+      { id: "1", date: "2026-08-11", slot: "lunch", foodKey: "oats", grams: 80, planned: false, eaten: true },
+      { id: "2", date: "2026-08-13", slot: "lunch", foodKey: "skyr", grams: 170, planned: false, eaten: true },
+      { id: "3", date: "2026-08-12", slot: "dinner", foodKey: "skyr", grams: 170, planned: false, eaten: true },
+      { id: "4", date: "2026-08-13", slot: "dinner", foodKey: "chicken_breast", grams: 180, planned: false, eaten: true },
+    ];
+    expect(recentFoodKeys(rows, 8)).toEqual(["skyr", "chicken_breast", "oats"]);
+    expect(frequentFoodKeys(rows, 2)).toEqual(["skyr", "chicken_breast"]);
+  });
+
+  it("keeps protein when swapping to a leaner cut", () => {
+    const from = foodByKey("chicken_breast") as FoodDef;
+    const to = foodByKey("turkey_steak") ?? foodByKey("turkey_mince");
+    expect(to).toBeDefined();
+    const grams = swapGrams(from, to as FoodDef, 180);
+    expect(grams).toBeGreaterThanOrEqual(100);
+    expect(grams).toBeLessThanOrEqual(400);
+  });
+});
+
+describe("menu-aware planning", () => {
+  const targets = macroTargets("cut", 92.8, 2876);
+
+  it("places a named menu when the kitchen can reach it", () => {
+    const plan = planDay(targets, FOODS, TODAY, DEFAULT_KITCHEN);
+    const breakfastKeys = plan.filter((i) => i.slot === "breakfast").map((i) => i.foodKey);
+    expect(breakfastKeys.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("will not place an oven menu on a microwave day", () => {
+    const kitchen: KitchenProfile = {
+      ...DEFAULT_KITCHEN,
+      minutes: 15,
+      equipment: "microwave",
+      hands: 1,
+    };
+    const plan = planDay(targets, FOODS, TODAY, kitchen);
+    for (const item of plan) {
+      expect(foodAllowed(food(item.foodKey), kitchen), item.foodKey).toBe(true);
+    }
+    expect(plan.some((i) => i.foodKey === "salmon_fillet")).toBe(false);
+  });
+
+  it("builds seven deterministic days for a week", () => {
+    const week = planWeek(targets, FOODS, TODAY, DEFAULT_KITCHEN);
+    expect(week).toHaveLength(7);
+    expect(week[0].date).toBe(TODAY);
+    expect(week[0].items).toEqual(planDay(targets, FOODS, TODAY, DEFAULT_KITCHEN));
+    expect(week.map((d) => d.items.map((i) => i.foodKey).join("|")).length).toBe(7);
+  });
+});
+
+describe("fuel view — bank and leftover", () => {
+  const entry = (
+    id: string,
+    date: string,
+    slot: (typeof MEAL_SLOTS)[number],
+    foodKey: string,
+    grams: number,
+    eaten: boolean,
+    planned = false,
+  ): RawMealEntry => ({ id, date, slot, foodKey, grams, planned, eaten });
+
+  const base = {
+    mode: "cut" as const,
+    date: TODAY,
+    weighIns: [{ date: addDays(TODAY, -1), weightKg: 92.8 }],
+    latestWeightKg: 92.8,
+    manualTarget: null,
+    lastWeekly: null,
+    foods: FOODS,
+  };
+
+  it("exposes menus, recents and a leftover bank", () => {
+    const view = buildFuelView({
+      ...base,
+      windowEntries: [
+        entry("me_1", addDays(TODAY, -1), "lunch", "skyr", 170, true),
+        entry("me_2", TODAY, "breakfast", "oats", 80, true),
+      ],
+    });
+    expect(view.menus.length).toBeGreaterThanOrEqual(20);
+    expect(view.recentFoods.length).toBeGreaterThan(0);
+    expect(view.leftoverKcal).toBeGreaterThanOrEqual(0);
+    expect(view.survival).toBe(false);
+  });
+
+  it("exposes the product catalogue, allowed only when the parent food is", () => {
+    const view = buildFuelView({
+      ...base,
+      windowEntries: [],
+      kitchen: {
+        ...DEFAULT_KITCHEN,
+        excludeAllergens: ["crustaceans"],
+      },
+    });
+    expect(view.products.length).toBeGreaterThanOrEqual(280);
+    const prawn = view.products.find((p) => p.foodKey === "prawns_cooked");
+    expect(prawn).toBeDefined();
+    expect(prawn?.allowed).toBe(false);
+    const skyr = view.products.find((p) => p.foodKey === "skyr");
+    expect(skyr?.allowed).toBe(true);
+    expect(skyr?.brand.length).toBeGreaterThan(0);
+    expect(skyr?.packG).toBeGreaterThan(0);
+  });
+
+  it("hides leftover and menus on the floor", () => {
+    const view = buildFuelView({ ...base, mode: "survival", windowEntries: [] });
+    expect(view.survival).toBe(true);
+    expect(view.leftoverKcal).toBe(0);
+    expect(view.proposal).toBeNull();
+    expect(view.products).toEqual([]);
   });
 });

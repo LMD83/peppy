@@ -48,19 +48,23 @@ export function StackTab() {
 
   if (stack.survival) {
     return (
-      <div className="flex flex-col gap-3 pt-4">
+      <div className="flex flex-col gap-4 pt-5">
         <Card tone="amber">
-          <Eyebrow color="bg-tm-amber">Stack — floor</Eyebrow>
-          <div className="flex items-end justify-between gap-3">
-            <Stat value={`${stack.takenCount}/${stack.dueCount}`} label="doses taken today" />
-            <Stat value={`${stack.adherence30.pct}%`} label="30-day adherence" />
-          </div>
-          <div className="mt-3">
+          <Eyebrow color="bg-tm-amber">Stack, floor</Eyebrow>
+          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-amber bg-tm-amber">
+            <div className="bg-tm-amber-bg px-3 py-3">
+              <Stat value={`${stack.takenCount}/${stack.dueCount}`} label="doses taken today" />
+            </div>
+            <div className="bg-tm-amber-bg px-3 py-3">
+              <Stat value={`${stack.adherence30.pct}%`} label="30-day adherence" />
+            </div>
+          </dl>
+          <div className="mt-4">
             <DoseList doses={floor} />
           </div>
-          <p className="mt-2.5 text-[12.5px] text-tm-amber-ink">
-            Meds and anything with strong evidence stay. Optional doses are deferred, not deleted —
-            the floor removes obligations, it never removes a prescription.
+          <p className="mt-2.5 text-[14px] text-tm-amber-ink">
+            Meds and anything with strong evidence stay. Optional doses are deferred, not deleted.
+            The floor removes obligations, it never removes a prescription.
           </p>
         </Card>
 
@@ -74,37 +78,38 @@ export function StackTab() {
   }
 
   return (
-    <div className="flex flex-col gap-3 pt-4">
-      <Card>
-        <div className="flex items-center justify-between">
-          <Eyebrow color="bg-tm-green" className="mb-0">
-            Due today
-          </Eyebrow>
-          <span className="font-tm-mono text-[10px] text-tm-dim">
-            {stack.takenCount}/{stack.dueCount} taken
-          </span>
-        </div>
-        <div className="mt-2">
-          <DoseList doses={floor} />
-        </div>
-      </Card>
+    <div className="flex flex-col gap-4 pt-5 lg:grid lg:grid-cols-12 lg:items-start lg:gap-6">
+      <div className="flex flex-col gap-3 lg:col-span-7">
+        <Card>
+          <div className="flex items-end justify-between gap-3">
+            <Eyebrow color="bg-tm-green" className="mb-0">
+              Due today
+            </Eyebrow>
+            <span className="font-tm-mono text-[11.5px] text-tm-dim">
+              {stack.takenCount}/{stack.dueCount} taken
+            </span>
+          </div>
+          <div className="mt-3">
+            <DoseList doses={floor} />
+          </div>
+        </Card>
 
-      <AdherenceCard
-        adherence7={stack.adherence7}
-        adherence30={stack.adherence30}
-      />
+        <AdherenceCard
+          adherence7={stack.adherence7}
+          adherence30={stack.adherence30}
+        />
 
-      {stack.cycles.length > 0 && <CyclesCard cycles={stack.cycles} />}
+        {stack.cycles.length > 0 && <CyclesCard cycles={stack.cycles} />}
 
-      <ReconCalculator items={stack.items} />
+        <ProtocolList stack={stack} />
+      </div>
 
-      <ProtocolList stack={stack} />
-
-      <InteractionsCard interactions={stack.interactions} />
-
-      <EvidenceLegend />
-
-      <DisclaimerCard text={stack.disclaimer} />
+      <div className="flex flex-col gap-3 lg:col-span-5">
+        <ReconCalculator items={stack.items} />
+        <InteractionsCard interactions={stack.interactions} />
+        <EvidenceLegend />
+        <DisclaimerCard text={stack.disclaimer} />
+      </div>
     </div>
   );
 }
@@ -202,7 +207,7 @@ function DoseRow({ dose }: { dose: DoseView }) {
       onClick={() => actions.logDose(dose.itemId, dose.timing, !dose.taken, dose.site ?? undefined)}
       aria-pressed={dose.taken}
       className={cn(
-        "flex min-h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left",
+        "flex min-h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-[10px] border px-3 py-2 text-left transition-transform duration-150 active:scale-[0.98]",
         dose.taken ? "border-tm-green bg-tm-green-faint" : "border-tm-rule bg-tm-panel",
       )}
     >
@@ -287,14 +292,14 @@ function AdherenceCard({
 }) {
   return (
     <Card>
-      <Eyebrow color="bg-tm-blue">Adherence — doses taken of doses due</Eyebrow>
+      <Eyebrow color="bg-tm-blue">Adherence</Eyebrow>
       <div className="flex items-center justify-between gap-3">
         <Ring pct={adherence7.pct} label="7 day" tone="stroke-tm-green" />
         <Ring pct={adherence30.pct} label="30 day" tone="stroke-tm-blue" />
       </div>
       <p className="mt-2.5 font-tm-mono text-[10px] text-tm-dim">
         {adherence30.takenCount}/{adherence30.dueCount} over 30 days. Only days an item was actually
-        scheduled count — pausing something never dents the number.
+        scheduled count. Pausing something never dents the number.
       </p>
     </Card>
   );
@@ -308,7 +313,7 @@ function CyclesCard({ cycles }: { cycles: StackData["cycles"] }) {
         {cycles.map((c) => (
           <div
             key={c.id}
-            className="flex items-center justify-between gap-2 rounded-lg border border-tm-rule bg-tm-panel px-3 py-2.5"
+            className="flex items-center justify-between gap-2 rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2.5"
           >
             <span className="min-w-0">
               <span className="block truncate text-[13px] font-medium">{c.name}</span>
@@ -362,7 +367,7 @@ function ProtocolList({ stack }: { stack: StackData }) {
                     <div
                       key={item.id}
                       className={cn(
-                        "rounded-lg border px-3 py-2.5",
+                        "rounded-[10px] border px-3 py-2.5",
                         item.active ? "border-tm-rule bg-tm-panel" : "border-tm-rule bg-tm-soft",
                       )}
                     >
@@ -393,7 +398,7 @@ function ProtocolList({ stack }: { stack: StackData }) {
                         <ul className="mt-1.5 flex flex-col gap-1">
                           {item.cautions.map((c) => (
                             <li key={c} className="font-tm-mono text-[10px] text-tm-dim">
-                              — {c}
+                              · {c}
                             </li>
                           ))}
                         </ul>
@@ -401,7 +406,7 @@ function ProtocolList({ stack }: { stack: StackData }) {
                       <button
                         onClick={() => actions.setStackItemActive(item.id, !item.active)}
                         aria-pressed={!item.active}
-                        className="mt-2 min-h-11 w-full cursor-pointer rounded-lg border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[10px] tracking-[0.12em] text-tm-dim uppercase"
+                        className="mt-2 min-h-11 w-full cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase transition-transform duration-150 active:scale-[0.98]"
                       >
                         {item.active ? "Pause this item" : "Resume this item"}
                       </button>
@@ -461,7 +466,7 @@ function ReconCalculator({ items }: { items: ItemView[] }) {
 
   return (
     <Card>
-      <Eyebrow color="bg-tm-amber">Reconstitution — your own numbers</Eyebrow>
+      <Eyebrow color="bg-tm-amber">Reconstitution</Eyebrow>
       {withRecon.length > 1 && (
         <div className="mb-2 flex flex-wrap gap-1.5" role="radiogroup" aria-label="Peptide">
           {withRecon.map((i) => (
@@ -471,7 +476,7 @@ function ReconCalculator({ items }: { items: ItemView[] }) {
               aria-checked={i.id === picked.id}
               onClick={() => select(i.id)}
               className={cn(
-                "min-h-11 cursor-pointer rounded-lg border px-3 font-tm-mono text-[9.5px] tracking-[0.1em] uppercase",
+                "min-h-11 cursor-pointer rounded-[10px] border px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
                 i.id === picked.id
                   ? "border-tm-ink bg-tm-ink text-white"
                   : "border-tm-rule bg-tm-panel text-tm-dim",
@@ -496,19 +501,25 @@ function ReconCalculator({ items }: { items: ItemView[] }) {
       </div>
 
       {result ? (
-        <div className="mt-3 flex items-end justify-between gap-2 rounded-lg bg-tm-soft px-3 py-2.5">
-          <Stat value={`${fmt(result.syringeUnits)}`} label="syringe units" />
-          <Stat value={`${fmt(result.mlPerDose)} mL`} label="per dose" />
-          <Stat value={`${fmt(result.mgPerMl)}`} label="mg per mL" />
-        </div>
+        <dl className="mt-3 grid grid-cols-3 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
+          <div className="bg-tm-soft px-3 py-2.5">
+            <Stat value={`${fmt(result.syringeUnits)}`} label="syringe units" />
+          </div>
+          <div className="bg-tm-soft px-3 py-2.5">
+            <Stat value={`${fmt(result.mlPerDose)} mL`} label="per dose" />
+          </div>
+          <div className="bg-tm-soft px-3 py-2.5">
+            <Stat value={`${fmt(result.mgPerMl)}`} label="mg per mL" />
+          </div>
+        </dl>
       ) : (
-        <p className="mt-3 rounded-lg bg-tm-amber-bg px-3 py-2.5 text-[12.5px] text-tm-amber-ink">
+        <p className="mt-3 rounded-[10px] bg-tm-amber-bg px-3 py-2.5 text-[12.5px] text-tm-amber-ink">
           {error}
         </p>
       )}
 
       <p className="mt-2 font-tm-mono text-[10px] text-tm-dim">
-        Arithmetic on the numbers you entered — vial strength, diluent, wanted dose. It reads no dose
+        Arithmetic on the numbers you entered: vial strength, diluent, wanted dose. It reads no dose
         off a label and recommends none. Units are marks on a {fmt(values.syringeUnitsPerMl)} u/mL
         syringe, rounded to the nearest half mark.
       </p>
@@ -537,7 +548,7 @@ function NumField({
         onChange={(e) => onChange(e.target.value)}
         inputMode="decimal"
         placeholder={placeholder}
-        className="min-h-11 w-full rounded-lg border border-tm-rule bg-tm-panel px-3 py-2 font-tm-mono text-sm outline-none focus:border-tm-ink"
+        className="min-h-11 w-full rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 py-2 font-tm-mono text-sm focus:border-tm-ink"
       />
     </label>
   );
@@ -551,7 +562,7 @@ function InteractionsCard({ interactions }: { interactions: StackData["interacti
       <Eyebrow color="bg-tm-yellow">Interactions on this file</Eyebrow>
       {interactions.length === 0 ? (
         <p className="text-[12.5px] text-tm-dim">
-          No known pair on the file. Absence of a note here is not clearance — the list only covers
+          No known pair on the file. Absence of a note here is not clearance. The list only covers
           compounds the catalogue recognises.
         </p>
       ) : (
@@ -585,7 +596,7 @@ function InteractionsCard({ interactions }: { interactions: StackData["interacti
 function EvidenceLegend() {
   return (
     <Card>
-      <Eyebrow color="bg-tm-dim2">Evidence tiers — what the tag claims</Eyebrow>
+      <Eyebrow color="bg-tm-dim2">Evidence tiers</Eyebrow>
       <ul className="flex flex-col gap-1.5">
         {EVIDENCE_ORDER.map((tier) => (
           <li key={tier} className="flex items-start gap-2">

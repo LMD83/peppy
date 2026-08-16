@@ -12,13 +12,13 @@ export function ProgressTab() {
   const reviewDue = reviewDate !== null && reviewDate <= date;
 
   return (
-    <div className="flex flex-col gap-3 pt-4">
+    <div className="flex flex-col gap-4 pt-5 lg:grid lg:grid-cols-12 lg:items-start lg:gap-6">
       {reviewDue && (
-        <Card tone="amber">
+        <Card tone="amber" className="lg:col-span-12">
           <Eyebrow color="bg-tm-amber">
             {today.user.mode === "survival" ? "Survival review due" : "Review prompt"}
           </Eyebrow>
-          <p className="text-[13px] text-tm-amber-ink">
+          <p className="text-[14px] text-tm-amber-ink">
             Review date <b className="font-tm-mono">{reviewDate}</b> is due. Revisit mode: keep the floor, or step
             back to cut / maintain.
           </p>
@@ -40,33 +40,39 @@ export function ProgressTab() {
       )}
 
       {!reviewDue && reviewDate && (
-        <Card>
+        <Card className="lg:col-span-12">
           <Eyebrow color="bg-tm-amber">Review on file</Eyebrow>
-          <p className="text-[12.5px]">
+          <p className="text-[14px]">
             Next review prompt: <b className="font-tm-mono">{reviewDate}</b>
           </p>
         </Card>
       )}
 
-      <Card>
+      <Card className="lg:col-span-7">
         <Eyebrow color="bg-tm-blue">Mass: actual vs 0.5 kg/wk</Eyebrow>
         <MassChart series={progress.series} ceilingKg={progress.ceilingKg} />
-        <p className="mt-2 font-tm-mono text-[10px] text-tm-dim">
+        <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
           Amber line = survival ceiling. It never disappears. It is the floor you defend in a bad season.
         </p>
       </Card>
 
-      <Card>
+      <Card className="lg:col-span-5">
         <Eyebrow color="bg-tm-green">Consistency, 14 days</Eyebrow>
         <ConsistencyWall wall={progress.wall} />
-        <div className="mt-3 flex gap-6">
-          <Stat value={`${progress.adherence7}%`} label="7-day" />
-          <Stat value={`${progress.streak}`} label="Streak" />
-          <Stat
-            value={`${Math.abs(progress.deltaKg).toFixed(1)}`}
-            label={progress.deltaKg <= 0 ? "kg down" : "kg up"}
-          />
-        </div>
+        <dl className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
+          <div className="bg-tm-panel px-3 py-3">
+            <Stat value={`${progress.adherence7}%`} label="7-day" />
+          </div>
+          <div className="bg-tm-panel px-3 py-3">
+            <Stat value={`${progress.streak}`} label="Streak" />
+          </div>
+          <div className="bg-tm-panel px-3 py-3">
+            <Stat
+              value={`${Math.abs(progress.deltaKg).toFixed(1)}`}
+              label={progress.deltaKg <= 0 ? "kg down" : "kg up"}
+            />
+          </div>
+        </dl>
       </Card>
     </div>
   );

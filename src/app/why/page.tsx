@@ -51,6 +51,10 @@ const FILE = [
     name: "Experiments",
     body: "Disputed genetics get functional tests, not vibes. n=1, run twice, verdict recorded.",
   },
+  {
+    name: "Train",
+    body: "The session is filtered by the room, the kit and the limits you stated. It is not a diagnosis, and it does not prescribe a load you did not configure.",
+  },
 ] as const;
 
 function OpenFileLink({ className }: { className?: string }) {

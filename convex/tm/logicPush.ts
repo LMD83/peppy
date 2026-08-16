@@ -100,7 +100,7 @@ export function deliveryResult<Id>(subscriptionId: Id, outcome: DeliveryOutcome)
  * that failure from 8am on a weekday to `npx convex deploy` — the right place
  * for it. A missing package is a broken build, not a quiet morning.
  */
-export type SweepReason = "nothing-due" | "no-vapid" | "sent";
+export type SweepReason = "nothing-due" | "no-keys" | "sent";
 
 export type SweepReport = {
   users: number;
@@ -122,15 +122,15 @@ export function nothingDue(): SweepReport {
  * tab at 3am when a dose was missed, and the question then is "did the app try".
  */
 export function blockedReport(users: number, notifications: number): SweepReport {
-  return { users, notifications, sent: 0, reason: "no-vapid" };
+  return { users, notifications, sent: 0, reason: "no-keys" };
 }
 
 export function blockedLog(users: number, notifications: number): string {
   return (
     `[timento reminders] ${notifications} notification(s) were due for ${users} file(s) and none ` +
-    "were sent: VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT are not all set on this " +
-    "deployment. Nothing was marked delivered and no subscription was penalised. " +
-    "See DEPLOY.md — Reminders — for the one step that switches delivery on."
+    "were sent: VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT are not all set, and " +
+    "RESEND_API_KEY is not set either. Nothing was marked delivered and no subscription was " +
+    "penalised. See DEPLOY.md — Reminders — for the keys that switch delivery on."
   );
 }
 

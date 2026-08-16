@@ -6,7 +6,7 @@ import { scoreInstrument } from "../logicMind";
 
 /**
  * Mind fixtures — a six-week self-report history for Liam on a cut, and the
- * two-instrument floor for Conor in survival.
+ * two-instrument floor for Artur in survival.
  *
  * Row shapes are redeclared here rather than imported: Convex code must not
  * reach into src/. They are field-identical to src/app/_lib/demo/rows.ts,
@@ -69,8 +69,8 @@ const LIAM_TAKES: Take[] = [
   ["pacs", 3, [2, 2, 2, 3, 2]],
 ];
 
-/** Conor, in survival: the floor set only, once each. Nothing alarming. */
-const CONOR_TAKES: Take[] = [
+/** Artur, in survival: the floor set only, once each. Nothing alarming. */
+const ARTUR_TAKES: Take[] = [
   ["who5", 20, [3, 2, 3, 2, 3]],
   ["pacs", 10, [2, 2, 1, 2, 2]],
 ];
@@ -96,7 +96,7 @@ function takesFor(userSlug: string, takes: Take[], today: string): AssessmentRow
 export function buildMindFixtures(today: string): MindFixtures {
   const assessments = [
     ...takesFor("liam", LIAM_TAKES, today),
-    ...takesFor("conor", CONOR_TAKES, today),
+    ...takesFor("artur", ARTUR_TAKES, today),
   ];
 
   const intentions: IntentionRow[] = [
@@ -120,7 +120,7 @@ export function buildMindFixtures(today: string): MindFixtures {
     },
     {
       id: "int_3",
-      userSlug: "conor",
+      userSlug: "artur",
       trigger: "the knee aches and I want to write the day off",
       action: "three floor checks only — protein, steps, kitchen closed at 20:30",
       active: true,

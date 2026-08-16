@@ -180,6 +180,8 @@
   --color-tm-green: #297047;
   --color-tm-green-mid: #9cc4a9;
   --color-tm-green-faint: #dfeae2;
+  --color-tm-blue-faint: #e9eff8;
+  --color-tm-red-bg: #faeceb;
   /* was #b8860b = 3.25:1 on panel. now 5.38:1 on panel, 4.65:1 on grid. */
   --color-tm-yellow: #8a6407;
   /* SURVIVAL MODE — the screen for someone's worst day was the least legible
@@ -380,21 +382,18 @@ summary:focus-visible,
 }
 
 /* ---- prefers-reduced-motion (2.3.3) ---------------------------------------
- * Kills transitions, the skeleton pulse, and the breathing timer's animated
- * progress fill. A breathing exercise that lurches is worse than a still one. */
+ * Still the pulse skeletons and the breathing timer fill. Leave the 150ms
+ * press on stamps — a global 0.01ms kill also removes useful state change. */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    transition-delay: 0ms !important;
-    scroll-behavior: auto !important;
+  html {
+    scroll-behavior: auto;
   }
   .animate-pulse {
     animation: none !important;
     opacity: 1 !important;
+  }
+  [role="timer"] .transition-all {
+    transition-duration: 0ms !important;
   }
 }
 

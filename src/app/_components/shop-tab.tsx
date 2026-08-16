@@ -140,12 +140,14 @@ function ShopBody({ shop, date, easy }: { shop: ShopData; date: string; easy: bo
 
   if (shop.aisles.length === 0) {
     return (
-      <div className="flex flex-col gap-3 pt-4">
+      <div className="flex flex-col gap-3 pt-5">
         <Card>
           <Eyebrow color="bg-tm-green">Shopping list</Eyebrow>
-          <p className="text-[14px]">
-            Nothing to buy. Either there is no meal plan for the days ahead, or the cupboard already
-            covers it.
+          <h2 className="font-tm-disp text-2xl leading-[1.1] tracking-tight uppercase">
+            Nothing to buy
+          </h2>
+          <p className="mt-2 text-[14px]">
+            Either there is no meal plan for the days ahead, or the cupboard already covers it.
           </p>
           {shop.pantryCount > 0 && (
             <p className="mt-2 text-[14px] text-tm-dim">
@@ -161,7 +163,7 @@ function ShopBody({ shop, date, easy }: { shop: ShopData; date: string; easy: bo
   if (easy) {
     const aisle = shop.aisles[safeStep];
     return (
-      <div className="flex flex-col gap-3 pt-4">
+      <div className="flex flex-col gap-3 pt-5">
         <PrintList shop={shop} />
         <div className="print:hidden">
           <Card>
@@ -204,7 +206,7 @@ function ShopBody({ shop, date, easy }: { shop: ShopData; date: string; easy: bo
                 onClick={() => setStep(Math.max(0, safeStep - 1))}
                 disabled={safeStep === 0}
                 className={cn(
-                  "min-h-16 flex-1 cursor-pointer rounded-[10px] border px-4 text-[17px] font-medium",
+                  "min-h-16 flex-1 cursor-pointer rounded-[10px] border px-4 text-[17px] font-medium transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
                   safeStep === 0
                     ? "border-tm-rule bg-tm-soft text-tm-dim"
                     : "border-tm-rule-strong bg-tm-panel text-tm-ink",
@@ -217,7 +219,7 @@ function ShopBody({ shop, date, easy }: { shop: ShopData; date: string; easy: bo
                 onClick={() => setStep(Math.min(lastStep, safeStep + 1))}
                 disabled={safeStep === lastStep}
                 className={cn(
-                  "min-h-16 flex-1 cursor-pointer rounded-[10px] border px-4 text-[17px] font-medium",
+                  "min-h-16 flex-1 cursor-pointer rounded-[10px] border px-4 text-[17px] font-medium transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
                   safeStep === lastStep
                     ? "border-tm-rule bg-tm-soft text-tm-dim"
                     : "border-tm-ink bg-tm-ink text-white",
@@ -233,89 +235,100 @@ function ShopBody({ shop, date, easy }: { shop: ShopData; date: string; easy: bo
   }
 
   return (
-    <div className="flex flex-col gap-3 pt-4">
+    <div className="flex flex-col gap-4 pt-5">
       <PrintList shop={shop} />
 
-      <div className="flex flex-col gap-3 print:hidden">
-        <Card>
-          <div className="flex items-center justify-between gap-2">
-            <Eyebrow color="bg-tm-blue" className="mb-0">
-              {shop.survival ? "Shopping list — floor" : "Shopping list"}
-            </Eyebrow>
-            <span className="font-tm-mono text-[11.5px] text-tm-dim">
-              {shop.days === 1 ? "today" : `${shop.days} days`}
-            </span>
-          </div>
-          <div className="mt-3 flex items-end justify-between gap-3">
-            <Stat value={String(shop.totals.toBuy)} label="to buy" />
-            <Stat value={String(shop.totals.aisles)} label="aisles" />
-            <Stat value={`${shop.totals.weightKg.toFixed(1)} kg`} label="to carry" />
-          </div>
-          <p className="mt-2 text-[14px] text-tm-dim">
-            Walk it in this order and it is one lap. {shop.totals.packs} pack
-            {shop.totals.packs === 1 ? "" : "s"} into the trolley.
-          </p>
-        </Card>
-
-        {shop.aisles.map((aisle) => (
-          <Card key={aisle.aisle}>
+      <div className="flex flex-col gap-4 print:hidden lg:grid lg:grid-cols-12 lg:items-start lg:gap-6">
+        <div className="flex flex-col gap-3 lg:col-span-7">
+          <Card>
             <div className="flex items-center justify-between gap-2">
-              <Eyebrow color="bg-tm-green" className="mb-0">
-                {aisle.label}
+              <Eyebrow color="bg-tm-blue" className="mb-0">
+                Shopping list
               </Eyebrow>
               <span className="font-tm-mono text-[11.5px] text-tm-dim">
-                {aisle.items.filter((i) => ticks.keys.includes(i.foodKey)).length}/
-                {aisle.items.length}
+                {shop.survival ? "floor · " : ""}
+                {shop.days === 1 ? "today" : `${shop.days} days`}
               </span>
             </div>
-            <div className="mt-2.5 flex flex-col gap-2">
-              {aisle.items.map((item) => (
-                <ItemRow
-                  key={item.foodKey}
-                  item={item}
-                  ticked={ticks.keys.includes(item.foodKey)}
-                  onTick={() => ticks.toggle(item.foodKey)}
-                  onHave={() => actions.setPantry(item.foodKey, item.have ? 0 : item.plannedG)}
-                  retailer={retailer}
-                />
-              ))}
-            </div>
+            <dl className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
+              <div className="bg-tm-panel px-3 py-3">
+                <Stat value={String(shop.totals.toBuy)} label="to buy" />
+              </div>
+              <div className="bg-tm-panel px-3 py-3">
+                <Stat value={String(shop.totals.aisles)} label="aisles" />
+              </div>
+              <div className="bg-tm-panel px-3 py-3">
+                <Stat value={`${shop.totals.weightKg.toFixed(1)} kg`} label="to carry" />
+              </div>
+            </dl>
+            <p className="mt-2 text-[14px] text-tm-dim">
+              Walk it in this order and it is one lap. {shop.totals.packs} pack
+              {shop.totals.packs === 1 ? "" : "s"} into the trolley.
+            </p>
           </Card>
-        ))}
 
-        {shop.retailers.length > 0 && (
-          <RetailerCard
-            retailers={shop.retailers}
-            selected={retailerKey}
-            onSelect={(key) => setRetailerKey(key === retailerKey ? null : key)}
-            handoff={shop.handoffNote}
-          />
-        )}
+          {shop.aisles.map((aisle) => (
+            <Card key={aisle.aisle}>
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="font-tm-disp text-2xl leading-[1.1] tracking-tight uppercase">
+                  {aisle.label}
+                </h2>
+                <span className="font-tm-mono text-[11.5px] text-tm-dim">
+                  {aisle.items.filter((i) => ticks.keys.includes(i.foodKey)).length}/
+                  {aisle.items.length}
+                </span>
+              </div>
+              <div className="mt-2.5 flex flex-col gap-2">
+                {aisle.items.map((item) => (
+                  <ItemRow
+                    key={item.foodKey}
+                    item={item}
+                    ticked={ticks.keys.includes(item.foodKey)}
+                    onTick={() => ticks.toggle(item.foodKey)}
+                    onHave={() => actions.setPantry(item.foodKey, item.have ? 0 : item.plannedG)}
+                    retailer={retailer}
+                  />
+                ))}
+              </div>
+            </Card>
+          ))}
+        </div>
 
-        <Card>
-          <Eyebrow color="bg-tm-dim2">Take it with you</Eyebrow>
-          <ShareButtons shop={shop} />
-          <div className="mt-2 flex gap-2">
-            <button
-              type="button"
-              onClick={ticks.clear}
-              className="min-h-11 flex-1 cursor-pointer rounded-lg border border-tm-rule bg-tm-panel px-3 text-[14px]"
-            >
-              Untick everything
-            </button>
-            {shop.pantryCount > 0 && (
+        <div className="flex flex-col gap-3 lg:col-span-5">
+          {shop.retailers.length > 0 && (
+            <RetailerCard
+              retailers={shop.retailers}
+              selected={retailerKey}
+              onSelect={(key) => setRetailerKey(key === retailerKey ? null : key)}
+              handoff={shop.handoffNote}
+            />
+          )}
+
+          <Card>
+            <Eyebrow color="bg-tm-dim2">Take it with you</Eyebrow>
+            <ShareButtons shop={shop} />
+            <div className="mt-2 flex gap-2">
               <button
                 type="button"
-                onClick={() => actions.clearPantry()}
-                className="min-h-11 flex-1 cursor-pointer rounded-lg border border-tm-rule bg-tm-panel px-3 text-[14px]"
+                onClick={ticks.clear}
+                className="min-h-11 flex-1 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 text-[14px] transition-transform duration-150 active:scale-[0.98]"
               >
-                Empty the cupboard ({shop.pantryCount})
+                Untick everything
               </button>
-            )}
-          </div>
-        </Card>
+              {shop.pantryCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => actions.clearPantry()}
+                  className="min-h-11 flex-1 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 text-[14px] transition-transform duration-150 active:scale-[0.98]"
+                >
+                  Empty the cupboard ({shop.pantryCount})
+                </button>
+              )}
+            </div>
+          </Card>
 
-        <NoteCard shop={shop} />
+          <NoteCard shop={shop} />
+        </div>
       </div>
     </div>
   );
@@ -332,7 +345,7 @@ export function ShopTodayCard() {
       <Eyebrow color="bg-tm-blue">Shopping</Eyebrow>
       <p className="text-[14px]">
         {shop.totals.toBuy} thing{shop.totals.toBuy === 1 ? "" : "s"} to buy across{" "}
-        {shop.totals.aisles} aisle{shop.totals.aisles === 1 ? "" : "s"} — {shop.totals.weightLabel}.
+        {shop.totals.aisles} aisle{shop.totals.aisles === 1 ? "" : "s"} · {shop.totals.weightLabel}.
       </p>
       {first && (
         <p className="mt-1 font-tm-mono text-[11.5px] text-tm-dim">
@@ -386,7 +399,7 @@ function ItemRow({
   return (
     <div
       className={cn(
-        "rounded-lg border px-3 py-2",
+        "rounded-[10px] border px-3 py-2",
         item.have ? "border-tm-rule bg-tm-soft" : "border-tm-rule-strong bg-tm-panel",
       )}
     >
@@ -422,7 +435,7 @@ function ItemRow({
           <span className="block text-[14px] text-tm-dim">
             {item.have
               ? "already in the cupboard"
-              : `${item.grams} g — buy ${item.packLabel}${item.leftoverLabel ? ` · ${item.leftoverLabel}` : ""}`}
+              : `${item.grams} g · buy ${item.packLabel}${item.leftoverLabel ? ` · ${item.leftoverLabel}` : ""}`}
           </span>
           {!item.have && item.haveG > 0 && (
             <span className="block font-tm-mono text-[11.5px] text-tm-dim">
@@ -438,7 +451,7 @@ function ItemRow({
           aria-pressed={item.have}
           onClick={onHave}
           className={cn(
-            "min-h-11 cursor-pointer rounded-lg border px-3 text-[14px]",
+            "min-h-11 cursor-pointer rounded-[10px] border px-3 text-[14px] transition-transform duration-150 active:scale-[0.98]",
             item.have
               ? "border-tm-ink bg-tm-ink text-white"
               : "border-tm-rule-strong bg-tm-panel text-tm-ink",
@@ -452,7 +465,7 @@ function ItemRow({
             type="button"
             aria-expanded={showSubs}
             onClick={() => setShowSubs(!showSubs)}
-            className="min-h-11 cursor-pointer rounded-lg border border-tm-rule-strong bg-tm-panel px-3 text-[14px]"
+            className="min-h-11 cursor-pointer rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-[14px] transition-transform duration-150 active:scale-[0.98]"
           >
             {showSubs ? "Hide swaps" : `Out of stock? (${item.substitutions.length})`}
           </button>
@@ -463,7 +476,7 @@ function ItemRow({
             href={url}
             target="_blank"
             rel="noreferrer noopener"
-            className="flex min-h-11 items-center rounded-lg border border-tm-blue bg-tm-panel px-3 text-[14px] text-tm-blue"
+            className="flex min-h-11 items-center rounded-[10px] border border-tm-blue bg-tm-panel px-3 text-[14px] text-tm-blue transition-transform duration-150 active:scale-[0.98]"
           >
             Find it on {retailer?.name} ↗
           </a>
@@ -475,7 +488,7 @@ function ItemRow({
           {item.substitutions.map((sub) => (
             <li key={sub.foodKey} className="border-b border-tm-grid py-2 last:border-0">
               <span className="block text-[15px]">
-                {sub.name} — {sub.grams} g
+                {sub.name} · {sub.grams} g
               </span>
               <span className="block text-[14px] text-tm-dim">{sub.reason}</span>
             </li>
@@ -515,7 +528,7 @@ function RetailerCard({
               aria-pressed={on}
               onClick={() => onSelect(r.key)}
               className={cn(
-                "flex min-h-11 w-full cursor-pointer items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left",
+                "flex min-h-11 w-full cursor-pointer items-center justify-between gap-3 rounded-[10px] border px-3 py-2 text-left transition-transform duration-150 active:scale-[0.98]",
                 on ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule-strong bg-tm-panel",
               )}
             >
@@ -568,14 +581,14 @@ function ShareButtons({ shop, className }: { shop: ShopData; className?: string 
       <button
         type="button"
         onClick={copy}
-        className="min-h-11 flex-1 cursor-pointer rounded-lg border border-tm-ink bg-tm-ink px-3 text-[14px] text-white"
+        className="min-h-11 flex-1 cursor-pointer rounded-[10px] border border-tm-ink bg-tm-ink px-3 text-[14px] text-white transition-transform duration-150 active:scale-[0.98]"
       >
         {copied ? "Copied" : "Copy the list"}
       </button>
       <button
         type="button"
         onClick={share}
-        className="min-h-11 flex-1 cursor-pointer rounded-lg border border-tm-rule-strong bg-tm-panel px-3 text-[14px]"
+        className="min-h-11 flex-1 cursor-pointer rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-[14px] transition-transform duration-150 active:scale-[0.98]"
       >
         Send it
       </button>
@@ -584,7 +597,7 @@ function ShareButtons({ shop, className }: { shop: ShopData; className?: string 
         onClick={() => {
           if (typeof window !== "undefined") window.print();
         }}
-        className="min-h-11 flex-1 cursor-pointer rounded-lg border border-tm-rule-strong bg-tm-panel px-3 text-[14px]"
+        className="min-h-11 flex-1 cursor-pointer rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-[14px] transition-transform duration-150 active:scale-[0.98]"
       >
         Print it big
       </button>
@@ -593,10 +606,11 @@ function ShareButtons({ shop, className }: { shop: ShopData; className?: string 
 }
 
 /**
- * The paper version. Hidden on screen, and on paper it is the only thing left:
- * 18px type, one line per item, aisle headings, no colour to survive a mono
- * printer. Two of the five shops here have no online ordering at all, so this
- * is not a fallback — for some people it is the product.
+ * The paper version. Hidden on screen (`display: none`, so not a second live
+ * heading), and on paper it is the only thing left: 18px type, one line per
+ * item, aisle headings, no colour to survive a mono printer. Two of the five
+ * shops here have no online ordering at all, so this is not a fallback — for
+ * some people it is the product. The h1 is this print document's title.
  */
 function PrintList({ shop }: { shop: ShopData }) {
   return (

@@ -170,7 +170,7 @@ function CopyButton({ value, what }: { value: string; what: string }) {
           () => setCopied(false),
         );
       }}
-      className="min-h-11 min-w-11 shrink-0 rounded-lg border border-tm-rule-strong bg-tm-panel px-3 text-[14px] font-medium text-tm-ink"
+      className="min-h-11 min-w-11 shrink-0 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-[14px] font-medium text-tm-ink transition-transform duration-150 active:scale-[0.98]"
     >
       {/* A word, not a hue — the state is readable with colour switched off. */}
       {copied ? "Copied ✓" : "Copy"}
@@ -182,7 +182,7 @@ function CopyButton({ value, what }: { value: string; what: string }) {
 function Field({ label, value, what }: { label: string; value: string; what: string }) {
   return (
     <div className="mt-2 flex items-start gap-2">
-      <div className="min-w-0 flex-1 rounded-lg border border-tm-rule bg-tm-soft px-3 py-2">
+      <div className="min-w-0 flex-1 rounded-[10px] border border-tm-rule bg-tm-soft px-3 py-2">
         <div className="font-tm-mono text-[11.5px] tracking-[0.14em] text-tm-dim uppercase">
           {label}
         </div>
@@ -216,7 +216,7 @@ export function HandsFreePanel() {
 }
 
 function HandsFree({ data }: { data: HandsFreeData }) {
-  const { stack, fuel, actions, date } = useTimento();
+  const { stack, fuel, actions, date, today } = useTimento();
   const captures = useSyncExternalStore(subscribeCaptures, readCaptures, () => NO_CAPTURES);
   const [status, setStatus] = useState("");
   const [listening, setListening] = useState(false);
@@ -419,61 +419,71 @@ function HandsFree({ data }: { data: HandsFreeData }) {
   }, [data, date]);
 
   const liveTokens = data.tokens.filter((t) => !t.revoked);
+  const easy = today?.a11y.profile === "easy";
+  const split = !data.survival && !easy;
 
   return (
-    <div className="flex flex-col gap-3 pt-4">
-      {/* One region, polite, for every outcome on this screen. */}
-      <p role="status" aria-live="polite" className="sr-only">
-        {status}
-      </p>
-
-      <SayItCard data={data} />
-
-      <TalkCard
-        canSpeak={canSpeak}
-        listening={listening}
-        onStart={startListening}
-        onStop={stopListening}
-        typed={typed}
-        setTyped={setTyped}
-        onSubmit={() => {
-          handleUtterance(typed);
-          setTyped("");
-        }}
-      />
-
-      {captures.length > 0 && (
-        <CapturesCard captures={captures} onClear={() => writeCaptures([])} />
+    <div
+      className={cn(
+        "flex flex-col gap-4 pt-5",
+        split && "lg:grid lg:grid-cols-12 lg:items-start lg:gap-6",
       )}
+    >
+      <div className="flex flex-col gap-3 lg:col-span-7">
+        {/* One region, polite, for every outcome on this screen. */}
+        <p role="status" aria-live="polite" className="sr-only">
+          {status}
+        </p>
+        <SayItCard data={data} />
 
-      {data.survival ? (
-        <button
-          type="button"
-          onClick={() => setShowSetup((s) => !s)}
-          aria-expanded={showSetup}
-          className="min-h-11 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-4 text-[14px] font-medium text-tm-ink"
-        >
-          {showSetup ? "Hide the phone setup" : "Set it up on your phone"}
-        </button>
-      ) : null}
+        <TalkCard
+          canSpeak={canSpeak}
+          listening={listening}
+          onStart={startListening}
+          onStop={stopListening}
+          typed={typed}
+          setTyped={setTyped}
+          onSubmit={() => {
+            handleUtterance(typed);
+            setTyped("");
+          }}
+        />
 
-      {showSetup && (
-        <>
-          <SecretCard data={data} testing={testing} testResult={testResult} onTest={runTest} />
-          <StepsCard data={data} />
-        </>
-      )}
+        {captures.length > 0 && (
+          <CapturesCard captures={captures} onClear={() => writeCaptures([])} />
+        )}
 
-      <TokensCard
-        tokens={data.tokens}
-        liveCount={liveTokens.length}
-        onCreate={() => actions.createIngestToken(`Phone · ${date}`)}
-        onRevoke={(id) => actions.revokeIngestToken(id)}
-      />
+        {data.survival ? (
+          <button
+            type="button"
+            onClick={() => setShowSetup((s) => !s)}
+            aria-expanded={showSetup}
+            className="min-h-11 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-4 text-[14px] font-medium text-tm-ink transition-transform duration-150 active:scale-[0.98]"
+          >
+            {showSetup ? "Hide the phone setup" : "Set it up on your phone"}
+          </button>
+        ) : null}
+      </div>
 
-      {!data.survival && data.recent.length > 0 && <RecentCard data={data} />}
+      <div className="flex flex-col gap-3 lg:col-span-5">
+        {showSetup && (
+          <>
+            <SecretCard data={data} testing={testing} testResult={testResult} onTest={runTest} />
+            <StepsCard data={data} />
+          </>
+        )}
 
-      <p className="px-1 pb-2 text-[14px] leading-relaxed text-tm-dim">{data.note}</p>
+        <TokensCard
+          tokens={data.tokens}
+          liveCount={liveTokens.length}
+          onCreate={() => actions.createIngestToken(`Phone · ${date}`)}
+          onRevoke={(id) => actions.revokeIngestToken(id)}
+        />
+
+        {!data.survival && data.recent.length > 0 && <RecentCard data={data} />}
+
+        <p className="px-1 pb-2 text-[14px] leading-relaxed text-tm-dim">{data.note}</p>
+      </div>
     </div>
   );
 }
@@ -490,7 +500,7 @@ function SayItCard({ data }: { data: HandsFreeData }) {
       </p>
       <ul className="mt-3 flex flex-col gap-2">
         {data.phrases.map((p) => (
-          <li key={p.text} className="rounded-lg border border-tm-rule bg-tm-soft px-3 py-2">
+          <li key={p.text} className="rounded-[10px] border border-tm-rule bg-tm-soft px-3 py-2">
             <div className="text-[14px] font-medium">“{p.text}”</div>
             <div className="mt-0.5 text-[14px] text-tm-dim">{p.meaning}</div>
           </li>
@@ -526,7 +536,7 @@ function TalkCard({
           onClick={listening ? onStop : onStart}
           aria-pressed={listening}
           className={cn(
-            "flex min-h-24 w-full items-center justify-center gap-3 rounded-[10px] border px-4 text-[17px] font-medium",
+            "flex min-h-24 w-full items-center justify-center gap-3 rounded-[10px] border px-4 text-[17px] font-medium transition-transform duration-150 active:scale-[0.98]",
             listening
               ? "border-tm-ink bg-tm-ink text-white"
               : "border-tm-rule-strong bg-tm-panel text-tm-ink",
@@ -540,11 +550,11 @@ function TalkCard({
               listening ? "bg-white motion-safe:animate-pulse" : "bg-tm-rule-strong",
             )}
           />
-          {listening ? "Listening — tap to stop" : "Hold the thought — tap and talk"}
+          {listening ? "Listening. Tap to stop" : "Tap and talk"}
         </button>
       ) : (
         <p className="text-[14px] leading-relaxed">
-          This browser has no speech recognition. Type it below instead — it goes through exactly
+          This browser has no speech recognition. Type it below instead. It goes through exactly
           the same reading of the words.
         </p>
       )}
@@ -561,13 +571,13 @@ function TalkCard({
             if (e.key === "Enter") onSubmit();
           }}
           placeholder="took my morning tablets"
-          className="min-h-11 min-w-0 flex-1 rounded-lg border border-tm-rule-strong bg-tm-panel px-3 text-[14px]"
+          className="min-h-11 min-w-0 flex-1 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-[14px]"
         />
         <button
           type="button"
           onClick={onSubmit}
           disabled={typed.trim() === ""}
-          className="min-h-11 min-w-11 shrink-0 rounded-lg border border-tm-ink bg-tm-ink px-4 text-[14px] font-medium text-white disabled:border-tm-rule-strong disabled:bg-tm-soft disabled:text-tm-dim"
+          className="min-h-11 min-w-11 shrink-0 rounded-[10px] border border-tm-ink bg-tm-ink px-4 text-[14px] font-medium text-white transition-transform duration-150 active:scale-[0.98] disabled:border-tm-rule-strong disabled:bg-tm-soft disabled:text-tm-dim disabled:active:scale-100"
         >
           Log it
         </button>
@@ -585,7 +595,7 @@ function CapturesCard({ captures, onClear }: { captures: Capture[]; onClear: () 
       </Eyebrow>
       <ul className="flex flex-col gap-2">
         {captures.map((c) => (
-          <li key={c.id} className="rounded-lg border border-tm-rule bg-tm-panel px-3 py-2.5">
+          <li key={c.id} className="rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2.5">
             <div className="flex items-baseline justify-between gap-2">
               <span className="font-tm-mono text-[11.5px] tracking-[0.14em] text-tm-dim uppercase">
                 {stamp(c.at)}
@@ -605,7 +615,7 @@ function CapturesCard({ captures, onClear }: { captures: Capture[]; onClear: () 
                     key={choice.id}
                     type="button"
                     onClick={choice.run}
-                    className="min-h-11 rounded-lg border border-tm-rule-strong bg-tm-panel px-3 text-left text-[14px] font-medium text-tm-ink"
+                    className="min-h-11 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-left text-[14px] font-medium text-tm-ink transition-transform duration-150 active:scale-[0.98]"
                   >
                     Log {choice.label}
                   </button>
@@ -618,7 +628,7 @@ function CapturesCard({ captures, onClear }: { captures: Capture[]; onClear: () 
       <button
         type="button"
         onClick={onClear}
-        className="mt-3 min-h-11 w-full rounded-lg border border-tm-rule-strong bg-tm-panel px-3 text-[14px] font-medium text-tm-ink"
+        className="mt-3 min-h-11 w-full rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-[14px] font-medium text-tm-ink transition-transform duration-150 active:scale-[0.98]"
       >
         Clear this list
       </button>
@@ -643,7 +653,7 @@ function SecretCard({
         <Eyebrow color="bg-tm-rule-strong">Setup</Eyebrow>
         <p className="text-[14px] leading-relaxed">
           There is no live deployment behind this copy of the app, so there is no address for a
-          Shortcut to call. Everything above still works — talk to it, or type.
+          Shortcut to call. Everything above still works. Talk to it, or type.
         </p>
       </Card>
     );
@@ -654,7 +664,7 @@ function SecretCard({
       <Card>
         <Eyebrow color="bg-tm-rule-strong">Your key</Eyebrow>
         <p className="text-[14px] leading-relaxed">
-          Your keys are in use and are not shown again — a key is legible here only until the first
+          Your keys are in use and are not shown again. A key is legible here only until the first
           time it is used, and never afterwards. If you have lost one, revoke it below and make a
           new one.
         </p>
@@ -664,7 +674,7 @@ function SecretCard({
 
   return (
     <Card tone="amber">
-      <Eyebrow color="bg-tm-amber">Your key — copy it now</Eyebrow>
+      <Eyebrow color="bg-tm-amber">Copy this key now</Eyebrow>
       <p className="text-[14px] leading-relaxed text-tm-amber-ink">
         This is the only time this key is legible. Once it has been used once it is hidden for good.
         Treat it like a password: anyone holding it can log to your file.
@@ -674,12 +684,12 @@ function SecretCard({
         type="button"
         onClick={onTest}
         disabled={testing}
-        className="mt-3 min-h-14 w-full rounded-[10px] border border-tm-ink bg-tm-ink px-4 text-[17px] font-medium text-white disabled:border-tm-rule-strong disabled:bg-tm-soft disabled:text-tm-dim"
+        className="mt-3 min-h-14 w-full rounded-[10px] border border-tm-ink bg-tm-ink px-4 text-[17px] font-medium text-white transition-transform duration-150 active:scale-[0.98] disabled:border-tm-rule-strong disabled:bg-tm-soft disabled:text-tm-dim disabled:active:scale-100"
       >
         {testing ? "Testing…" : "Test it now"}
       </button>
       {testResult !== null && (
-        <p className="mt-2 rounded-lg border border-tm-rule bg-tm-panel px-3 py-2 text-[14px] leading-relaxed">
+        <p className="mt-2 rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2 text-[14px] leading-relaxed">
           {testResult}
         </p>
       )}
@@ -691,7 +701,7 @@ function StepsCard({ data }: { data: HandsFreeData }) {
   const recipe = data.shortcutRecipe;
   return (
     <Card>
-      <Eyebrow color="bg-tm-blue">Set it up — seven steps</Eyebrow>
+      <Eyebrow color="bg-tm-blue">Set it up</Eyebrow>
       <ol className="flex flex-col gap-3">
         {recipe.steps.map((step) => (
           <li key={step.n} className="flex gap-3">
@@ -745,7 +755,7 @@ function TokensCard({
           {tokens.map((t) => (
             <li
               key={t.id}
-              className="rounded-lg border border-tm-rule bg-tm-panel px-3 py-2.5"
+              className="rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2.5"
             >
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-[14px] font-medium">{t.label}</span>
@@ -762,7 +772,7 @@ function TokensCard({
                 <button
                   type="button"
                   onClick={() => onRevoke(t.id)}
-                  className="mt-2 min-h-14 w-full rounded-lg border border-tm-red bg-tm-panel px-3 text-[17px] font-medium text-tm-red"
+                  className="mt-2 min-h-14 w-full rounded-[10px] border border-tm-red bg-tm-panel px-3 text-[17px] font-medium text-tm-red transition-transform duration-150 active:scale-[0.98]"
                 >
                   Revoke this key
                 </button>
@@ -774,7 +784,7 @@ function TokensCard({
       <button
         type="button"
         onClick={onCreate}
-        className="mt-3 min-h-14 w-full rounded-[10px] border border-tm-ink bg-tm-ink px-4 text-[17px] font-medium text-white"
+        className="mt-3 min-h-14 w-full rounded-[10px] border border-tm-ink bg-tm-ink px-4 text-[17px] font-medium text-white transition-transform duration-150 active:scale-[0.98]"
       >
         Make a new key
       </button>

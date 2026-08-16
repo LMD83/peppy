@@ -1,22 +1,22 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-16T08:31:00.000Z",
+  "generatedAt": "2026-08-16T10:45:00.000Z",
   "title": "Design System: Timento",
   "extensions": {
     "colorMeta": {
-      "paper": { "role": "neutral", "displayName": "Cool Paper", "canonical": "#fafaf8", "tonalRamp": ["#15171c", "#2c313b", "#70747b", "#9ba0a8", "#e4e5e1", "#eeefeb", "#f3f3f0", "#fafaf8"] },
-      "panel": { "role": "neutral", "displayName": "Panel White", "canonical": "#ffffff", "tonalRamp": ["#15171c", "#2c313b", "#70747b", "#9ba0a8", "#e4e5e1", "#eeefeb", "#f3f3f0", "#ffffff"] },
-      "ink": { "role": "primary", "displayName": "File Ink", "canonical": "#15171c", "tonalRamp": ["#0a0b0d", "#15171c", "#1e222a", "#232730", "#2c313b", "#70747b", "#9ba0a8", "#e4e5e1"] },
-      "green": { "role": "secondary", "displayName": "Protocol Green", "canonical": "#2e7d4f", "tonalRamp": ["#143624", "#1f5a38", "#2e7d4f", "#4a9a6a", "#9cc4a9", "#dfeae2", "#e8f1eb", "#f3f8f4"] },
-      "amber": { "role": "secondary", "displayName": "Floor Amber", "canonical": "#c77d1f", "tonalRamp": ["#5a3a0e", "#8a5615", "#c77d1f", "#d9a04a", "#e8c07a", "#fbf3e4", "#fdf8ee", "#fffdf8"] },
+      "paper": { "role": "neutral", "displayName": "Cool Paper", "canonical": "#fafaf8", "tonalRamp": ["#15171c", "#2c313b", "#5f636a", "#63676e", "#e4e5e1", "#eeefeb", "#f3f3f0", "#fafaf8"] },
+      "panel": { "role": "neutral", "displayName": "Panel White", "canonical": "#ffffff", "tonalRamp": ["#15171c", "#2c313b", "#5f636a", "#63676e", "#e4e5e1", "#eeefeb", "#f3f3f0", "#ffffff"] },
+      "ink": { "role": "primary", "displayName": "File Ink", "canonical": "#15171c", "tonalRamp": ["#0a0b0d", "#15171c", "#1e222a", "#232730", "#2c313b", "#5f636a", "#a2a7af", "#e4e5e1"] },
+      "green": { "role": "secondary", "displayName": "Protocol Green", "canonical": "#297047", "tonalRamp": ["#143624", "#1f5a38", "#297047", "#4a9a6a", "#9cc4a9", "#dfeae2", "#e8f1eb", "#f3f8f4"] },
+      "amber": { "role": "secondary", "displayName": "Floor Amber", "canonical": "#8f5a15", "tonalRamp": ["#4b3f20", "#6b5a2e", "#8f5a15", "#e0a34e", "#e8c07a", "#fbf3e4", "#fdf8ee", "#fffdf8"] },
       "blue": { "role": "tertiary", "displayName": "Measure Blue", "canonical": "#2b5fab", "tonalRamp": ["#142a4a", "#1e4280", "#2b5fab", "#4a7bc4", "#7a9fd6", "#e9eff8", "#f2f6fb", "#f8fafd"] },
-      "red": { "role": "tertiary", "displayName": "Alarm Red", "canonical": "#c7373f", "tonalRamp": ["#5a181c", "#8a242c", "#c7373f", "#d75a60", "#e89a9e", "#faeceb", "#fcf4f3", "#fefafa"] }
+      "red": { "role": "tertiary", "displayName": "Alarm Red", "canonical": "#b8323a", "tonalRamp": ["#5a181c", "#8a242c", "#b8323a", "#d75a60", "#e89a9e", "#faeceb", "#fcf4f3", "#fefafa"] }
     },
     "typographyMeta": {
       "display": { "displayName": "Display", "purpose": "Protocol titles and large file numbers." },
       "title": { "displayName": "Title", "purpose": "In-card section titles." },
       "body": { "displayName": "Body", "purpose": "Explanatory copy and list rows." },
-      "label": { "displayName": "Mono stamp", "purpose": "Buttons, eyebrows, nav, chips — uppercase tracking." }
+      "label": { "displayName": "Mono stamp", "purpose": "Buttons, eyebrows, nav, chips — uppercase tracking, 11.5px floor." }
     },
     "shadows": [
       { "name": "card-rest", "value": "0 1px 2px rgba(21,23,28,0.04)", "purpose": "Default card whisper." },
@@ -37,7 +37,7 @@
       "refersTo": "button-primary",
       "description": "Ink mono stamp for primary actions.",
       "html": "<button class=\"ds-btn-primary\" type=\"button\">OPEN THE FILE</button>",
-      "css": ".ds-btn-primary { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:12px 16px; background:#15171c; color:#fff; border:none; border-radius:10px; font-family:\"IBM Plex Mono\",ui-monospace,monospace; font-size:11px; letter-spacing:0.15em; text-transform:uppercase; cursor:pointer; transition:opacity 150ms ease; } .ds-btn-primary:hover { opacity:0.9; } .ds-btn-primary:active { opacity:0.7; } .ds-btn-primary:focus-visible { outline:2px solid #15171c; outline-offset:2px; } .ds-btn-primary:disabled { opacity:0.4; cursor:not-allowed; }"
+      "css": ".ds-btn-primary { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:12px 16px; background:#15171c; color:#fff; border:none; border-radius:10px; font-family:\"IBM Plex Mono\",ui-monospace,monospace; font-size:11.5px; letter-spacing:0.15em; text-transform:uppercase; cursor:pointer; transition:opacity 150ms ease; } .ds-btn-primary:hover { opacity:0.9; } .ds-btn-primary:active { opacity:0.7; } .ds-btn-primary:focus-visible { outline:3px solid #3b82f6; outline-offset:2px; } .ds-btn-primary:disabled { opacity:0.4; cursor:not-allowed; }"
     },
     {
       "name": "Ghost Button",
@@ -45,7 +45,7 @@
       "refersTo": "button-ghost",
       "description": "Bordered panel stamp for secondary actions.",
       "html": "<button class=\"ds-btn-ghost\" type=\"button\">CORRECT</button>",
-      "css": ".ds-btn-ghost { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:12px 16px; background:#ffffff; color:#15171c; border:1px solid #e4e5e1; border-radius:10px; font-family:\"IBM Plex Mono\",ui-monospace,monospace; font-size:11px; letter-spacing:0.15em; text-transform:uppercase; cursor:pointer; transition:opacity 150ms ease; } .ds-btn-ghost:hover { opacity:0.9; } .ds-btn-ghost:active { opacity:0.7; } .ds-btn-ghost:focus-visible { outline:2px solid #15171c; outline-offset:2px; }"
+      "css": ".ds-btn-ghost { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:12px 16px; background:#ffffff; color:#15171c; border:1px solid #888b85; border-radius:10px; font-family:\"IBM Plex Mono\",ui-monospace,monospace; font-size:11.5px; letter-spacing:0.15em; text-transform:uppercase; cursor:pointer; transition:opacity 150ms ease; } .ds-btn-ghost:hover { opacity:0.9; } .ds-btn-ghost:active { opacity:0.7; } .ds-btn-ghost:focus-visible { outline:3px solid #3b82f6; outline-offset:2px; }"
     },
     {
       "name": "Chip",
@@ -53,7 +53,7 @@
       "refersTo": "chip-default",
       "description": "Pill stamp for craving signals and nudges.",
       "html": "<button class=\"ds-chip\" type=\"button\">TIRED</button>",
-      "css": ".ds-chip { min-height:44px; padding:8px 14px; background:#f3f3f0; color:#15171c; border:1px solid #e4e5e1; border-radius:20px; font-family:\"IBM Plex Mono\",ui-monospace,monospace; font-size:11px; cursor:pointer; transition:opacity 150ms ease; } .ds-chip:active { opacity:0.7; } .ds-chip:focus-visible { outline:2px solid #15171c; outline-offset:2px; } .ds-chip.is-active { background:#15171c; color:#fff; border-color:#15171c; }"
+      "css": ".ds-chip { min-height:44px; padding:8px 14px; background:#f3f3f0; color:#15171c; border:1px solid #888b85; border-radius:20px; font-family:\"IBM Plex Mono\",ui-monospace,monospace; font-size:11.5px; cursor:pointer; transition:opacity 150ms ease; } .ds-chip:active { opacity:0.7; } .ds-chip:focus-visible { outline:3px solid #3b82f6; outline-offset:2px; } .ds-chip.is-active { background:#15171c; color:#fff; border-color:#15171c; }"
     },
     {
       "name": "Card",
@@ -61,7 +61,7 @@
       "refersTo": "card-default",
       "description": "Default file card on panel stock.",
       "html": "<div class=\"ds-card\"><div class=\"ds-eyebrow\"><span class=\"ds-hash\"></span><span>TODAY'S CHECKS</span></div><p class=\"ds-body\">Complete the floor checks for this mode.</p></div>",
-      "css": ".ds-card { background:#ffffff; border:1px solid #e4e5e1; border-radius:10px; padding:16px; box-shadow:0 1px 2px rgba(21,23,28,0.04); color:#15171c; font-family:\"IBM Plex Sans\",system-ui,sans-serif; } .ds-eyebrow { display:flex; align-items:center; gap:8px; margin-bottom:8px; font-family:\"IBM Plex Mono\",ui-monospace,monospace; font-size:10.5px; letter-spacing:0.15em; text-transform:uppercase; color:#70747b; } .ds-hash { display:inline-block; width:18px; height:4px; border-radius:1px; background:#2e7d4f; } .ds-body { margin:0; font-size:13px; line-height:1.45; }"
+      "css": ".ds-card { background:#ffffff; border:1px solid #e4e5e1; border-radius:10px; padding:16px; box-shadow:0 1px 2px rgba(21,23,28,0.04); color:#15171c; font-family:\"IBM Plex Sans\",system-ui,sans-serif; } .ds-eyebrow { display:flex; align-items:center; gap:8px; margin-bottom:8px; font-family:\"IBM Plex Mono\",ui-monospace,monospace; font-size:11.5px; letter-spacing:0.15em; text-transform:uppercase; color:#5f636a; } .ds-hash { display:inline-block; width:18px; height:4px; border-radius:1px; background:#297047; } .ds-body { margin:0; font-size:13px; line-height:1.45; }"
     },
     {
       "name": "Amber Card",
@@ -69,7 +69,7 @@
       "refersTo": "card-amber",
       "description": "Tripwire / survival / review stock.",
       "html": "<div class=\"ds-card-amber\"><div class=\"ds-eyebrow\"><span class=\"ds-hash\"></span><span>HARD TRIPWIRE</span></div><p class=\"ds-body\">Ceiling breached — floor protocol is available.</p></div>",
-      "css": ".ds-card-amber { background:#fbf3e4; border:1px solid #c77d1f; border-radius:10px; padding:16px; color:#6b5a2e; font-family:\"IBM Plex Sans\",system-ui,sans-serif; } .ds-card-amber .ds-eyebrow { display:flex; align-items:center; gap:8px; margin-bottom:8px; font-family:\"IBM Plex Mono\",ui-monospace,monospace; font-size:10.5px; letter-spacing:0.15em; text-transform:uppercase; color:#70747b; } .ds-card-amber .ds-hash { display:inline-block; width:18px; height:4px; border-radius:1px; background:#c77d1f; } .ds-card-amber .ds-body { margin:0; font-size:13px; line-height:1.45; color:#6b5a2e; }"
+      "css": ".ds-card-amber { background:#fbf3e4; border:1px solid #8f5a15; border-radius:10px; padding:16px; color:#6b5a2e; font-family:\"IBM Plex Sans\",system-ui,sans-serif; } .ds-card-amber .ds-eyebrow { display:flex; align-items:center; gap:8px; margin-bottom:8px; font-family:\"IBM Plex Mono\",ui-monospace,monospace; font-size:11.5px; letter-spacing:0.15em; text-transform:uppercase; color:#5f636a; } .ds-card-amber .ds-hash { display:inline-block; width:18px; height:4px; border-radius:1px; background:#8f5a15; } .ds-card-amber .ds-body { margin:0; font-size:13px; line-height:1.45; color:#6b5a2e; }"
     },
     {
       "name": "Text Input",
@@ -77,7 +77,7 @@
       "refersTo": "input-default",
       "description": "Weigh-in / passcode field on panel.",
       "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"kg\" aria-label=\"Weight in kilograms\" />",
-      "css": ".ds-input { min-height:44px; width:100%; max-width:120px; padding:8px 12px; background:#ffffff; color:#15171c; border:1px solid #e4e5e1; border-radius:10px; font-family:\"IBM Plex Mono\",ui-monospace,monospace; font-size:14px; outline:none; } .ds-input:focus { border-color:#15171c; } .ds-input:focus-visible { outline:2px solid #15171c; outline-offset:2px; }"
+      "css": ".ds-input { min-height:44px; width:100%; max-width:120px; padding:8px 12px; background:#ffffff; color:#15171c; border:1px solid #888b85; border-radius:10px; font-family:\"IBM Plex Mono\",ui-monospace,monospace; font-size:14px; outline:none; } .ds-input:focus { border-color:#15171c; } .ds-input:focus-visible { outline:3px solid #3b82f6; outline-offset:2px; }"
     },
     {
       "name": "Bottom Nav Item",
@@ -85,7 +85,7 @@
       "refersTo": "nav-tab",
       "description": "Fixed tab with mode accent bar.",
       "html": "<button class=\"ds-nav is-active\" type=\"button\"><span class=\"ds-nav-bar\"></span><span class=\"ds-nav-label\">TODAY</span></button>",
-      "css": ".ds-nav { display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px 8px 12px; background:#ffffff; border:none; color:#15171c; font-family:\"IBM Plex Mono\",ui-monospace,monospace; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; cursor:pointer; } .ds-nav-bar { display:block; width:32px; height:3px; border-radius:999px; background:#2e7d4f; } .ds-nav:not(.is-active) { color:#70747b; } .ds-nav:not(.is-active) .ds-nav-bar { background:transparent; } .ds-nav:focus-visible { outline:2px solid #15171c; outline-offset:2px; }"
+      "css": ".ds-nav { display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px 8px 12px; background:#ffffff; border:none; color:#15171c; font-family:\"IBM Plex Mono\",ui-monospace,monospace; font-size:11.5px; letter-spacing:0.02em; text-transform:uppercase; cursor:pointer; } .ds-nav-bar { display:block; width:32px; height:3px; border-radius:999px; background:#297047; } .ds-nav:not(.is-active) { color:#5f636a; } .ds-nav:not(.is-active) .ds-nav-bar { background:transparent; } .ds-nav:focus-visible { outline:3px solid #3b82f6; outline-offset:2px; }"
     },
     {
       "name": "Scoreboard Cell",
@@ -93,7 +93,7 @@
       "refersTo": "scoreboard-cell",
       "description": "Dark file-tab cell inside the ink header.",
       "html": "<div class=\"ds-score\"><div class=\"ds-score-label\">MASS</div><div class=\"ds-score-value\">91.2 kg</div><div class=\"ds-score-sub\"><span class=\"ds-score-hash\"></span>Δ -3.8 kg</div></div>",
-      "css": ".ds-score { background:#1e222a; color:#fff; padding:12px; border:1px solid #2c313b; font-family:\"IBM Plex Mono\",ui-monospace,monospace; } .ds-score-label { font-size:9px; letter-spacing:0.16em; text-transform:uppercase; color:#9ba0a8; } .ds-score-value { margin:2px 0; font-family:\"Archivo Black\",sans-serif; font-size:22px; color:#fff; } .ds-score-sub { display:flex; align-items:center; gap:6px; font-size:9px; color:#9ba0a8; } .ds-score-hash { display:inline-block; width:12px; height:3px; background:#2b5fab; }"
+      "css": ".ds-score { background:#1e222a; color:#fff; padding:12px; border:1px solid #2c313b; font-family:\"IBM Plex Mono\",ui-monospace,monospace; } .ds-score-label { font-size:11.5px; letter-spacing:0.16em; text-transform:uppercase; color:#a2a7af; } .ds-score-value { margin:2px 0; font-family:\"Archivo Black\",sans-serif; font-size:22px; color:#fff; } .ds-score-sub { display:flex; align-items:center; gap:6px; font-size:11.5px; color:#a2a7af; } .ds-score-hash { display:inline-block; width:12px; height:3px; background:#2b5fab; }"
     }
   ],
   "narrative": {
@@ -104,7 +104,7 @@
       "Archivo Black display + IBM Plex Sans body + IBM Plex Mono labels",
       "Mode-aware green (execute) vs amber (floor)",
       "Flat surfaces; one soft card shadow; deeper lift only on sheets",
-      "Mobile-first max-w-md column; fixed bottom nav + quick actions"
+      "Mobile-first max-w-md column; fixed bottom nav (More is overflow)"
     ],
     "rules": [
       { "name": "The One Stamp Rule", "body": "Saturated accents (green, amber, red, blue) mark state — never decorate empty chrome. Prefer ink + paper first.", "section": "colors" },
@@ -122,9 +122,10 @@
     "donts": [
       "Don't introduce purple gradients, glassmorphism, or neon dark themes.",
       "Don't replace Archivo / IBM Plex with Inter/Roboto “default SaaS” stacks.",
-      "Don't add a fifth bottom-nav destination casually (quick actions absorb overflow).",
+      "Don't add an eighth bottom-nav destination; More is the overflow shelf.",
       "Don't decorate with emoji or sticker badges on the scoreboard.",
-      "Don't invent macro-tracking chrome that violates survival’s three-check floor."
+      "Don't invent macro-tracking chrome that violates survival’s three-check floor.",
+      "Don't restore pre-AA hex (#c77d1f, #2e7d4f, #c7373f, #70747b, #9ba0a8, #b8860b)."
     ]
   }
 }

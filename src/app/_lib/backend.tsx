@@ -1,10 +1,12 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useSyncExternalStore } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useSyncExternalStore } from "react";
 import { ConvexProvider, ConvexReactClient, useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { DemoDb } from "./demo-db";
+import { fetchDeliverCapability } from "./deliver-client";
+import { SWEEP_MINUTES } from "@convex/tm/logicPush";
 import {
   localToday,
   type CravingEntry,
@@ -142,6 +144,25 @@ function DemoBackend({ children }: { children: React.ReactNode }) {
   );
 
   const slug = session?.slug ?? null;
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchDeliverCapability().then((cap) => {
+      if (!cancelled) db.setDelivery(cap);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [db]);
+
+  useEffect(() => {
+    if (!slug) return;
+    const id = window.setInterval(() => {
+      void db.sweepReminders(slug, date);
+    }, SWEEP_MINUTES * 60 * 1000);
+    return () => window.clearInterval(id);
+  }, [db, slug, date]);
+
   const actions: TimentoActions = useMemo(
     () => ({
       login: async (loginSlug: string, passcode: string) => {
@@ -163,9 +184,17 @@ function DemoBackend({ children }: { children: React.ReactNode }) {
       setFoodEaten: (entryId, eaten) => db.setFoodEaten(entryId, eaten),
       removeFood: (entryId) => db.removeFood(entryId),
       generateMealPlan: (today) => slug && db.generateMealPlan(slug, date, today),
+      logMenu: (slot, items) => slug && db.logMenu(slug, date, slot, items),
+      saveMenu: (name, slot, items) => slug && db.saveMenu(slug, name, slot, items),
+      copyYesterday: () => slug && db.copyYesterday(slug, date),
+      generateWeek: (today) => slug && db.generateWeek(slug, date, today),
+      setKitchen: (patch) => slug && db.setKitchen(slug, patch),
+      swapFood: (entryId, foodKey) => db.swapFood(entryId, foodKey),
       logSet: (exercise, setIndex, weightKg, reps, rir) =>
         slug && db.logSet(slug, date, exercise, setIndex, weightKg, reps, rir),
       startMesocycle: (goal) => slug && db.startMesocycle(slug, date, goal),
+      saveTrainProfile: (profile) => slug && db.saveTrainProfile(slug, profile),
+      swapTrainBlock: (exercise, replacement) => slug && db.swapTrainBlock(slug, exercise, replacement),
       logDose: (itemId, timing, taken, site) => slug && db.logDose(slug, date, itemId, timing, taken, site),
       setStackItemActive: (itemId, active) => db.setStackItemActive(itemId, active),
       addLabPanel: (name, results, fasted) => slug && db.addLabPanel(slug, date, name, results, fasted),
@@ -268,8 +297,16 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
   const setFoodEatenMut = useMutation(api.tm.fuel.setFoodEaten);
   const removeFoodMut = useMutation(api.tm.fuel.removeFood);
   const generatePlanMut = useMutation(api.tm.fuel.generatePlan);
+  const logMenuMut = useMutation(api.tm.fuel.logMenu);
+  const saveMenuMut = useMutation(api.tm.fuel.saveMenu);
+  const copyYesterdayMut = useMutation(api.tm.fuel.copyYesterday);
+  const generateWeekMut = useMutation(api.tm.fuel.generateWeek);
+  const setKitchenMut = useMutation(api.tm.fuel.setKitchen);
+  const swapFoodMut = useMutation(api.tm.fuel.swapFood);
   const logSetMut = useMutation(api.tm.train.logSet);
   const startMesoMut = useMutation(api.tm.train.startMesocycle);
+  const saveTrainProfileMut = useMutation(api.tm.train.saveProfile);
+  const swapTrainBlockMut = useMutation(api.tm.train.swapBlock);
   const logDoseMut = useMutation(api.tm.stack.logDose);
   const setItemActiveMut = useMutation(api.tm.stack.setItemActive);
   const addPanelMut = useMutation(api.tm.labs.addPanel);
@@ -332,9 +369,19 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
       removeFood: (entryId) =>
         token && void removeFoodMut({ token, entryId: entryId as Id<"tm_mealEntries"> }),
       generateMealPlan: (today) => token && void generatePlanMut({ token, date, ...(today ?? {}) }),
+      logMenu: (slot, items) => token && void logMenuMut({ token, date, slot, items }),
+      saveMenu: (name, slot, items) => token && void saveMenuMut({ token, name, slot, items }),
+      copyYesterday: () => token && void copyYesterdayMut({ token, date }),
+      generateWeek: (today) => token && void generateWeekMut({ token, date, ...(today ?? {}) }),
+      setKitchen: (patch) => token && void setKitchenMut({ token, ...patch }),
+      swapFood: (entryId, foodKey) =>
+        token && void swapFoodMut({ token, entryId: entryId as Id<"tm_mealEntries">, foodKey }),
       logSet: (exercise, setIndex, weightKg, reps, rir) =>
         token && void logSetMut({ token, date, exercise, setIndex, weightKg, reps, rir }),
       startMesocycle: (goal) => token && void startMesoMut({ token, date, goal }),
+      saveTrainProfile: (profile) => token && void saveTrainProfileMut({ token, ...profile }),
+      swapTrainBlock: (exercise, replacement) =>
+        token && void swapTrainBlockMut({ token, exercise, replacement }),
       logDose: (itemId, timing, taken, site) =>
         token && void logDoseMut({ token, date, itemId: itemId as Id<"tm_protocolItems">, timing, taken, site }),
       setStackItemActive: (itemId, active) =>
@@ -389,8 +436,16 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
       setFoodEatenMut,
       removeFoodMut,
       generatePlanMut,
+      logMenuMut,
+      saveMenuMut,
+      copyYesterdayMut,
+      generateWeekMut,
+      setKitchenMut,
+      swapFoodMut,
       logSetMut,
       startMesoMut,
+      saveTrainProfileMut,
+      swapTrainBlockMut,
       logDoseMut,
       setItemActiveMut,
       addPanelMut,

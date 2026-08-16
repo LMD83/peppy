@@ -35,6 +35,7 @@ const modules = {
   "./tm/seed.ts": () => import("../convex/tm/seed"),
   "./tm/today.ts": () => import("../convex/tm/today"),
   "./tm/remind.ts": () => import("../convex/tm/remind"),
+  "./tm/logicEmail.ts": () => import("../convex/tm/logicEmail"),
   // Read alongside remind.get to prove the confirm list is drawn from the
   // owner's own stack and nothing else.
   "./tm/stack.ts": () => import("../convex/tm/stack"),
@@ -50,7 +51,7 @@ async function seeded() {
     if (!res.ok) throw new Error(`login failed: ${res.code}`);
     return res.token;
   };
-  return { t, liam: await login("liam", "2580"), conor: await login("conor", "1379") };
+  return { t, liam: await login("liam", "2580"), artur: await login("artur", "1379") };
 }
 
 type Harness = Awaited<ReturnType<typeof seeded>>["t"];
@@ -86,7 +87,7 @@ describe("auth boundary", () => {
 
 describe("a photo belongs to one file and reaches no other", () => {
   it("never appears in the other user's view, and its url is never handed over", async () => {
-    const { t, liam, conor } = await seeded();
+    const { t, liam, artur } = await seeded();
     const storageId = await storeFile(t);
     await t.mutation(api.tm.remind.saveCapture, {
       token: liam,
@@ -100,7 +101,7 @@ describe("a photo belongs to one file and reaches no other", () => {
     expect(mine.capture.today).toHaveLength(1);
     expect(mine.capture.today[0]?.url).toBeTruthy();
 
-    const theirs = await t.query(api.tm.remind.get, { token: conor, date: TODAY });
+    const theirs = await t.query(api.tm.remind.get, { token: artur, date: TODAY });
     expect(theirs.capture.today).toEqual([]);
     expect(theirs.capture.days).toEqual([]);
     // Belt and braces: the whole of the other user's payload, searched for the
@@ -112,7 +113,7 @@ describe("a photo belongs to one file and reaches no other", () => {
   });
 
   it("refuses to delete another user's photo, and the photo survives the attempt", async () => {
-    const { t, liam, conor } = await seeded();
+    const { t, liam, artur } = await seeded();
     const storageId = await storeFile(t);
     await t.mutation(api.tm.remind.saveCapture, {
       token: liam,
@@ -126,7 +127,7 @@ describe("a photo belongs to one file and reaches no other", () => {
     });
 
     await expect(
-      t.mutation(api.tm.remind.removeCapture, { token: conor, captureId }),
+      t.mutation(api.tm.remind.removeCapture, { token: artur, captureId }),
     ).rejects.toThrow(/not-your-capture/);
 
     const mine = await t.query(api.tm.remind.get, { token: liam, date: TODAY });
@@ -216,7 +217,7 @@ describe("a subscription is a capability, not a name", () => {
   });
 
   it("refuses to let the other user claim or remove an endpoint already on a file", async () => {
-    const { t, liam, conor } = await seeded();
+    const { t, liam, artur } = await seeded();
     const endpoint = "https://push.example/ep-liam";
     await t.mutation(api.tm.remind.saveSubscription, {
       token: liam,
@@ -229,7 +230,7 @@ describe("a subscription is a capability, not a name", () => {
 
     await expect(
       t.mutation(api.tm.remind.saveSubscription, {
-        token: conor,
+        token: artur,
         date: TODAY,
         endpoint,
         p256dh: "x",
@@ -238,12 +239,12 @@ describe("a subscription is a capability, not a name", () => {
       }),
     ).rejects.toThrow(/not-your-subscription/);
     await expect(
-      t.mutation(api.tm.remind.removeSubscription, { token: conor, endpoint }),
+      t.mutation(api.tm.remind.removeSubscription, { token: artur, endpoint }),
     ).rejects.toThrow(/not-your-subscription/);
 
     const mine = await t.query(api.tm.remind.get, { token: liam, date: TODAY });
     expect(mine.subscriptions[0]?.label).toBe("Phone");
-    const theirs = await t.query(api.tm.remind.get, { token: conor, date: TODAY });
+    const theirs = await t.query(api.tm.remind.get, { token: artur, date: TODAY });
     expect(theirs.subscriptions).toEqual([]);
   });
 
@@ -273,11 +274,11 @@ describe("what the deployment can honestly promise", () => {
     // No VAPID keys on this deployment, so the switch must not claim otherwise.
     expect(view.supported).toBe(false);
     expect(view.ready).toBe(false);
-    expect(view.blockers.join(" ")).toMatch(/no push keys/i);
+    expect(view.blockers.join(" ")).toMatch(/no send keys/i);
   });
 
   it("stores preferences per user and normalises what it is given", async () => {
-    const { t, liam, conor } = await seeded();
+    const { t, liam, artur } = await seeded();
     await t.mutation(api.tm.remind.setPrefs, {
       token: liam,
       enabled: true,
@@ -291,7 +292,22 @@ describe("what the deployment can honestly promise", () => {
     expect(mine.prefs.quietFrom).toBe("22:30");
     expect(mine.prefs.maxPerDay).toBe(8);
 
-    const theirs = await t.query(api.tm.remind.get, { token: conor, date: TODAY });
+    const theirs = await t.query(api.tm.remind.get, { token: artur, date: TODAY });
     expect(theirs.prefs.enabled).toBe(false);
+  });
+
+  it("stores an email on the file and never puts it on the crew board", async () => {
+    const { t, liam, artur } = await seeded();
+    await t.mutation(api.tm.remind.setPrefs, {
+      token: liam,
+      enabled: true,
+      email: "Liam@Example.COM",
+    });
+    const mine = await t.query(api.tm.remind.get, { token: liam, date: TODAY });
+    expect(mine.prefs.email).toBe("liam@example.com");
+
+    const board = await t.query(api.tm.crew.board, { token: artur, date: TODAY });
+    expect(JSON.stringify(board)).not.toContain("liam@example.com");
+    expect(JSON.stringify(board)).not.toContain("Liam@Example.COM");
   });
 });

@@ -75,6 +75,16 @@ export type SetLogRow = {
   rir: number;
 };
 
+export type TrainProfileRow = {
+  userSlug: string;
+  setting: "home" | "gym" | "box";
+  kit: string[];
+  experience: "new" | "returning" | "trained";
+  ageBand: "under-40" | "40-59" | "60-plus";
+  minutes: number;
+  constraints: string[];
+};
+
 export type VolumeLandmarkRow = {
   userSlug: string;
   muscle: string;

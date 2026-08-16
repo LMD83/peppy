@@ -53,10 +53,36 @@ export type TimentoActions = {
     oneHanded?: boolean;
     canStand?: boolean;
   }) => void;
+  logMenu: (slot: MealSlot, items: { foodKey: string; grams: number }[]) => void;
+  saveMenu: (name: string, slot: MealSlot, items: { foodKey: string; grams: number }[]) => void;
+  copyYesterday: () => void;
+  generateWeek: (today?: {
+    minutes?: number;
+    equipment?: "none" | "kettle" | "microwave" | "one-pan" | "oven";
+    oneHanded?: boolean;
+    canStand?: boolean;
+  }) => void;
+  setKitchen: (patch: {
+    minutes?: number;
+    equipment?: "none" | "kettle" | "microwave" | "one-pan" | "oven";
+    oneHanded?: boolean;
+    canStand?: boolean;
+    pinnedBreakfast?: string | null;
+  }) => void;
+  swapFood: (entryId: string, foodKey: string) => void;
 
   /* train */
   logSet: (exercise: string, setIndex: number, weightKg: number, reps: number, rir: number) => void;
   startMesocycle: (goal: "hypertrophy" | "strength" | "recomp") => void;
+  saveTrainProfile: (profile: {
+    setting: "home" | "gym" | "box";
+    kit: string[];
+    experience: "new" | "returning" | "trained";
+    ageBand: "under-40" | "40-59" | "60-plus";
+    minutes: number;
+    constraints: string[];
+  }) => void;
+  swapTrainBlock: (exercise: string, replacement: string) => void;
 
   /* stack */
   logDose: (itemId: string, timing: string, taken: boolean, site?: string) => void;
@@ -87,6 +113,7 @@ export type TimentoActions = {
     doses?: boolean;
     supply?: boolean;
     checkins?: boolean;
+    email?: string;
   }) => void;
 
   /* visual check-ins */

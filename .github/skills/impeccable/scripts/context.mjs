@@ -1140,9 +1140,10 @@ async function cli() {
           'fixes to existing code do not need the new-surface flow.',
         ];
     // DESIGN.md is authority in its own right and does not depend on
-    // PRODUCT.md existing. Withholding it here used to lose it for the whole
-    // session: the skill resumes after init writes PRODUCT.md without
-    // rerunning this script, so the hasProduct branch below never runs.
+    // PRODUCT.md existing. Emit it on this first NO_PRODUCT_MD run so the
+    // session has design context before init. After init writes PRODUCT.md
+    // the skill reruns this script once so the hasProduct branch below can
+    // load the new product file, surface briefs, and staleness directives.
     if (ctx.hasDesign) {
       parts.push(`# DESIGN.md\n\n${ctx.design.trim()}`);
     }

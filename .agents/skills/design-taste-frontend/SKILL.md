@@ -7,6 +7,7 @@ description: Anti-slop frontend skill for landing pages, portfolios, and redesig
 
 > Landing pages, portfolios, and redesigns. Not dashboards, not data tables, not multi-step product UI.
 > Every rule below is **contextual**. None of it fires automatically. First read the brief, then pull only what fits.
+> When the Impeccable craft floor is also loaded, its Refuse list wins on any conflict.
 
 ---
 
@@ -164,7 +165,7 @@ LLMs default to clichés. Override these defaults proactively. Each rule has a c
 
 ### 4.1 Typography
 * **Display / Headlines:** Default `text-4xl md:text-6xl tracking-tighter leading-none`.
-* **Body / Paragraphs:** Default `text-base text-gray-600 leading-relaxed max-w-[65ch]`.
+* **Body / Paragraphs:** Default `text-base text-gray-600 dark:text-gray-400 leading-relaxed max-w-[65ch]`. Pair every color utility with its `dark:` counterpart (Sections 6.C / 8.A).
 * **Sans font choice:**
   * **Discouraged as default:** `Inter`. Pick `Geist`, `Outfit`, `Cabinet Grotesk`, `Satoshi`, or a brand-appropriate serif first.
   * **Override:** Inter is acceptable when the user explicitly asks for a neutral / standard / Linear-style feel, or when the brief is a public-sector / accessibility-first site.
@@ -237,12 +238,12 @@ LLMs default to "static successful state only." Always implement full cycles:
 * **Hero font-scale discipline.** Plan font size and image size *together*. If the hero asset is large and the headline is more than 6 words, do not start at `text-7xl/text-8xl`. Default sensible range: `text-4xl md:text-5xl lg:text-6xl` for most heroes; `text-6xl md:text-7xl` only when the headline is 3-5 words. A 4-line hero headline is always a font-size error, never a copy-length error.
 * **HERO TOP PADDING CAP (mandatory):** Hero top padding max `pt-24` (≈6rem) at desktop. More than that means the hero content floats halfway down the viewport and reads as a layout bug, not as intentional space. If your hero needs more breathing room, increase font scale or asset size, not top padding.
 * **HERO STACK DISCIPLINE (max 4 text elements).** The hero is a single moment, not a feature list. Allowed text elements, max 4 in total:
-  1. Eyebrow (small uppercase label) OR brand strip OR neither - pick zero or one
+  1. Brand strip OR neither - never a kicker or eyebrow above the headline
   2. Headline (max 2 lines, see above)
   3. Subtext (max 20 words, max 4 lines)
   4. CTAs (1 primary + max 1 secondary)
-  - **BANNED in the hero:** tiny tagline below CTAs ("Works with GitHub, GitLab, and self-hosted Git"), trust micro-strip ("Used by engineering teams at..."), pricing teaser ("Free for solo, $10/user for teams"), feature bullet list, social-proof avatar row. All of those move to dedicated sections directly below the hero.
-  - If you have an eyebrow AND a tagline below CTAs in the same hero, drop the tagline. If you have a brand strip AND a tagline, drop the tagline. One small text element per hero, max.
+  - **BANNED in the hero:** kicker/eyebrow above the headline, tiny tagline below CTAs ("Works with GitHub, GitLab, and self-hosted Git"), trust micro-strip ("Used by engineering teams at..."), pricing teaser ("Free for solo, $10/user for teams"), feature bullet list, social-proof avatar row. All of those move to dedicated sections directly below the hero.
+  - If you have a brand strip AND a tagline below CTAs in the same hero, drop the tagline. One small text element per hero, max.
 * **"Used by" / "Trusted by" logo wall belongs UNDER the hero, never inside it.** The hero is for the value prop and primary CTA. The logo wall is a separate section directly below. Do not stuff trust logos into the same flex row as the hero copy.
 * **Navigation MUST render on a single line on desktop.** If items don't fit at `lg` (1024px), condense labels, drop secondary items, or move to a hamburger. A two-line nav at desktop is broken design.
 * **Navigation height cap: 80px max desktop, default 64-72px.** No huge "agency" nav bars that eat 15% of the viewport.
@@ -250,11 +251,9 @@ LLMs default to "static successful state only." Always implement full cycles:
 * **BENTO CELL COUNT RULE (mandatory):** A bento grid has EXACTLY as many cells as you have content for. 3 items → 3 cells (1+2 split, or 2+1, or asymmetric trio). 5 items → 5 cells (2+3, 3+2, hero+4, etc.). If your grid has an empty cell in the middle or at the end, you planned wrong. Re-shape the grid; do not paste a blank tile.
 * **Section-Layout-Repetition Ban.** Once you use a layout family for a section (e.g., 3-column-image-cards, full-width-quote, split-text-image), that family can appear at most ONCE on the page. "Selected commissions" must not look like "What we do." A landing page with 8 sections must use at least 4 different layout families.
 * **ZIGZAG ALTERNATION CAP (mandatory).** Alternating "left-image + right-text" then "left-text + right-image" zigzag layout = banal. Max 2 sections in a row with this image+text-split pattern. The 3rd consecutive image+text split is a Pre-Flight Fail. Break the pattern with a full-width section, a vertical-stack section, a bento grid, a marquee, or a different layout family.
-* **EYEBROW RESTRAINT (mandatory, the #1 violated rule in production tests).** An "eyebrow" is the small uppercase wide-tracking label sitting above a section headline (e.g. `FOUR COLORWAYS`, `SELECTED WORK`, `THE HARDWARE`, `Git-native task management`). Typical CSS signature: `text-[11px] uppercase tracking-[0.18em]`, `font-mono text-[10.5px] uppercase tracking-[0.22em]`. Every AI-built site puts an eyebrow above EVERY section header, producing the same templated rhythm. Hard rule:
-  - **Maximum 1 eyebrow per 3 sections.** Hero counts as 1. So a page with 9 sections may use at most 3 eyebrows total.
-  - If section A has an eyebrow, the next 2 sections cannot have one.
-  - **Pre-Flight Check is mechanical:** count instances of `uppercase tracking` (or similar small-caps mono labels above headlines) across all section components. If count > ceil(sectionCount / 3), the output fails.
-  - **What to do instead of an eyebrow:** drop it entirely. The headline alone is enough. If you need to categorize a section, the section's location on the page already categorizes it; no label needed.
+* **EYEBROW BAN (mandatory, the #1 violated rule in production tests).** An "eyebrow" or kicker is the small uppercase wide-tracking label sitting above a section headline (e.g. `FOUR COLORWAYS`, `SELECTED WORK`, `THE HARDWARE`, `Git-native task management`). Typical CSS signature: `text-[11px] uppercase tracking-[0.18em]`, `font-mono text-[10.5px] uppercase tracking-[0.22em]`. Hard rule: **zero**. No brief earns it back. The heading carries its own weight. This matches the Impeccable craft floor; a 1-per-3 quota is not a valid compromise.
+  - **Pre-Flight Check is mechanical:** count instances of `uppercase tracking` (or similar small-caps mono labels above headlines) across all section components. If count > 0, the output fails.
+  - **What to do instead:** drop the label. If you need to categorize a section, the section's location on the page already categorizes it.
 * **SPLIT-HEADER BAN (mandatory).** The pattern "left big headline + right small explainer paragraph" as a section header (left col-span-7/8, right col-span-4/5 with a small body paragraph floating in the right column) is **banned as default**. Sections should have ONE focused message. If you genuinely need both a headline and an explainer paragraph, stack them vertically (headline on top, body below, max-width 65ch). Reach for the split-header pattern only when there is a real compositional reason (e.g., the right column carries a visual or interactive element, not just filler text).
 * **Bento Background Diversity (mandatory).** Bento and feature-grid sections cannot be 6 white-on-white cards with text inside. At least 2-3 cells in any multi-cell grid need real visual variation: a real image, a brand-appropriate gradient (not AI-purple), a pattern, a tinted background. A cream-on-cream bento with only typography inside reads as boring AI default, even when the rest of the page is good.
 * **Mobile collapse must be explicit per section.** For every multi-column layout, declare the `< 768px` fallback in the same component. No "it'll work, Tailwind handles it" assumptions.
@@ -369,15 +368,14 @@ These are tools, not defaults. Use them when the design read calls for them. **N
 import { useRef, useEffect } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useReducedMotion } from "motion/react";
 
 gsap.registerPlugin(ScrollTrigger);
 
 export function StickyStack({ cards }: { cards: React.ReactNode[] }) {
   const ref = useRef<HTMLDivElement>(null);
-  const reduce = useReducedMotion();
 
   useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduce || !ref.current) return;
     const ctx = gsap.context(() => {
       const cardEls = gsap.utils.toArray<HTMLElement>(".stack-card");
@@ -405,14 +403,14 @@ export function StickyStack({ cards }: { cards: React.ReactNode[] }) {
       });
     }, ref);
     return () => ctx.revert();
-  }, [reduce]);
+  }, []);
 
   return (
     <div ref={ref} className="relative">
       {cards.map((card, i) => (
         <div
           key={i}
-          className="stack-card sticky top-0 min-h-[100dvh] flex items-center justify-center"
+          className="stack-card min-h-[100dvh] flex items-center justify-center"
         >
           {card}
         </div>
@@ -422,7 +420,7 @@ export function StickyStack({ cards }: { cards: React.ReactNode[] }) {
 }
 ```
 
-Critical points: `start: "top top"`, `pin: true`, every card except the last is pinned, the scale/opacity transform is driven by the NEXT card's scroll trigger (so previous card shrinks as next one arrives).
+Critical points: `start: "top top"`, `pin: true`, every card except the last is pinned, the scale/opacity transform is driven by the NEXT card's scroll trigger (so previous card shrinks as next one arrives). **Do not also apply CSS `position: sticky`** — GSAP `pin` and CSS sticky compete for scroll control and cause jitter, broken pin spacing, and unreliable stack transitions. Pick one mechanism; this skeleton uses GSAP pin only. Do not import `motion/react` into this leaf; read `prefers-reduced-motion` with `matchMedia`.
 
 ### 5.B Horizontal-Pan - Canonical Skeleton
 
@@ -431,34 +429,45 @@ Critical points: `start: "top top"`, `pin: true`, every card except the last is 
 import { useRef, useEffect } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useReducedMotion } from "motion/react";
 
 gsap.registerPlugin(ScrollTrigger);
 
 export function HorizontalPan({ children }: { children: React.ReactNode }) {
   const wrap = useRef<HTMLDivElement>(null);
   const track = useRef<HTMLDivElement>(null);
-  const reduce = useReducedMotion();
 
   useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduce || !wrap.current || !track.current) return;
+
+    const getDistance = () =>
+      Math.max(0, track.current!.scrollWidth - window.innerWidth);
+
     const ctx = gsap.context(() => {
-      const distance = track.current!.scrollWidth - window.innerWidth;
       gsap.to(track.current, {
-        x: -distance,
+        x: () => -getDistance(),                         // function: invalidateOnRefresh re-reads width
         ease: "none",
         scrollTrigger: {
           trigger: wrap.current,
           start: "top top",                              // pin starts when section top hits viewport top
-          end: () => `+=${distance}`,                    // scroll distance = track width minus viewport
+          end: () => `+=${getDistance()}`,               // function: same live width as x
           pin: true,
           scrub: 1,
           invalidateOnRefresh: true,
         },
       });
     }, wrap);
-    return () => ctx.revert();
-  }, [reduce]);
+
+    const refresh = () => ScrollTrigger.refresh();
+    const images = Array.from(track.current.querySelectorAll("img"));
+    images.forEach((img) => img.addEventListener("load", refresh));
+    void document.fonts?.ready.then(refresh);
+
+    return () => {
+      images.forEach((img) => img.removeEventListener("load", refresh));
+      ctx.revert();
+    };
+  }, []);
 
   return (
     <section ref={wrap} className="relative overflow-hidden">
@@ -470,7 +479,7 @@ export function HorizontalPan({ children }: { children: React.ReactNode }) {
 }
 ```
 
-Critical points: `start: "top top"`, `pin: true`, `end: "+=${distance}"` (scroll length = horizontal travel needed), `scrub: 1`. The wrapper is pinned, the inner track slides horizontally as the user scrolls vertically.
+Critical points: `start: "top top"`, `pin: true`, `scrub: 1`. `x` and `end` MUST be functions that re-measure `scrollWidth`; a closed-over `distance` number makes `invalidateOnRefresh` a no-op when images or fonts load late. After those assets settle, call `ScrollTrigger.refresh()`. A track that already fits returns `0` from `getDistance` (no travel). The wrapper is pinned, the inner track slides horizontally as the user scrolls vertically. Do not import `motion/react` into this leaf.
 
 ### 5.C Scroll-Reveal Stagger - Canonical Skeleton (lighter alternative)
 
@@ -525,6 +534,7 @@ Use this for: feature lists, testimonial grids, logo walls, anything that just n
 ### 6.B Reduced Motion (mandatory)
 * **Any motion above `MOTION_INTENSITY > 3` MUST honor `prefers-reduced-motion`.** This is non-negotiable.
 * In Motion: wrap with `useReducedMotion()` and degrade to static.
+* In GSAP / Three leaves: read `window.matchMedia("(prefers-reduced-motion: reduce)")`. Do not import `useReducedMotion` from `motion/react` into those leaves (Section 10).
 * In CSS: gate animations behind `@media (prefers-reduced-motion: no-preference)` or provide an override block under `@media (prefers-reduced-motion: reduce)` that disables.
 * Infinite loops, parallax, scroll-hijack, and magnetic physics MUST collapse to static / instant under reduced motion.
 
@@ -620,7 +630,7 @@ Avoid these signatures unless the brief explicitly asks for them.
 * **NO filler verbs.** "Elevate", "Seamless", "Unleash", "Next-Gen", "Revolutionize" → concrete verbs only.
 
 ### 9.E External Resources & Components
-* **NO hand-rolled SVG icons.** Use Phosphor / HugeIcons / Radix / Tabler. Lucide on explicit request only.
+* **NO hand-rolled SVG icons.** Use Phosphor / HugeIcons / Radix / Tabler. Lucide only when the user explicitly asks or the project already depends on it (see Section 3.C).
 * **Hand-rolled decorative SVGs strongly discouraged** as default (see Section 4.8).
 * **NO div-based fake screenshots.** Never build a fake product UI out of `<div>` rectangles to simulate a screenshot. Use real images, generated images, or skip the preview.
 * **NO broken Unsplash links.** Use `https://picsum.photos/seed/{descriptive-string}/{w}/{h}`, or generated photo placeholders, or actual assets.
@@ -636,7 +646,7 @@ These patterns came out of real LLM-generated landing-page tests. They are the s
 * **NO "Brand · No. 01"-style sub-eyebrows.** "Marrow · No. 01 · The 6-quart" type micro-meta lines. Skip them.
 
 **Section numbering & micro-labels**
-* **NO section-number eyebrows.** `00 / INDEX`, `001 · Capabilities`, `002 · Featured commission`, `06 · how it works`, `05 · The honest table` - banned. Eyebrows should name the topic in plain language, not enumerate.
+* **NO section-number labels.** `00 / INDEX`, `001 · Capabilities`, `002 · Featured commission`, `06 · how it works`, `05 · The honest table` - banned. Do not add a topic label above the heading either; the heading names the topic.
 * **NO `01 / 4`-style pagination on images or bento tiles.** If the user can count, they don't need the label.
 * **NO `Scroll · 001 Capabilities`-style scroll cues.** A simple arrow or "Scroll" is enough; no section-number prefix.
 * **NO "Index of Work, 2018 - 2026"-style range labels** as eyebrows. Just say what the section is.
@@ -660,7 +670,7 @@ These patterns came out of real LLM-generated landing-page tests. They are the s
 * **NO "From the field" / "Field notes" / "Currently on the bench" / "On our desks" / "Loose plates" style poetic labels** on quote, blog, or sidebar sections. Reads as performative-craftsman. Use plain functional labels ("Testimonials", "Latest writing", "Now working on") or skip the label.
 * **NO "We respect the French ones"-style** mock-humble industry-references in body copy. Cute and AI-y.
 * **NO weather / locale strips** ("LIS 14:23 · 18°C") in headers/footers unless the brief is explicitly about a place / time-zone-distributed studio.
-* **NO micro-meta-sentences under eyebrows.** Sentences like *"Each of these is a feature we ship today, not a roadmap promise. The list will stay short on purpose."* sitting under a section heading are clutter. Eyebrow + Headline + Body is enough.
+* **NO micro-meta-sentences under headings.** Sentences like *"Each of these is a feature we ship today, not a roadmap promise. The list will stay short on purpose."* sitting under a section heading are clutter. Headline + Body is enough.
 * **NO generic step labels.** "Stage 1 / Stage 2 / Stage 3", "Step 1 / Step 2 / Step 3", "Phase 01 / Phase 02 / Phase 03", "Pass One / Pass Two / Pass Three". Banned. The actual step content is the label. If you must show progression, use the verb-noun directly ("Install", "Configure", "Ship") not "Stage 1: Install".
 
 **Pills, labels and version stamps**
@@ -776,7 +786,7 @@ This is a vocabulary, not a library. The agent should KNOW these pattern names t
 * **Motion (`motion/react`)** - default for UI / Bento / state-change motion.
 * **GSAP + ScrollTrigger** - for full-page scrolltelling and scroll hijacks. Isolate in dedicated leaf components with `useEffect` cleanup.
 * **Three.js / WebGL** - for canvas backgrounds and 3D scenes. Same isolation rule.
-* **NEVER mix GSAP / Three.js with Motion in the same component tree.** They fight over the same frames.
+* **NEVER mix GSAP / Three.js with Motion in the same component tree.** They fight over the same frames. GSAP / Three leaves must not import from `motion/react` (including `useReducedMotion`). Read `prefers-reduced-motion` with `window.matchMedia` instead.
 
 ---
 
@@ -929,8 +939,8 @@ Run this matrix before outputting code. This is the last filter.
 - [ ] **Italic descender clearance**: every italic word with `y g j p q` has `leading-[1.1]` min + `pb-1` reserve?
 - [ ] **Hero fits the viewport**: headline ≤ 2 lines, subtext ≤ 20 words AND ≤ 4 lines, CTA visible without scroll, font scale planned around image?
 - [ ] **Hero top padding**: max `pt-24` at desktop, hero content does not float halfway down the viewport?
-- [ ] **Hero stack discipline**: max 4 text elements in hero (eyebrow OR brand strip, headline, subtext, CTAs)? No tiny tagline below CTAs, no trust micro-strip in hero?
-- [ ] **EYEBROW COUNT (mechanical)**: count instances of `uppercase tracking` micro-labels above section headlines across all components. Count ≤ ceil(sectionCount / 3)? Hero counts as 1.
+- [ ] **Hero stack discipline**: max 4 text elements in hero (optional brand strip, headline, subtext, CTAs)? No kicker/eyebrow, no tiny tagline below CTAs, no trust micro-strip in hero?
+- [ ] **EYEBROW COUNT (mechanical)**: count instances of `uppercase tracking` micro-labels above section headlines across all components. Count must be 0.
 - [ ] **Split-Header Ban**: no "left big headline + right small explainer paragraph" pattern as a section header (vertical stack instead)?
 - [ ] **Zigzag Alternation Cap**: no 3+ consecutive sections with the same image+text-split layout?
 - [ ] **No Duplicate CTA Intent**: no two CTAs with the same intent ("Get in touch" + "Let's talk" both on page = Fail)?
@@ -948,7 +958,7 @@ Run this matrix before outputting code. This is the last filter.
 - [ ] **No pills/labels overlaid on images** (no `Plate · Brand`, no `Field notes - journal`)?
 - [ ] **No photo-credit captions as decoration** (`Field study no. 12 · Ines Caetano`)?
 - [ ] **No version footers** (`v1.4.2`, `Build 0048`) on marketing pages?
-- [ ] **No micro-meta-sentences** under eyebrows ("Each of these is a feature we ship today...")?
+- [ ] **No micro-meta-sentences** under headings ("Each of these is a feature we ship today...")?
 - [ ] **No decoration text strip at hero bottom** (`BRAND. MOTION. SPATIAL.`)?
 - [ ] **No floating top-right sub-text** in section headings?
 - [ ] **No scoring/progress bars with filled background tracks** as comparison visuals?
@@ -961,7 +971,7 @@ Run this matrix before outputting code. This is the last filter.
 - [ ] **Content density** sane: no 20-row data tables, no fake-precise specs without justification, ≤ 25-word sub-paragraphs by default?
 - [ ] **Quotes ≤ 3 lines** of body, attribution clean (no em-dash)?
 - [ ] **Motion claimed = motion shown**: if `MOTION_INTENSITY > 4`, page actually animates, not just claimed?
-- [ ] **GSAP sticky-stack / horizontal-pan** implemented per Section 5.A / 5.B canonical skeleton (`start: "top top"`, `pin: true`, correct scrub)?
+- [ ] **GSAP sticky-stack / horizontal-pan** implemented per Section 5.A / 5.B (`start: "top top"`, `pin: true`, function-based `x`/`end`, `matchMedia` for reduced motion, no `motion/react` import)?
 - [ ] **No `window.addEventListener('scroll')`** - using Motion `useScroll()` / ScrollTrigger / IntersectionObserver / CSS scroll-driven animations only?
 - [ ] **Reduced motion** wrapped for everything `MOTION_INTENSITY > 3`?
 - [ ] **Dark mode** tokens defined and tested in both modes?
@@ -970,7 +980,7 @@ Run this matrix before outputting code. This is the last filter.
 - [ ] **`useEffect` animations** have strict cleanup functions?
 - [ ] **Empty / loading / error** states provided?
 - [ ] **Cards omitted** in favor of spacing where possible?
-- [ ] **Icons** from an allowed library only (Phosphor / HugeIcons / Radix / Tabler), no hand-rolled SVG paths?
+- [ ] **Icons** from an allowed library only (Phosphor / HugeIcons / Radix / Tabler; Lucide only if the user asked or the project already depends on it), no hand-rolled SVG paths?
 - [ ] **Motion** isolated in client-leaf components with `'use client'` at the top, memoized?
 - [ ] **No AI Tells** from Section 9 (Inter as default, AI-purple, three-equal cards, Jane Doe, Acme, "Quietly in use at")?
 - [ ] **Core Web Vitals** plausibly hit (LCP < 2.5s, INP < 200ms, CLS < 0.1)?

@@ -450,6 +450,11 @@ describe("preferences", () => {
     expect(next.quietTo).toBe(DEFAULT_PREFS.quietTo);
   });
 
+  it("stores a valid email and drops an unusable one", () => {
+    expect(normalisePrefs({ email: " Liam@Example.COM " }).email).toBe("liam@example.com");
+    expect(normalisePrefs({ email: "not-an-email" }).email).toBe("");
+  });
+
   it("pads a sloppy but legal time", () => {
     expect(normalisePrefs({ quietFrom: "9:05" }).quietFrom).toBe("09:05");
   });
@@ -553,7 +558,8 @@ describe("the view", () => {
       doses: [dose()],
       supply: [],
       checkins: [],
-      serverReady: true,
+      pushReady: true,
+      emailSupported: false,
       vapidPublicKey: "BPk",
       demo: false,
       ...over,
@@ -568,24 +574,46 @@ describe("the view", () => {
     expect(view.preview).toHaveLength(1);
   });
 
-  it("says plainly that a demo cannot send, and still previews honestly", () => {
-    const view = build({ demo: true, serverReady: false, vapidPublicKey: "" });
-    expect(view.ready).toBe(false);
-    expect(view.supported).toBe(false);
-    expect(view.blockers[0]).toContain("no server behind it");
+  it("lets a demo be ready when send keys are present", () => {
+    const view = build({ demo: true, pushReady: true, vapidPublicKey: "BPk" });
+    expect(view.ready).toBe(true);
+    expect(view.supported).toBe(true);
     expect(view.preview).toHaveLength(1);
   });
 
-  it("says plainly when the deployment has no keys", () => {
-    const view = build({ serverReady: false, vapidPublicKey: "" });
+  it("says plainly when the deployment has no keys, including a demo", () => {
+    const view = build({ demo: true, pushReady: false, emailSupported: false, vapidPublicKey: "" });
     expect(view.ready).toBe(false);
-    expect(view.blockers.join(" ")).toContain("no push keys");
+    expect(view.supported).toBe(false);
+    expect(view.blockers.join(" ")).toContain("no send keys");
+    expect(view.preview).toHaveLength(1);
   });
 
-  it("says plainly when no device is set up", () => {
+  it("is ready on email alone when mail is configured", () => {
+    const view = build({
+      pushReady: false,
+      emailSupported: true,
+      vapidPublicKey: "",
+      subscriptions: [],
+      prefs: prefs({ email: "liam@example.com" }),
+    });
+    expect(view.ready).toBe(true);
+    expect(view.blockers).toEqual([]);
+  });
+
+  it("does not claim email will fire when the address is saved but no email key exists", () => {
+    const view = build({
+      subscriptions: [],
+      prefs: prefs({ email: "liam@example.com" }),
+    });
+    expect(view.ready).toBe(false);
+    expect(view.blockers.join(" ")).toContain("no email key");
+  });
+
+  it("says plainly when no device is set up and no email is on the file", () => {
     const view = build({ subscriptions: [] });
     expect(view.ready).toBe(false);
-    expect(view.blockers.join(" ")).toContain("No device");
+    expect(view.blockers.join(" ")).toContain("no email");
   });
 
   it("says plainly when reminders are switched off", () => {

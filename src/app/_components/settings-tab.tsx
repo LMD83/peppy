@@ -35,16 +35,17 @@ export function SettingsTab() {
   const profile = today.a11y.profile;
 
   return (
-    <div className="flex flex-col gap-3 pt-4">
+    <div className="flex flex-col gap-4 pt-5 lg:grid lg:grid-cols-12 lg:items-start lg:gap-6">
+      <div className="flex flex-col gap-3 lg:col-span-7">
       <p role="status" aria-live="polite" className="sr-only">
         {status}
       </p>
-
       <Card>
         <Eyebrow color="bg-tm-blue">How the app looks</Eyebrow>
-        <p className="mb-3 text-[15px]">
+        <h2 className="font-tm-disp text-2xl leading-[1.1] tracking-tight uppercase">Easy mode</h2>
+        <p className="mt-2 mb-3 text-[15px]">
           Easy mode shows you less at once. You get one thing to do at a time, in bigger text, with
-          bigger buttons. Nothing is deleted — it is all still there when you want it.
+          bigger buttons. Nothing is deleted. It is all still there when you want it.
         </p>
         <BigChoice
           question="Which one do you want?"
@@ -75,7 +76,9 @@ export function SettingsTab() {
           You can switch back here at any time. Nothing you have logged changes either way.
         </p>
       </Card>
+      </div>
 
+      <div className="flex flex-col gap-3 lg:col-span-5">
       <Card>
         <Eyebrow color="bg-tm-green">What easy mode changes</Eyebrow>
         <ul className="flex flex-col gap-2 text-[15px]">
@@ -108,6 +111,7 @@ export function SettingsTab() {
           something in your data. It is offered to everybody, the same way. You choose.
         </p>
       </Card>
+      </div>
     </div>
   );
 }
