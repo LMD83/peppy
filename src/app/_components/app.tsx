@@ -22,6 +22,7 @@ import { HandsFreePanel } from "./handsfree-tab";
 import { ShopPanel } from "./shop-tab";
 import { RemindPanel } from "./remind-tab";
 import { CapturePanel } from "./capture-tab";
+import { fileWidth } from "./ui";
 
 /*
   Bottom nav.
@@ -245,7 +246,7 @@ function Shell() {
   return (
     <div className="min-h-screen pb-[84px]">
       <Scoreboard />
-      <main className="mx-auto max-w-md px-4">
+      <main className={cn(fileWidth, "px-4")}>
         {subItems && <SubNav items={subItems} value={subValue} onChange={setSub} />}
         {tab === "more" && (
           <MoreShelf
@@ -280,7 +281,7 @@ function Shell() {
         zone, still named "Sign out".
       */}
       <nav className="fixed inset-x-0 bottom-0 border-t border-tm-rule bg-tm-panel" aria-label="Sections">
-        <div className="mx-auto flex max-w-md">
+        <div className={cn(fileWidth, "flex")}>
           {navItems.map((t) => (
             <button
               key={t.id}
@@ -323,7 +324,7 @@ class SessionRecoveryBoundary extends Component<{ children: ReactNode }, { faile
       return (
         <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-tm-paper px-6 text-center">
           <p role="alert" className="font-tm-mono text-[11.5px] tracking-[0.15em] text-tm-dim uppercase">
-            Session expired — signed out
+            Session expired. Signed out.
           </p>
           <button
             onClick={() => this.setState({ failed: false })}

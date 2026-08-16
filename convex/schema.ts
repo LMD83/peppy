@@ -284,6 +284,32 @@ export default defineSchema({
     weightSlopeKgPerWeek: v.number(),
   }).index("by_userId", ["userId"]),
 
+  tm_kitchenProfiles: defineTable({
+    userId: v.id("tm_users"),
+    minutes: v.number(),
+    equipment: v.union(
+      v.literal("none"),
+      v.literal("kettle"),
+      v.literal("microwave"),
+      v.literal("one-pan"),
+      v.literal("oven"),
+    ),
+    hands: v.union(v.literal(1), v.literal(2)),
+    canStand: v.boolean(),
+    excludeAllergens: v.array(v.string()),
+    safeFoodsOnly: v.boolean(),
+    pinnedBreakfast: v.optional(v.string()),
+    safeFoods: v.array(v.string()),
+    neverAgain: v.array(v.string()),
+  }).index("by_userId", ["userId"]),
+
+  tm_savedMenus: defineTable({
+    userId: v.id("tm_users"),
+    name: v.string(),
+    slot: mealSlot,
+    items: v.array(v.object({ foodKey: v.string(), grams: v.number() })),
+  }).index("by_userId", ["userId"]),
+
   /* ===== Train — mesocycle, programme, set logs ===== */
 
   tm_mesocycles: defineTable({

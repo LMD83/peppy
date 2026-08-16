@@ -12,6 +12,7 @@ import {
   type FoodGroup,
   type FoodShelf,
 } from "./data/foods";
+import { MENUS, type MenuDef } from "./data/menus";
 
 /**
  * Pure fuel logic — energy balance, macro targets, meal-plan generation.
@@ -477,6 +478,99 @@ export function allowedFoods(foods: FoodDef[], kitchen: KitchenProfile): FoodDef
   return foods.filter((f) => foodAllowed(f, kitchen));
 }
 
+/** Every part of the menu must be reachable. One missing food kills the menu. */
+export function menuAllowed(menu: MenuDef, foods: FoodDef[], kitchen: KitchenProfile): boolean {
+  if (menu.items.length === 0) return false;
+  const byKey = new Map(foods.map((f) => [f.key, f]));
+  for (const item of menu.items) {
+    const food = byKey.get(item.foodKey);
+    if (!food || !foodAllowed(food, kitchen)) return false;
+  }
+  return true;
+}
+
+/** Nutrients in a named menu — the sum of its parts, nothing invented. */
+export function menuTotals(menu: MenuDef, foods: FoodDef[]): FuelTotals {
+  return totalsFor(menu.items, foods);
+}
+
+/** What is left after logging one more portion or menu. */
+export function remainingAfter(remaining: FuelTotals, adding: FuelTotals): FuelTotals {
+  return {
+    kcal: r0(remaining.kcal - adding.kcal),
+    proteinG: r1(remaining.proteinG - adding.proteinG),
+    carbsG: r1(remaining.carbsG - adding.carbsG),
+    fatG: r1(remaining.fatG - adding.fatG),
+    fiberG: r1(remaining.fiberG - adding.fiberG),
+    sodiumMg: r0(remaining.sodiumMg - adding.sodiumMg),
+  };
+}
+
+/** Unused kcal on logged days only. Unlogged days do not mint a credit. */
+export function weeklyLeftoverKcal(
+  days: { kcal: number }[],
+  targetKcal: number,
+): number {
+  let sum = 0;
+  for (const day of days) {
+    if (!(day.kcal > 0)) continue;
+    sum += Math.max(0, targetKcal - day.kcal);
+  }
+  return r0(sum);
+}
+
+/** Distinct foods, newest date first. */
+export function recentFoodKeys(entries: RawMealEntry[], limit = 8): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  const ordered = [...entries].sort((a, b) => b.date.localeCompare(a.date));
+  for (const entry of ordered) {
+    if (seen.has(entry.foodKey)) continue;
+    seen.add(entry.foodKey);
+    out.push(entry.foodKey);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+/** Distinct foods by how often they appear, then by key. */
+export function frequentFoodKeys(entries: RawMealEntry[], limit = 8): string[] {
+  const counts = new Map<string, number>();
+  for (const entry of entries) {
+    counts.set(entry.foodKey, (counts.get(entry.foodKey) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, limit)
+    .map(([key]) => key);
+}
+
+/** Grams of `to` that keep the protein of `from` at `grams`. */
+export function swapGrams(from: FoodDef, to: FoodDef, grams: number): number {
+  if (!(grams > 0)) return 0;
+  const toP = to.per100.proteinG;
+  if (!(toP > 0)) return clampRound5(grams, 20, 400);
+  const fromP = from.per100.proteinG;
+  const raw = fromP > 0 ? (grams * fromP) / toP : grams;
+  return clampRound5(raw, 20, 400);
+}
+
+/** Seven days from a start date. Same kitchen, same catalogue, date-seeded. */
+export function planWeek(
+  targets: FuelTargets,
+  foods: FoodDef[],
+  startDate: string,
+  kitchen: KitchenProfile = DEFAULT_KITCHEN,
+  menus: MenuDef[] = MENUS,
+): { date: string; items: PlanItem[] }[] {
+  const days: { date: string; items: PlanItem[] }[] = [];
+  for (let i = 0; i < 7; i++) {
+    const date = addDays(startDate, i);
+    days.push({ date, items: planDay(targets, foods, date, kitchen, menus) });
+  }
+  return days;
+}
+
 /** Stable index from a date string — rotation only, never randomness. */
 function seedIndex(seed: string): number {
   let h = 7;
@@ -505,11 +599,13 @@ export function planDay(
   foods: FoodDef[],
   seed: string,
   kitchen: KitchenProfile = DEFAULT_KITCHEN,
+  menus: MenuDef[] = MENUS,
 ): PlanItem[] {
   const sorted = allowedFoods(foods, kitchen).sort((a, b) => a.key.localeCompare(b.key));
   if (sorted.length === 0) return [];
   const rot = seedIndex(seed);
   const safe = new Set(kitchen.safeFoods);
+  const byKeyEarly = new Map(sorted.map((f) => [f.key, f]));
   const proteinPool = sorted.filter(
     (f) => f.tags.includes("high-protein") && f.per100.proteinG >= 10,
   );
@@ -543,8 +639,9 @@ export function planDay(
    * point. Everything else rotates on the date seed as it always did.
    */
   const candidates = (pool: FoodDef[], spin: number): FoodDef[] => {
-    const preferred = pool.filter((f) => safe.has(f.key));
-    const rest = pool.filter((f) => !safe.has(f.key));
+    const open = pool.filter((f) => f.key !== kitchen.pinnedBreakfast);
+    const preferred = open.filter((f) => safe.has(f.key));
+    const rest = open.filter((f) => !safe.has(f.key));
     const rotated =
       rest.length === 0 ? [] : rest.map((_, k) => rest[(rot + spin + k) % rest.length]);
     return [...preferred, ...rotated];
@@ -568,6 +665,51 @@ export function planDay(
     ? sorted.find((f) => f.key === kitchen.pinnedBreakfast)
     : undefined;
   if (pinned) push("breakfast", pinned, pinned.portionG);
+
+  // 0.5 — a named menu per empty slot, when the kitchen can reach every part.
+  const tryMenu = (menu: MenuDef): boolean => {
+    const trial: PlanItem[] = [];
+    let trialSodium = sodium;
+    let trialMinutes = spentMinutes;
+    const trialUsed = new Set(used);
+    let trialKcal = totalsFor(items, sorted).kcal;
+    for (const part of menu.items) {
+      const food = byKeyEarly.get(part.foodKey);
+      if (!food || !(part.grams >= 5) || used.has(food.key)) return false;
+      const added = (food.per100.sodiumMg * part.grams) / 100;
+      if (trialSodium + added > targets.sodiumMgMax) return false;
+      const cost = trialUsed.has(food.key) ? 0 : food.standingMinutes;
+      if (trialMinutes + cost > kitchen.minutes) return false;
+      trialKcal += (food.per100.kcal * part.grams) / 100;
+      if (trialKcal > targets.kcal * KCAL_OVERSHOOT) return false;
+      trialSodium += added;
+      trialMinutes += cost;
+      trialUsed.add(food.key);
+      trial.push({ slot: menu.slot, foodKey: food.key, grams: part.grams });
+    }
+    sodium = trialSodium;
+    spentMinutes = trialMinutes;
+    for (const key of trialUsed) used.add(key);
+    items.push(...trial);
+    return true;
+  };
+
+  const filledByMenu = new Set<MealSlot>();
+  if (pinned) filledByMenu.add("breakfast");
+  MEAL_SLOTS.forEach((slot, i) => {
+    if (filledByMenu.has(slot)) return;
+    const pool = menus.filter((m) => m.slot === slot && menuAllowed(m, sorted, kitchen));
+    const preferred = pool.filter((m) => m.items.some((it) => safe.has(it.foodKey)));
+    const rest = pool.filter((m) => !m.items.some((it) => safe.has(it.foodKey)));
+    const rotated =
+      rest.length === 0 ? [] : rest.map((_, k) => rest[(rot + i * 11 + k) % rest.length]);
+    for (const menu of [...preferred, ...rotated]) {
+      if (tryMenu(menu)) {
+        filledByMenu.add(slot);
+        return;
+      }
+    }
+  });
 
   // 1 — protein across every slot, net of anything the pin already put there.
   MEAL_SLOTS.forEach((slot, i) => {
@@ -863,6 +1005,18 @@ export type KitchenView = {
   catalogueSize: number;
 };
 
+export type MenuOption = {
+  key: string;
+  name: string;
+  slot: MealSlot;
+  items: { foodKey: string; name: string; grams: number }[];
+  kcal: number;
+  proteinG: number;
+  effortSummary: string;
+  allowed: boolean;
+  saved: boolean;
+};
+
 export type FuelView = {
   targets: FuelTargets;
   totals: FuelTotals;
@@ -874,6 +1028,9 @@ export type FuelView = {
   week: FuelWeek;
   shoppingList: ShoppingItem[];
   foods: FoodOption[];
+  recentFoods: FoodOption[];
+  menus: MenuOption[];
+  leftoverKcal: number;
   survival: boolean;
   kitchen: KitchenView;
   /** What "generate a day" would write, priced up front. Null on the floor. */
@@ -897,6 +1054,8 @@ export type FuelViewInput = {
   foods: FoodDef[];
   /** Minutes, pans, hands, standing, exclusions. Omitted means a full kitchen. */
   kitchen?: KitchenProfile;
+  /** User-saved menus, same shape as the static bank. */
+  savedMenus?: MenuDef[];
 };
 
 /** Plan items, priced and named, with the effort line the UI leads with. */
@@ -1097,9 +1256,44 @@ export function buildFuelView(input: FuelViewInput): FuelView {
 
   // Survival is a floor, not a lite mode: the floor plan and nothing else. No
   // proposal to weigh up, no shopping list, no new obligation.
+  const savedMenus = input.savedMenus ?? [];
+  const savedKeys = new Set(savedMenus.map((m) => m.key));
+  const catalogueMenus = [...MENUS, ...savedMenus.filter((m) => !MENUS.some((s) => s.key === m.key))];
+  const foodBy = new Map(input.foods.map((f) => [f.key, f]));
+  const menuViews: MenuOption[] = catalogueMenus.map((menu) => {
+    const totals = menuTotals(menu, input.foods);
+    const parts = menu.items
+      .map((item) => {
+        const food = foodBy.get(item.foodKey);
+        return food ? { foodKey: food.key, name: food.name, grams: item.grams } : null;
+      })
+      .filter((row): row is { foodKey: string; name: string; grams: number } => row !== null);
+    return {
+      key: menu.key,
+      name: menu.name,
+      slot: menu.slot,
+      items: parts,
+      kcal: totals.kcal,
+      proteinG: totals.proteinG,
+      effortSummary: effortFor(
+        menu.items.map((item) => ({ slot: menu.slot, foodKey: item.foodKey, grams: item.grams })),
+        input.foods,
+      ).summary,
+      allowed: menuAllowed(menu, input.foods, kitchen),
+      saved: savedKeys.has(menu.key),
+    };
+  });
+
+  const foodOptByKey = new Map(foods.map((f) => [f.key, f]));
+  const recentFoods = recentFoodKeys(input.windowEntries)
+    .map((key) => foodOptByKey.get(key))
+    .filter((row): row is FoodOption => row !== undefined);
+
+  const leftoverKcal = survival ? 0 : weeklyLeftoverKcal(week.days, targets.kcal);
+
   const proposal = survival
     ? null
-    : buildPlanView(planDay(targets, input.foods, input.date, kitchen), input.foods);
+    : buildPlanView(planDay(targets, input.foods, input.date, kitchen, catalogueMenus), input.foods);
 
   return {
     targets,
@@ -1117,6 +1311,9 @@ export function buildFuelView(input: FuelViewInput): FuelView {
           input.foods,
         ),
     foods,
+    recentFoods,
+    menus: survival ? [] : menuViews,
+    leftoverKcal,
     survival,
     kitchen: kitchenView,
     proposal,

@@ -128,4 +128,4 @@ Recommend the next action from the actual project state:
 - Existing surface needing work: name the most relevant scoped command.
 - Web project ready for visual iteration: `$impeccable live` when configured.
 
-If init was invoked by another request, resume without rerunning context.mjs; the native reference above is the one thing that run could not have given you, and new-work owns later visual decisions.
+If init was invoked by another request and this session's first context.mjs run reported NO_PRODUCT_MD, rerun context.mjs once after PRODUCT.md exists so the session receives the new product file, surface briefs, and staleness directives. Then do not rerun it again. Init still loads the native platform reference itself when the platform it recorded is ios, android, or adaptive; new-work owns later visual decisions.

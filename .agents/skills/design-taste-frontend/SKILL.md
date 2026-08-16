@@ -164,7 +164,7 @@ LLMs default to clichés. Override these defaults proactively. Each rule has a c
 
 ### 4.1 Typography
 * **Display / Headlines:** Default `text-4xl md:text-6xl tracking-tighter leading-none`.
-* **Body / Paragraphs:** Default `text-base text-gray-600 leading-relaxed max-w-[65ch]`.
+* **Body / Paragraphs:** Default `text-base text-gray-600 dark:text-gray-400 leading-relaxed max-w-[65ch]`. Pair every color utility with its `dark:` counterpart (Sections 6.C / 8.A).
 * **Sans font choice:**
   * **Discouraged as default:** `Inter`. Pick `Geist`, `Outfit`, `Cabinet Grotesk`, `Satoshi`, or a brand-appropriate serif first.
   * **Override:** Inter is acceptable when the user explicitly asks for a neutral / standard / Linear-style feel, or when the brief is a public-sector / accessibility-first site.
@@ -412,7 +412,7 @@ export function StickyStack({ cards }: { cards: React.ReactNode[] }) {
       {cards.map((card, i) => (
         <div
           key={i}
-          className="stack-card sticky top-0 min-h-[100dvh] flex items-center justify-center"
+          className="stack-card min-h-[100dvh] flex items-center justify-center"
         >
           {card}
         </div>
@@ -422,7 +422,7 @@ export function StickyStack({ cards }: { cards: React.ReactNode[] }) {
 }
 ```
 
-Critical points: `start: "top top"`, `pin: true`, every card except the last is pinned, the scale/opacity transform is driven by the NEXT card's scroll trigger (so previous card shrinks as next one arrives).
+Critical points: `start: "top top"`, `pin: true`, every card except the last is pinned, the scale/opacity transform is driven by the NEXT card's scroll trigger (so previous card shrinks as next one arrives). **Do not also apply CSS `position: sticky`** — GSAP `pin` and CSS sticky compete for scroll control and cause jitter, broken pin spacing, and unreliable stack transitions. Pick one mechanism; this skeleton uses GSAP pin only.
 
 ### 5.B Horizontal-Pan - Canonical Skeleton
 
@@ -444,6 +444,7 @@ export function HorizontalPan({ children }: { children: React.ReactNode }) {
     if (reduce || !wrap.current || !track.current) return;
     const ctx = gsap.context(() => {
       const distance = track.current!.scrollWidth - window.innerWidth;
+      if (distance <= 0) return;                         // track already fits; do not pin or translate
       gsap.to(track.current, {
         x: -distance,
         ease: "none",
@@ -470,7 +471,7 @@ export function HorizontalPan({ children }: { children: React.ReactNode }) {
 }
 ```
 
-Critical points: `start: "top top"`, `pin: true`, `end: "+=${distance}"` (scroll length = horizontal travel needed), `scrub: 1`. The wrapper is pinned, the inner track slides horizontally as the user scrolls vertically.
+Critical points: `start: "top top"`, `pin: true`, `end: "+=${distance}"` (scroll length = horizontal travel needed), `scrub: 1`. Guard `distance <= 0` before creating the tween — a track that already fits the viewport must not pin or translate. The wrapper is pinned, the inner track slides horizontally as the user scrolls vertically.
 
 ### 5.C Scroll-Reveal Stagger - Canonical Skeleton (lighter alternative)
 
@@ -620,7 +621,7 @@ Avoid these signatures unless the brief explicitly asks for them.
 * **NO filler verbs.** "Elevate", "Seamless", "Unleash", "Next-Gen", "Revolutionize" → concrete verbs only.
 
 ### 9.E External Resources & Components
-* **NO hand-rolled SVG icons.** Use Phosphor / HugeIcons / Radix / Tabler. Lucide on explicit request only.
+* **NO hand-rolled SVG icons.** Use Phosphor / HugeIcons / Radix / Tabler. Lucide only when the user explicitly asks or the project already depends on it (see Section 3.C).
 * **Hand-rolled decorative SVGs strongly discouraged** as default (see Section 4.8).
 * **NO div-based fake screenshots.** Never build a fake product UI out of `<div>` rectangles to simulate a screenshot. Use real images, generated images, or skip the preview.
 * **NO broken Unsplash links.** Use `https://picsum.photos/seed/{descriptive-string}/{w}/{h}`, or generated photo placeholders, or actual assets.
@@ -970,7 +971,7 @@ Run this matrix before outputting code. This is the last filter.
 - [ ] **`useEffect` animations** have strict cleanup functions?
 - [ ] **Empty / loading / error** states provided?
 - [ ] **Cards omitted** in favor of spacing where possible?
-- [ ] **Icons** from an allowed library only (Phosphor / HugeIcons / Radix / Tabler), no hand-rolled SVG paths?
+- [ ] **Icons** from an allowed library only (Phosphor / HugeIcons / Radix / Tabler; Lucide only if the user asked or the project already depends on it), no hand-rolled SVG paths?
 - [ ] **Motion** isolated in client-leaf components with `'use client'` at the top, memoized?
 - [ ] **No AI Tells** from Section 9 (Inter as default, AI-purple, three-equal cards, Jane Doe, Acme, "Quietly in use at")?
 - [ ] **Core Web Vitals** plausibly hit (LCP < 2.5s, INP < 200ms, CLS < 0.1)?

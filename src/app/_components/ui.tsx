@@ -3,6 +3,9 @@
 import { useId } from "react";
 import { cn } from "@/lib/utils";
 
+/** Narrow on a phone, a real file on a desk. Not a dashboard. */
+export const fileWidth = "mx-auto w-full max-w-md lg:max-w-3xl";
+
 export function Card({
   children,
   className,
@@ -190,8 +193,7 @@ export function TmButton({
       onClick={onClick}
       aria-label={ariaLabel}
       className={cn(
-        "inline-flex min-h-11 cursor-pointer items-center justify-center rounded-[10px] px-4 font-tm-mono text-[11px] tracking-[0.15em] uppercase transition-[transform,opacity] duration-150 active:scale-[0.98] active:opacity-80 disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tm-ink/25 focus-visible:ring-offset-2 focus-visible:ring-offset-tm-paper",
+        "inline-flex min-h-11 cursor-pointer items-center justify-center rounded-[10px] px-4 font-tm-mono text-[11.5px] tracking-[0.15em] uppercase transition-[transform,opacity] duration-150 active:scale-[0.98] active:opacity-80 disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100",
         variants[variant],
         className,
       )}
@@ -219,8 +221,7 @@ export function TmChip({
       type="button"
       onClick={onClick}
       className={cn(
-        "min-h-11 cursor-pointer rounded-[20px] border px-3.5 py-2 font-tm-mono text-[11px] transition-[transform,opacity] duration-150 active:scale-[0.98] active:opacity-80",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tm-ink/25 focus-visible:ring-offset-2 focus-visible:ring-offset-tm-paper",
+        "min-h-11 cursor-pointer rounded-[20px] border px-3.5 py-2 font-tm-mono text-[11.5px] transition-[transform,opacity] duration-150 active:scale-[0.98] active:opacity-80",
         tone === "green"
           ? active
             ? "border-tm-green bg-tm-green text-white"
@@ -270,7 +271,7 @@ export function TmSheet({
             <button
               type="button"
               onClick={onClose}
-              className="min-h-11 cursor-pointer px-1 font-tm-mono text-[10px] tracking-[0.12em] text-tm-dim uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tm-ink/25"
+              className="min-h-11 cursor-pointer px-1 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase"
             >
               Close
             </button>

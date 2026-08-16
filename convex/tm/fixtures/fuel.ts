@@ -47,11 +47,8 @@ export type EnergyEstimateRow = {
 /**
  * The kitchen someone actually has, per user.
  *
- * Seam note: this has no table yet. Until the schema carries `tm_kitchenProfile`
- * the profile is static config keyed by slug, read identically by
- * convex/tm/fuel.ts and src/app/_lib/demo/fuel.ts through `kitchenProfileFor`,
- * so the two backends cannot drift. Nothing else in the fixture set depends on
- * it, so promoting it to a table is an additive change.
+ * Seeded into `tm_kitchenProfiles`. Both backends still fall back to
+ * `kitchenProfileFor` when no row has been written yet.
  */
 export type KitchenProfileRow = { userSlug: string } & KitchenProfile;
 
@@ -263,10 +260,6 @@ export function buildFuelFixtures(today: string): FuelFixtures {
 
 /**
  * Insert the fixtures, dropping the demo-only string ids.
- *
- * Kitchen profiles are deliberately not inserted: they have no table yet (see
- * KitchenProfileRow). Both backends read them from this module, so seeding is a
- * no-op for them rather than a silent half-state.
  */
 export async function seedFuel(
   ctx: MutationCtx,
@@ -304,6 +297,20 @@ export async function seedFuel(
       tdeeKcal: row.tdeeKcal,
       avgIntakeKcal: row.avgIntakeKcal,
       weightSlopeKgPerWeek: row.weightSlopeKgPerWeek,
+    });
+  }
+  for (const row of fx.kitchenProfiles) {
+    await ctx.db.insert("tm_kitchenProfiles", {
+      userId: uid(row.userSlug),
+      minutes: row.minutes,
+      equipment: row.equipment,
+      hands: row.hands,
+      canStand: row.canStand,
+      excludeAllergens: row.excludeAllergens,
+      safeFoodsOnly: row.safeFoodsOnly,
+      pinnedBreakfast: row.pinnedBreakfast ?? undefined,
+      safeFoods: row.safeFoods,
+      neverAgain: row.neverAgain,
     });
   }
 }

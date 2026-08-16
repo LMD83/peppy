@@ -1,27 +1,38 @@
 import { describe, expect, it } from "vitest";
 import {
+  BOX_TEMPLATES,
   DEFAULT_LANDMARKS,
+  DEFAULT_TRAIN_PROFILE,
   EXERCISES,
   EXERCISE_BY_KEY,
+  HOME_TEMPLATES,
   MESO_TEMPLATES,
   MESO_TRAINING_WEEKDAYS,
   MUSCLES,
   exerciseName,
   mesocycleName,
+  templatesFor,
   type Muscle,
 } from "../convex/tm/data/exercises";
 import {
   e1rm,
+  exerciseAllowed,
   lastSessionFor,
+  legalSwaps,
   mesoWeekFor,
   progressionFor,
   prsFrom,
   readinessAdjust,
+  resolveExercise,
   roundHalf,
+  sessionScale,
+  targetLine,
   topSetFor,
+  volumeLabel,
   volumeSetsByMuscle,
   volumeVerdict,
   type DatedSet,
+  type TrainingProfile,
 } from "../convex/tm/logicTrain";
 import { buildTrainFixtures } from "../convex/tm/fixtures/train";
 
@@ -388,5 +399,105 @@ describe("fixtures", () => {
       expect(sets[muscle]).toBeLessThanOrEqual(DEFAULT_LANDMARKS[muscle].mrv);
     }
     expect(sets.back).toBeGreaterThan(0);
+  });
+});
+
+const HOME_KNEES: TrainingProfile = {
+  setting: "home",
+  kit: ["none", "dumbbell", "band"],
+  experience: "new",
+  ageBand: "60-plus",
+  minutes: 20,
+  constraints: ["knees"],
+};
+
+describe("catalogue quality", () => {
+  it("is large enough that a room filter still has choices", () => {
+    expect(EXERCISES.length).toBeGreaterThanOrEqual(180);
+  });
+
+  it("tags every lift with setting, kit, skill, cue and two real swaps", () => {
+    for (const ex of EXERCISES) {
+      expect(ex.settings.length, ex.key).toBeGreaterThan(0);
+      expect(ex.kit.length, ex.key).toBeGreaterThan(0);
+      expect(ex.cue.length, ex.key).toBeGreaterThan(8);
+      expect(ex.swaps.length, ex.key).toBeGreaterThanOrEqual(2);
+      for (const swap of ex.swaps) {
+        expect(EXERCISE_BY_KEY[swap], `${ex.key} → ${swap}`).toBeDefined();
+        expect(swap).not.toBe(ex.key);
+      }
+    }
+  });
+
+  it("home and box templates only programme lifts that exist", () => {
+    for (const block of [...HOME_TEMPLATES, ...BOX_TEMPLATES]) {
+      expect(EXERCISE_BY_KEY[block.exercise]).toBeDefined();
+      expect(block.repLow).toBeLessThan(block.repHigh);
+    }
+  });
+});
+
+describe("profile filter", () => {
+  it("never returns a barbell squat or a box jump for home, no bar, knees stated", () => {
+    const allowed = EXERCISES.filter((ex) => exerciseAllowed(ex, HOME_KNEES)).map((ex) => ex.key);
+    expect(allowed).not.toContain("back-squat");
+    expect(allowed).not.toContain("front-squat");
+    expect(allowed).not.toContain("box-jump");
+    expect(allowed).not.toContain("walking-lunge");
+    expect(allowed.length).toBeGreaterThan(8);
+  });
+
+  it("keeps the gym template legal for the default trained-gym profile", () => {
+    for (const block of MESO_TEMPLATES) {
+      const ex = EXERCISE_BY_KEY[block.exercise];
+      expect(exerciseAllowed(ex, DEFAULT_TRAIN_PROFILE), block.exercise).toBe(true);
+    }
+  });
+
+  it("resolves a blocked lift to a legal swap, not a guess", () => {
+    const resolved = resolveExercise("back-squat", HOME_KNEES);
+    expect(resolved).not.toBe("back-squat");
+    expect(resolved).not.toBeNull();
+    if (!resolved) return;
+    expect(exerciseAllowed(EXERCISE_BY_KEY[resolved], HOME_KNEES)).toBe(true);
+  });
+
+  it("lists only legal swaps", () => {
+    const swaps = legalSwaps("bench-press", HOME_KNEES);
+    expect(swaps.length).toBeGreaterThan(0);
+    for (const key of swaps) {
+      expect(exerciseAllowed(EXERCISE_BY_KEY[key], HOME_KNEES)).toBe(true);
+    }
+  });
+
+  it("picks home, box or gym templates from the profile, not from a hidden default", () => {
+    expect(templatesFor(HOME_KNEES)).toBe(HOME_TEMPLATES);
+    expect(templatesFor({ ...DEFAULT_TRAIN_PROFILE, setting: "box" })).toBe(BOX_TEMPLATES);
+    expect(templatesFor(DEFAULT_TRAIN_PROFILE)).toBe(MESO_TEMPLATES);
+  });
+
+  it("scales a short, new, 60-plus session down instead of inventing a different sport", () => {
+    const scale = sessionScale(HOME_KNEES);
+    expect(scale.setDelta).toBeLessThan(0);
+    expect(scale.rounds).toBeLessThan(3);
+    expect(scale.preferLowImpact).toBe(true);
+  });
+});
+
+describe("plain training language", () => {
+  it("hides MEV/MAV/MRV and e1RM in the easy voice", () => {
+    const easy = volumeLabel("below MEV", "4 sets short of the minimum that grows anything.", "easy");
+    expect(easy.verdict).toBe("not enough this week");
+    expect(easy.note).not.toMatch(/MEV|MAV|MRV|e1RM/i);
+    expect(targetLine({ sets: 3, repLow: 8, repHigh: 12, rirTarget: 2 }, "easy")).toBe(
+      "3 × 8–12, leave 2 in the tank",
+    );
+    expect(targetLine({ sets: 3, repLow: 8, repHigh: 12, rirTarget: 2 }, "standard")).toContain("RIR");
+  });
+
+  it("keeps the landmark words in the standard voice", () => {
+    const std = volumeLabel("over MRV", "Past what you can recover from — cut sets before the next week.", "standard");
+    expect(std.verdict).toBe("over MRV");
+    expect(std.note).toContain("recover");
   });
 });

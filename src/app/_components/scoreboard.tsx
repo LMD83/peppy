@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useTimento } from "../_lib/backend";
+import { fileWidth, TmButton, TmSheet } from "./ui";
 
 export function Scoreboard() {
   const { today, actions, date } = useTimento();
   const [confirmMode, setConfirmMode] = useState(false);
+  const [fileOpen, setFileOpen] = useState(false);
   if (!today) return null;
 
   const { user, stats, latestKg, deltaKg, dayNumber } = today;
@@ -24,25 +27,22 @@ export function Scoreboard() {
   ];
 
   return (
-    <header className="bg-tm-ink px-4 pt-[18px] pb-4">
-      <div className="mx-auto max-w-md">
+    <header className="bg-tm-ink px-4 pt-5 pb-5">
+      <div className={fileWidth}>
         <div className="flex items-center justify-between gap-2">
           <p className="font-tm-mono text-[11.5px] tracking-[0.16em] text-tm-onink uppercase">
             Performance file · {user.name}
           </p>
-          {/*
-            Sign-out lives here, not in the bottom nav where it used to sit one
-            thumb-width from "Crew". 44px target, out of the navigation zone.
-            The accessible name stays "Sign out" — the e2e suite finds it by name.
-          */}
           <button
-            onClick={() => actions.logout()}
+            type="button"
+            onClick={() => setFileOpen(true)}
+            aria-label="File menu"
             className="-mr-2 inline-flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center rounded-[8px] px-2 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-onink uppercase"
           >
-            Sign out
+            File
           </button>
         </div>
-        <h1 className="mt-1 font-tm-disp text-2xl leading-tight text-white uppercase">{title}</h1>
+        <h1 className="mt-2 font-tm-disp text-2xl leading-[1.1] tracking-tight text-white uppercase md:text-3xl">{title}</h1>
         {survival && (
           <p className="mt-1.5 text-[14px] leading-relaxed text-tm-amber-lift">
             Executing as designed.{user.reviewDate ? ` Review prompt: ${user.reviewDate}.` : ""} Zero guilt clause active.
@@ -77,6 +77,30 @@ export function Scoreboard() {
             setConfirmMode(false);
           }} />
         )}
+        <TmSheet open={fileOpen} onClose={() => setFileOpen(false)} title="File" label="File menu">
+          <div className="flex flex-col gap-3">
+            <p className="font-tm-mono text-[12px] text-tm-ink">
+              Kitchen closes <b>{user.kitchenClose}</b>
+            </p>
+            <Link
+              href="/why"
+              className="inline-flex min-h-11 items-center font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase underline decoration-tm-rule underline-offset-4"
+              onClick={() => setFileOpen(false)}
+            >
+              Why this design
+            </Link>
+            <TmButton
+              variant="danger"
+              aria-label="Sign out"
+              onClick={() => {
+                setFileOpen(false);
+                actions.logout();
+              }}
+            >
+              Sign out
+            </TmButton>
+          </div>
+        </TmSheet>
       </div>
     </header>
   );
@@ -96,12 +120,12 @@ function ModeSwitcher({
   const options = [
     { mode: "cut" as const, blurb: "Full five checks, deficit targets, weekly weigh-in." },
     { mode: "maintain" as const, blurb: "Band goal ±1.5 kg. Four checks. Tripwires pre-written." },
-    { mode: "survival" as const, blurb: "Three checks only. Ceiling re-anchors. An executed decision — not a lapse." },
+    { mode: "survival" as const, blurb: "Three checks only. Ceiling re-anchors. An executed decision, not a lapse." },
   ];
   const defaultReview = `${Number(date.slice(0, 4))}-${date.slice(5, 7)}-${date.slice(8, 10)}`;
   return (
     <div role="dialog" aria-label="Switch mode" className="mt-3 rounded-lg border border-tm-inkrule bg-tm-ink3 p-3">
-      <p className="mb-2 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-onink uppercase">Switch mode — takes effect now</p>
+      <p className="mb-2 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-onink uppercase">Switch mode. Takes effect now</p>
       <div className="flex flex-col gap-1.5">
         {options.map((o) => (
           <button

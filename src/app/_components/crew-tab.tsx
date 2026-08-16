@@ -57,7 +57,7 @@ const STEP_COPY: Record<CarerView["step"], string> = {
 
 const SUPPLY_ANSWER: Record<CarerView["supply"], string> = {
   "order-due": "Yes — something needs reordering",
-  ok: "No — nothing is running out",
+  ok: "No. Nothing is running out",
   none: "Not shared with you",
 };
 
@@ -108,7 +108,13 @@ export function CrewTab() {
   const carersShown = easy ? yourCarers.slice(0, 1) : yourCarers;
 
   return (
-    <div className="flex flex-col gap-3 pt-4">
+    <div
+      className={cn(
+        "flex flex-col gap-4 pt-5",
+        !easy && "lg:grid lg:grid-cols-12 lg:items-start lg:gap-6",
+      )}
+    >
+      <div className="flex flex-col gap-3 lg:col-span-7">
       {helpingShown.map((m) =>
         m.link.carerView ? (
           <CarerSeat key={`seat-${m.slug}`} member={m} view={m.link.carerView} />
@@ -117,33 +123,47 @@ export function CrewTab() {
 
       {crewShown.map((m) => (
         <Card key={m.slug}>
-          <div className="flex items-center justify-between gap-2">
-            <span className="font-tm-mono text-[13px] font-medium">{m.name}</span>
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="font-tm-disp text-2xl leading-[1.1] tracking-tight uppercase">{m.name}</h2>
             {m.mode ? <ModeBadge mode={m.mode} /> : null}
           </div>
 
           {m.link.youSee.length > 0 ? (
-            <div className="mt-3 flex flex-wrap gap-x-6 gap-y-3">
-              {m.streak !== undefined && <Stat value={`${m.streak}`} label="Streak" />}
-              {m.adherence7 !== undefined && <Stat value={`${m.adherence7}%`} label="7-day" />}
+            <dl className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule sm:grid-cols-3">
+              {m.streak !== undefined && (
+                <div className="bg-tm-panel px-3 py-3">
+                  <Stat value={`${m.streak}`} label="Streak" />
+                </div>
+              )}
+              {m.adherence7 !== undefined && (
+                <div className="bg-tm-panel px-3 py-3">
+                  <Stat value={`${m.adherence7}%`} label="7-day" />
+                </div>
+              )}
               {m.todayDone !== undefined && (
-                <Stat value={`${m.todayDone}/${m.todayTotal}`} label="Today" />
+                <div className="bg-tm-panel px-3 py-3">
+                  <Stat value={`${m.todayDone}/${m.todayTotal}`} label="Today" />
+                </div>
               )}
               {m.mode === "survival" && m.daysInMode !== undefined && (
-                <Stat value={`${m.daysInMode}`} label="Days on floor" />
+                <div className="bg-tm-panel px-3 py-3">
+                  <Stat value={`${m.daysInMode}`} label="Days on floor" />
+                </div>
               )}
               {m.supplyState && m.supplyState !== "none" && (
-                <Stat value={SUPPLY_COPY[m.supplyState]} label="Supply" />
+                <div className="bg-tm-panel px-3 py-3">
+                  <Stat value={SUPPLY_COPY[m.supplyState]} label="Supply" />
+                </div>
               )}
-            </div>
+            </dl>
           ) : (
-            <p className="mt-2 text-[12.5px] text-tm-dim">
+            <p className="mt-3 text-[14px] text-tm-dim">
               {m.name} shares nothing with you. That is their call, and it stays theirs.
             </p>
           )}
 
           {m.mode === "survival" && m.modeSince && (
-            <p className="mt-2 font-tm-mono text-[10px] text-tm-dim">
+            <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
               floor since {m.modeSince}
               {m.reviewDate ? ` · review ${m.reviewDate}` : ""}
             </p>
@@ -268,9 +288,10 @@ export function CrewTab() {
           onInvite={(slug, scopes, relationship) => actions.inviteCrew(slug, scopes, relationship)}
         />
       )}
+      </div>
 
-      <Card>
-        <Eyebrow color="bg-tm-green">Nudges — mode-aware</Eyebrow>
+      <Card className="lg:col-span-5">
+        <Eyebrow color="bg-tm-green">Nudges, mode-aware</Eyebrow>
         <div className="mb-3 flex flex-wrap gap-2">
           {(easy ? presets.slice(0, 2) : presets).map((n) => (
             <button
@@ -281,7 +302,7 @@ export function CrewTab() {
                 setTimeout(() => setSent(null), 1500);
               }}
               className={cn(
-                "min-h-11 cursor-pointer rounded-lg border px-3 font-tm-mono text-[11px]",
+                "min-h-11 cursor-pointer rounded-[10px] border px-3.5 font-tm-mono text-[11.5px] transition-[transform,opacity] duration-150 active:scale-[0.98]",
                 sent === n ? "border-tm-green bg-tm-green text-white" : "border-tm-green text-tm-green",
               )}
             >
@@ -307,12 +328,12 @@ export function CrewTab() {
             placeholder="Custom message"
             aria-label="Custom crew message"
             maxLength={200}
-            className="min-h-11 flex-1 rounded-lg border border-tm-rule-strong bg-tm-panel px-3 py-2 text-[15px] text-tm-ink outline-none focus:border-tm-ink"
+            className="min-h-11 flex-1 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 py-2 text-[15px] text-tm-ink outline-none focus:border-tm-ink"
           />
           <button
             type="submit"
             disabled={custom.trim().length === 0}
-            className="min-h-11 cursor-pointer rounded-lg bg-tm-ink px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase disabled:opacity-40"
+            className="min-h-11 cursor-pointer rounded-[10px] bg-tm-ink px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase transition-transform duration-150 active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100"
           >
             Send
           </button>
@@ -321,7 +342,7 @@ export function CrewTab() {
           {(feed ?? []).slice(easy ? -4 : -8).map((f, i) => (
             <li
               key={`${f.at}-${i}`}
-              className="flex justify-between gap-3 border-b border-tm-grid py-1.5 font-tm-mono text-[11px] last:border-0"
+              className="flex justify-between gap-3 border-b border-tm-grid py-2.5 font-tm-mono text-[11.5px] last:border-0"
             >
               <span>
                 <b>{f.name}</b> · {f.message}

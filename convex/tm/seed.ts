@@ -32,6 +32,8 @@ const TM_TABLES = [
   "tm_nutritionTargets",
   "tm_mealEntries",
   "tm_energyEstimates",
+  "tm_kitchenProfiles",
+  "tm_savedMenus",
   "tm_mesocycles",
   "tm_programBlocks",
   "tm_setLogs",
