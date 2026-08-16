@@ -35,6 +35,30 @@ jobs:
       - name: Test
         run: npm test
 
+      # The authority on whether the backend actually deploys.
+      #
+      # tests/convex-deployability.test.ts catches the two classes that have
+      # already bitten this repo — module paths Convex cannot address, and
+      # Node-runtime code reachable from the default runtime — in seconds and
+      # without credentials. This catches everything else, and it needs a deploy
+      # key, which only the repo owner can set.
+      #
+      # --dry-run prints the configuration it would push and deploys nothing, so
+      # this is safe to run against prod on a pull request.
+      #
+      # When the key is absent the step warns instead of passing quietly: a
+      # check that silently does nothing is worse than no check, because the
+      # green tick reads as "the backend is fine".
+      - name: Convex deploy check
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+        run: |
+          if [ -z "${CONVEX_DEPLOY_KEY:-}" ]; then
+            echo "::warning title=Convex deploy check skipped::CONVEX_DEPLOY_KEY is not set, so the Convex backend was not deploy-checked. Add it under Settings → Secrets and variables → Actions (see DEPLOY.md). The static deployability tests still ran."
+            exit 0
+          fi
+          npx convex deploy --dry-run --typecheck enable
+
       - name: Build
         env:
           NEXT_PUBLIC_CONVEX_URL: https://dependable-vulture-853.eu-west-1.convex.cloud
