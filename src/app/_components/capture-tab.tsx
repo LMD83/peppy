@@ -10,7 +10,7 @@ import {
   type CaptureKind,
   type CaptureView,
   type ConfirmChoice,
-} from "@convex/tm/logic-capture";
+} from "@convex/tm/logicCapture";
 import { cn } from "@/lib/utils";
 import { useTimento } from "../_lib/backend";
 import { BigChoice, Card, Eyebrow } from "./ui";

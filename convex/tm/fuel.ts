@@ -17,7 +17,7 @@ import {
   type KitchenProfile,
   type RawMealEntry,
   type WeighIn,
-} from "./logic-fuel";
+} from "./logicFuel";
 
 /**
  * Fuel — intake, adaptive expenditure, meal planning.

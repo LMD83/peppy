@@ -18,7 +18,7 @@ import {
   type Relationship,
   type Scope,
   type SupplyCover,
-} from "@convex/tm/logic-consent";
+} from "@convex/tm/logicConsent";
 import type { DemoDb } from "../demo-db";
 import type { CrewData } from "../types";
 
@@ -27,7 +27,7 @@ import type { CrewData } from "../types";
  * the view type is derived from the Convex query, so any drift is a build error.
  *
  * Identities here are slugs where Convex uses document ids; the pure logic in
- * logic-consent.ts treats both as opaque strings, so the rules are shared, not
+ * logicConsent.ts treats both as opaque strings, so the rules are shared, not
  * reimplemented.
  */
 

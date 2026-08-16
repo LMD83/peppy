@@ -1,7 +1,7 @@
 import type { Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { addDays } from "../lib";
-import { DEFAULT_KITCHEN, type KitchenProfile } from "../logic-fuel";
+import { DEFAULT_KITCHEN, type KitchenProfile } from "../logicFuel";
 
 /**
  * Fuel fixtures — a fortnight of realistic intake for the two crew members.

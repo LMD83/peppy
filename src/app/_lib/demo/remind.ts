@@ -1,7 +1,7 @@
 import { MODE_CHECKS, daysBetween } from "@convex/tm/lib";
-import { dosesForDate, type DoseLog, type StackItem } from "@convex/tm/logic-stack";
-import { buildSupplyView, type SupplyRow as SupplyLogicRow } from "@convex/tm/logic-supply";
-import type { CaptureKind } from "@convex/tm/logic-capture";
+import { dosesForDate, type DoseLog, type StackItem } from "@convex/tm/logicStack";
+import { buildSupplyView, type SupplyRow as SupplyLogicRow } from "@convex/tm/logicSupply";
+import type { CaptureKind } from "@convex/tm/logicCapture";
 import {
   buildRemindView,
   checkinsFor,
@@ -9,7 +9,7 @@ import {
   type AssessmentHistory,
   type PrefsPatch,
   type SubscriptionRow,
-} from "@convex/tm/logic-remind";
+} from "@convex/tm/logicRemind";
 // The captures screen is the capture slice's, in both backends. This module
 // carries it through; it does not keep a second copy of the rules.
 import * as capture from "./capture";

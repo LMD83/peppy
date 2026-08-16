@@ -28,7 +28,7 @@ import {
   trendFor,
   type LabFlag,
   type LabsViewInput,
-} from "../convex/tm/logic-labs";
+} from "../convex/tm/logicLabs";
 import { buildLabsFixtures } from "../convex/tm/fixtures/labs";
 import { addDays } from "../convex/tm/lib";
 

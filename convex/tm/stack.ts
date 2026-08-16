@@ -10,7 +10,7 @@ import {
   type StackItem,
   type StackView,
   type StackViewInput,
-} from "./logic-stack";
+} from "./logicStack";
 
 /**
  * Stack — meds, peptides and supplements.

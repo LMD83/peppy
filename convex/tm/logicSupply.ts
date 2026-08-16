@@ -1,6 +1,6 @@
 import { addDays, daysBetween, type TmMode } from "./lib";
 import type { CompoundKind } from "./data/compounds";
-import { dueOn, scheduleLabel, type StackItem } from "./logic-stack";
+import { dueOn, scheduleLabel, type StackItem } from "./logicStack";
 
 /**
  * Pure supply logic — "never run out".
@@ -11,7 +11,7 @@ import { dueOn, scheduleLabel, type StackItem } from "./logic-stack";
  *
  * Deterministic by construction: no Date.now(), no Math.random(). Every date is
  * an argument. The schedule is never re-derived here — `dueOn` from
- * ./logic-stack is the single source of truth for when a dose falls, so a cycle
+ * ./logicStack is the single source of truth for when a dose falls, so a cycle
  * that is currently off, a paused item and an every-third-day item all consume
  * exactly what the stack tab says they consume.
  *

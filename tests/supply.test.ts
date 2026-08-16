@@ -17,8 +17,8 @@ import {
   unitsPerDay,
   type SupplyItemView,
   type SupplyRow,
-} from "../convex/tm/logic-supply";
-import type { StackItem } from "../convex/tm/logic-stack";
+} from "../convex/tm/logicSupply";
+import type { StackItem } from "../convex/tm/logicStack";
 import { buildStackFixtures } from "../convex/tm/fixtures/stack";
 import { buildSupplyFixtures } from "../convex/tm/fixtures/supply";
 import { addDays } from "../convex/tm/lib";

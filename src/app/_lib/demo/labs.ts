@@ -4,7 +4,7 @@ import {
   type LabsViewInput,
   type RawLabPanel,
   type RawLabResult,
-} from "@convex/tm/logic-labs";
+} from "@convex/tm/logicLabs";
 import type { DemoDb } from "../demo-db";
 import type { LabResultInput, LabsData } from "../types";
 

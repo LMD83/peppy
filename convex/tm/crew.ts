@@ -21,7 +21,7 @@ import {
   type Relationship,
   type Scope,
   type SupplyCover,
-} from "./logic-consent";
+} from "./logicConsent";
 
 /**
  * The crew board — a consented projection, not a shared table.
@@ -31,7 +31,7 @@ import {
  * shut only by there being two users who had agreed in person. It is now a
  * per-scope grant: the caller sees their own row in full, plus the rows of
  * people who hold an *active* link naming them as viewer, each squeezed through
- * `projectMember` in convex/tm/logic-consent.ts.
+ * `projectMember` in convex/tm/logicConsent.ts.
  *
  * Two rules hold everywhere in this file:
  *   1. No user row is read without a link that justifies reading it.

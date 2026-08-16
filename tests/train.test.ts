@@ -22,7 +22,7 @@ import {
   volumeSetsByMuscle,
   volumeVerdict,
   type DatedSet,
-} from "../convex/tm/logic-train";
+} from "../convex/tm/logicTrain";
 import { buildTrainFixtures } from "../convex/tm/fixtures/train";
 
 const TODAY = "2026-08-13"; // Thursday — pull day.

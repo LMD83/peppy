@@ -27,9 +27,9 @@ import {
   type Now,
   type Reminder,
   type ReminderPrefs,
-} from "../convex/tm/logic-remind";
+} from "../convex/tm/logicRemind";
 import { MODE_CHECKS, daysBetween } from "../convex/tm/lib";
-import { buildCaptureView } from "../convex/tm/logic-capture";
+import { buildCaptureView } from "../convex/tm/logicCapture";
 
 const DATE = "2026-08-13";
 

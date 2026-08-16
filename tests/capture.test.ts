@@ -22,9 +22,9 @@ import {
   type CaptureRow,
   type ConfirmFood,
   type ConfirmItem,
-} from "../convex/tm/logic-capture";
-import { SCOPES, isScope } from "../convex/tm/logic-consent";
-import type { StackItem } from "../convex/tm/logic-stack";
+} from "../convex/tm/logicCapture";
+import { SCOPES, isScope } from "../convex/tm/logicConsent";
+import type { StackItem } from "../convex/tm/logicStack";
 import { addDays } from "../convex/tm/lib";
 
 const TODAY = "2026-08-13"; // Thursday

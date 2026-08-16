@@ -2,7 +2,7 @@ import { ConvexError, v } from "convex/values";
 import type { Doc } from "../_generated/dataModel";
 import { mutation, query, type QueryCtx } from "../_generated/server";
 import { requireUser } from "./db";
-import type { StackItem } from "./logic-stack";
+import type { StackItem } from "./logicStack";
 import {
   DEFAULT_LEAD_DAYS,
   DEFAULT_PACK_SIZE,
@@ -12,7 +12,7 @@ import {
   type SupplyRow,
   type SupplyView,
   type SupplyViewInput,
-} from "./logic-supply";
+} from "./logicSupply";
 
 /**
  * Supply — never run out.

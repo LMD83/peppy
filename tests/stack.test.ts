@@ -23,7 +23,7 @@ import {
   timingRank,
   type DoseLog,
   type StackItem,
-} from "../convex/tm/logic-stack";
+} from "../convex/tm/logicStack";
 import { buildStackFixtures } from "../convex/tm/fixtures/stack";
 import { addDays } from "../convex/tm/lib";
 

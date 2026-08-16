@@ -7,8 +7,8 @@ import {
   parseFoodUtterance,
   type DoseParse,
   type FoodParse,
-} from "@convex/tm/logic-ingest";
-import { timingLabel } from "@convex/tm/logic-stack";
+} from "@convex/tm/logicIngest";
+import { timingLabel } from "@convex/tm/logicStack";
 import { useTimento } from "../_lib/backend";
 import type { HandsFreeData, MealSlot } from "../_lib/types";
 import { Card, Eyebrow } from "./ui";

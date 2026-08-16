@@ -10,8 +10,8 @@ import {
   type CaptureRow,
   type CaptureView,
   type CaptureViewInput,
-} from "@convex/tm/logic-capture";
-import type { StackItem } from "@convex/tm/logic-stack";
+} from "@convex/tm/logicCapture";
+import type { StackItem } from "@convex/tm/logicStack";
 import { foodByKey } from "@convex/tm/data/foods";
 import type { DemoDb } from "../demo-db";
 

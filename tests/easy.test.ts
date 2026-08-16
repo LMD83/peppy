@@ -12,7 +12,7 @@ import {
   projectToday,
   type CheckRow,
   type TodayPayload,
-} from "../convex/tm/logic-easy";
+} from "../convex/tm/logicEasy";
 import { MODE_CHECKS, type TmMode } from "../convex/tm/lib";
 
 /**

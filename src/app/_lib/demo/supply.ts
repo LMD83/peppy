@@ -6,8 +6,8 @@ import {
   type SupplyContact,
   type SupplyRow,
   type SupplyViewInput,
-} from "@convex/tm/logic-supply";
-import type { StackItem } from "@convex/tm/logic-stack";
+} from "@convex/tm/logicSupply";
+import type { StackItem } from "@convex/tm/logicStack";
 import type { DemoDb } from "../demo-db";
 import type { SupplyData } from "../types";
 
