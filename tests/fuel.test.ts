@@ -34,7 +34,7 @@ import {
   type KitchenProfile,
   type PlanItem,
   type RawMealEntry,
-} from "../convex/tm/logic-fuel";
+} from "../convex/tm/logicFuel";
 import { addDays } from "../convex/tm/lib";
 import { buildFuelFixtures, kitchenProfileFor } from "../convex/tm/fixtures/fuel";
 

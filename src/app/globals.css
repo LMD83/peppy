@@ -257,7 +257,7 @@
  * the query, which reads the setting the person chose. Nothing infers it.
  *
  * READ THIS BEFORE ADDING A RULE HERE: easy mode's actual work happens in
- * convex/tm/logic-easy.ts — it returns FEWER OBJECTS. This block only makes
+ * convex/tm/logicEasy.ts — it returns FEWER OBJECTS. This block only makes
  * what survives readable and hittable. Do not try to hide a card from here.
  * A `display: none` in a stylesheet is not one-thing-per-screen; it is the same
  * screen with something invisible on it, still in the tab order, still in the
@@ -350,7 +350,7 @@
 }
 
 /* No auto-starting timers. A countdown nobody asked for is a demand, and this
-   mode's contract is that it adds none — so easy mode's card list (logic-easy.ts)
+   mode's contract is that it adds none — so easy mode's card list (logicEasy.ts)
    contains no card that starts one, and anything animated that does survive is
    stilled here rather than left ticking in the corner. */
 [data-easy="1"] .animate-pulse {

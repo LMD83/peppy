@@ -22,6 +22,9 @@
  *     failure it did not earn, because the failure was ours.
  */
 
+/** How often the sweep runs, and therefore how wide its due-window is. */
+export const SWEEP_MINUTES = 30;
+
 /* ===== what goes on the wire ===== */
 
 /** The shape convex/tm/remind.ts hands to the sweep for one notification. */
@@ -66,7 +69,7 @@ export type DeliveryOutcome = "ok" | "gone" | "failed";
  * A push service answers 404 or 410 for an endpoint that no longer exists.
  * That is not transient and there is nothing to retry — the device is gone and
  * the row goes with it. Everything else is counted, and three consecutive
- * failures retire the device (see MAX_CONSECUTIVE_FAILURES in logic-remind).
+ * failures retire the device (see MAX_CONSECUTIVE_FAILURES in logicRemind).
  *
  * Anything unrecognisable is "failed", never "gone": guessing wrong in this
  * direction costs a retry, and guessing wrong in the other deletes a working

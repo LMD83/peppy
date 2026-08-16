@@ -38,7 +38,7 @@ import {
   type ConsentLink,
   type MemberFacts,
   type Scope,
-} from "../convex/tm/logic-consent";
+} from "../convex/tm/logicConsent";
 import { buildConsentFixtures } from "../convex/tm/fixtures/consent";
 import { addDays } from "../convex/tm/lib";
 

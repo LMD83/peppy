@@ -2,7 +2,7 @@
 
 import { Fragment, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
-import { plain } from "@convex/tm/logic-easy";
+import { plain } from "@convex/tm/logicEasy";
 import { cn } from "@/lib/utils";
 import { useTimento } from "../_lib/backend";
 import { BigChoice, Card, Eyebrow } from "./ui";
@@ -37,7 +37,7 @@ export function TodayTab() {
 
   /*
     Which cards exist is the query's decision, not this component's — see
-    convex/tm/logic-easy.ts. Standard mode gets every id in TODAY_CARDS, so the
+    convex/tm/logicEasy.ts. Standard mode gets every id in TODAY_CARDS, so the
     rendered order below is byte-for-byte the order that shipped; easy mode gets
     a short list and the rest are never built. Nothing here filters, so nothing
     here can be wrong about what easy mode means.

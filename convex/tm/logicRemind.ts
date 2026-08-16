@@ -2,7 +2,7 @@ import { MODE_CHECKS, type TmMode } from "./lib";
 // The captures screen is its own slice: what a photo means, what may label it,
 // and what is never shared all live there. Reminders only carry the finished
 // view through, so there is exactly one set of rules about photos in the app.
-import type { CaptureView as CaptureScreenView } from "./logic-capture";
+import type { CaptureView as CaptureScreenView } from "./logicCapture";
 
 /**
  * Reminders — the product judgement, in one pure file.
@@ -117,10 +117,10 @@ export function normalisePrefs(patch: PrefsPatch | null | undefined, base = DEFA
 
 /* ===== the inputs, kept structural ===== */
 
-/** A `DoseView` from logic-stack satisfies this without conversion. */
+/** A `DoseView` from logicStack satisfies this without conversion. */
 export type DueDose = { itemId: string; name: string; timing: string; taken: boolean };
 
-/** A `SupplyItemView` from logic-supply satisfies this without conversion. */
+/** A `SupplyItemView` from logicSupply satisfies this without conversion. */
 export type DueSupply = {
   itemId: string;
   name: string;

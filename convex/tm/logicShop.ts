@@ -8,7 +8,7 @@ import {
 } from "./data/foods";
 import { HANDOFF_NOTE, retailerDescriptors, type RetailerDescriptor } from "./data/retailers";
 import { addDays, type TmMode } from "./lib";
-import { shoppingList, type SimpleEntry } from "./logic-fuel";
+import { shoppingList, type SimpleEntry } from "./logicFuel";
 
 /**
  * Pure shopping logic — the part of "order my groceries" that nobody needs
@@ -291,7 +291,7 @@ export type NeededItem = {
 /**
  * The plan, minus the cupboard.
  *
- * Aggregation and the food lookup are `shoppingList` from logic-fuel — the fuel
+ * Aggregation and the food lookup are `shoppingList` from logicFuel — the fuel
  * tab's list and this one are the same arithmetic on purpose, so the two
  * screens can never disagree about what the plan needs. What this adds is the
  * subtraction nobody else does: a pantry count knocks grams off the buy, and a

@@ -2,7 +2,7 @@ import type { Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { addDays } from "../lib";
 import { compoundByKey } from "../data/compounds";
-import { dueOn, type StackItem } from "../logic-stack";
+import { dueOn, type StackItem } from "../logicStack";
 
 /**
  * Stack fixtures — what the two crew members are actually on, and three weeks

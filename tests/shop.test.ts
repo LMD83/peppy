@@ -17,7 +17,7 @@ import {
   substitutionsFor,
   type PlannedEntry,
   type ShopViewInput,
-} from "../convex/tm/logic-shop";
+} from "../convex/tm/logicShop";
 import { FOODS, foodByKey, type FoodDef } from "../convex/tm/data/foods";
 import {
   HANDOFF_NOTE,

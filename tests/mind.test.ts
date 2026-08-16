@@ -32,7 +32,7 @@ import {
   type MindViewInput,
   type RawAssessment,
   type TriggerBucket,
-} from "../convex/tm/logic-mind";
+} from "../convex/tm/logicMind";
 import { buildMindFixtures } from "../convex/tm/fixtures/mind";
 import { addDays, daysBetween } from "../convex/tm/lib";
 

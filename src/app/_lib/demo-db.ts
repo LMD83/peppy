@@ -1,5 +1,5 @@
 import { buildFixtures, type Fixtures, type FixtureUser } from "@convex/tm/fixtures";
-import { projectToday } from "@convex/tm/logic-easy";
+import { projectToday } from "@convex/tm/logicEasy";
 import { MODE_CHECKS, SESSION_PLAN, addDays, daysBetween, type TmMode } from "@convex/tm/lib";
 import {
   buildTriggerMap,

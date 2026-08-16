@@ -9,7 +9,7 @@ import {
   type RawAssessment,
   type RawIntention,
   type RawReflection,
-} from "@convex/tm/logic-mind";
+} from "@convex/tm/logicMind";
 import type { DemoDb } from "../demo-db";
 import type { MindData } from "../types";
 

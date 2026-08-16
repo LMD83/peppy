@@ -23,7 +23,7 @@ import {
   volumeSetsByMuscle,
   volumeVerdict,
   type DatedSet,
-} from "@convex/tm/logic-train";
+} from "@convex/tm/logicTrain";
 import type { DemoDb } from "../demo-db";
 import type { TrainData } from "../types";
 

@@ -14,7 +14,7 @@ import {
   type RawAssessment,
   type RawIntention,
   type RawReflection,
-} from "./logic-mind";
+} from "./logicMind";
 
 /**
  * Mind — validated self-report instruments, implementation intentions,

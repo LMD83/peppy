@@ -28,7 +28,7 @@ import {
   type DatedSet,
   type MesoPhase,
   type VolumeVerdict,
-} from "./logic-train";
+} from "./logicTrain";
 
 /**
  * Train — programming, autoregulation, volume. Every read is bounded by the

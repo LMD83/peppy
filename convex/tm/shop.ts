@@ -11,7 +11,7 @@ import {
   type PlannedEntry,
   type ShopView,
   type ShopViewInput,
-} from "./logic-shop";
+} from "./logicShop";
 
 /**
  * Shop — the meal plan turned into a list that actually gets used.

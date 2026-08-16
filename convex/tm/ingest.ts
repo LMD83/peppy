@@ -10,7 +10,7 @@ import {
 import { requireUser } from "./db";
 import { addDays } from "./lib";
 import { FOODS, foodByKey } from "./data/foods";
-import { timingLabel } from "./logic-stack";
+import { timingLabel } from "./logicStack";
 import {
   MAX_GRAMS,
   TOKEN_BYTES,
@@ -22,7 +22,7 @@ import {
   type HandsFreeView,
   type IngestRecentRow,
   type IngestTokenRow,
-} from "./logic-ingest";
+} from "./logicIngest";
 
 /**
  * Hands-free — logging without typing.
@@ -35,7 +35,7 @@ import {
  * touching the session.
  *
  * Both paths converge on `commitDose` / `commitFood`, which parse with the pure
- * logic in ./logic-ingest and then write the same rows the Stack and Fuel tabs
+ * logic in ./logicIngest and then write the same rows the Stack and Fuel tabs
  * write. No arithmetic forks off here, and nothing is written on a guess: an
  * unclear phrase comes back as alternatives, never as a dose.
  */

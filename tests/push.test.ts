@@ -11,7 +11,7 @@ import {
   nothingDue,
   sentReport,
   type Notification,
-} from "../convex/tm/logic-push";
+} from "../convex/tm/logicPush";
 
 /**
  * Delivery rules. The transport is a network call and is not tested here; every
@@ -136,7 +136,7 @@ describe("a sweep that cannot deliver", () => {
     // The dynamic-import fallback is gone: web-push is a real dependency and the
     // import is static, so an uninstalled package fails `npx convex deploy`
     // rather than silently sending nothing on a weekday morning.
-    const logic = readFileSync(join(process.cwd(), "convex", "tm", "logic-push.ts"), "utf8");
+    const logic = readFileSync(join(process.cwd(), "convex", "tm", "logicPush.ts"), "utf8");
     expect(logic).toContain('"nothing-due" | "no-vapid" | "sent"');
     const push = readFileSync(join(process.cwd(), "convex", "tm", "push.ts"), "utf8");
     expect(push).toContain('import webpush from "web-push"');
@@ -187,6 +187,13 @@ describe("the runtime split is the thing that makes delivery possible", () => {
 
   it("schedules the action that actually sends", () => {
     expect(crons).toContain("internal.tm.push.sweep");
+  });
+
+  it("does not import the Node-runtime module from crons.ts", () => {
+    // Importing push.ts here pulls web-push into the default runtime and the
+    // deploy fails. The interval lives in logicPush.ts, which has no Node APIs.
+    expect(crons).not.toMatch(/from ["']\.\/tm\/push["']/);
+    expect(crons).toContain("from \"./tm/logicPush\"");
   });
 
   it("declares web-push as a dependency, not a dev dependency", () => {

@@ -3,7 +3,7 @@ import { mutation, query } from "../_generated/server";
 import { MODE_CHECKS, SESSION_PLAN, daysBetween } from "./lib";
 import { adherenceStats, checksForDate, requireUser } from "./db";
 import { overloadFlag, tripwireFor } from "./logic";
-import { profileOf, projectToday, type TodayPayload } from "./logic-easy";
+import { profileOf, projectToday, type TodayPayload } from "./logicEasy";
 
 const dateArg = v.string();
 

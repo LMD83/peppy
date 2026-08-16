@@ -21,7 +21,7 @@ import {
   type FoodCandidate,
   type IngestRecentRow,
   type IngestTokenRow,
-} from "../convex/tm/logic-ingest";
+} from "../convex/tm/logicIngest";
 import { FOODS } from "../convex/tm/data/foods";
 
 const TODAY = "2026-08-13";

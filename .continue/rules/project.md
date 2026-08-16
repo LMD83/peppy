@@ -86,7 +86,7 @@ refill sheet), **shop** (aisle-ordered list, packs, retailer hand-off), **remind
 worth interrupting someone for — quiet hours, once-only, the survival floor) and **capture**
 (a photo as evidence, never as an identification). `remind` and `capture` share one Convex
 module, `convex/tm/remind.ts`, because backend.tsx wires their mutations together; the rules
-stay in their own `logic-remind.ts` / `logic-capture.ts`, and `remind.get` carries the whole
+stay in their own `logicRemind.ts` / `logicCapture.ts`, and `remind.get` carries the whole
 capture view through under `capture`.
 
 Reminders are wired end to end and gated on one thing only: VAPID keys. `convex/crons.ts` holds

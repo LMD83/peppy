@@ -5,7 +5,7 @@ import {
   type DoseLog,
   type StackItem,
   type StackViewInput,
-} from "@convex/tm/logic-stack";
+} from "@convex/tm/logicStack";
 import type { DemoDb } from "../demo-db";
 import type { StackData } from "../types";
 

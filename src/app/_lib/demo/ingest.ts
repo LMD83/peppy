@@ -1,13 +1,13 @@
 import { foodByKey } from "@convex/tm/data/foods";
 import { addDays } from "@convex/tm/lib";
-import { timingLabel } from "@convex/tm/logic-stack";
+import { timingLabel } from "@convex/tm/logicStack";
 import {
   TOKEN_BYTES,
   TOKEN_PREFIX,
   buildHandsFreeView,
   type IngestRecentRow,
   type IngestTokenRow,
-} from "@convex/tm/logic-ingest";
+} from "@convex/tm/logicIngest";
 import type { DemoDb } from "../demo-db";
 import type { HandsFreeData } from "../types";
 

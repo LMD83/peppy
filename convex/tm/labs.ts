@@ -9,7 +9,7 @@ import {
   type LabsViewInput,
   type RawLabPanel,
   type RawLabResult,
-} from "./logic-labs";
+} from "./logicLabs";
 
 /**
  * Labs — blood panels, reference intervals, trends.

@@ -2,7 +2,7 @@
 
 import { Component, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { plain } from "@convex/tm/logic-easy";
+import { plain } from "@convex/tm/logicEasy";
 import { cn } from "@/lib/utils";
 import { TimentoProvider, clearStoredSession, useTimento } from "../_lib/backend";
 import { Login } from "./login";
@@ -156,7 +156,7 @@ function NavRow({ label, onClick }: { label: string; onClick: () => void }) {
  * short here: a two-level menu is two decisions, and the second one is always
  * the one people get wrong.
  *
- * Easy mode relabels the rows with logic-easy's plain-language map ("Bloods" →
+ * Easy mode relabels the rows with logicEasy's plain-language map ("Bloods" →
  * "Blood tests"). Standard mode keeps every original name exactly as it is.
  */
 function MoreShelf({

@@ -14,9 +14,10 @@ import {
   encodePayload,
   nothingDue,
   sentReport,
+  SWEEP_MINUTES,
   type DeliveryResult,
   type SweepReport,
-} from "./logic-push";
+} from "./logicPush";
 
 /**
  * Delivery. The half of the reminder system that touches the network.
@@ -29,8 +30,8 @@ import {
  * analysed in the default runtime and cannot have it either.
  *
  * What is *decided* here: nothing. Which reminders are due, in what words, for
- * whom, is settled in logic-remind.ts and gathered by remind.sweepPlan. What
- * counts as a dead endpoint and what goes on the wire is in logic-push.ts. This
+ * whom, is settled in logicRemind.ts and gathered by remind.sweepPlan. What
+ * counts as a dead endpoint and what goes on the wire is in logicPush.ts. This
  * module sends, and reports back what happened.
  *
  * ## When it cannot send
@@ -41,9 +42,6 @@ import {
  * failure against a device that was never contacted. The person's next sweep
  * has to be able to reach them.
  */
-
-/** How often the sweep runs, and therefore how wide its due-window is. */
-export const SWEEP_MINUTES = 30;
 
 function vapid(): { subject: string; publicKey: string; privateKey: string } | null {
   const publicKey = (process.env.VAPID_PUBLIC_KEY ?? "").trim();

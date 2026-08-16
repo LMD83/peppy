@@ -1,6 +1,6 @@
 import { cronJobs } from "convex/server";
 import { internal } from "./_generated/api";
-import { SWEEP_MINUTES } from "./tm/push";
+import { SWEEP_MINUTES } from "./tm/logicPush";
 
 /**
  * The reminder schedule, and nothing else.
@@ -14,7 +14,7 @@ import { SWEEP_MINUTES } from "./tm/push";
  * how "a missed dose is mentioned once" is kept without a sent-log table: each
  * due thing falls inside exactly one sweep, so it goes out once and is never
  * escalated into a second, louder copy. What is due is decided in
- * convex/tm/logic-remind.ts — the same pure module the Reminders tab previews
+ * convex/tm/logicRemind.ts — the same pure module the Reminders tab previews
  * from, so the lock screen and the tab can never disagree.
  *
  * Delivery itself is convex/tm/push.ts, which is a Node-runtime action because

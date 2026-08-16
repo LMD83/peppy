@@ -2,7 +2,7 @@ import type { Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { instrumentByKey } from "../data/instruments";
 import { addDays } from "../lib";
-import { scoreInstrument } from "../logic-mind";
+import { scoreInstrument } from "../logicMind";
 
 /**
  * Mind fixtures — a six-week self-report history for Liam on a cut, and the

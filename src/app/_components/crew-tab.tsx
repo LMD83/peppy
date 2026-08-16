@@ -15,7 +15,7 @@ import {
   type CarerView,
   type Relationship,
   type Scope,
-} from "@convex/tm/logic-consent";
+} from "@convex/tm/logicConsent";
 import { useTimento } from "../_lib/backend";
 import type { CrewData } from "../_lib/types";
 import { Card, Eyebrow, ModeBadge, Stat } from "./ui";
@@ -30,7 +30,7 @@ import { Card, Eyebrow, ModeBadge, Stat } from "./ui";
  *
  * Carers are listed apart from crew because they *are* apart: a narrower grant,
  * a different set of questions, and a view that can only ever narrow what the
- * projection already allowed (convex/tm/logic-consent.ts).
+ * projection already allowed (convex/tm/logicConsent.ts).
  */
 
 type Member = CrewData[number];

@@ -9,7 +9,7 @@ import {
 } from "../_generated/server";
 import { checksForDate, requireUser } from "./db";
 import { daysBetween } from "./lib";
-import { buildSupplyView, type SupplyRow } from "./logic-supply";
+import { buildSupplyView, type SupplyRow } from "./logicSupply";
 // The capture rules live in the captures slice; this module owns the mutations
 // only because backend.tsx already wires them here. One set of rules, one place.
 import {
@@ -20,9 +20,9 @@ import {
   mealChoices,
   normaliseCaptureNote,
   type CaptureRow,
-} from "./logic-capture";
+} from "./logicCapture";
 import { foodByKey } from "./data/foods";
-import { dosesForDate, type DoseLog, type StackItem } from "./logic-stack";
+import { dosesForDate, type DoseLog, type StackItem } from "./logicStack";
 import {
   APP_TIMEZONE,
   MAX_CONSECUTIVE_FAILURES,
@@ -35,7 +35,7 @@ import {
   type RemindView,
   type ReminderPrefs,
   type SubscriptionRow,
-} from "./logic-remind";
+} from "./logicRemind";
 
 /**
  * Reminders — the server half of a promise the app could not previously keep.
@@ -46,7 +46,7 @@ import {
  * somebody; it is never addressable by anyone but its owner.
  *
  * All of the judgement — what is due, what quiet hours swallow, what survival
- * mode lets speak, what the words are — lives in ./logic-remind.ts, which the
+ * mode lets speak, what the words are — lives in ./logicRemind.ts, which the
  * demo backend calls too. This module only gathers rows and hands them over.
  *
  * The endpoint and keys of a subscription never leave the server. The tab is

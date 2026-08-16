@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { MINDSET_PROMPTS, type BandTone } from "@convex/tm/data/instruments";
-import { mindsetPromptForDate } from "@convex/tm/logic-mind";
+import { mindsetPromptForDate } from "@convex/tm/logicMind";
 import { useTimento } from "../_lib/backend";
 import type { MindData } from "../_lib/types";
 import { Card, Eyebrow, Stat } from "./ui";

@@ -6,7 +6,7 @@ import {
   type PantryRow,
   type PlannedEntry,
   type ShopViewInput,
-} from "@convex/tm/logic-shop";
+} from "@convex/tm/logicShop";
 import type { DemoDb } from "../demo-db";
 import type { ShopData } from "../types";
 

@@ -13,7 +13,7 @@ import {
   type MealSlot,
   type RawMealEntry,
   type WeighIn,
-} from "@convex/tm/logic-fuel";
+} from "@convex/tm/logicFuel";
 import type { DemoDb } from "../demo-db";
 import type { FuelData } from "../types";
 

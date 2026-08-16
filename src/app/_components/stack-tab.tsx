@@ -7,7 +7,7 @@ import {
   EVIDENCE_ORDER,
   type EvidenceTier,
 } from "@convex/tm/data/compounds";
-import { ReconstitutionError, reconstitution } from "@convex/tm/logic-stack";
+import { ReconstitutionError, reconstitution } from "@convex/tm/logicStack";
 import { useTimento } from "../_lib/backend";
 import type { StackData } from "../_lib/types";
 import { Card, Eyebrow, Stat } from "./ui";

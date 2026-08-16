@@ -1,6 +1,6 @@
 import type { TmMode } from "./lib";
-import type { MealSlot } from "./logic-fuel";
-import { dueOn, timingLabel, timingRank, type StackItem } from "./logic-stack";
+import type { MealSlot } from "./logicFuel";
+import { dueOn, timingLabel, timingRank, type StackItem } from "./logicStack";
 
 /**
  * Visual check-ins — evidence, never identification.
