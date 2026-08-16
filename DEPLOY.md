@@ -91,33 +91,56 @@ All commands run from a checkout where you've done `npx convex login`
    passcodes from step 3, and a second browser signed in as the other user
    should see only the shared crew projection.
 
-## Reminders: what is needed before a push can actually be delivered
+## Reminders: one step left, and it is yours
 
-The reminder schedule already runs — `convex/crons.ts` sweeps every 30 minutes
-and computes exactly what should go out, using the same pure module the
-Reminders tab previews from. What it cannot do yet is *send*, and the app says
-so rather than showing a switch that lies (`remind.get` returns
-`supported: false`, and the tab lists the reason).
+Reminders are wired end to end. `convex/crons.ts` sweeps every 30 minutes,
+`convex/tm/remind.ts` decides what is due using the same pure module the
+Reminders tab previews from, and `convex/tm/push.ts` signs and sends it with
+`web-push`. The client half — service worker, subscription, iOS install
+gating — is in place too.
 
-Three steps, in this order:
+**The only thing missing is the keys**, because a VAPID keypair is an identity
+for your deployment and is not something to generate into a repo.
 
-1. `npm install web-push` — signing a VAPID JWT and encrypting the payload per
-   RFC 8291 is that package's job, and it is deliberately not a dependency yet.
-2. Move `sendPush`/`sweep` out of `convex/crons.ts` into their own module with
-   `"use node";` at the top. `web-push` needs Node built-ins, and Convex
-   analyses `crons.ts` in the default runtime, so it cannot carry that pragma.
-3. Set the keys on the deployment (see `.env.convex.example`):
+```sh
+npx web-push generate-vapid-keys
+npx convex env set VAPID_PUBLIC_KEY  <public>                --prod
+npx convex env set VAPID_PRIVATE_KEY <private>               --prod
+npx convex env set VAPID_SUBJECT     mailto:you@example.com  --prod
+```
 
-   ```sh
-   npx web-push generate-vapid-keys
-   npx convex env set VAPID_PUBLIC_KEY  <public>  --prod
-   npx convex env set VAPID_PRIVATE_KEY <private> --prod
-   npx convex env set VAPID_SUBJECT     mailto:you@example.com --prod
-   ```
+Then redeploy the frontend. `NEXT_PUBLIC_CONVEX_URL` already carries the public
+key to the browser through `remind.get`, so no client env var is needed.
 
-Until step 3, the sweep is a no-op that logs one clear line and leaves every
-subscription untouched — nothing is marked delivered and no device is penalised
-with a failure it did not earn.
+Until those are set, the sweep logs one line naming the missing variables and
+leaves every subscription untouched — nothing is marked delivered and no device
+is charged a failure it did not earn, because the failure is the deployment's.
+The tab says the same thing rather than showing a switch that lies.
+
+**Do not remove `web-push` from `dependencies`.** The import in `push.ts` is
+static, so an uninstalled package fails `npx convex deploy` rather than quietly
+sending nothing at 8am. That is deliberate: it was a dynamic import precisely so
+it *could* degrade quietly, and moving the failure to deploy time is the point.
+
+**Verifying it actually works** — the tab's "send a test" button draws a
+notification from the worker already running in the browser. That proves the
+worker, the icons and the permission; it does **not** prove the server can reach
+a shut tab. For that, from a checkout:
+
+```sh
+npx convex run tm/push:sweep '{"windowMinutes": 1440}' --prod
+```
+
+It returns `{users, notifications, sent, reason}` — `reason: "no-vapid"` means
+the keys are not set, `"nothing-due"` means nobody had anything owing in the
+window, and `"sent"` with a non-zero `sent` means a push left the server.
+
+### iOS
+
+Notifications only work once the app is added to the Home Screen (Safari →
+Share → Add to Home Screen). Apple allows no other route, and iOS has neither
+Background Sync nor Periodic Sync — which is why the schedule lives on the
+server and the device only receives.
 
 **iOS**: notifications only work once the app is added to the Home Screen
 (Safari → Share → Add to Home Screen). Apple allows no other route, and iOS has

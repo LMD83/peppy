@@ -1,0 +1,121 @@
+"use node";
+
+import { v } from "convex/values";
+import webpush from "web-push";
+import { internal } from "../_generated/api";
+import { internalAction } from "../_generated/server";
+import type { Id } from "../_generated/dataModel";
+import type { SweepBatch } from "./remind";
+import {
+  blockedLog,
+  blockedReport,
+  classifyError,
+  deliveryResult,
+  encodePayload,
+  nothingDue,
+  sentReport,
+  type DeliveryResult,
+  type SweepReport,
+} from "./logic-push";
+
+/**
+ * Delivery. The half of the reminder system that touches the network.
+ *
+ * This is a separate module from convex/crons.ts, and separate from
+ * convex/tm/remind.ts, for a reason that is not stylistic: signing a VAPID JWT
+ * and encrypting a payload per RFC 8291 needs Node built-ins, so this file
+ * carries `"use node";` — and a file with that pragma may export actions only.
+ * remind.ts holds the queries and mutations and cannot have it; crons.ts is
+ * analysed in the default runtime and cannot have it either.
+ *
+ * What is *decided* here: nothing. Which reminders are due, in what words, for
+ * whom, is settled in logic-remind.ts and gathered by remind.sweepPlan. What
+ * counts as a dead endpoint and what goes on the wire is in logic-push.ts. This
+ * module sends, and reports back what happened.
+ *
+ * ## When it cannot send
+ *
+ * Without VAPID keys this does nothing, loudly, and touches no subscription.
+ * That is the important behaviour, not a placeholder for it: a sweep that
+ * cannot deliver must never mark anything delivered, and must never count a
+ * failure against a device that was never contacted. The person's next sweep
+ * has to be able to reach them.
+ */
+
+/** How often the sweep runs, and therefore how wide its due-window is. */
+export const SWEEP_MINUTES = 30;
+
+function vapid(): { subject: string; publicKey: string; privateKey: string } | null {
+  const publicKey = (process.env.VAPID_PUBLIC_KEY ?? "").trim();
+  const privateKey = (process.env.VAPID_PRIVATE_KEY ?? "").trim();
+  const subject = (process.env.VAPID_SUBJECT ?? "").trim();
+  if (publicKey === "" || privateKey === "" || subject === "") return null;
+  return { subject, publicKey, privateKey };
+}
+
+/**
+ * What should be sent right now, sent.
+ *
+ * `nowMs` is read here rather than in the query it calls: a Convex query is not
+ * rerun because time passed, so a query that reads the clock returns whatever
+ * it cached. The action owns the clock and hands it down.
+ */
+export const sweep = internalAction({
+  args: { windowMinutes: v.optional(v.number()) },
+  handler: async (ctx, { windowMinutes }): Promise<SweepReport> => {
+    const nowMs = Date.now();
+    const window = windowMinutes ?? SWEEP_MINUTES;
+
+    const batches: SweepBatch[] = await ctx.runQuery(internal.tm.remind.sweepPlan, {
+      nowMs,
+      windowMinutes: window,
+    });
+    if (batches.length === 0) return nothingDue();
+
+    const users = batches.length;
+    const notifications = batches.reduce((n, b) => n + b.notifications.length, 0);
+
+    const keys = vapid();
+    if (keys === null) {
+      console.warn(blockedLog(users, notifications));
+      return blockedReport(users, notifications);
+    }
+
+    webpush.setVapidDetails(keys.subject, keys.publicKey, keys.privateKey);
+
+    const results: DeliveryResult<Id<"tm_pushSubscriptions">>[] = [];
+    let sent = 0;
+
+    for (const batch of batches) {
+      for (const target of batch.targets) {
+        const subscription = {
+          endpoint: target.endpoint,
+          keys: { p256dh: target.p256dh, auth: target.auth },
+        };
+
+        // One delivery per notification. The worker's per-subject tag replaces
+        // rather than stacks, so a device never receives a pile — but a device
+        // that has just failed is not asked again in the same sweep either.
+        let outcome: "ok" | "gone" | "failed" = "ok";
+        for (const note of batch.notifications) {
+          try {
+            await webpush.sendNotification(subscription, encodePayload(note));
+            sent += 1;
+          } catch (error) {
+            outcome = classifyError(error);
+            console.warn(
+              `[timento reminders] delivery failed for one device (${outcome}): ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+            );
+            break;
+          }
+        }
+        results.push(deliveryResult(target.subscriptionId, outcome));
+      }
+    }
+
+    await ctx.runMutation(internal.tm.remind.recordDelivery, { results, atMs: nowMs });
+    return sentReport(users, notifications, sent);
+  },
+});

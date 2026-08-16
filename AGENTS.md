@@ -82,10 +82,19 @@ module, `convex/tm/remind.ts`, because backend.tsx wires their mutations togethe
 stay in their own `logic-remind.ts` / `logic-capture.ts`, and `remind.get` carries the whole
 capture view through under `capture`.
 
-Two things the reminder slice cannot do yet, deliberately: `web-push` is not a dependency, so
-`convex/crons.ts` computes the correct plan and logs instead of sending; and without
-`VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY` on the deployment, `remind.get` reports
-`supported: false` so the tab says so rather than showing a switch that lies.
+Reminders are wired end to end and gated on one thing only: VAPID keys. `convex/crons.ts` holds
+the schedule, `convex/tm/push.ts` does the sending, and the two are separate modules because
+`web-push` needs Node built-ins — `push.ts` carries `"use node";`, which means it may export
+**actions only**, so the queries and mutations stay in `remind.ts` and the cron stays in
+`crons.ts` (Convex analyses that file in the default runtime). Without
+`VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`/`VAPID_SUBJECT`, `remind.get` reports `supported: false`
+so the tab says so rather than showing a switch that lies, and the sweep logs one line and
+touches no subscription — a deployment that cannot deliver must never mark anything delivered
+or charge a device a failure it did not earn.
+
+The push payload is a contract with `public/sw.js` that nothing validates at build time: rename
+a key and the worker silently shows "A reminder from your file." `tests/push.test.ts` asserts
+the two ends agree, so keep it passing when touching either.
 
 Each slice owns a fixed set of files and never edits another's. The rule that keeps the two
 backends honest: **all arithmetic lives in `logic-<slice>.ts`**, and both `convex/tm/<slice>.ts`

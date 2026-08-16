@@ -27,6 +27,7 @@ import type * as tm_supply from "../tm/supply.js";
 import type * as tm_ingest from "../tm/ingest.js";
 import type * as tm_shop from "../tm/shop.js";
 import type * as tm_remind from "../tm/remind.js";
+import type * as tm_push from "../tm/push.js";
 import type * as tm_crons from "../crons.js";
 import type * as tm_http from "../http.js";
 
@@ -56,6 +57,7 @@ declare const fullApi: ApiFromModules<{
   "tm/ingest": typeof tm_ingest;
   "tm/shop": typeof tm_shop;
   "tm/remind": typeof tm_remind;
+  "tm/push": typeof tm_push;
   crons: typeof tm_crons;
   http: typeof tm_http;
 }>;
