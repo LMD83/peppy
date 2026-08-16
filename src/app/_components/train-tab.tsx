@@ -101,7 +101,7 @@ export function TrainTab() {
 
 /** Compact Train summary for the Today tab. */
 export function TrainTodayCard() {
-  const { train } = useTimento();
+  const { train, today, actions } = useTimento();
   if (!train)
     return (
       <Card>
@@ -147,6 +147,16 @@ export function TrainTodayCard() {
         </div>
       ) : (
         <p className="mt-1 text-[12px] text-tm-dim">Nothing programmed. Recovery counts.</p>
+      )}
+      {planned > 0 && (
+        <button
+          type="button"
+          disabled={today?.day.sessionDone}
+          onClick={() => actions.markSessionDone()}
+          className="mt-3 inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-lg bg-tm-ink px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase disabled:opacity-40"
+        >
+          {today?.day.sessionDone ? "Session logged" : "Mark session done"}
+        </button>
       )}
     </Card>
   );

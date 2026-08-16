@@ -64,6 +64,7 @@ const SUPPLY_ANSWER: Record<CarerView["supply"], string> = {
 export function CrewTab() {
   const { crew, feed, actions, today } = useTimento();
   const [sent, setSent] = useState<string | null>(null);
+  const [custom, setCustom] = useState("");
   const [undo, setUndo] = useState<{
     slug: string;
     name: string;
@@ -288,6 +289,34 @@ export function CrewTab() {
             </button>
           ))}
         </div>
+        <form
+          className="mb-3 flex gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const trimmed = custom.trim();
+            if (!trimmed) return;
+            actions.nudge(trimmed);
+            setSent(trimmed);
+            setCustom("");
+            setTimeout(() => setSent(null), 1500);
+          }}
+        >
+          <input
+            value={custom}
+            onChange={(e) => setCustom(e.target.value.slice(0, 200))}
+            placeholder="Custom message"
+            aria-label="Custom crew message"
+            maxLength={200}
+            className="min-h-11 flex-1 rounded-lg border border-tm-rule-strong bg-tm-panel px-3 py-2 text-[15px] text-tm-ink outline-none focus:border-tm-ink"
+          />
+          <button
+            type="submit"
+            disabled={custom.trim().length === 0}
+            className="min-h-11 cursor-pointer rounded-lg bg-tm-ink px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase disabled:opacity-40"
+          >
+            Send
+          </button>
+        </form>
         <ul aria-label="Crew feed">
           {(feed ?? []).slice(easy ? -4 : -8).map((f, i) => (
             <li

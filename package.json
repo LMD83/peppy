@@ -27,7 +27,7 @@
     "node": "24.x"
   },
   "scripts": {
-    "dev": "convex dev --start next dev",
+    "dev": "convex dev --start \"next dev\"",
     "dev:frontend": "next dev",
     "dev:backend": "convex dev",
     "build": "next build",

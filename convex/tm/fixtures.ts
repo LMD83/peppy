@@ -32,7 +32,15 @@ export type FixtureUser = {
 
 export type Fixtures = {
   users: FixtureUser[];
-  days: { userSlug: string; date: string; weightKg?: number; stress?: number; energy?: number; ritualDone?: boolean }[];
+  days: {
+    userSlug: string;
+    date: string;
+    weightKg?: number;
+    stress?: number;
+    energy?: number;
+    ritualDone?: boolean;
+    sessionDone?: boolean;
+  }[];
   checks: { userSlug: string; date: string; key: string; done: boolean }[];
   cravings: {
     userSlug: string;

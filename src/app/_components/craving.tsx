@@ -43,6 +43,14 @@ export function CravingLogger() {
   const [afterState, setAfterState] = useState<CravingEntry["afterState"]>(undefined);
   if (!today) return null;
 
+  const logs = today.cravingsToday;
+  const count = logs.length;
+
+  const undoLast = () => {
+    const last = logs[logs.length - 1];
+    if (last) actions.undoCraving(last.id);
+  };
+
   const commit = (action?: CravingEntry["action"]) => {
     if (!signal) return;
     actions.logCraving({
@@ -90,9 +98,38 @@ export function CravingLogger() {
             ))}
           </div>
           <p className="mt-2.5 font-tm-mono text-[11.5px] leading-relaxed text-tm-dim">
-            {today.cravingsToday > 0 ? `${today.cravingsToday} logged today · ` : ""}
+            {count > 0 ? `${count} logged today · ` : ""}
             Two taps per urge. Two weeks builds your trigger map — see Research.
           </p>
+          {count > 0 && (
+            <div className="mt-3 border-t border-tm-grid pt-3">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase">
+                  Today&apos;s log
+                </span>
+                <button
+                  type="button"
+                  onClick={undoLast}
+                  className={cn(QUIET, "text-tm-red")}
+                >
+                  Undo last
+                </button>
+              </div>
+              <ul aria-label="Today's craving log" className="flex flex-col gap-1">
+                {logs.map((c) => (
+                  <li
+                    key={c.id}
+                    className="flex justify-between gap-2 font-tm-mono text-[11.5px] text-tm-ink"
+                  >
+                    <span>
+                      {c.time} · {c.signal}
+                      {c.action ? ` · ${c.action}` : ""}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </>
       )}
 

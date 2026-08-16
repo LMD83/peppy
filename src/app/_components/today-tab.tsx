@@ -321,24 +321,42 @@ export function BreathingTimerInline({ onDone }: { onDone: () => void }) {
 function WeighIn() {
   const { today, actions } = useTimento();
   const [value, setValue] = useState("");
+  const [editing, setEditing] = useState(false);
   if (!today) return null;
   const logged = today.day.weightKg;
+  const showForm = logged === null || editing;
 
   return (
     <Card>
       <Eyebrow color="bg-tm-blue">Weigh-in</Eyebrow>
-      {logged !== null ? (
-        <p className="text-[14px]">
-          Logged: <b className="font-tm-mono">{logged.toFixed(1)} kg</b>
-          <span className="ml-2 font-tm-mono text-[11.5px] text-tm-dim">house rule: you can eat the cake; you can&apos;t stop measuring</span>
-        </p>
+      {!showForm && logged !== null ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-[14px]">
+            Logged: <b className="font-tm-mono">{logged.toFixed(1)} kg</b>
+            <span className="ml-2 font-tm-mono text-[11.5px] text-tm-dim">house rule: you can eat the cake; you can&apos;t stop measuring</span>
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setValue(logged.toFixed(1));
+              setEditing(true);
+            }}
+            className="inline-flex min-h-11 shrink-0 cursor-pointer items-center px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim underline uppercase"
+          >
+            Correct
+          </button>
+        </div>
       ) : (
         <form
           className="flex gap-2"
           onSubmit={(e) => {
             e.preventDefault();
             const kg = Number(value);
-            if (Number.isFinite(kg) && kg > 30 && kg < 250) actions.logWeight(Math.round(kg * 10) / 10);
+            if (Number.isFinite(kg) && kg > 30 && kg < 250) {
+              actions.logWeight(Math.round(kg * 10) / 10);
+              setEditing(false);
+              setValue("");
+            }
           }}
         >
           <input
@@ -352,6 +370,18 @@ function WeighIn() {
           <button type="submit" className="min-h-11 cursor-pointer rounded-lg bg-tm-ink px-5 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase">
             Log
           </button>
+          {editing && (
+            <button
+              type="button"
+              onClick={() => {
+                setEditing(false);
+                setValue("");
+              }}
+              className="inline-flex min-h-11 cursor-pointer items-center px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim underline uppercase"
+            >
+              Cancel
+            </button>
+          )}
         </form>
       )}
     </Card>

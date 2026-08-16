@@ -155,6 +155,8 @@ function DemoBackend({ children }: { children: React.ReactNode }) {
       logState: (patch: { stress?: number; energy?: number }) => slug && db.logState(slug, date, patch),
       markRitual: () => slug && db.markRitual(slug, date),
       logCraving: (entry: CravingEntry) => slug && db.logCraving(slug, date, entry),
+      undoCraving: (id: string) => slug && db.undoCraving(slug, id),
+      markSessionDone: () => slug && db.markSessionDone(slug, date),
       setMode: (mode, reason, reviewDate) => slug && db.setMode(slug, date, mode, reason, reviewDate),
       nudge: (message: string) => slug && db.nudge(slug, message),
       logFood: (slot, foodKey, grams) => slug && db.logFood(slug, date, slot, foodKey, grams),
@@ -258,6 +260,8 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
   const stateMut = useMutation(api.tm.today.logState);
   const ritualMut = useMutation(api.tm.today.markRitual);
   const cravingMut = useMutation(api.tm.today.logCraving);
+  const undoCravingMut = useMutation(api.tm.today.undoCraving);
+  const sessionDoneMut = useMutation(api.tm.today.markSessionDone);
   const modeMut = useMutation(api.tm.today.setMode);
   const nudgeMut = useMutation(api.tm.crew.nudge);
   const logFoodMut = useMutation(api.tm.fuel.logFood);
@@ -299,7 +303,7 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
               res.code === "wrong-passcode"
                 ? "Wrong passcode"
                 : res.code === "too-many-attempts"
-                  ? "Too many attempts — try again in 15 minutes"
+                  ? "Too many attempts. Try again in 15 minutes."
                   : "Unknown user";
             return { ok: false, error };
           }
@@ -318,6 +322,8 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
       logState: (patch: { stress?: number; energy?: number }) => token && void stateMut({ token, date, ...patch }),
       markRitual: () => token && void ritualMut({ token, date }),
       logCraving: (entry: CravingEntry) => token && void cravingMut({ token, date, ...entry }),
+      undoCraving: (id: string) => token && void undoCravingMut({ token, id: id as Id<"tm_cravings"> }),
+      markSessionDone: () => token && void sessionDoneMut({ token, date }),
       setMode: (mode, reason, reviewDate) => token && void modeMut({ token, date, mode, reason, reviewDate }),
       nudge: (message: string) => token && void nudgeMut({ token, message }),
       logFood: (slot, foodKey, grams) => token && void logFoodMut({ token, date, slot, foodKey, grams }),
@@ -375,6 +381,8 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
       stateMut,
       ritualMut,
       cravingMut,
+      undoCravingMut,
+      sessionDoneMut,
       modeMut,
       nudgeMut,
       logFoodMut,

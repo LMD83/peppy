@@ -217,11 +217,12 @@ export type TodayPayload = {
     stress: number | null;
     energy: number | null;
     ritualDone: boolean;
+    sessionDone: boolean;
   };
   latestKg: number;
   deltaKg: number;
   dayNumber: number;
-  cravingsToday: number;
+  cravingsToday: { id: string; time: string; signal: string; action: string | null }[];
   stats: { adherence7: number; streak: number; todayDone: number; todayTotal: number };
   session: TodaySession | null;
   tripwire: Tripwire | null;

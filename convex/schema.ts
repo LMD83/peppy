@@ -50,6 +50,7 @@ export default defineSchema({
     stress: v.optional(v.number()),
     energy: v.optional(v.number()),
     ritualDone: v.optional(v.boolean()),
+    sessionDone: v.optional(v.boolean()),
     note: v.optional(v.string()),
   }).index("by_userId_and_date", ["userId", "date"]),
 

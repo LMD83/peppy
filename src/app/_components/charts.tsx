@@ -175,7 +175,7 @@ export function TriggerMap({
   triggerMap: { hour: number; counts: Record<string, number> }[];
 }) {
   if (triggerMap.length === 0)
-    return <p className="py-6 text-center text-[12.5px] text-tm-dim">No craving logs yet — two weeks of taps builds the map.</p>;
+    return <p className="py-6 text-center text-[12.5px] text-tm-dim">No craving logs yet. Two weeks of taps builds the map.</p>;
   const max = Math.max(...triggerMap.map((t) => Object.values(t.counts).reduce((s, n) => s + n, 0)));
   const usedSignals = SIGNAL_ORDER.filter((s) => triggerMap.some((t) => (t.counts[s] ?? 0) > 0));
   return (
@@ -188,7 +188,7 @@ export function TriggerMap({
               <div
                 className="flex w-full flex-col-reverse justify-start gap-[2px]"
                 style={{ height: 72 }}
-                title={`${t.hour}:00 — ${usedSignals.map((s) => `${s} ${t.counts[s] ?? 0}`).join(", ")}`}
+                title={`${t.hour}:00: ${usedSignals.map((s) => `${s} ${t.counts[s] ?? 0}`).join(", ")}`}
               >
                 {usedSignals.map((s) =>
                   (t.counts[s] ?? 0) > 0 ? (
@@ -201,7 +201,7 @@ export function TriggerMap({
                 )}
               </div>
               <span className="font-tm-mono text-[8.5px] text-tm-dim">{t.hour}h</span>
-              <span className="sr-only">{`${t.hour}:00 — ${total} logs`}</span>
+              <span className="sr-only">{`${t.hour}:00, ${total} logs`}</span>
             </div>
           );
         })}

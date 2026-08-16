@@ -38,6 +38,8 @@ export type TimentoActions = {
   logState: (patch: { stress?: number; energy?: number }) => void;
   markRitual: () => void;
   logCraving: (entry: CravingEntry) => void;
+  undoCraving: (id: string) => void;
+  markSessionDone: () => void;
   setMode: (mode: "cut" | "maintain" | "survival", reason?: string, reviewDate?: string) => void;
   nudge: (message: string) => void;
 

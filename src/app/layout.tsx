@@ -23,7 +23,7 @@ const sans = IBM_Plex_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: "Timento — performance file",
+    default: "Timento · performance file",
     template: "%s | Timento",
   },
   description: "Two-person performance file: checks, modes, experiments, evidence.",

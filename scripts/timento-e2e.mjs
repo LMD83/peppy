@@ -56,6 +56,12 @@ async function goTab(page, tab, sub) {
   if (sub) await page.getByRole("tab", { name: sub, exact: true }).click({ timeout: NAV_TIMEOUT });
 }
 
+async function signOut(page) {
+  await page.getByRole("button", { name: "File menu" }).click();
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.getByText("Who's checking in").waitFor();
+}
+
 const browser = await chromium.launch({ executablePath }).catch(() => chromium.launch());
 
 for (const [label, viewport] of [
@@ -106,13 +112,40 @@ for (const [label, viewport] of [
     }
   });
 
+  await check("mark session done when a session card is present", async () => {
+    const btn = page.getByRole("button", { name: /mark session done/i });
+    if ((await btn.count()) > 0) {
+      await btn.click();
+      await page.getByRole("button", { name: /session logged/i }).waitFor();
+    }
+  });
+
+  await check("weigh-in log + correct overwrite", async () => {
+    await page.getByLabel("Weight in kilograms").fill("91.4");
+    await page.getByRole("button", { name: /^log$/i }).click();
+    await page.getByText(/Logged:.*91\.4/).waitFor();
+    await page.getByRole("button", { name: /correct/i }).click();
+    await page.getByLabel("Weight in kilograms").fill("91.2");
+    await page.getByRole("button", { name: /^log$/i }).click();
+    await page.getByText(/Logged:.*91\.2/).waitFor();
+  });
+
   await check("craving flow: tired → relief → rode it out → breathing timer", async () => {
-    await page.getByRole("button", { name: "Tired", exact: true }).click();
+    await page.getByRole("button", { name: "Tired", exact: true }).first().click();
     await page.getByRole("button", { name: "Relief", exact: true }).click();
     await page.getByRole("button", { name: "Rode it out", exact: true }).click();
     await page.getByRole("timer").waitFor();
     await page.screenshot({ path: `${SHOTS}/${label}-2-breathe.png` });
     await page.getByRole("button", { name: /done early/i }).click();
+  });
+
+  await check("undo last craving from today's log", async () => {
+    await page.getByLabel("Today's craving log").waitFor();
+    const before = await page.getByLabel("Today's craving log").locator("li").count();
+    await page.getByRole("button", { name: /undo last/i }).click();
+    await page.waitForTimeout(150);
+    const after = await page.getByLabel("Today's craving log").locator("li").count().catch(() => 0);
+    if (after >= before) throw new Error("undo did not remove a log");
   });
 
   await check("fuel: macro targets, adaptive energy, plan and food picker", async () => {
@@ -323,10 +356,17 @@ for (const [label, viewport] of [
     await page.screenshot({ path: `${SHOTS}/${label}-3-crew.png`, fullPage: true });
   });
 
+  await check("custom crew message lands in feed", async () => {
+    await page.getByLabel("Custom crew message").fill("Hold the line");
+    await page.getByRole("button", { name: /^send$/i }).click();
+    await page.waitForTimeout(200);
+    const feed = await page.getByLabel("Crew feed").textContent();
+    if (!feed.includes("Hold the line")) throw new Error("custom nudge not in feed");
+  });
+
   await check("crew board carries no absolute weights (shared projection only)", async () => {
     const body = await page.textContent("body");
     if (/9[24]\.\d\s?kg/.test(body.replace(/Mass[\s\S]*?Day/, ""))) {
-      // scoreboard shows YOUR OWN mass; strip it before asserting the crew area
       throw new Error("weight-looking value in crew view");
     }
   });
@@ -358,7 +398,6 @@ for (const [label, viewport] of [
     const checkButtons = await page.getByRole("button", { name: /protein hit|steps|kitchen closed/i }).count();
     if (checkButtons < 3) throw new Error(`expected 3 floor checks, saw ${checkButtons}`);
     await page.screenshot({ path: `${SHOTS}/${label}-6-survival.png`, fullPage: true });
-    // switch back to cut for the next run
     await page.getByRole("button", { name: /survival mode ⇄/i }).click();
     await page.getByRole("dialog").getByRole("button", { name: /^cut/i }).click();
     await page.getByText(/Cut protocol/i).waitFor();
@@ -370,17 +409,17 @@ for (const [label, viewport] of [
     await page.getByText(/ghrelin/i).first().waitFor();
     await page.screenshot({ path: `${SHOTS}/${label}-7-why.png`, fullPage: true });
     await page.goto(`${BASE}/`);
+    await page.getByRole("heading", { level: 1 }).waitFor();
   });
 
   await check("logout → conor sees survival file, not liam's data", async () => {
-    await page.getByRole("button", { name: "Sign out" }).click();
-    await page.getByText("Who's checking in").waitFor();
+    await signOut(page);
     await login(page, "conor", "1379");
     await page.getByText(/Floor protocol — hold < 96/i).waitFor();
     const body = await page.textContent("body");
     if (body.includes("92.8")) throw new Error("liam's weight visible in conor session");
     await page.screenshot({ path: `${SHOTS}/${label}-8-conor.png`, fullPage: true });
-    await page.getByRole("button", { name: "Sign out" }).click();
+    await signOut(page);
   });
 
   await context.close();
