@@ -414,7 +414,7 @@ function TodayStrip({ view, onDelete }: { view: CaptureView; onDelete: (id: stri
         {view.today.map((row) => (
           <li key={row.id} className="rounded-[10px] border border-tm-rule p-2">
             {row.url === null ? (
-              <div className="flex h-24 items-center justify-center rounded-lg bg-tm-soft text-[14px] text-tm-dim">
+              <div className="flex h-24 items-center justify-center rounded-[10px] bg-tm-soft text-[14px] text-tm-dim">
                 Picture gone
               </div>
             ) : (
@@ -422,7 +422,7 @@ function TodayStrip({ view, onDelete }: { view: CaptureView; onDelete: (id: stri
               <img
                 src={row.url}
                 alt={captureLabel(row)}
-                className="h-24 w-full rounded-lg object-cover"
+                className="h-24 w-full rounded-[10px] object-cover"
               />
             )}
             <p className="mt-1.5 text-[14px]">{captureLabel(row)}</p>
@@ -460,7 +460,7 @@ function EarlierCard({ view, onDelete }: { view: CaptureView; onDelete: (id: str
               {day.captures.map((row) => (
                 <li
                   key={row.id}
-                  className="flex items-center justify-between gap-2 rounded-lg border border-tm-rule px-3 py-2"
+                  className="flex items-center justify-between gap-2 rounded-[10px] border border-tm-rule px-3 py-2"
                 >
                   <span className="min-w-0">
                     <span className="block truncate text-[14px]">{captureLabel(row)}</span>

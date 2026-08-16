@@ -204,11 +204,11 @@ describe("survival mode is not the least legible screen we ship", () => {
 /* ---- the rest of the floor, asserted structurally ------------------------ */
 
 describe("the stylesheet carries the rest of the floor", () => {
-  it("floors sub-11.5px type", () => {
+  it("keeps the floor token easy mode reads", () => {
+    // The sub-floor net is gone — the classes it caught were raised at the
+    // source on 2026-08-17, and a11y-floor-guard.test.ts bans their return.
+    // What remains load-bearing here is the token easy mode re-points to 16px.
     expect(CSS).toContain("--tm-type-floor: 11.5px");
-    for (const size of ["8\\.5", "9", "9\\.5", "10", "10\\.5", "11"]) {
-      expect(CSS, `no floor rule for text-[${size.replace("\\", "")}px]`).toContain(`.text-\\[${size}px\\]`);
-    }
   });
 
   it("declares a :focus-visible ring from a token", () => {

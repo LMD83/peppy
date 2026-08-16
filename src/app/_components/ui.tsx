@@ -155,7 +155,7 @@ export function ModeBadge({ mode }: { mode: "cut" | "maintain" | "survival" }) {
   return (
     <span
       className={cn(
-        "rounded-xl border px-2.5 py-[3px] font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
+        "rounded-[14px] border px-2.5 py-[3px] font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
         styles[mode],
       )}
     >

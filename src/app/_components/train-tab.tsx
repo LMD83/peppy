@@ -44,7 +44,7 @@ export function TrainTab() {
             make up. Walk, stretch, keep the joint moving. The mesocycle waits.
           </p>
           {train.survivalMove && (
-            <p className="mt-2 text-[12.5px] text-tm-amber-ink">
+            <p className="mt-2 text-[13px] text-tm-amber-ink">
               {train.survivalMove.minutes} min · {train.survivalMove.name}. {train.survivalMove.cue}
             </p>
           )}
@@ -181,7 +181,7 @@ export function TrainTodayCard() {
       <Card tone="amber">
         <Eyebrow color="bg-tm-amber">Train — floor</Eyebrow>
         <p className="font-tm-disp text-lg leading-tight">Movement only</p>
-        <p className="mt-1 text-[12px] text-tm-amber-ink">No block, no volume target, nothing owed.</p>
+        <p className="mt-1 text-[13px] text-tm-amber-ink">No block, no volume target, nothing owed.</p>
       </Card>
     );
 
@@ -201,7 +201,7 @@ export function TrainTodayCard() {
           Train
         </Eyebrow>
         {train.mesocycle && (
-          <span className="font-tm-mono text-[10px] text-tm-dim">
+          <span className="font-tm-mono text-[11.5px] text-tm-dim">
             week {train.mesocycle.week}/{train.mesocycle.weeks}
             {train.mesocycle.isDeload ? " · deload" : ""}
           </span>
@@ -219,13 +219,13 @@ export function TrainTodayCard() {
           )}
         </div>
       ) : (
-        <p className="mt-1 text-[12px] text-tm-dim">Nothing programmed. Recovery counts.</p>
+        <p className="mt-1 text-[13px] text-tm-dim">Nothing programmed. Recovery counts.</p>
       )}
       {planned > 0 && (
         <button
           type="button"
           onClick={() => go("train")}
-          className="mt-3 inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-lg bg-tm-ink px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase"
+          className="mt-3 inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-[10px] bg-tm-ink px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase"
         >
           {label}
         </button>
@@ -268,14 +268,14 @@ function MesoCard({
         <Eyebrow color={meso.isDeload ? "bg-tm-amber" : "bg-tm-green"} className="mb-0">
           {meso.name}
         </Eyebrow>
-        <span className="font-tm-mono text-[10px] text-tm-dim">{meso.phase}</span>
+        <span className="font-tm-mono text-[11.5px] text-tm-dim">{meso.phase}</span>
       </div>
       <div className="mt-2.5 flex gap-1" aria-label={`Week ${meso.week} of ${meso.weeks}`}>
         {weeks.map((w) => (
           <span
             key={w}
             className={cn(
-              "flex h-7 flex-1 items-center justify-center rounded-[4px] border font-tm-mono text-[10px]",
+              "flex h-7 flex-1 items-center justify-center rounded-[4px] border font-tm-mono text-[11.5px]",
               w === meso.week
                 ? meso.isDeload
                   ? "border-tm-amber bg-tm-amber text-white"
@@ -289,7 +289,7 @@ function MesoCard({
           </span>
         ))}
       </div>
-      <p className="mt-2 font-tm-mono text-[10px] text-tm-dim">
+      <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
         week {meso.week} of {meso.weeks} · D = deload · readiness ×{readiness.multiplier.toFixed(2)}.{" "}
         {readiness.note}
       </p>
@@ -307,7 +307,7 @@ function StartMesoCard() {
   return (
     <Card>
       <Eyebrow color="bg-tm-blue">No block running</Eyebrow>
-      <p className="text-[12.5px]">
+      <p className="text-[13px]">
         A mesocycle gives the progression something to progress against. Six weeks, week six is the
         deload.
       </p>
@@ -318,7 +318,7 @@ function StartMesoCard() {
             onClick={() => actions.startMesocycle(g.goal)}
             className="min-h-11 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2 text-left transition-transform duration-150 active:scale-[0.98]"
           >
-            <span className="font-tm-mono text-[10px] tracking-[0.12em] uppercase">{g.goal}</span>
+            <span className="font-tm-mono text-[11.5px] tracking-[0.12em] uppercase">{g.goal}</span>
             <span className="block text-[11.5px] text-tm-dim">{g.blurb}</span>
           </button>
         ))}
@@ -433,7 +433,7 @@ function BlockCard({
           )}
           <button
             type="submit"
-            className="min-h-14 w-full cursor-pointer rounded-[10px] bg-tm-ink font-tm-mono text-[12px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+            className="min-h-14 w-full cursor-pointer rounded-[10px] bg-tm-ink font-tm-mono text-[13px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
           >
             Log set {nextIndex + 1}
           </button>
@@ -555,7 +555,7 @@ function NumField({
       inputMode="decimal"
       aria-label={label}
       placeholder={placeholder}
-      className="min-h-11 w-14 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-2 text-center font-tm-mono text-[12px] focus:border-tm-ink"
+      className="min-h-11 w-14 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-2 text-center font-tm-mono text-[13px] focus:border-tm-ink"
     />
   );
 }
@@ -569,8 +569,8 @@ function VolumeCard({ rows, voice }: { rows: VolumeRow[]; voice: TrainData["voic
       {flagged.length > 0 && (
         <ul className="mt-2 flex flex-col gap-1">
           {flagged.map((r) => (
-            <li key={r.muscle} className="text-[12px]">
-              <span className="font-tm-mono text-[10px] tracking-[0.1em] text-tm-dim uppercase">
+            <li key={r.muscle} className="text-[13px]">
+              <span className="font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-dim uppercase">
                 {r.muscle} · {voice === "easy" ? r.verdictLabel : r.verdict}
               </span>
               <span className="block text-tm-ink">{r.note}</span>
@@ -578,7 +578,7 @@ function VolumeCard({ rows, voice }: { rows: VolumeRow[]; voice: TrainData["voic
           ))}
         </ul>
       )}
-      <p className="mt-2 font-tm-mono text-[10px] text-tm-dim">
+      <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
         {voice === "easy"
           ? "Today’s session counts once you log it. The marks are a starting range, not a threshold measured on you."
           : "Ticks mark MEV · MAV · MRV. Today’s session counts once you log it. A landmark is a starting range, not a threshold measured on you."}
@@ -656,7 +656,7 @@ function LoggedTodayCard({
         {sets.map((s) => (
           <li
             key={`${s.exercise}-${s.setIndex}`}
-            className="flex items-center justify-between border-b border-tm-grid py-1.5 last:border-0 font-tm-mono text-[11px]"
+            className="flex items-center justify-between border-b border-tm-grid py-1.5 last:border-0 font-tm-mono text-[11.5px]"
           >
             <span>{exerciseName(s.exercise)}</span>
             <span>
@@ -726,7 +726,7 @@ function ProfileCard({ profile }: { profile: TrainingProfile }) {
           <Eyebrow color="bg-tm-blue" className="mb-0">
             This session
           </Eyebrow>
-          <p className="mt-1 text-[12.5px]">
+          <p className="mt-1 text-[13px]">
             {SETTINGS.find((s) => s.id === profile.setting)?.label} ·{" "}
             {EXPERIENCES.find((s) => s.id === profile.experience)?.label} · {profile.minutes} min
             {profile.constraints.length > 0 ? ` · ${profile.constraints.join(", ")}` : ""}
@@ -764,14 +764,14 @@ function ProfileCard({ profile }: { profile: TrainingProfile }) {
             onChange={(ageBand) => setDraft({ ...draft, ageBand })}
           />
           <label className="flex flex-col gap-1">
-            <span className="font-tm-mono text-[10px] tracking-[0.1em] text-tm-dim uppercase">Minutes</span>
+            <span className="font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-dim uppercase">Minutes</span>
             <input
               type="number"
               inputMode="numeric"
               aria-label="Session minutes"
               value={draft.minutes}
               onChange={(e) => setDraft({ ...draft, minutes: Number(e.target.value) || 20 })}
-              className="min-h-11 w-24 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-2 font-tm-mono text-[12px] focus:border-tm-ink"
+              className="min-h-11 w-24 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-2 font-tm-mono text-[13px] focus:border-tm-ink"
             />
           </label>
           <ChipMulti
@@ -812,7 +812,7 @@ function ChipRow<T extends string>({
 }) {
   return (
     <fieldset>
-      <legend className="font-tm-mono text-[10px] tracking-[0.1em] text-tm-dim uppercase">{label}</legend>
+      <legend className="font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-dim uppercase">{label}</legend>
       <div className="mt-1.5 flex flex-wrap gap-1.5">
         {options.map((opt) => (
           <button
@@ -845,7 +845,7 @@ function ChipMulti<T extends string>({
 }) {
   return (
     <fieldset>
-      <legend className="font-tm-mono text-[10px] tracking-[0.1em] text-tm-dim uppercase">{label}</legend>
+      <legend className="font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-dim uppercase">{label}</legend>
       <div className="mt-1.5 flex flex-wrap gap-1.5">
         {options.map((opt) => {
           const on = value.includes(opt.id);

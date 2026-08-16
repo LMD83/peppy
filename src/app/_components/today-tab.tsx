@@ -208,7 +208,7 @@ function KitchenCard() {
         onClick={() => actions.markRitual()}
         disabled={today.day.ritualDone}
         className={cn(
-          "mt-2.5 min-h-11 w-full cursor-pointer rounded-lg px-3 py-2.5 text-left text-[14px]",
+          "mt-2.5 min-h-11 w-full cursor-pointer rounded-[10px] px-3 py-2.5 text-left text-[14px]",
           today.day.ritualDone ? "bg-tm-green-faint text-tm-green" : "bg-tm-soft text-tm-ink",
         )}
       >
@@ -277,7 +277,7 @@ function ScaleRow({ label, value, onPick }: { label: string; value: number | nul
 function BreathePrompt() {
   const [open, setOpen] = useState(false);
   return (
-    <div className="mt-2 rounded-lg bg-tm-soft px-3 py-2.5">
+    <div className="mt-2 rounded-[10px] bg-tm-soft px-3 py-2.5">
       <p className="text-[14px]">Stress is high. Two minutes of breathing helps the next hour.</p>
       {open ? (
         <BreathingTimerInline onDone={() => setOpen(false)} />
@@ -376,9 +376,9 @@ function WeighIn() {
             inputMode="decimal"
             placeholder="kg"
             aria-label="Weight in kilograms"
-            className="min-h-11 w-24 rounded-lg border border-tm-rule-strong bg-tm-panel px-3 py-2 font-tm-mono text-base outline-none focus:border-tm-ink"
+            className="min-h-11 w-24 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 py-2 font-tm-mono text-base outline-none focus:border-tm-ink"
           />
-          <button type="submit" className="min-h-11 cursor-pointer rounded-lg bg-tm-ink px-5 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase">
+          <button type="submit" className="min-h-11 cursor-pointer rounded-[10px] bg-tm-ink px-5 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase">
             Log
           </button>
           {editing && (

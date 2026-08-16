@@ -135,7 +135,7 @@ export function StackTodayCard() {
         <Stat value={`${stack.adherence7.pct}%`} label="7-day adherence" />
         <Stat value={`${stack.cycles.length}`} label="cycles running" />
       </div>
-      <p className="mt-2 font-tm-mono text-[10px] text-tm-dim">
+      <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
         {next
           ? `next up — ${next.timingLabel.toLowerCase()} · ${next.name.toLowerCase()}`
           : stack.dueCount === 0
@@ -154,7 +154,7 @@ function StackSkeleton() {
       {[0, 1, 2].map((i) => (
         <div key={i} className="h-28 rounded-[10px] border border-tm-rule bg-tm-panel" />
       ))}
-      <p className="text-center font-tm-mono text-[10px] tracking-[0.12em] text-tm-dim uppercase">
+      <p className="text-center font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase">
         Loading stack…
       </p>
     </div>
@@ -174,7 +174,7 @@ function DoseList({ doses }: { doses: DoseView[] }) {
   }, [doses]);
 
   if (doses.length === 0) {
-    return <p className="text-[12.5px] text-tm-dim">Nothing scheduled today.</p>;
+    return <p className="text-[13px] text-tm-dim">Nothing scheduled today.</p>;
   }
 
   return (
@@ -182,10 +182,10 @@ function DoseList({ doses }: { doses: DoseView[] }) {
       {blocks.map((block) => (
         <div key={block.timing}>
           <div className="flex items-baseline justify-between">
-            <span className="font-tm-mono text-[10px] tracking-[0.12em] text-tm-dim uppercase">
+            <span className="font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase">
               {block.label}
             </span>
-            <span className="font-tm-mono text-[10px] text-tm-dim">
+            <span className="font-tm-mono text-[11.5px] text-tm-dim">
               {block.doses.filter((d) => d.taken).length}/{block.doses.length}
             </span>
           </div>
@@ -213,7 +213,7 @@ function DoseRow({ dose }: { dose: DoseView }) {
     >
       <span className="min-w-0">
         <span className="block truncate text-[13px] font-medium">{dose.name}</span>
-        <span className="block font-tm-mono text-[10px] text-tm-dim">
+        <span className="block font-tm-mono text-[11.5px] text-tm-dim">
           {doseLine(dose)}
           {dose.site ? ` · ${dose.site}` : ""}
         </span>
@@ -238,9 +238,9 @@ function DeferredCard({ doses }: { doses: DoseView[] }) {
           >
             <span className="min-w-0">
               <span className="block truncate text-[13px]">{d.name}</span>
-              <span className="block font-tm-mono text-[10px] text-tm-dim">{d.deferredNote}</span>
+              <span className="block font-tm-mono text-[11.5px] text-tm-dim">{d.deferredNote}</span>
             </span>
-            <span className="shrink-0 font-tm-mono text-[10px] text-tm-dim">{d.timingLabel}</span>
+            <span className="shrink-0 font-tm-mono text-[11.5px] text-tm-dim">{d.timingLabel}</span>
           </li>
         ))}
       </ul>
@@ -275,7 +275,7 @@ function Ring({ pct, label, tone }: { pct: number; label: string; tone: string }
       </svg>
       <div>
         <div className="font-tm-disp text-xl leading-none">{filled}%</div>
-        <div className="mt-1 font-tm-mono text-[9px] tracking-[0.16em] text-tm-dim uppercase">
+        <div className="mt-1 font-tm-mono text-[11.5px] tracking-[0.16em] text-tm-dim uppercase">
           {label}
         </div>
       </div>
@@ -297,7 +297,7 @@ function AdherenceCard({
         <Ring pct={adherence7.pct} label="7 day" tone="stroke-tm-green" />
         <Ring pct={adherence30.pct} label="30 day" tone="stroke-tm-blue" />
       </div>
-      <p className="mt-2.5 font-tm-mono text-[10px] text-tm-dim">
+      <p className="mt-2.5 font-tm-mono text-[11.5px] text-tm-dim">
         {adherence30.takenCount}/{adherence30.dueCount} over 30 days. Only days an item was actually
         scheduled count. Pausing something never dents the number.
       </p>
@@ -317,13 +317,13 @@ function CyclesCard({ cycles }: { cycles: StackData["cycles"] }) {
           >
             <span className="min-w-0">
               <span className="block truncate text-[13px] font-medium">{c.name}</span>
-              <span className="block font-tm-mono text-[10px] text-tm-dim">
+              <span className="block font-tm-mono text-[11.5px] text-tm-dim">
                 week {c.weekInPhase} · switches {c.nextSwitchDate}
               </span>
             </span>
             <span
               className={cn(
-                "shrink-0 rounded-xl border px-2.5 py-[3px] font-tm-mono text-[9px] tracking-[0.1em] uppercase",
+                "shrink-0 rounded-[14px] border px-2.5 py-[3px] font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
                 c.phase === "on"
                   ? "border-tm-green bg-tm-green-faint text-tm-green"
                   : "border-tm-rule bg-tm-soft text-tm-dim",
@@ -357,7 +357,7 @@ function ProtocolList({ stack }: { stack: StackData }) {
         {groups.map((g) =>
           g.items.length === 0 ? null : (
             <div key={g.key}>
-              <div className="font-tm-mono text-[10px] tracking-[0.12em] text-tm-dim uppercase">
+              <div className="font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase">
                 {g.label}
               </div>
               <div className="mt-1.5 flex flex-col gap-1.5">
@@ -376,28 +376,28 @@ function ProtocolList({ stack }: { stack: StackData }) {
                           <span className="block truncate text-[13px] font-medium">
                             {item.name}
                           </span>
-                          <span className="block font-tm-mono text-[10px] text-tm-dim">
+                          <span className="block font-tm-mono text-[11.5px] text-tm-dim">
                             {doseLine(item)} · {item.timings.join(", ")}
                           </span>
-                          <span className="block font-tm-mono text-[10px] text-tm-dim">
+                          <span className="block font-tm-mono text-[11.5px] text-tm-dim">
                             {item.scheduleLabel}
                             {stats ? ` · ${stats.pct}% · streak ${stats.streak}` : ""}
                           </span>
                         </span>
                         <span
                           className={cn(
-                            "shrink-0 rounded-xl border bg-tm-panel px-2 py-[3px] font-tm-mono text-[9px] tracking-[0.1em] uppercase",
+                            "shrink-0 rounded-[14px] border bg-tm-panel px-2 py-[3px] font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
                             EVIDENCE_TONE[item.evidence],
                           )}
                         >
                           {item.evidence}
                         </span>
                       </div>
-                      {item.note && <p className="mt-1.5 text-[12.5px]">{item.note}</p>}
+                      {item.note && <p className="mt-1.5 text-[13px]">{item.note}</p>}
                       {item.cautions.length > 0 && (
                         <ul className="mt-1.5 flex flex-col gap-1">
                           {item.cautions.map((c) => (
-                            <li key={c} className="font-tm-mono text-[10px] text-tm-dim">
+                            <li key={c} className="font-tm-mono text-[11.5px] text-tm-dim">
                               · {c}
                             </li>
                           ))}
@@ -418,7 +418,7 @@ function ProtocolList({ stack }: { stack: StackData }) {
           ),
         )}
       </div>
-      <p className="mt-2.5 font-tm-mono text-[10px] text-tm-dim">
+      <p className="mt-2.5 font-tm-mono text-[11.5px] text-tm-dim">
         Pausing stops the schedule. It keeps every dose already logged against it.
       </p>
     </Card>
@@ -513,12 +513,12 @@ function ReconCalculator({ items }: { items: ItemView[] }) {
           </div>
         </div>
       ) : (
-        <p className="mt-3 rounded-[10px] bg-tm-amber-bg px-3 py-2.5 text-[12.5px] text-tm-amber-ink">
+        <p className="mt-3 rounded-[10px] bg-tm-amber-bg px-3 py-2.5 text-[13px] text-tm-amber-ink">
           {error}
         </p>
       )}
 
-      <p className="mt-2 font-tm-mono text-[10px] text-tm-dim">
+      <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
         Arithmetic on the numbers you entered: vial strength, diluent, wanted dose. It reads no dose
         off a label and recommends none. Units are marks on a {fmt(values.syringeUnitsPerMl)} u/mL
         syringe, rounded to the nearest half mark.
@@ -540,7 +540,7 @@ function NumField({
 }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="font-tm-mono text-[9.5px] tracking-[0.12em] text-tm-dim uppercase">
+      <span className="font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase">
         {label}
       </span>
       <input
@@ -561,7 +561,7 @@ function InteractionsCard({ interactions }: { interactions: StackData["interacti
     <Card>
       <Eyebrow color="bg-tm-yellow">Interactions on this file</Eyebrow>
       {interactions.length === 0 ? (
-        <p className="text-[12.5px] text-tm-dim">
+        <p className="text-[13px] text-tm-dim">
           No known pair on the file. Absence of a note here is not clearance. The list only covers
           compounds the catalogue recognises.
         </p>
@@ -575,7 +575,7 @@ function InteractionsCard({ interactions }: { interactions: StackData["interacti
                 </span>
                 <span
                   className={cn(
-                    "shrink-0 rounded-xl border px-2 py-[3px] font-tm-mono text-[9px] tracking-[0.1em] uppercase",
+                    "shrink-0 rounded-[14px] border px-2 py-[3px] font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
                     x.severity === "caution"
                       ? "border-tm-amber bg-tm-amber-bg text-tm-amber"
                       : "border-tm-rule bg-tm-panel text-tm-dim",
@@ -584,7 +584,7 @@ function InteractionsCard({ interactions }: { interactions: StackData["interacti
                   {x.severity}
                 </span>
               </div>
-              <p className="mt-1 text-[12.5px]">{x.note}</p>
+              <p className="mt-1 text-[13px]">{x.note}</p>
             </li>
           ))}
         </ul>
@@ -601,8 +601,8 @@ function EvidenceLegend() {
         {EVIDENCE_ORDER.map((tier) => (
           <li key={tier} className="flex items-start gap-2">
             <span className={cn("mt-1.5 inline-block size-1.5 shrink-0 rounded-full", EVIDENCE_DOT[tier])} />
-            <span className="text-[12.5px]">
-              <b className="font-tm-mono text-[10px] tracking-[0.12em] uppercase">{tier}</b>{" "}
+            <span className="text-[13px]">
+              <b className="font-tm-mono text-[11.5px] tracking-[0.12em] uppercase">{tier}</b>{" "}
               {EVIDENCE_NOTES[tier]}
             </span>
           </li>
@@ -616,7 +616,7 @@ function DisclaimerCard({ text }: { text: string }) {
   return (
     <Card>
       <Eyebrow color="bg-tm-red">Standing note</Eyebrow>
-      <p className="text-[12.5px]">{text}</p>
+      <p className="text-[13px]">{text}</p>
     </Card>
   );
 }

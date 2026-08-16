@@ -548,7 +548,7 @@ function PreviewCard({ data, easy }: { data: RemindData; easy: boolean }) {
       )}
 
       {data.survival && (
-        <p className="mt-3 rounded-lg border border-tm-amber bg-tm-amber-bg px-3 py-2 text-[14px] leading-relaxed text-tm-amber-ink">
+        <p className="mt-3 rounded-[10px] border border-tm-amber bg-tm-amber-bg px-3 py-2 text-[14px] leading-relaxed text-tm-amber-ink">
           {data.survivalNote}
         </p>
       )}
@@ -560,7 +560,7 @@ function PreviewCard({ data, easy }: { data: RemindData; easy: boolean }) {
           </summary>
           <ul className="mt-1 flex flex-col gap-2">
             {held.map(({ card, why }) => (
-              <li key={`${card.key}-${why}`} className="rounded-lg border border-tm-rule bg-tm-soft px-3 py-2">
+              <li key={`${card.key}-${why}`} className="rounded-[10px] border border-tm-rule bg-tm-soft px-3 py-2">
                 <p className="text-[14px] font-medium">{card.title}</p>
                 <p className="mt-0.5 text-[14px] text-tm-dim">
                   {card.at} · {why}
@@ -594,7 +594,7 @@ function EmailCard({ data, onChange }: { data: RemindData; onChange: (p: PrefsCh
             const email = cleanEmail(e.target.value);
             onChange({ email, ...(email !== "" ? { enabled: true } : {}) });
           }}
-          className="min-h-11 rounded-lg border border-tm-rule-strong bg-tm-panel px-3 text-[15px]"
+          className="min-h-11 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-[15px]"
         />
       </label>
       {!data.emailSupported && data.prefs.email !== "" ? (

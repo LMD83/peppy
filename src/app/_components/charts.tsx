@@ -50,7 +50,7 @@ export function MassChart({
   const [hover, setHover] = useState<number | null>(null);
   const clipId = useId();
   if (series.length === 0)
-    return <p className="py-8 text-center text-[12.5px] text-tm-dim">No weigh-ins yet. Log one on Today.</p>;
+    return <p className="py-8 text-center text-[13px] text-tm-dim">No weigh-ins yet. Log one on Today.</p>;
 
   const W = 360;
   const H = 200;
@@ -140,7 +140,7 @@ export function MassChart({
           </g>
         )}
       </svg>
-      <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 font-tm-mono text-[10px] text-tm-dim">
+      <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 font-tm-mono text-[11.5px] text-tm-dim">
         <span className="flex items-center gap-1.5"><span aria-hidden className="inline-block h-[2px] w-4 bg-tm-blue" /> actual</span>
         <span className="flex items-center gap-1.5"><span aria-hidden className="inline-block h-[2px] w-4 border-t-2 border-dashed border-tm-dim" /> target 0.5 kg/wk</span>
         <span className="flex items-center gap-1.5"><span aria-hidden className="inline-block h-[2px] w-4 border-t-2 border-dashed border-tm-amber" /> survival ceiling</span>
@@ -175,7 +175,7 @@ export function TriggerMap({
   triggerMap: { hour: number; counts: Record<string, number> }[];
 }) {
   if (triggerMap.length === 0)
-    return <p className="py-6 text-center text-[12.5px] text-tm-dim">No craving logs yet. Two weeks of taps builds the map.</p>;
+    return <p className="py-6 text-center text-[13px] text-tm-dim">No craving logs yet. Two weeks of taps builds the map.</p>;
   const max = Math.max(...triggerMap.map((t) => Object.values(t.counts).reduce((s, n) => s + n, 0)));
   const usedSignals = SIGNAL_ORDER.filter((s) => triggerMap.some((t) => (t.counts[s] ?? 0) > 0));
   return (
@@ -200,13 +200,13 @@ export function TriggerMap({
                   ) : null,
                 )}
               </div>
-              <span className="font-tm-mono text-[8.5px] text-tm-dim">{t.hour}h</span>
+              <span className="font-tm-mono text-[11.5px] text-tm-dim">{t.hour}h</span>
               <span className="sr-only">{`${t.hour}:00, ${total} logs`}</span>
             </div>
           );
         })}
       </div>
-      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 font-tm-mono text-[10px] text-tm-dim">
+      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 font-tm-mono text-[11.5px] text-tm-dim">
         {usedSignals.map((s) => (
           <span key={s} className="flex items-center gap-1.5">
             <span aria-hidden className="inline-block size-2 rounded-[2px]" style={{ background: SIGNAL_COLORS[s] }} />

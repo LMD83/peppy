@@ -158,7 +158,7 @@ export function LabsTodayCard() {
           label={nearest ? "recheck overdue" : "no recheck due"}
         />
       </div>
-      <p className="mt-2 font-tm-mono text-[10px] text-tm-dim">
+      <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
         {nearest
           ? `${nearest.name.toLowerCase()} last drawn ${nearest.lastDate}`
           : worst
@@ -177,7 +177,7 @@ function LabsSkeleton() {
       {[0, 1, 2].map((i) => (
         <div key={i} className="h-28 rounded-[10px] border border-tm-rule bg-tm-panel" />
       ))}
-      <p className="text-center font-tm-mono text-[10px] tracking-[0.12em] text-tm-dim uppercase">
+      <p className="text-center font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase">
         Loading bloods…
       </p>
     </div>
@@ -189,7 +189,7 @@ function LatestPanelCard({ panel, results }: { panel: LabPanel | null; results: 
     return (
       <Card>
         <Eyebrow color="bg-tm-purple">Bloods</Eyebrow>
-        <p className="text-[12.5px] text-tm-dim">
+        <p className="text-[13px] text-tm-dim">
           No panel on file. Add one below and every later draw becomes a trend instead of a number
           on a page.
         </p>
@@ -233,7 +233,7 @@ function LatestPanelCard({ panel, results }: { panel: LabPanel | null; results: 
           <Stat value={String(results.length)} label="markers on file" />
         </div>
       </div>
-      <p className="mt-2 font-tm-mono text-[10px] text-tm-dim">
+      <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
         drawn {panel.date}
         {panel.lab ? ` · ${panel.lab}` : ""} · {panel.results.length} results this panel
       </p>
@@ -253,13 +253,13 @@ function RechecksCard({ rechecks }: { rechecks: LabRecheck[] }) {
             className="flex items-center justify-between border-b border-tm-rule py-2 last:border-0"
           >
             <span className="text-[13px] font-medium">{r.name}</span>
-            <span className="font-tm-mono text-[10.5px] text-tm-amber-ink">
+            <span className="font-tm-mono text-[11.5px] text-tm-amber-ink">
               {r.overdueDays} d over · last {r.lastDate}
             </span>
           </li>
         ))}
       </ul>
-      <p className="mt-2 font-tm-mono text-[10px] text-tm-amber-ink">
+      <p className="mt-2 font-tm-mono text-[11.5px] text-tm-amber-ink">
         Interval suggested from the flag on your own last draw. A prompt to book, never a
         prescription. Your GP sets what actually gets repeated.
       </p>
@@ -289,7 +289,7 @@ function GroupCard({
         <Eyebrow color={flagged ? "bg-tm-red" : "bg-tm-dim2"} className="mb-0">
           {label}
         </Eyebrow>
-        <span className="font-tm-mono text-[10px] text-tm-dim">
+        <span className="font-tm-mono text-[11.5px] text-tm-dim">
           {markers.length} {open ? "−" : "+"}
         </span>
       </button>
@@ -317,7 +317,7 @@ function MarkerRow({ result, trend }: { result: LabResult; trend: LabTrend | nul
       >
         <div className="flex items-baseline justify-between gap-2">
           <span className="text-[13px] font-medium">{result.name}</span>
-          <span className="shrink-0 font-tm-mono text-[12px]">
+          <span className="shrink-0 font-tm-mono text-[13px]">
             {fmt(result.value)} <span className="text-tm-dim">{result.unit}</span>
           </span>
         </div>
@@ -325,13 +325,13 @@ function MarkerRow({ result, trend }: { result: LabResult; trend: LabTrend | nul
         <div className="flex items-center justify-between gap-2">
           <span
             className={cn(
-              "rounded-xl border px-2 py-[2px] font-tm-mono text-[9px] tracking-[0.1em] uppercase",
+              "rounded-[14px] border px-2 py-[2px] font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
               FLAG_CHIP[result.flag],
             )}
           >
             {FLAG_LABEL[result.flag]}
           </span>
-          <span className="font-tm-mono text-[10px] text-tm-dim">
+          <span className="font-tm-mono text-[11.5px] text-tm-dim">
             {result.delta
               ? `${DIRECTION_MARK[result.delta.direction]} ${signed(result.delta.change)} ${result.unit} since ${result.delta.sinceDate}`
               : `first draw · ${result.date}`}
@@ -342,13 +342,13 @@ function MarkerRow({ result, trend }: { result: LabResult; trend: LabTrend | nul
       {open && (
         <div className="mb-2 rounded-[10px] bg-tm-soft p-3">
           {trend && trend.points.length >= 2 && <Sparkline trend={trend} />}
-          <p className="text-[12.5px]">{result.blurb}</p>
+          <p className="text-[13px]">{result.blurb}</p>
           {result.movedBy.length > 0 && (
-            <p className="mt-1.5 font-tm-mono text-[10px] text-tm-dim">
+            <p className="mt-1.5 font-tm-mono text-[11.5px] text-tm-dim">
               moved by {result.movedBy.join(" · ")}
             </p>
           )}
-          <p className="mt-1.5 font-tm-mono text-[10px] text-tm-dim">
+          <p className="mt-1.5 font-tm-mono text-[11.5px] text-tm-dim">
             reference {result.refLow === null || result.refHigh === null
               ? "not on file"
               : `${fmt(result.refLow)}–${fmt(result.refHigh)} ${result.unit}`}
@@ -421,7 +421,7 @@ function Sparkline({ trend }: { trend: LabTrend }) {
       >
         <polyline points={points} className="fill-none stroke-tm-blue" strokeWidth="1.5" />
       </svg>
-      <div className="flex justify-between font-tm-mono text-[9.5px] text-tm-dim">
+      <div className="flex justify-between font-tm-mono text-[11.5px] text-tm-dim">
         <span>
           {fmt(first.value)} · {first.date}
         </span>
@@ -452,11 +452,11 @@ function PanelHistory({ panels }: { panels: LabPanel[] }) {
             >
               <span className="text-[13px] font-medium">
                 {p.name}{" "}
-                <span className="font-tm-mono text-[10px] text-tm-dim">
+                <span className="font-tm-mono text-[11.5px] text-tm-dim">
                   {p.fasted === true ? "fasted" : p.fasted === false ? "non-fasted" : ""}
                 </span>
               </span>
-              <span className="font-tm-mono text-[10.5px] text-tm-dim">
+              <span className="font-tm-mono text-[11.5px] text-tm-dim">
                 {p.date} · {p.results.length} markers · {out} out
               </span>
             </li>
@@ -509,7 +509,7 @@ function AddPanel({ templates }: { templates: LabTemplate[] }) {
               </button>
             ))}
           </div>
-          <p className="mt-2 font-tm-mono text-[10px] text-tm-dim">
+          <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
             Pick the panel your lab ran, type the numbers off the report. Units are fixed to the SI
             values Irish labs print. No conversion guessing.
           </p>
@@ -520,7 +520,7 @@ function AddPanel({ templates }: { templates: LabTemplate[] }) {
             <span className="text-[13px] font-semibold">{template.name}</span>
             <button
               onClick={() => setTemplateKey(null)}
-              className="min-h-11 cursor-pointer font-tm-mono text-[10px] tracking-[0.12em] text-tm-dim uppercase"
+              className="min-h-11 cursor-pointer font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase"
             >
               Change
             </button>
@@ -529,9 +529,9 @@ function AddPanel({ templates }: { templates: LabTemplate[] }) {
           <div className="mt-2 flex flex-col gap-1.5">
             {template.markers.map((m) => (
               <div key={m.key} className="flex items-center justify-between gap-2">
-                <label htmlFor={`lab-${m.key}`} className="text-[12.5px]">
+                <label htmlFor={`lab-${m.key}`} className="text-[13px]">
                   {m.name}{" "}
-                  <span className="font-tm-mono text-[10px] text-tm-dim">
+                  <span className="font-tm-mono text-[11.5px] text-tm-dim">
                     {fmt(m.refLow)}–{fmt(m.refHigh)}
                   </span>
                 </label>
@@ -544,7 +544,7 @@ function AddPanel({ templates }: { templates: LabTemplate[] }) {
                     placeholder="—"
                     className="min-h-11 w-20 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-2 py-2 text-right font-tm-mono text-sm focus:border-tm-ink"
                   />
-                  <span className="w-16 font-tm-mono text-[10px] text-tm-dim">{m.unit}</span>
+                  <span className="w-16 font-tm-mono text-[11.5px] text-tm-dim">{m.unit}</span>
                 </div>
               </div>
             ))}
@@ -582,7 +582,7 @@ function AddPanel({ templates }: { templates: LabTemplate[] }) {
           >
             Save {filled.length} {filled.length === 1 ? "result" : "results"}
           </button>
-          <p className="mt-2 font-tm-mono text-[10px] text-tm-dim">
+          <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
             Blank rows are skipped. A panel records what was measured, never a gap filled in.
           </p>
         </>
