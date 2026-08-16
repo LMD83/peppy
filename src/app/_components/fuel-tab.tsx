@@ -1,19 +1,18 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useState } from "react";
 import {
   ALLERGEN_LABELS,
   EQUIPMENT_LABELS,
-  SHELF_LABELS,
   type FoodEquipment,
 } from "@convex/tm/data/foods";
 import { cn } from "@/lib/utils";
 import { useTimento } from "../_lib/backend";
 import type { FuelData, MealSlot } from "../_lib/types";
+import { FuelBank } from "./fuel-bank";
 import { Card, Eyebrow, Stat } from "./ui";
 import { axisFontSize } from "./charts";
 
-type FoodOption = FuelData["foods"][number];
 type SlotView = FuelData["slots"][number];
 
 const SLOT_ORDER: MealSlot[] = ["breakfast", "lunch", "dinner", "snack"];
@@ -169,6 +168,11 @@ function FuelTabBody({
           <Bar label="Fibre" value={fuel.totals.fiberG} target={fuel.targets.fiberG} unit="g" tone="fill-tm-purple" />
           <Bar label="Salt" value={fuel.sodiumUsedMg} target={fuel.targets.sodiumMgMax} unit="mg sodium" tone="fill-tm-dim2" ceiling />
         </div>
+        {fuel.leftoverKcal > 0 && (
+          <p className="mt-2 text-sm text-tm-dim">
+            Week leftover {fuel.leftoverKcal} kcal — unused on logged days, not spent automatically.
+          </p>
+        )}
       </Card>
 
       <TdeeCard tdee={fuel.tdee} />
@@ -176,16 +180,30 @@ function FuelTabBody({
       <KitchenCard kitchen={fuel.kitchen} />
 
       <Card>
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-col gap-2">
           <Eyebrow color="bg-tm-green" className="mb-0">
             Plan &amp; log
           </Eyebrow>
-          <button
-            onClick={() => actions.generateMealPlan()}
-            className="min-h-11 cursor-pointer rounded-lg bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase"
-          >
-            Generate day
-          </button>
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              onClick={() => actions.generateMealPlan()}
+              className="min-h-11 cursor-pointer rounded-lg bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase"
+            >
+              Generate day
+            </button>
+            <button
+              onClick={() => actions.generateWeek()}
+              className="min-h-11 cursor-pointer rounded-lg border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-ink uppercase"
+            >
+              Generate week
+            </button>
+            <button
+              onClick={() => actions.copyYesterday()}
+              className="min-h-11 cursor-pointer rounded-lg border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-ink uppercase"
+            >
+              Copy yesterday
+            </button>
+          </div>
         </div>
         {fuel.proposal && (
           <p className="mt-2 rounded-lg bg-tm-soft px-3 py-2 text-sm">
@@ -217,7 +235,13 @@ function FuelTabBody({
 
       <FloorCard floor={fuel.floor} tone="default" />
 
-      <AddFood foods={fuel.foods} />
+      <FuelBank
+        foods={fuel.foods}
+        recentFoods={fuel.recentFoods}
+        menus={fuel.menus}
+        remaining={fuel.remaining}
+        portions={portions}
+      />
 
       <WeekStrip week={fuel.week} targetKcal={fuel.targets.kcal} />
 
@@ -452,6 +476,24 @@ function FloorCard({ floor, tone }: { floor: FuelData["floor"]; tone: "default" 
 
 /** The kitchen the plan was built for — stated, so it can be argued with. */
 function KitchenCard({ kitchen }: { kitchen: FuelData["kitchen"] }) {
+  const { actions } = useTimento();
+  const [minutes, setMinutes] = useState(String(kitchen.minutes));
+  const [equipment, setEquipment] = useState<FoodEquipment>(kitchen.equipment);
+  const [oneHanded, setOneHanded] = useState(kitchen.hands === 1);
+  const [canStand, setCanStand] = useState(kitchen.canStand);
+
+  const apply = (generate: boolean) => {
+    const mins = Number(minutes);
+    const patch = {
+      minutes: Number.isFinite(mins) ? mins : kitchen.minutes,
+      equipment,
+      oneHanded,
+      canStand,
+    };
+    actions.setKitchen(patch);
+    if (generate) actions.generateMealPlan(patch);
+  };
+
   const rows: { label: string; value: string }[] = [
     {
       label: "Pinned breakfast",
@@ -506,224 +548,182 @@ function KitchenCard({ kitchen }: { kitchen: FuelData["kitchen"] }) {
         works inside that, protein first — it does not treat a short day as a compromise.
         {kitchen.safeFoodsOnly ? " Safe foods only: nothing new is being suggested." : ""}
       </p>
+      <div className="mt-3 flex flex-col gap-2">
+        <label className="flex items-center justify-between gap-2">
+          <span className="font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase">
+            Minutes
+          </span>
+          <input
+            value={minutes}
+            onChange={(e) => setMinutes(e.target.value)}
+            inputMode="numeric"
+            aria-label="Hands-on minutes today"
+            className="min-h-11 w-24 rounded-lg border border-tm-rule bg-tm-panel px-3 font-tm-mono text-sm outline-none focus:border-tm-ink"
+          />
+        </label>
+        <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Equipment today">
+          {(["none", "kettle", "microwave", "one-pan", "oven"] as const).map((eq) => (
+            <button
+              key={eq}
+              role="radio"
+              aria-checked={equipment === eq}
+              onClick={() => setEquipment(eq)}
+              className={cn(
+                "min-h-11 cursor-pointer rounded-lg border px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
+                equipment === eq
+                  ? "border-tm-ink bg-tm-ink text-white"
+                  : "border-tm-rule bg-tm-panel text-tm-dim",
+              )}
+            >
+              {EQUIPMENT_LABELS[eq]}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-1.5">
+          <button
+            aria-pressed={oneHanded}
+            onClick={() => setOneHanded((v) => !v)}
+            className={cn(
+              "min-h-11 flex-1 cursor-pointer rounded-lg border font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
+              oneHanded ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule bg-tm-panel text-tm-dim",
+            )}
+          >
+            One hand
+          </button>
+          <button
+            aria-pressed={!canStand}
+            onClick={() => setCanStand((v) => !v)}
+            className={cn(
+              "min-h-11 flex-1 cursor-pointer rounded-lg border font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
+              !canStand ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule bg-tm-panel text-tm-dim",
+            )}
+          >
+            Can&apos;t stand
+          </button>
+        </div>
+        <div className="flex gap-1.5">
+          <button
+            onClick={() => apply(false)}
+            className="min-h-11 flex-1 cursor-pointer rounded-lg border border-tm-rule bg-tm-panel font-tm-mono text-[11.5px] tracking-[0.12em] uppercase"
+          >
+            Save kitchen
+          </button>
+          <button
+            onClick={() => apply(true)}
+            className="min-h-11 flex-1 cursor-pointer rounded-lg bg-tm-ink font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase"
+          >
+            Generate for today
+          </button>
+        </div>
+      </div>
     </Card>
   );
 }
 
 function SlotBlock({ slot }: { slot: SlotView }) {
-  const { actions } = useTimento();
+  const { actions, fuel } = useTimento();
   const mode = usePortionMode();
+  const [swapFor, setSwapFor] = useState<string | null>(null);
+  const foods = fuel?.foods ?? [];
   return (
     <div>
-      <div className="flex items-baseline justify-between">
+      <div className="flex items-baseline justify-between gap-2">
         <span className="font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase">
           {slot.label}
         </span>
-        <span className="font-tm-mono text-[11.5px] text-tm-dim">
-          {slot.kcal} kcal · {fmt(slot.proteinG)} g protein
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="font-tm-mono text-[11.5px] text-tm-dim">
+            {slot.kcal} kcal · {fmt(slot.proteinG)} g protein
+          </span>
+          {slot.entries.length > 0 && (
+            <button
+              onClick={() =>
+                actions.saveMenu(
+                  slot.label,
+                  slot.slot,
+                  slot.entries.map((e) => ({ foodKey: e.foodKey, grams: e.grams })),
+                )
+              }
+              className="min-h-11 cursor-pointer px-2 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-dim uppercase"
+            >
+              Save menu
+            </button>
+          )}
+        </div>
       </div>
       {slot.entries.length === 0 ? (
         <p className="mt-1 text-sm text-tm-dim">Empty.</p>
       ) : (
         <div className="mt-1.5 flex flex-col gap-1.5">
-          {slot.entries.map((e) => (
-            <div key={e.id} className="flex items-stretch gap-1.5">
-              <button
-                onClick={() => actions.setFoodEaten(e.id, !e.eaten)}
-                aria-pressed={e.eaten}
-                className={cn(
-                  "flex min-h-11 flex-1 cursor-pointer items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left",
-                  e.eaten
-                    ? "border-tm-green bg-tm-green-faint"
-                    : "border-tm-rule bg-tm-panel",
+          {slot.entries.map((e) => {
+            const from = foods.find((f) => f.key === e.foodKey);
+            const swaps = from
+              ? foods
+                  .filter((f) => f.allowed && f.group === from.group && f.key !== from.key)
+                  .slice(0, 4)
+              : [];
+            return (
+              <div key={e.id} className="flex flex-col gap-1">
+                <div className="flex items-stretch gap-1.5">
+                  <button
+                    onClick={() => actions.setFoodEaten(e.id, !e.eaten)}
+                    aria-pressed={e.eaten}
+                    className={cn(
+                      "flex min-h-11 flex-1 cursor-pointer items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left",
+                      e.eaten
+                        ? "border-tm-green bg-tm-green-faint"
+                        : "border-tm-rule bg-tm-panel",
+                    )}
+                  >
+                    <span className="text-sm font-medium">
+                      {e.name}{" "}
+                      <span className="font-tm-mono text-[11.5px] text-tm-dim">
+                        {mode === "hands" ? e.portion : `${e.grams} g`}
+                      </span>
+                    </span>
+                    <span className="shrink-0 font-tm-mono text-[11.5px] text-tm-dim">
+                      {e.kcal} · {fmt(e.proteinG)}p {e.eaten ? "✓ eaten" : "— to eat"}
+                    </span>
+                  </button>
+                  {swaps.length > 0 && (
+                    <button
+                      onClick={() => setSwapFor(swapFor === e.id ? null : e.id)}
+                      aria-expanded={swapFor === e.id}
+                      className="min-h-11 shrink-0 cursor-pointer rounded-lg border border-tm-rule bg-tm-panel px-2 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-dim uppercase"
+                    >
+                      Swap
+                    </button>
+                  )}
+                  <button
+                    onClick={() => actions.removeFood(e.id)}
+                    aria-label={`Remove ${e.name} from ${slot.label.toLowerCase()}`}
+                    className="min-h-11 w-11 shrink-0 cursor-pointer rounded-lg border border-tm-rule bg-tm-panel font-tm-mono text-sm text-tm-dim"
+                  >
+                    ×
+                  </button>
+                </div>
+                {swapFor === e.id && (
+                  <div className="flex flex-wrap gap-1.5 pl-1">
+                    {swaps.map((s) => (
+                      <button
+                        key={s.key}
+                        onClick={() => {
+                          actions.swapFood(e.id, s.key);
+                          setSwapFor(null);
+                        }}
+                        className="min-h-11 cursor-pointer rounded-lg border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] uppercase"
+                      >
+                        {s.name}
+                      </button>
+                    ))}
+                  </div>
                 )}
-              >
-                <span className="text-sm font-medium">
-                  {e.name}{" "}
-                  <span className="font-tm-mono text-[11.5px] text-tm-dim">
-                    {mode === "hands" ? e.portion : `${e.grams} g`}
-                  </span>
-                </span>
-                {/* State is never colour alone: "eaten" and "to eat" are words. */}
-                <span className="shrink-0 font-tm-mono text-[11.5px] text-tm-dim">
-                  {e.kcal} · {fmt(e.proteinG)}p {e.eaten ? "✓ eaten" : "— to eat"}
-                </span>
-              </button>
-              <button
-                onClick={() => actions.removeFood(e.id)}
-                aria-label={`Remove ${e.name} from ${slot.label.toLowerCase()}`}
-                className="min-h-11 w-11 shrink-0 cursor-pointer rounded-lg border border-tm-rule bg-tm-panel font-tm-mono text-sm text-tm-dim"
-              >
-                ×
-              </button>
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
-  );
-}
-
-function AddFood({ foods }: { foods: FoodOption[] }) {
-  const { actions } = useTimento();
-  const mode = usePortionMode();
-  const [query, setQuery] = useState("");
-  const [slot, setSlot] = useState<MealSlot>("lunch");
-  const [picked, setPicked] = useState<FoodOption | null>(null);
-  const [grams, setGrams] = useState("");
-
-  const results = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    // What today can reach comes first — never hidden, just not offered first.
-    const byReach = (a: FoodOption, b: FoodOption) => Number(b.allowed) - Number(a.allowed);
-    if (q.length === 0)
-      return foods
-        .filter((f) => f.allowed && (f.effort === "none" || f.effort === "heat"))
-        .filter((f) => f.tags.includes("high-protein") || f.tags.includes("quick"))
-        .slice(0, 6);
-    return foods
-      .filter(
-        (f) =>
-          f.name.toLowerCase().includes(q) ||
-          f.tags.some((t) => t.includes(q)) ||
-          f.shelf.includes(q) ||
-          f.effort.includes(q),
-      )
-      .sort(byReach)
-      .slice(0, 8);
-  }, [foods, query]);
-
-  const log = (g: number) => {
-    if (!picked || !Number.isFinite(g) || g <= 0) return;
-    actions.logFood(slot, picked.key, Math.round(g));
-    setPicked(null);
-    setQuery("");
-    setGrams("");
-  };
-
-  return (
-    <Card>
-      <Eyebrow color="bg-tm-blue">Add food</Eyebrow>
-      <div className="flex gap-1.5" role="radiogroup" aria-label="Meal slot">
-        {SLOT_ORDER.map((s) => (
-          <button
-            key={s}
-            role="radio"
-            aria-checked={slot === s}
-            onClick={() => setSlot(s)}
-            className={cn(
-              "min-h-11 flex-1 cursor-pointer rounded-lg border font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
-              slot === s ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule bg-tm-panel text-tm-dim",
-            )}
-          >
-            {s}
-          </button>
-        ))}
-      </div>
-
-      <input
-        value={query}
-        onChange={(e) => {
-          setQuery(e.target.value);
-          setPicked(null);
-        }}
-        placeholder="Search — name, freezer, cupboard, none"
-        aria-label="Search foods"
-        className="mt-2 min-h-11 w-full rounded-lg border border-tm-rule bg-tm-panel px-3 py-2 text-sm outline-none focus:border-tm-ink"
-      />
-
-      {picked === null ? (
-        <div className="mt-2 flex flex-col gap-1.5">
-          {results.length === 0 && (
-            <p className="text-sm text-tm-dim">
-              Nothing in the file matches. The catalogue holds staples only — no invented foods.
-            </p>
-          )}
-          {results.map((f) => (
-            <button
-              key={f.key}
-              onClick={() => {
-                setPicked(f);
-                setGrams(String(f.portionG));
-              }}
-              className="flex min-h-11 cursor-pointer flex-col justify-center rounded-lg border border-tm-rule bg-tm-panel px-3 py-2 text-left"
-            >
-              <span className="flex flex-wrap items-baseline justify-between gap-x-2">
-                <span className="text-sm font-medium">{f.name}</span>
-                <span className="font-tm-mono text-[11.5px] text-tm-dim">
-                  {f.kcalPer100} kcal · {fmt(f.proteinPer100G)} p /100 g
-                </span>
-              </span>
-              <span className="font-tm-mono text-[11.5px] text-tm-dim">
-                {costOf(f)} · {SHELF_LABELS[f.shelf]}
-                {f.allowed ? "" : " · outside today's kitchen"}
-              </span>
-            </button>
-          ))}
-        </div>
-      ) : (
-        <div className="mt-2 rounded-lg bg-tm-soft p-3">
-          <div className="flex items-baseline justify-between gap-2">
-            <span className="text-sm font-semibold">{picked.name}</span>
-            <button
-              onClick={() => setPicked(null)}
-              className="min-h-11 cursor-pointer px-2 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase"
-            >
-              Change
-            </button>
-          </div>
-          <p className="font-tm-mono text-[11.5px] text-tm-dim">
-            {costOf(picked)} · {SHELF_LABELS[picked.shelf]}
-            {picked.allergens.length > 0
-              ? ` · contains ${picked.allergens.map((a) => ALLERGEN_LABELS[a].toLowerCase()).join(", ")}`
-              : ""}
-          </p>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            <button
-              onClick={() => log(picked.portionG)}
-              className="min-h-11 cursor-pointer rounded-lg border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase"
-            >
-              {mode === "hands"
-                ? `${picked.handPortion} · ${picked.portionLabel}`
-                : `${picked.portionLabel} · ${picked.portionG} g`}
-            </button>
-            <button
-              onClick={() => log(100)}
-              className="min-h-11 cursor-pointer rounded-lg border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase"
-            >
-              100 g
-            </button>
-          </div>
-          <form
-            className="mt-2 flex gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              log(Number(grams));
-            }}
-          >
-            <input
-              value={grams}
-              onChange={(e) => setGrams(e.target.value)}
-              inputMode="numeric"
-              aria-label="Grams"
-              placeholder="g"
-              className="min-h-11 w-24 rounded-lg border border-tm-rule bg-tm-panel px-3 py-2 font-tm-mono text-sm outline-none focus:border-tm-ink"
-            />
-            <button
-              type="submit"
-              className="min-h-11 flex-1 cursor-pointer rounded-lg bg-tm-ink px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase"
-            >
-              Log to {slot}
-            </button>
-          </form>
-          <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
-            Reference values per 100 g, not an analysis of your shopping. Weigh it or accept the
-            estimate — both are recorded the same way.
-          </p>
-        </div>
-      )}
-    </Card>
   );
 }
 

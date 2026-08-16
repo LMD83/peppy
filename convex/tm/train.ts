@@ -4,29 +4,37 @@ import { requireUser } from "./db";
 import { addDays } from "./lib";
 import {
   DEFAULT_LANDMARKS,
+  DEFAULT_TRAIN_PROFILE,
   EXERCISE_BY_KEY,
   MESO_DELOAD_WEEK,
-  MESO_TEMPLATES,
   MESO_WEEKS,
   MUSCLES,
+  formatFor,
   mesocycleName,
+  templatesFor,
   type Landmark,
   type MesoGoal,
   type Muscle,
+  type SessionFormat,
+  type TrainVoice,
+  type TrainingProfile,
 } from "./data/exercises";
 import {
   e1rm,
-  lastSessionFor,
   mesoWeekFor,
-  progressionFor,
+  profileFromRow,
   prsFrom,
   readinessAdjust,
   roundHalf,
-  topSetFor,
+  sessionBlockFor,
+  sessionScale,
+  survivalMoveFor,
+  volumeLabel,
   volumeSetsByMuscle,
   volumeVerdict,
   type DatedSet,
   type MesoPhase,
+  type SessionBlock,
   type VolumeVerdict,
 } from "./logicTrain";
 
@@ -42,18 +50,7 @@ const goalArg = v.union(v.literal("hypertrophy"), v.literal("strength"), v.liter
 const SET_LOG_SCAN = 400;
 const VOLUME_WINDOW_DAYS = 6;
 
-export type TrainBlockView = {
-  exercise: string;
-  muscle: Muscle;
-  sets: number;
-  repLow: number;
-  repHigh: number;
-  rirTarget: number;
-  lastTopSet: { weightKg: number; reps: number; rir: number } | null;
-  suggestionKg: number;
-  why: string;
-  e1rm: number;
-};
+export type TrainBlockView = SessionBlock;
 
 export type TrainView = {
   mesocycle: {
@@ -64,7 +61,7 @@ export type TrainView = {
     isDeload: boolean;
     phase: MesoPhase;
   } | null;
-  today: { dayName: string; isRestDay: boolean; blocks: TrainBlockView[] };
+  today: { dayName: string; isRestDay: boolean; blocks: TrainBlockView[]; format: SessionFormat };
   loggedSets: {
     exercise: string;
     setIndex: number;
@@ -81,10 +78,14 @@ export type TrainView = {
     mrv: number;
     verdict: VolumeVerdict;
     note: string;
+    verdictLabel: string;
   }[];
   prs: { exercise: string; e1rm: number; date: string }[];
   readiness: { multiplier: number; note: string };
   survival: boolean;
+  profile: TrainingProfile;
+  voice: TrainVoice;
+  survivalMove: { name: string; minutes: number; cue: string } | null;
 };
 
 export const get = query({
@@ -109,16 +110,27 @@ export const get = query({
         e1rm: e1rm(r.weightKg, r.reps, r.rir),
       }));
 
+    const profileRow = await ctx.db
+      .query("tm_trainProfiles")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .unique();
+    const profile = profileRow ? profileFromRow(profileRow) : DEFAULT_TRAIN_PROFILE;
+    const voice: TrainVoice = user.a11yProfile === "easy" ? "easy" : "standard";
+    const format = formatFor(profile);
+
     // Survival is a floor: no programme, no volume targets, nothing to catch up on.
     if (user.mode === "survival") {
       return {
         mesocycle: null,
-        today: { dayName: "Floor — movement only", isRestDay: true, blocks: [] },
+        today: { dayName: "Floor — movement only", isRestDay: true, blocks: [], format },
         loggedSets,
         weeklyVolume: [],
         prs: [],
         readiness: { multiplier: 1, note: "floor mode — no load prescription" },
         survival: true,
+        profile,
+        voice,
+        survivalMove: survivalMoveFor(profile),
       };
     }
 
@@ -164,36 +176,11 @@ export const get = query({
           .sort((a, b) => a.orderIndex - b.orderIndex)
       : [];
 
-    const blocks: TrainBlockView[] = blockRows.map((b) => {
-      const exercise = EXERCISE_BY_KEY[b.exercise];
-      const last = lastSessionFor(history, b.exercise);
-      const top = topSetFor(history, b.exercise);
-      const progression = progressionFor(last?.sets ?? [], {
-        repLow: b.repLow,
-        repHigh: b.repHigh,
-        rirTarget: b.rirTarget,
-        loadStepKg: exercise?.loadStepKg ?? 2.5,
-      });
-      const scaled = roundHalf(progression.suggestionKg * readiness.multiplier);
-      // State scales the number, so say so — otherwise "load goes up" reads as
-      // a contradiction next to a smaller suggestion.
-      const why =
-        readiness.multiplier < 1 && progression.suggestionKg > 0
-          ? `${progression.why} Readiness ×${readiness.multiplier.toFixed(2)} → ${scaled.toFixed(1)} kg today.`
-          : progression.why;
-      return {
-        exercise: b.exercise,
-        muscle: isMuscle(b.muscle) ? b.muscle : (exercise?.muscle ?? "core"),
-        sets: readiness.dropSet ? Math.max(1, b.sets - 1) : b.sets,
-        repLow: b.repLow,
-        repHigh: b.repHigh,
-        rirTarget: b.rirTarget,
-        lastTopSet: top ? { weightKg: top.weightKg, reps: top.reps, rir: top.rir } : null,
-        suggestionKg: scaled,
-        why,
-        e1rm: top?.e1rm ?? 0,
-      };
-    });
+    const scale = sessionScale(profile);
+    const blocks: TrainBlockView[] = blockRows
+      .map((b) => sessionBlockFor(b, profile, voice, history, readiness))
+      .filter((b): b is TrainBlockView => b !== null)
+      .slice(0, scale.maxBlocks);
 
     const landmarkRows = await ctx.db
       .query("tm_volumeLandmarks")
@@ -212,7 +199,8 @@ export const get = query({
       const landmark = landmarks.get(muscle) ?? DEFAULT_LANDMARKS[muscle];
       const sets = setsByMuscle[muscle];
       const { verdict, note } = volumeVerdict(sets, landmark);
-      return { muscle, sets, ...landmark, verdict, note };
+      const labelled = volumeLabel(verdict, note, voice);
+      return { muscle, sets, ...landmark, verdict, note: labelled.note, verdictLabel: labelled.verdict };
     });
 
     const dayName = meso
@@ -233,19 +221,18 @@ export const get = query({
               phase: position.phase,
             }
           : null,
-      today: { dayName, isRestDay: blocks.length === 0, blocks },
+      today: { dayName, isRestDay: blocks.length === 0, blocks, format },
       loggedSets,
       weeklyVolume,
       prs: prsFrom(history).slice(0, 8),
       readiness: { multiplier: readiness.multiplier, note: readiness.note },
       survival: false,
+      profile,
+      voice,
+      survivalMove: null,
     };
   },
 });
-
-function isMuscle(value: string): value is Muscle {
-  return (MUSCLES as string[]).includes(value);
-}
 
 export const logSet = mutation({
   args: {
@@ -306,9 +293,71 @@ export const startMesocycle = mutation({
       goal,
       status: "running",
     });
-    for (const block of MESO_TEMPLATES) {
+    const profileRow = await ctx.db
+      .query("tm_trainProfiles")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .unique();
+    const profile = profileRow ? profileFromRow(profileRow) : DEFAULT_TRAIN_PROFILE;
+    for (const block of templatesFor(profile)) {
       await ctx.db.insert("tm_programBlocks", { userId: user._id, mesocycleId, ...block });
     }
+    return null;
+  },
+});
+
+const settingArg = v.union(v.literal("home"), v.literal("gym"), v.literal("box"));
+const experienceArg = v.union(v.literal("new"), v.literal("returning"), v.literal("trained"));
+const ageBandArg = v.union(v.literal("under-40"), v.literal("40-59"), v.literal("60-plus"));
+
+export const saveProfile = mutation({
+  args: {
+    token: v.string(),
+    setting: settingArg,
+    kit: v.array(v.string()),
+    experience: experienceArg,
+    ageBand: ageBandArg,
+    minutes: v.number(),
+    constraints: v.array(v.string()),
+  },
+  handler: async (ctx, { token, ...raw }) => {
+    const user = await requireUser(ctx, token);
+    const profile = profileFromRow(raw);
+    const existing = await ctx.db
+      .query("tm_trainProfiles")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .unique();
+    if (existing) await ctx.db.patch("tm_trainProfiles", existing._id, profile);
+    else await ctx.db.insert("tm_trainProfiles", { userId: user._id, ...profile });
+    return null;
+  },
+});
+
+export const swapBlock = mutation({
+  args: {
+    token: v.string(),
+    exercise: v.string(),
+    replacement: v.string(),
+  },
+  handler: async (ctx, { token, exercise, replacement }) => {
+    const user = await requireUser(ctx, token);
+    if (!EXERCISE_BY_KEY[replacement]) throw new Error("Unknown exercise");
+    const mesoRows = await ctx.db
+      .query("tm_mesocycles")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .take(20);
+    const meso = mesoRows.find((m) => m.status === "running");
+    if (!meso) return null;
+    const blocks = await ctx.db
+      .query("tm_programBlocks")
+      .withIndex("by_mesocycleId", (q) => q.eq("mesocycleId", meso._id))
+      .take(200);
+    const row = blocks.find((b) => b.exercise === exercise);
+    if (!row) return null;
+    const next = EXERCISE_BY_KEY[replacement];
+    await ctx.db.patch("tm_programBlocks", row._id, {
+      exercise: replacement,
+      muscle: next.muscle,
+    });
     return null;
   },
 });

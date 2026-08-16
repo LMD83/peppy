@@ -32,6 +32,8 @@ import type {
   TrainData,
 } from "./types";
 import type { FoodEquipment } from "@convex/tm/data/foods";
+import { KITCHEN_PROFILES, type KitchenProfileRow } from "@convex/tm/fixtures/fuel";
+import type { SavedMenuRow } from "./demo/fuel";
 import type {
   AssessmentRow,
   DoseLogRow,
@@ -46,6 +48,7 @@ import type {
   ProtocolItemRow,
   ReflectionRow,
   SetLogRow,
+  TrainProfileRow,
   VolumeLandmarkRow,
 } from "./demo/rows";
 import type { ContactRow, CrewLinkRow, SupplyRow } from "./demo/rows-wave1";
@@ -90,6 +93,7 @@ export class DemoDb {
   programBlocks: ProgramBlockRow[];
   setLogs: SetLogRow[];
   volumeLandmarks: VolumeLandmarkRow[];
+  trainProfiles: TrainProfileRow[];
   protocolItems: ProtocolItemRow[];
   doseLogs: DoseLogRow[];
   labPanels: LabPanelRow[];
@@ -105,6 +109,8 @@ export class DemoDb {
   captures: { id: string; userSlug: string; date: string; kind: "dose" | "meal" | "organiser"; storageId: string; note?: string; at: number }[];
   pantry: { id: string; userSlug: string; foodKey: string; grams: number; updatedDate: string }[];
   ingestTokens: { id: string; userSlug: string; token: string; label: string; createdDate: string; lastUsedAt?: number; revoked: boolean }[];
+  kitchenProfiles: KitchenProfileRow[];
+  savedMenus: SavedMenuRow[];
 
   private listeners = new Set<() => void>();
   private idSeq = 0;
@@ -126,6 +132,7 @@ export class DemoDb {
     this.programBlocks = [...fx.programBlocks];
     this.setLogs = [...fx.setLogs];
     this.volumeLandmarks = [...fx.volumeLandmarks];
+    this.trainProfiles = [...fx.trainProfiles];
     this.protocolItems = [...fx.protocolItems];
     this.doseLogs = [...fx.doseLogs];
     this.labPanels = [...fx.labPanels];
@@ -138,6 +145,8 @@ export class DemoDb {
     this.contacts = [...fx.contacts];
     this.ingestTokens = [];
     this.pantry = [...fx.pantry];
+    this.kitchenProfiles = KITCHEN_PROFILES.map((p) => ({ ...p }));
+    this.savedMenus = [];
     this.pushSubs = [];
     this.reminderPrefs = [];
     this.captures = [];
@@ -488,6 +497,43 @@ export class DemoDb {
     fuel.generatePlan(this, slug, date, today);
     this.bump();
   }
+  logMenu(slug: string, date: string, slot: MealSlot, items: { foodKey: string; grams: number }[]) {
+    fuel.logMenu(this, slug, date, slot, items);
+    this.bump();
+  }
+  saveMenu(slug: string, name: string, slot: MealSlot, items: { foodKey: string; grams: number }[]) {
+    fuel.saveMenu(this, slug, name, slot, items);
+    this.bump();
+  }
+  copyYesterday(slug: string, date: string) {
+    fuel.copyYesterday(this, slug, date);
+    this.bump();
+  }
+  generateWeek(
+    slug: string,
+    date: string,
+    today?: { minutes?: number; equipment?: FoodEquipment; oneHanded?: boolean; canStand?: boolean },
+  ) {
+    fuel.generateWeek(this, slug, date, today);
+    this.bump();
+  }
+  setKitchen(
+    slug: string,
+    patch: {
+      minutes?: number;
+      equipment?: FoodEquipment;
+      oneHanded?: boolean;
+      canStand?: boolean;
+      pinnedBreakfast?: string | null;
+    },
+  ) {
+    fuel.setKitchen(this, slug, patch);
+    this.bump();
+  }
+  swapFood(entryId: string, foodKey: string) {
+    fuel.swapFood(this, entryId, foodKey);
+    this.bump();
+  }
 
   logSet(slug: string, date: string, exercise: string, setIndex: number, weightKg: number, reps: number, rir: number) {
     train.logSet(this, slug, date, exercise, setIndex, weightKg, reps, rir);
@@ -495,6 +541,24 @@ export class DemoDb {
   }
   startMesocycle(slug: string, date: string, goal: "hypertrophy" | "strength" | "recomp") {
     train.startMesocycle(this, slug, date, goal);
+    this.bump();
+  }
+  saveTrainProfile(
+    slug: string,
+    profile: {
+      setting: "home" | "gym" | "box";
+      kit: string[];
+      experience: "new" | "returning" | "trained";
+      ageBand: "under-40" | "40-59" | "60-plus";
+      minutes: number;
+      constraints: string[];
+    },
+  ) {
+    train.saveProfile(this, slug, profile);
+    this.bump();
+  }
+  swapTrainBlock(slug: string, exercise: string, replacement: string) {
+    train.swapBlock(this, slug, exercise, replacement);
     this.bump();
   }
 

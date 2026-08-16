@@ -358,6 +358,16 @@ export default defineSchema({
     mrv: v.number(),
   }).index("by_userId", ["userId"]),
 
+  tm_trainProfiles: defineTable({
+    userId: v.id("tm_users"),
+    setting: v.union(v.literal("home"), v.literal("gym"), v.literal("box")),
+    kit: v.array(v.string()),
+    experience: v.union(v.literal("new"), v.literal("returning"), v.literal("trained")),
+    ageBand: v.union(v.literal("under-40"), v.literal("40-59"), v.literal("60-plus")),
+    minutes: v.number(),
+    constraints: v.array(v.string()),
+  }).index("by_userId", ["userId"]),
+
   /* ===== Stack — meds, peptides, supplements ===== */
 
   tm_protocolItems: defineTable({

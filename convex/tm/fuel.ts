@@ -18,7 +18,6 @@ import {
   type FuelView,
   type FuelViewInput,
   type KitchenProfile,
-  type MealSlot,
   type RawMealEntry,
   type WeighIn,
 } from "./logicFuel";

@@ -51,6 +51,15 @@ export type TrainFixtures = {
     rir: number;
   }[];
   volumeLandmarks: { userSlug: string; muscle: string; mev: number; mav: number; mrv: number }[];
+  trainProfiles: {
+    userSlug: string;
+    setting: "home" | "gym" | "box";
+    kit: string[];
+    experience: "new" | "returning" | "trained";
+    ageBand: "under-40" | "40-59" | "60-plus";
+    minutes: number;
+    constraints: string[];
+  }[];
 };
 
 /** Working loads Liam started the block on. */
@@ -153,7 +162,28 @@ export function buildTrainFixtures(today: string): TrainFixtures {
     MUSCLES.map((muscle) => ({ userSlug, muscle, ...DEFAULT_LANDMARKS[muscle] })),
   );
 
-  return { mesocycles, programBlocks, setLogs, volumeLandmarks };
+  const trainProfiles: TrainFixtures["trainProfiles"] = [
+    {
+      userSlug: "liam",
+      setting: "gym",
+      kit: ["none", "barbell", "dumbbell", "machine", "cable", "bench", "pull-up-bar", "box"],
+      experience: "trained",
+      ageBand: "under-40",
+      minutes: 60,
+      constraints: [],
+    },
+    {
+      userSlug: "conor",
+      setting: "home",
+      kit: ["none", "dumbbell", "band"],
+      experience: "returning",
+      ageBand: "40-59",
+      minutes: 25,
+      constraints: [],
+    },
+  ];
+
+  return { mesocycles, programBlocks, setLogs, volumeLandmarks, trainProfiles };
 }
 
 export async function seedTrain(
@@ -174,4 +204,6 @@ export async function seedTrain(
     await ctx.db.insert("tm_setLogs", { userId: uid(userSlug), ...row });
   for (const { userSlug, ...row } of fx.volumeLandmarks)
     await ctx.db.insert("tm_volumeLandmarks", { userId: uid(userSlug), ...row });
+  for (const { userSlug, ...row } of fx.trainProfiles)
+    await ctx.db.insert("tm_trainProfiles", { userId: uid(userSlug), ...row });
 }

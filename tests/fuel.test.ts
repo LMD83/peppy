@@ -1012,9 +1012,9 @@ describe("calorie control helpers", () => {
     expect(
       weeklyLeftoverKcal(
         [
-          { date: "2026-08-10", kcal: 2000, proteinG: 150 },
-          { date: "2026-08-11", kcal: 0, proteinG: 0 },
-          { date: "2026-08-12", kcal: 2400, proteinG: 180 },
+          { kcal: 2000 },
+          { kcal: 0 },
+          { kcal: 2400 },
         ],
         2300,
       ),

@@ -1,8 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { MESO_DELOAD_WEEK, exerciseName, type MesoGoal } from "@convex/tm/data/exercises";
+import {
+  MESO_DELOAD_WEEK,
+  exerciseName,
+  type AgeBand,
+  type Constraint,
+  type Experience,
+  type Kit,
+  type MesoGoal,
+  type Setting,
+  type TrainingProfile,
+} from "@convex/tm/data/exercises";
 import { useTimento } from "../_lib/backend";
 import type { TrainData } from "../_lib/types";
 import { Card, Eyebrow, Stat } from "./ui";
@@ -32,14 +42,26 @@ export function TrainTab() {
             Survival is the floor, not a lite programme: no block, no volume targets, no session to
             make up. Walk, stretch, keep the joint moving. The mesocycle waits.
           </p>
+          {train.survivalMove && (
+            <p className="mt-2 text-[12.5px] text-tm-amber-ink">
+              {train.survivalMove.minutes} min · {train.survivalMove.name}. {train.survivalMove.cue}
+            </p>
+          )}
         </Card>
-        {train.loggedSets.length > 0 && <LoggedTodayCard sets={train.loggedSets} />}
+        <ProfileCard profile={train.profile} />
+        {train.loggedSets.length > 0 && <LoggedTodayCard sets={train.loggedSets} hideE1rm={train.voice === "easy"} />}
       </div>
     );
   }
 
+  const focus = train.today.blocks.find((b) => {
+    const done = train.loggedSets.filter((s) => s.exercise === b.exercise).length;
+    return done < b.sets;
+  });
+
   return (
     <div className="flex flex-col gap-3 pt-4">
+      <ProfileCard profile={train.profile} />
       {train.mesocycle ? <MesoCard meso={train.mesocycle} readiness={train.readiness} /> : <StartMesoCard />}
 
       {train.today.blocks.length > 0 ? (
