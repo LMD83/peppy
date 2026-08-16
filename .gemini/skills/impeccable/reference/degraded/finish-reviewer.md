@@ -31,7 +31,7 @@ The first line of your return is `disposition: recapture`, `disposition: rebuild
 
 ## Output Contract
 
-Return the disposition line first, then exactly five sections: `persistence` (pass/fail with specifics), `fidelity` (the element matrix: match, adaptation, missing, contradicted, or added without approval per salient element, adaptations citing their evidence, or "faithful"), `ceiling` (unused native devices, or "reached"), `material_fixes` (ordered, most material first, fidelity failures ahead of craft, each one line tied to a check or contract promise, at most eight), and `keep` (one line naming what must not be diluted while fixing). A recapture return replaces the five sections with the single `recapture` section from check 0. Missing inputs are named in one line above the sections. No praise, no summary prose.
+Return the disposition line first, then exactly five sections: `persistence` (pass/fail with specifics), `fidelity` (the element matrix: match, adaptation, missing, contradicted, or added without approval per salient element, adaptations citing their evidence, or "faithful"), `ceiling` (unused native devices, or "reached"), `material_fixes` (ordered, most material first, fidelity failures ahead of craft, each one line tied to a check or contract promise, at most eight), and `keep` (one line naming what must not be diluted while fixing). A recapture return replaces the five sections with the single `recapture` section from check 0. A verdict-pass return replaces the five sections with `verdict` and `remaining`. Missing inputs are named in one line above the sections. No praise, no summary prose.
 
 ## Verdict Pass
 
