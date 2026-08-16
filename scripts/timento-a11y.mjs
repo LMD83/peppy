@@ -65,10 +65,33 @@ async function login(page, slug, passcode) {
   await page.evaluate(() => document.querySelector("nextjs-portal")?.remove());
 }
 
+const PROTOCOL_ROW = {
+  Fuel: "Fuel",
+  Train: "Train",
+  Stack: "Stack",
+  Supply: "Supply",
+  Bloods: "Bloods",
+  Trend: "Trend",
+  "Check-in": "Check-in",
+  "Trigger map": "Trigger map",
+  Craving: "Trigger map",
+};
+
+function protocolRow(tab, sub) {
+  if (sub) return PROTOCOL_ROW[sub] ?? sub;
+  return PROTOCOL_ROW[tab] ?? null;
+}
+
 async function goTab(page, tab, sub) {
   await page.evaluate(() => window.scrollTo(0, 0));
-  await page.getByRole("button", { name: tab, exact: true }).click({ timeout: NAV_TIMEOUT });
-  if (sub) await page.getByRole("tab", { name: sub, exact: true }).click({ timeout: NAV_TIMEOUT });
+  const nav = page.getByRole("navigation", { name: "Sections" });
+  const row = protocolRow(tab, sub);
+  if (row) {
+    await nav.getByRole("button", { name: "Protocol", exact: true }).click({ timeout: NAV_TIMEOUT });
+    await page.locator("main").getByRole("button", { name: row, exact: true }).click({ timeout: NAV_TIMEOUT });
+    return;
+  }
+  await nav.getByRole("button", { name: tab, exact: true }).click({ timeout: NAV_TIMEOUT });
 }
 
 /** Reach a More-shelf destination by its row label. */
@@ -267,7 +290,9 @@ for (const [label, viewport, reflow] of [
   await login(page, "liam", "2580");
   await sweep(page, `${label}-today`, { reflow });
 
-  // Every tab and sub-tab the bottom nav reaches.
+  // The Protocol shelf, then every row it reaches, then Crew.
+  await goTab(page, "Protocol");
+  await sweep(page, `${label}-protocol`, { reflow });
   for (const [tab, sub] of [
     ["Fuel", null],
     ["Train", null],
@@ -276,7 +301,7 @@ for (const [label, viewport, reflow] of [
     ["Body", "Bloods"],
     ["Body", "Trend"],
     ["Mind", "Check-in"],
-    ["Mind", "Craving"],
+    ["Mind", "Trigger map"],
     ["Crew", null],
   ]) {
     await goTab(page, tab, sub);
@@ -297,18 +322,23 @@ for (const [label, viewport, reflow] of [
   // shipped was the one for someone at their worst, so it is scanned explicitly.
   await goTab(page, "Today");
   await page.getByRole("button", { name: /cut mode ⇄/i }).click();
-  await page.getByRole("dialog").getByRole("button", { name: /survival/i }).click();
+  await page.getByRole("button", { name: /^survival\b/i }).click();
   await page.getByText(/Floor protocol — hold/i).waitFor();
   await sweep(page, `${label}-survival-floor`, { reflow });
   await page.getByRole("button", { name: /survival mode ⇄/i }).click();
-  await page.getByRole("dialog").getByRole("button", { name: /^cut/i }).click();
+  await page.getByRole("button", { name: /^cut\b/i }).click();
   await page.getByText(/Cut protocol/i).waitFor();
 
-  // Easy mode is a different tree, not a skin: fewer objects, bigger targets,
-  // a two-item nav. Scanning standard mode says nothing about it.
+  // Easy mode is a different tree, not a skin: fewer objects, bigger targets.
+  // The four stamps stay; only the shelf rows go through plain(). Scanning
+  // standard mode says nothing about it.
   await setProfile(page, "easy");
   await goTab(page, "Today");
   await sweep(page, `${label}-easy-today`, { reflow });
+  await goTab(page, "Protocol");
+  await sweep(page, `${label}-easy-protocol`, { reflow });
+  await goTab(page, "Crew");
+  await sweep(page, `${label}-easy-crew`, { reflow });
   await goTab(page, "More");
   await sweep(page, `${label}-easy-more`, { reflow });
   await setProfile(page, "standard");

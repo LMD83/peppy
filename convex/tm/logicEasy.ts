@@ -127,6 +127,7 @@ export const plainLanguage: Record<string, string> = {
   "Check-in": "Questions",
   Compound: "Medicine or supplement",
   Craving: "Urges",
+  "Trigger map": "When urges hit",
   Crew: "People helping you",
   Cut: "Losing weight",
   Dose: "One tablet or shot",

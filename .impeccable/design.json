@@ -122,7 +122,7 @@
     "donts": [
       "Don't introduce purple gradients, glassmorphism, or neon dark themes.",
       "Don't replace Archivo / IBM Plex with Inter/Roboto “default SaaS” stacks.",
-      "Don't add an eighth bottom-nav destination; More is the overflow shelf.",
+      "Don't add a fifth bottom-nav stamp; Protocol and More are shelves.",
       "Don't decorate with emoji or sticker badges on the scoreboard.",
       "Don't invent macro-tracking chrome that violates survival’s three-check floor.",
       "Don't restore pre-AA hex (#c77d1f, #2e7d4f, #c7373f, #70747b, #9ba0a8, #b8860b)."

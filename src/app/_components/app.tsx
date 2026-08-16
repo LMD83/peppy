@@ -10,7 +10,7 @@ import { Login } from "./login";
 import { Scoreboard } from "./scoreboard";
 import { TodayTab } from "./today-tab";
 import { FileNavProvider } from "./file-nav";
-import { fileWidth } from "./ui";
+import { Eyebrow, fileWidth } from "./ui";
 
 function TabBusy() {
   return (
@@ -39,30 +39,21 @@ const RemindPanel = dynamic(() => import("./remind-tab").then((m) => m.RemindPan
 const CapturePanel = dynamic(() => import("./capture-tab").then((m) => m.CapturePanel), { loading: TabBusy });
 
 /*
-  Bottom nav.
+  Bottom nav — the same four stamps in both profiles.
 
-  "More" is the seventh item and it is the same idea in both profiles: the
-  overflow shelf. In standard mode it holds Settings, so the six sections the
-  e2e suite drives (Today/Fuel/Train/Body/Mind/Crew) keep their exact positions
-  and exact accessible names. In easy mode the nav collapses to Today + More and
-  the shelf holds everything else as a plain list of big rows.
-
-  Two items is the whole point: a person who wants one decision per screen
-  should not have to choose between six destinations before they have chosen
-  anything at all. It is a collapse, never a second UI — the same Shell renders
-  the same tab components either way.
+  The story, left to right: execute the day, open the protocol, see the other
+  holder, then the appendix. Easy mode used to hide Crew and the work inside a
+  thirteen-row More list. That was a second IA, not a simpler one. Easy still
+  shows fewer cards on Today; the bar tells the same story.
 */
-const TABS = [
-  { id: "today", label: "Today" },
-  { id: "fuel", label: "Fuel" },
-  { id: "train", label: "Train" },
-  { id: "body", label: "Body" },
-  { id: "mind", label: "Mind" },
-  { id: "crew", label: "Crew" },
-] as const;
-
 type TabId =
-  | (typeof TABS)[number]["id"]
+  | "today"
+  | "protocol"
+  | "fuel"
+  | "train"
+  | "body"
+  | "mind"
+  | "crew"
   | "more"
   | "settings"
   | "handsfree"
@@ -70,83 +61,45 @@ type TabId =
   | "remind"
   | "capture";
 
-const MORE_TAB = { id: "more", label: "More" } as const;
-
-/** Destinations the bottom nav already reaches, so the shelf need not repeat them. */
-const NAV_TAB_IDS: ReadonlySet<string> = new Set(TABS.map((t) => t.id));
-const NAV_STANDARD: readonly { id: TabId; label: string }[] = [...TABS, MORE_TAB];
-const NAV_EASY: readonly { id: TabId; label: string }[] = [{ id: "today", label: "Today" }, MORE_TAB];
-
-/* Second-level views, so the bottom bar stays at thumb-sized targets. */
-const SUB: Partial<Record<TabId, { id: string; label: string }[]>> = {
-  body: [
-    { id: "stack", label: "Stack" },
-    { id: "supply", label: "Supply" },
-    { id: "labs", label: "Bloods" },
-    { id: "trend", label: "Trend" },
-  ],
-  mind: [
-    { id: "checkin", label: "Check-in" },
-    { id: "craving", label: "Craving" },
-  ],
-};
-
-/** Every destination the More shelf can send you to, as one flat list. */
-type Destination = { key: string; label: string; tab: TabId; sub?: string };
-
-const DESTINATIONS: Destination[] = [
-  { key: "fuel", label: "Fuel", tab: "fuel" },
-  { key: "train", label: "Train", tab: "train" },
-  { key: "stack", label: "Stack", tab: "body", sub: "stack" },
-  { key: "supply", label: "Supply", tab: "body", sub: "supply" },
-  { key: "labs", label: "Bloods", tab: "body", sub: "labs" },
-  { key: "trend", label: "Trend", tab: "body", sub: "trend" },
-  { key: "checkin", label: "Check-in", tab: "mind", sub: "checkin" },
-  { key: "craving", label: "Craving", tab: "mind", sub: "craving" },
-  { key: "crew", label: "Crew", tab: "crew" },
-  { key: "shop", label: "Shopping", tab: "shop" },
-  { key: "handsfree", label: "Hands-free", tab: "handsfree" },
-  { key: "remind", label: "Reminders", tab: "remind" },
-  { key: "capture", label: "Photos", tab: "capture" },
+const NAV: readonly { id: TabId; label: string }[] = [
+  { id: "today", label: "Today" },
+  { id: "protocol", label: "Protocol" },
+  { id: "crew", label: "Crew" },
+  { id: "more", label: "More" },
 ];
 
-function SubNav({
-  items,
-  value,
-  onChange,
-}: {
-  items: { id: string; label: string }[];
-  value: string;
-  onChange: (id: string) => void;
-}) {
-  return (
-    // flex-wrap: four chips at 44px tall overflow a 320px viewport (1.4.10).
-    // They wrap onto a second row instead of scrolling the page sideways.
-    <div className="mb-3 flex flex-wrap gap-1.5" role="tablist">
-      {items.map((s) => (
-        <button
-          key={s.id}
-          role="tab"
-          aria-selected={value === s.id}
-          onClick={() => onChange(s.id)}
-          className={cn(
-            // min-h-11 = 44px (2.5.8 Target Size). rule-strong, not rule, so the
-            // unselected chip has a 3:1 boundary rather than a 1.27:1 one.
-            "inline-flex min-h-11 cursor-pointer items-center rounded-[8px] border px-3.5 font-tm-mono text-[11.5px] tracking-[0.12em] uppercase",
-            value === s.id
-              ? "border-tm-ink bg-tm-ink text-white"
-              : "border-tm-rule-strong bg-tm-panel text-tm-dim",
-          )}
-        >
-          {s.label}
-        </button>
-      ))}
-    </div>
-  );
-}
+const PROTOCOL_TABS: ReadonlySet<TabId> = new Set(["fuel", "train", "body", "mind"]);
+const MORE_TABS: ReadonlySet<TabId> = new Set(["settings", "handsfree", "shop", "remind", "capture"]);
+
+type Destination = { key: string; label: string; tab: TabId; sub?: string; group: string };
+
+/** The day's work, in the order a day actually runs. */
+const PROTOCOL_STORY: Destination[] = [
+  { key: "fuel", label: "Fuel", tab: "fuel", group: "kitchen" },
+  { key: "train", label: "Train", tab: "train", group: "kitchen" },
+  { key: "stack", label: "Stack", tab: "body", sub: "stack", group: "body" },
+  { key: "supply", label: "Supply", tab: "body", sub: "supply", group: "body" },
+  { key: "labs", label: "Bloods", tab: "body", sub: "labs", group: "body" },
+  { key: "trend", label: "Trend", tab: "body", sub: "trend", group: "body" },
+  { key: "checkin", label: "Check-in", tab: "mind", sub: "checkin", group: "mind" },
+  { key: "research", label: "Trigger map", tab: "mind", sub: "craving", group: "mind" },
+];
+
+const APPENDIX: Destination[] = [
+  { key: "shop", label: "Shopping", tab: "shop", group: "appendix" },
+  { key: "handsfree", label: "Hands-free", tab: "handsfree", group: "appendix" },
+  { key: "remind", label: "Reminders", tab: "remind", group: "appendix" },
+  { key: "capture", label: "Photos", tab: "capture", group: "appendix" },
+];
+
+const STORY_GROUPS = [
+  { id: "kitchen", eyebrow: "Kitchen and session", color: "bg-tm-amber" },
+  { id: "body", eyebrow: "The body file", color: "bg-tm-blue" },
+  { id: "mind", eyebrow: "The mind file", color: "bg-tm-yellow" },
+] as const;
 
 /**
- * One big row in the More shelf. 64px tall, whole row is the target, and the
+ * One big row in a story shelf. 64px tall, whole row is the target, and the
  * chevron is a shape rather than a colour so it survives forced-colours.
  */
 function NavRow({ label, onClick }: { label: string; onClick: () => void }) {
@@ -163,17 +116,31 @@ function NavRow({ label, onClick }: { label: string; onClick: () => void }) {
   );
 }
 
-/**
- * The More shelf.
- *
- * In easy mode it is the whole rest of the app as one flat list of plain words
- * — no sub-tabs, no nesting, one tap per destination. Flat matters more than
- * short here: a two-level menu is two decisions, and the second one is always
- * the one people get wrong.
- *
- * Easy mode relabels the rows with logicEasy's plain-language map ("Bloods" →
- * "Blood tests"). Standard mode keeps every original name exactly as it is.
- */
+function ProtocolShelf({
+  easy,
+  onGo,
+}: {
+  easy: boolean;
+  onGo: (d: Destination) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2 pt-5">
+      <h2 className="font-tm-disp text-2xl leading-[1.1] tracking-tight uppercase">Protocol</h2>
+      <p className="mb-1 text-[15px] text-tm-dim">The day&apos;s work, in order.</p>
+      {STORY_GROUPS.map((g) => (
+        <div key={g.id} className="flex flex-col gap-2">
+          <Eyebrow color={g.color} className="mt-2 mb-0">
+            {g.eyebrow}
+          </Eyebrow>
+          {PROTOCOL_STORY.filter((d) => d.group === g.id).map((d) => (
+            <NavRow key={d.key} label={easy ? plain(d.label) : d.label} onClick={() => onGo(d)} />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function MoreShelf({
   easy,
   onGo,
@@ -185,13 +152,8 @@ function MoreShelf({
 }) {
   return (
     <div className="flex flex-col gap-2 pt-5">
-      <h2 className="font-tm-disp text-2xl leading-[1.1] tracking-tight uppercase">
-        {easy ? "Everything else" : "More"}
-      </h2>
-      {/* Easy mode flattens the whole app into this list. Standard mode already
-          reaches most of it from the bottom nav, so the shelf carries exactly
-          what the nav cannot — otherwise a destination has no route at all. */}
-      {(easy ? DESTINATIONS : DESTINATIONS.filter((d) => !NAV_TAB_IDS.has(d.tab))).map((d) => (
+      <h2 className="font-tm-disp text-2xl leading-[1.1] tracking-tight uppercase">More</h2>
+      {APPENDIX.map((d) => (
         <NavRow key={d.key} label={easy ? plain(d.label) : d.label} onClick={() => onGo(d)} />
       ))}
       <NavRow label="Settings" onClick={onSettings} />
@@ -252,15 +214,12 @@ function Shell() {
   // amber-lift sits on the white nav at 1.9:1, so the light-surface amber is
   // right here; it clears 5.77:1 on panel.
   const accent = survival ? "bg-tm-amber" : "bg-tm-green";
-  // Easy mode reaches a sub-view directly from the More shelf, so the row of
-  // chips would be a second navigation for the same choice. It goes.
-  const subItems = easy ? undefined : SUB[tab];
-  const subValue = tab === "body" ? bodyView : mindView;
-  const setSub = tab === "body" ? setBodyView : setMindView;
-  const navItems = easy ? NAV_EASY : NAV_STANDARD;
-  // Settings, and every easy-mode destination, was reached through More — so
-  // More is what stays lit. A nav with nothing current is a lost user.
-  const navCurrent: TabId = navItems.some((n) => n.id === tab) ? tab : "more";
+  const navCurrent: TabId = PROTOCOL_TABS.has(tab) ? "protocol" : MORE_TABS.has(tab) ? "more" : tab;
+
+  function goDestination(d: Destination) {
+    if (d.sub) (d.tab === "body" ? setBodyView : setMindView)(d.sub);
+    setTab(d.tab);
+  }
 
   return (
     <FileNavProvider value={(t) => setTab(t)}>
@@ -269,20 +228,13 @@ function Shell() {
         href="#tm-main"
         className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:inline-flex focus:min-h-11 focus:items-center focus:rounded-[10px] focus:bg-tm-ink focus:px-4 focus:font-tm-mono focus:text-[11.5px] focus:tracking-[0.15em] focus:text-white focus:uppercase"
       >
-        Skip to checks
+        Skip to content
       </a>
       <Scoreboard />
       <main id="tm-main" className={cn(fileWidth, "px-4")}>
-        {subItems && <SubNav items={subItems} value={subValue} onChange={setSub} />}
+        {tab === "protocol" && <ProtocolShelf easy={easy} onGo={goDestination} />}
         {tab === "more" && (
-          <MoreShelf
-            easy={easy}
-            onGo={(d) => {
-              if (d.sub) (d.tab === "body" ? setBodyView : setMindView)(d.sub);
-              setTab(d.tab);
-            }}
-            onSettings={() => setTab("settings")}
-          />
+          <MoreShelf easy={easy} onGo={goDestination} onSettings={() => setTab("settings")} />
         )}
         {tab === "settings" && <SettingsTab />}
         {tab === "handsfree" && <HandsFreePanel />}
@@ -308,10 +260,14 @@ function Shell() {
       */}
       <nav className="fixed inset-x-0 bottom-0 border-t border-tm-rule bg-tm-panel" aria-label="Sections">
         <div className={cn(fileWidth, "flex")}>
-          {navItems.map((t) => (
+          {NAV.map((t) => (
             <button
               key={t.id}
-              onClick={() => setTab(t.id)}
+              onClick={() => {
+                if (t.id === "protocol" && PROTOCOL_TABS.has(tab)) setTab("protocol");
+                else if (t.id === "more" && MORE_TABS.has(tab)) setTab("more");
+                else setTab(t.id);
+              }}
               aria-current={navCurrent === t.id ? "page" : undefined}
               className={cn(
                 "min-h-14 min-w-0 flex-1 cursor-pointer px-0.5 pt-3 pb-4 font-tm-mono text-[11.5px] leading-none tracking-[0.02em] whitespace-nowrap uppercase",

@@ -43,7 +43,7 @@ describe("the shell has a skip link and a named auth splash", () => {
   it("skips to main", () => {
     expect(APP).toContain('href="#tm-main"');
     expect(APP).toContain('id="tm-main"');
-    expect(APP).toContain("Skip to checks");
+    expect(APP).toContain("Skip to content");
   });
 
   it("names the first busy paint", () => {

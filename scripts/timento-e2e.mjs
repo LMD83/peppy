@@ -42,18 +42,42 @@ async function login(page, slug, passcode) {
 }
 
 /**
- * Bottom-nav tab, then an optional second-level tab inside it.
+ * Bottom-nav stamp, or Protocol shelf row.
  *
- * Short timeout on purpose: a tab that is missing is missing (a deployment
- * serving an older bundle), not slow. The default 30 s turns one stale build
- * into a ten-minute run that says nothing the first failure did not.
+ * Fuel / Train / Body / Mind are no longer stamps — they live on the Protocol
+ * story shelf. Callers can still say "Fuel" or "Body","Bloods"; this opens
+ * Protocol and clicks the row in main so a Today card with the same name is
+ * not the target. Short timeout on purpose: a missing stamp is missing.
  */
 const NAV_TIMEOUT = 8000;
 
+const PROTOCOL_ROW = {
+  Fuel: "Fuel",
+  Train: "Train",
+  Stack: "Stack",
+  Supply: "Supply",
+  Bloods: "Bloods",
+  Trend: "Trend",
+  "Check-in": "Check-in",
+  "Trigger map": "Trigger map",
+  Craving: "Trigger map",
+};
+
+function protocolRow(tab, sub) {
+  if (sub) return PROTOCOL_ROW[sub] ?? sub;
+  return PROTOCOL_ROW[tab] ?? null;
+}
+
 async function goTab(page, tab, sub) {
   await page.evaluate(() => window.scrollTo(0, 0));
-  await page.getByRole("button", { name: tab, exact: true }).click({ timeout: NAV_TIMEOUT });
-  if (sub) await page.getByRole("tab", { name: sub, exact: true }).click({ timeout: NAV_TIMEOUT });
+  const nav = page.getByRole("navigation", { name: "Sections" });
+  const row = protocolRow(tab, sub);
+  if (row) {
+    await nav.getByRole("button", { name: "Protocol", exact: true }).click({ timeout: NAV_TIMEOUT });
+    await page.locator("main").getByRole("button", { name: row, exact: true }).click({ timeout: NAV_TIMEOUT });
+    return;
+  }
+  await nav.getByRole("button", { name: tab, exact: true }).click({ timeout: NAV_TIMEOUT });
 }
 
 async function signOut(page) {
@@ -392,14 +416,14 @@ for (const [label, viewport] of [
   await check("mode switch to survival: 3 checks, amber, executed-decision feed line", async () => {
     await goTab(page, "Today");
     await page.getByRole("button", { name: /cut mode ⇄/i }).click();
-    await page.getByRole("dialog").getByRole("button", { name: /survival/i }).click();
+    await page.getByRole("button", { name: /^survival\b/i }).click();
     await page.getByText(/Floor protocol — hold/i).waitFor();
     await page.getByText(/Floor checks — only these three exist/i).waitFor();
     const checkButtons = await page.getByRole("button", { name: /protein hit|steps|kitchen closed/i }).count();
     if (checkButtons < 3) throw new Error(`expected 3 floor checks, saw ${checkButtons}`);
     await page.screenshot({ path: `${SHOTS}/${label}-6-survival.png`, fullPage: true });
     await page.getByRole("button", { name: /survival mode ⇄/i }).click();
-    await page.getByRole("dialog").getByRole("button", { name: /^cut/i }).click();
+    await page.getByRole("button", { name: /^cut\b/i }).click();
     await page.getByText(/Cut protocol/i).waitFor();
   });
 
