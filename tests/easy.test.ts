@@ -180,6 +180,7 @@ describe("plainLanguage", () => {
     expect(plain("Bloods")).toBe("Blood tests");
     expect(plain("Adherence")).toBe("How often you did it");
     expect(plain("Mesocycle")).toBe("Training block");
+    expect(plain("Trigger map")).toBe("When urges hit");
   });
 
   it("carries no jargon through to the plain side", () => {

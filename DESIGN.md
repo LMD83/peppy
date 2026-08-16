@@ -229,7 +229,7 @@ Mono uppercase dim label with an 18×4px color hash bar — the file’s section
 Panel background, 10px radius, **rule-strong** border (3:1); focus border shifts to ink. Numeric weigh-in stays narrow mono.
 
 ### Navigation
-Fixed bottom tab bar on panel with top rule; mono label; 3px mode-accent pill when active (green or amber). Standard: Today / Fuel / Train / Body / Mind / Crew / More. Easy: Today + More. Labels nowrap at 320px. A “Skip to checks” link precedes the scoreboard.
+Fixed bottom tab bar on panel with top rule; mono label; 3px mode-accent pill when active (green or amber). Four stamps for everyone: Today / Protocol / Crew / More. Protocol is the day's work in order (kitchen → body file → mind file); More is the appendix. Easy mode keeps the same stamps and plains the shelf rows only. Labels nowrap at 320px. A “Skip to content” link precedes the scoreboard.
 
 ### Scoreboard (signature)
 Ink header with white display title, mono kicker, mode disclosure (not a dialog), and a three-cell dark interior board (Mass / Day / Adherence|Floor). File menu lives here — not in the tab bar.
@@ -250,7 +250,7 @@ Bottom sheet on mobile, centered on larger viewports; 14px radius; title in mono
 ### Don't:
 - **Don't** introduce purple gradients, glassmorphism, or neon dark themes.
 - **Don't** replace Archivo / IBM Plex with Inter/Roboto “default SaaS” stacks.
-- **Don't** add an eighth bottom-nav destination; More is the overflow shelf.
+- **Don't** add a fifth bottom-nav stamp; Protocol and More are shelves.
 - **Don't** decorate with emoji or sticker badges on the scoreboard.
 - **Don't** invent macro-tracking chrome that violates survival’s three-check floor.
 - **Don't** restore pre-AA hex (`#c77d1f`, `#2e7d4f`, `#c7373f`, `#70747b`, `#9ba0a8`, `#b8860b`).
