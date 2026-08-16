@@ -156,9 +156,9 @@ export function buildTrainFixtures(today: string): TrainFixtures {
     });
   }
 
-  // Landmarks for every muscle, both users. Conor holds the floor: landmarks
+  // Landmarks for every muscle, both users. Artur holds the floor: landmarks
   // exist so the numbers are there when he comes back, but no block runs.
-  const volumeLandmarks: TrainFixtures["volumeLandmarks"] = ["liam", "conor"].flatMap((userSlug) =>
+  const volumeLandmarks: TrainFixtures["volumeLandmarks"] = ["liam", "artur"].flatMap((userSlug) =>
     MUSCLES.map((muscle) => ({ userSlug, muscle, ...DEFAULT_LANDMARKS[muscle] })),
   );
 
@@ -173,7 +173,7 @@ export function buildTrainFixtures(today: string): TrainFixtures {
       constraints: [],
     },
     {
-      userSlug: "conor",
+      userSlug: "artur",
       setting: "home",
       kit: ["none", "dumbbell", "band"],
       experience: "returning",

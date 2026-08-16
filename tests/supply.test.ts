@@ -517,19 +517,19 @@ describe("fixtures", () => {
     expect(liam.contacts.pharmacy?.phone).toMatch(/^01 /);
   });
 
-  it("leaves Conor's floor silent — his med has plenty left", () => {
-    const conor = buildSupplyView({
+  it("leaves Artur's floor silent — his med has plenty left", () => {
+    const artur = buildSupplyView({
       mode: "survival",
       date: TODAY,
-      userName: "Conor",
-      items: itemsFor("conor"),
-      supply: supplyFor("conor"),
-      contacts: contactsFor("conor"),
+      userName: "Artur",
+      items: itemsFor("artur"),
+      supply: supplyFor("artur"),
+      contacts: contactsFor("artur"),
     });
-    expect(conor.attention).toHaveLength(0);
-    expect(conor.items).toHaveLength(0);
-    expect(conor.okCount).toBe(1);
-    expect(conor.refillMessage).toBe("");
+    expect(artur.attention).toHaveLength(0);
+    expect(artur.items).toHaveLength(0);
+    expect(artur.okCount).toBe(1);
+    expect(artur.refillMessage).toBe("");
   });
 
   it("holds the story on any date the fixtures are built for", () => {

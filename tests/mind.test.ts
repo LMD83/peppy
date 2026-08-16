@@ -530,7 +530,7 @@ describe("buildMindView", () => {
   });
 
   it("collapses survival to who5 + pacs — the floor offers no extra questionnaire", () => {
-    const view = buildMindView(inputFor("conor", "survival"));
+    const view = buildMindView(inputFor("artur", "survival"));
     expect(view.survival).toBe(true);
     expect(view.instruments.map((i) => i.key)).toEqual(["who5", "pacs"]);
     expect(view.due.map((d) => d.key).sort()).toEqual(["pacs", "who5"]);
@@ -538,9 +538,9 @@ describe("buildMindView", () => {
   });
 
   it("hides longer instruments from survival even when history exists for them", () => {
-    const withPhq = inputFor("conor", "survival", {
+    const withPhq = inputFor("artur", "survival", {
       assessments: [
-        ...inputFor("conor", "survival").assessments,
+        ...inputFor("artur", "survival").assessments,
         { date: addDays(TODAY, -60), instrument: "phq9", answers: [1, 1, 1, 1, 1, 1, 1, 1, 0], score: 8, band: "mild" },
       ],
     });
@@ -666,11 +666,11 @@ describe("mind fixtures", () => {
     expect(Math.min(...dates)).toBeGreaterThan(0);
   });
 
-  it("gives Conor the floor set only, plus one intention", () => {
-    const conor = FX.assessments.filter((a) => a.userSlug === "conor");
-    expect(conor.map((a) => a.instrument).sort()).toEqual(["pacs", "who5"]);
-    expect(FX.intentions.filter((i) => i.userSlug === "conor")).toHaveLength(1);
-    for (const a of conor) {
+  it("gives Artur the floor set only, plus one intention", () => {
+    const artur = FX.assessments.filter((a) => a.userSlug === "artur");
+    expect(artur.map((a) => a.instrument).sort()).toEqual(["pacs", "who5"]);
+    expect(FX.intentions.filter((i) => i.userSlug === "artur")).toHaveLength(1);
+    for (const a of artur) {
       expect(SURVIVAL_INSTRUMENT_KEYS).toContain(a.instrument as (typeof SURVIVAL_INSTRUMENT_KEYS)[number]);
     }
   });

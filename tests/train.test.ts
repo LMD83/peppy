@@ -386,7 +386,7 @@ describe("fixtures", () => {
 
   it("gives both users landmarks but only Liam a block", () => {
     const slugs = new Set(fx.volumeLandmarks.map((r) => r.userSlug));
-    expect(slugs).toEqual(new Set(["liam", "conor"]));
+    expect(slugs).toEqual(new Set(["liam", "artur"]));
     expect(fx.volumeLandmarks).toHaveLength(MUSCLES.length * 2);
     expect(fx.setLogs.every((r) => r.userSlug === "liam")).toBe(true);
     expect(fx.programBlocks.every((r) => r.userSlug === "liam")).toBe(true);

@@ -173,6 +173,12 @@ describe("packMaths", () => {
     }
   });
 
+  it("reads pack sizes from the product catalogue when the food is stocked", () => {
+    const ladder = packsFor(food("chicken_breast"));
+    expect(ladder.map((p) => p.grams)).toEqual([300, 600]);
+    expect(packsFor(food("beef_mince_5")).some((p) => p.grams === 400)).toBe(true);
+  });
+
   it("switches to kilos once grams stop being words a person would use", () => {
     expect(leftoverWords(0)).toBe("");
     expect(leftoverWords(700)).toBe("about 700 g left over");
@@ -560,7 +566,7 @@ describe("fixtures", () => {
   });
 
   it("leaves the floor's cupboard empty — the floor is a short list, not a store", () => {
-    expect(fx.pantry.filter((p) => p.userSlug === "conor")).toEqual([]);
+    expect(fx.pantry.filter((p) => p.userSlug === "artur")).toEqual([]);
   });
 
   it("carries the partial-coverage case a naive list gets wrong", () => {

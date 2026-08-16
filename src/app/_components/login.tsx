@@ -8,7 +8,7 @@ import { useTimento } from "../_lib/backend";
 
 const USERS = [
   { slug: "liam", name: "Liam" },
-  { slug: "conor", name: "Conor" },
+  { slug: "artur", name: "Artur" },
 ];
 
 export function Login() {
@@ -58,7 +58,7 @@ export function Login() {
             <h1 className="mt-3 font-tm-disp text-4xl leading-none tracking-tight text-white uppercase lg:text-5xl lg:text-tm-ink">
               Timento
             </h1>
-            <p className="mt-3 max-w-[34ch] text-[15px] leading-relaxed text-[#c9cdd4] lg:text-tm-ink2">
+            <p className="mt-3 max-w-[34ch] text-[15px] leading-relaxed text-tm-onink lg:text-tm-ink2">
               Two people, one file. Checks, modes, experiments. Evidence over vibes.
             </p>
           </div>
@@ -103,7 +103,7 @@ export function Login() {
             />
           </label>
           {error && (
-            <p role="alert" className="mt-3 rounded-[10px] border border-tm-red bg-[#faeceb] px-3 py-2.5 text-[14px] text-tm-red">
+            <p role="alert" className="mt-3 rounded-[10px] border border-tm-red bg-tm-red-bg px-3 py-2.5 text-[14px] text-tm-red">
               {error}
             </p>
           )}
@@ -116,7 +116,7 @@ export function Login() {
           </button>
           {demo && (
             <p className="mt-4 rounded-[10px] bg-tm-soft px-3 py-2.5 font-tm-mono text-[11.5px] leading-relaxed text-tm-dim">
-              Demo mode. No deployment configured. Passcodes: Liam 2580 · Conor 1379.
+              Demo mode. No deployment configured. Passcodes: Liam 2580 · Artur 1379.
             </p>
           )}
           <p className="mt-8 pb-10">

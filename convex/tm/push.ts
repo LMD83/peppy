@@ -1,11 +1,13 @@
 "use node";
 
 import { v } from "convex/values";
+import { Resend } from "resend";
 import webpush from "web-push";
 import { internal } from "../_generated/api";
 import { internalAction } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
 import type { SweepBatch } from "./remind";
+import { emailFromEnv, emailMessage } from "./logicEmail";
 import {
   blockedLog,
   blockedReport,
@@ -74,46 +76,72 @@ export const sweep = internalAction({
     const notifications = batches.reduce((n, b) => n + b.notifications.length, 0);
 
     const keys = vapid();
-    if (keys === null) {
+    const mailKey = (process.env.RESEND_API_KEY ?? "").trim();
+    if (keys === null && mailKey === "") {
       console.warn(blockedLog(users, notifications));
       return blockedReport(users, notifications);
     }
 
-    webpush.setVapidDetails(keys.subject, keys.publicKey, keys.privateKey);
+    if (keys !== null) webpush.setVapidDetails(keys.subject, keys.publicKey, keys.privateKey);
+    const mailer = mailKey !== "" ? new Resend(mailKey) : null;
+    const from = emailFromEnv(process.env.REMIND_EMAIL_FROM);
 
     const results: DeliveryResult<Id<"tm_pushSubscriptions">>[] = [];
     let sent = 0;
 
     for (const batch of batches) {
-      for (const target of batch.targets) {
-        const subscription = {
-          endpoint: target.endpoint,
-          keys: { p256dh: target.p256dh, auth: target.auth },
-        };
+      if (keys !== null) {
+        for (const target of batch.targets) {
+          const subscription = {
+            endpoint: target.endpoint,
+            keys: { p256dh: target.p256dh, auth: target.auth },
+          };
 
-        // One delivery per notification. The worker's per-subject tag replaces
-        // rather than stacks, so a device never receives a pile — but a device
-        // that has just failed is not asked again in the same sweep either.
-        let outcome: "ok" | "gone" | "failed" = "ok";
-        for (const note of batch.notifications) {
-          try {
-            await webpush.sendNotification(subscription, encodePayload(note));
-            sent += 1;
-          } catch (error) {
-            outcome = classifyError(error);
-            console.warn(
-              `[timento reminders] delivery failed for one device (${outcome}): ${
-                error instanceof Error ? error.message : String(error)
-              }`,
-            );
-            break;
+          // One delivery per notification. The worker's per-subject tag replaces
+          // rather than stacks, so a device never receives a pile — but a device
+          // that has just failed is not asked again in the same sweep either.
+          let outcome: "ok" | "gone" | "failed" = "ok";
+          for (const note of batch.notifications) {
+            try {
+              await webpush.sendNotification(subscription, encodePayload(note));
+              sent += 1;
+            } catch (error) {
+              outcome = classifyError(error);
+              console.warn(
+                `[timento reminders] delivery failed for one device (${outcome}): ${
+                  error instanceof Error ? error.message : String(error)
+                }`,
+              );
+              break;
+            }
           }
+          results.push(deliveryResult(target.subscriptionId, outcome));
         }
-        results.push(deliveryResult(target.subscriptionId, outcome));
+      }
+
+      if (mailer !== null && batch.email !== "") {
+        for (const note of batch.notifications) {
+          const msg = emailMessage(batch.email, note);
+          const { error } = await mailer.emails.send({
+            from,
+            to: msg.to,
+            subject: msg.subject,
+            text: msg.text,
+          });
+          if (error) {
+            console.warn(
+              `[timento reminders] email failed: ${error instanceof Error ? error.message : String(error)}`,
+            );
+            continue;
+          }
+          sent += 1;
+        }
       }
     }
 
-    await ctx.runMutation(internal.tm.remind.recordDelivery, { results, atMs: nowMs });
+    if (results.length > 0) {
+      await ctx.runMutation(internal.tm.remind.recordDelivery, { results, atMs: nowMs });
+    }
     return sentReport(users, notifications, sent);
   },
 });

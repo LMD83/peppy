@@ -62,7 +62,7 @@ function PortionToggle({
           aria-checked={mode === m}
           onClick={() => onChange(m)}
           className={cn(
-            "min-h-11 min-w-11 flex-1 cursor-pointer rounded-lg border px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
+            "min-h-11 min-w-11 flex-1 cursor-pointer rounded-[10px] border px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
             mode === m
               ? "border-tm-ink bg-tm-ink text-white"
               : "border-tm-rule bg-tm-panel text-tm-dim",
@@ -99,9 +99,9 @@ function FuelTabBody({
   if (fuel.survival) {
     const proteinLeft = Math.max(0, fuel.remaining.proteinG);
     return (
-      <div className="flex flex-col gap-3 pt-4">
+      <div className="flex flex-col gap-4 pt-5">
         <Card tone="amber">
-          <Eyebrow color="bg-tm-amber">Fuel — floor</Eyebrow>
+          <Eyebrow color="bg-tm-amber">Fuel, floor</Eyebrow>
           <div className="flex items-end justify-between gap-3">
             <div>
               <div className="font-tm-disp text-[34px] leading-none">{fmt(proteinLeft)} g</div>
@@ -126,7 +126,7 @@ function FuelTabBody({
             />
           </div>
           <p className="mt-2.5 text-sm text-tm-amber-ink">
-            Protein and a closed kitchen. No macro tracking, no plan, no shopping list — the floor
+            Protein and a closed kitchen. No macro tracking, no plan, no shopping list. The floor
             adds nothing, it only stops the drift.
           </p>
         </Card>
@@ -144,9 +144,10 @@ function FuelTabBody({
   const kcalLeft = fuel.remaining.kcal;
 
   return (
-    <div className="flex flex-col gap-3 pt-4">
+    <div className="flex flex-col gap-4 pt-5 lg:grid lg:grid-cols-12 lg:items-start lg:gap-6">
+      <div className="flex flex-col gap-3 lg:col-span-7">
       <Card>
-        <Eyebrow color="bg-tm-green">Today — energy</Eyebrow>
+        <Eyebrow color="bg-tm-green">Energy</Eyebrow>
         <div className="flex items-end justify-between gap-3">
           <div>
             <div className={cn("font-tm-disp text-[34px] leading-none", kcalLeft < 0 && "text-tm-red")}>
@@ -170,14 +171,10 @@ function FuelTabBody({
         </div>
         {fuel.leftoverKcal > 0 && (
           <p className="mt-2 text-sm text-tm-dim">
-            Week leftover {fuel.leftoverKcal} kcal — unused on logged days, not spent automatically.
+            Week leftover {fuel.leftoverKcal} kcal. Unused on logged days, not spent automatically.
           </p>
         )}
       </Card>
-
-      <TdeeCard tdee={fuel.tdee} />
-
-      <KitchenCard kitchen={fuel.kitchen} />
 
       <Card>
         <div className="flex flex-col gap-2">
@@ -187,26 +184,26 @@ function FuelTabBody({
           <div className="flex flex-wrap gap-1.5">
             <button
               onClick={() => actions.generateMealPlan()}
-              className="min-h-11 cursor-pointer rounded-lg bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase"
+              className="min-h-11 cursor-pointer rounded-[10px] bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
             >
               Generate day
             </button>
             <button
               onClick={() => actions.generateWeek()}
-              className="min-h-11 cursor-pointer rounded-lg border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-ink uppercase"
+              className="min-h-11 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-ink uppercase transition-transform duration-150 active:scale-[0.98]"
             >
               Generate week
             </button>
             <button
               onClick={() => actions.copyYesterday()}
-              className="min-h-11 cursor-pointer rounded-lg border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-ink uppercase"
+              className="min-h-11 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-ink uppercase transition-transform duration-150 active:scale-[0.98]"
             >
               Copy yesterday
             </button>
           </div>
         </div>
         {fuel.proposal && (
-          <p className="mt-2 rounded-lg bg-tm-soft px-3 py-2 text-sm">
+          <p className="mt-2 rounded-[10px] bg-tm-soft px-3 py-2 text-sm">
             <span className="font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase">
               Generating costs
             </span>
@@ -229,7 +226,7 @@ function FuelTabBody({
         </div>
         <p className="mt-2.5 text-sm text-tm-dim">
           Today&apos;s rows cost {fuel.todayEffort.summary}. Tap a row when you eat it. Generating
-          replaces the untouched plan rows only — anything already eaten stays on the record.
+          replaces the untouched plan rows only. Anything already eaten stays on the record.
         </p>
       </Card>
 
@@ -239,14 +236,19 @@ function FuelTabBody({
         foods={fuel.foods}
         recentFoods={fuel.recentFoods}
         menus={fuel.menus}
+        products={fuel.products}
         remaining={fuel.remaining}
         portions={portions}
       />
+      </div>
 
+      <div className="flex flex-col gap-3 lg:col-span-5">
+      <TdeeCard tdee={fuel.tdee} />
+      <KitchenCard kitchen={fuel.kitchen} />
       <WeekStrip week={fuel.week} targetKcal={fuel.targets.kcal} />
 
       <Card>
-        <Eyebrow color="bg-tm-purple">Shopping — planned, not yet eaten</Eyebrow>
+        <Eyebrow color="bg-tm-purple">Shopping</Eyebrow>
         {fuel.shoppingList.length === 0 ? (
           <p className="text-sm text-tm-dim">
             Nothing queued. Generate a day, or keep logging as you go.
@@ -267,6 +269,7 @@ function FuelTabBody({
           </ul>
         )}
       </Card>
+      </div>
     </div>
   );
 }
@@ -389,14 +392,14 @@ function Bar({
 function TdeeCard({ tdee }: { tdee: FuelData["tdee"] }) {
   const adaptive = tdee.basis === "adaptive";
   const line = adaptive
-    ? `14-day slope vs logged intake — ${signed(tdee.weightSlopeKgPerWeek)} kg/wk across ${tdee.weighInCount} weigh-ins, ${tdee.avgIntakeKcal} kcal averaged over ${tdee.intakeDays} days.`
-    : `Estimated — Mifflin-St Jeor × activity. ${tdee.intakeDays}/10 intake days and ${tdee.weighInCount}/4 weigh-ins in the last 14. Log both and this switches to your own numbers.`;
+    ? `14-day slope vs logged intake. ${signed(tdee.weightSlopeKgPerWeek)} kg/wk across ${tdee.weighInCount} weigh-ins, ${tdee.avgIntakeKcal} kcal averaged over ${tdee.intakeDays} days.`
+    : `Estimated. Mifflin-St Jeor × activity. ${tdee.intakeDays}/10 intake days and ${tdee.weighInCount}/4 weigh-ins in the last 14. Log both and this switches to your own numbers.`;
 
   return (
     <Card>
       <div className="flex items-center justify-between">
         <Eyebrow color={adaptive ? "bg-tm-blue" : "bg-tm-dim2"} className="mb-0">
-          Energy out — {adaptive ? "adaptive" : "estimated"}
+          Energy out, {adaptive ? "adaptive" : "estimated"}
         </Eyebrow>
         <span className="font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase">
           confidence {tdee.confidence}
@@ -433,7 +436,7 @@ function FloorCard({ floor, tone }: { floor: FuelData["floor"]; tone: "default" 
   return (
     <Card tone={tone}>
       <Eyebrow color={tone === "amber" ? "bg-tm-amber" : "bg-tm-dim2"}>
-        Bad day — three things
+        Bad day, three things
       </Eyebrow>
       <p className="font-tm-disp text-base">{floor.effortSummary}</p>
       {floor.items.length === 0 ? (
@@ -445,7 +448,7 @@ function FloorCard({ floor, tone }: { floor: FuelData["floor"]; tone: "default" 
         <ul className="mt-2 flex flex-col gap-1.5">
           {floor.items.map((item) => (
             <li key={item.foodKey} className="flex items-stretch gap-1.5">
-              <div className="flex flex-1 flex-col justify-center rounded-lg border border-tm-rule bg-tm-panel px-3 py-2">
+              <div className="flex flex-1 flex-col justify-center rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2">
                 <span className="text-sm font-medium">{item.name}</span>
                 <span className="font-tm-mono text-[11.5px] text-tm-dim">
                   {item.slotLabel.toLowerCase()} ·{" "}
@@ -459,7 +462,7 @@ function FloorCard({ floor, tone }: { floor: FuelData["floor"]; tone: "default" 
                   setLogged(item.name);
                 }}
                 aria-label={`Log ${item.name} as eaten`}
-                className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-lg bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase"
+                className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[10px] bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
               >
                 Ate it
               </button>
@@ -497,7 +500,7 @@ function KitchenCard({ kitchen }: { kitchen: FuelData["kitchen"] }) {
   const rows: { label: string; value: string }[] = [
     {
       label: "Pinned breakfast",
-      value: kitchen.pinnedBreakfast ? kitchen.pinnedBreakfast.name : "none — free every morning",
+      value: kitchen.pinnedBreakfast ? kitchen.pinnedBreakfast.name : "none. Free every morning",
     },
     {
       label: "Safe foods",
@@ -522,13 +525,13 @@ function KitchenCard({ kitchen }: { kitchen: FuelData["kitchen"] }) {
     },
     {
       label: "Standing",
-      value: kitchen.canStand ? "fine today" : "not today — nothing that needs feet",
+          value: kitchen.canStand ? "fine today" : "not today. Nothing that needs feet",
     },
   ];
 
   return (
     <Card>
-      <Eyebrow color="bg-tm-blue">Kitchen — what today can take</Eyebrow>
+      <Eyebrow color="bg-tm-blue">Kitchen</Eyebrow>
       <p className="font-tm-disp text-base">{kitchen.summary}</p>
       <dl className="mt-2">
         {rows.map((row) => (
@@ -545,7 +548,7 @@ function KitchenCard({ kitchen }: { kitchen: FuelData["kitchen"] }) {
       </dl>
       <p className="mt-2 text-sm text-tm-dim">
         {kitchen.reachableFoods} of {kitchen.catalogueSize} foods are reachable today. The planner
-        works inside that, protein first — it does not treat a short day as a compromise.
+        works inside that, protein first. It does not treat a short day as a compromise.
         {kitchen.safeFoodsOnly ? " Safe foods only: nothing new is being suggested." : ""}
       </p>
       <div className="mt-3 flex flex-col gap-2">
@@ -558,7 +561,7 @@ function KitchenCard({ kitchen }: { kitchen: FuelData["kitchen"] }) {
             onChange={(e) => setMinutes(e.target.value)}
             inputMode="numeric"
             aria-label="Hands-on minutes today"
-            className="min-h-11 w-24 rounded-lg border border-tm-rule bg-tm-panel px-3 font-tm-mono text-sm outline-none focus:border-tm-ink"
+            className="min-h-11 w-24 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 font-tm-mono text-sm focus:border-tm-ink"
           />
         </label>
         <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Equipment today">
@@ -569,7 +572,7 @@ function KitchenCard({ kitchen }: { kitchen: FuelData["kitchen"] }) {
               aria-checked={equipment === eq}
               onClick={() => setEquipment(eq)}
               className={cn(
-                "min-h-11 cursor-pointer rounded-lg border px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
+                "min-h-11 cursor-pointer rounded-[10px] border px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
                 equipment === eq
                   ? "border-tm-ink bg-tm-ink text-white"
                   : "border-tm-rule bg-tm-panel text-tm-dim",
@@ -584,7 +587,7 @@ function KitchenCard({ kitchen }: { kitchen: FuelData["kitchen"] }) {
             aria-pressed={oneHanded}
             onClick={() => setOneHanded((v) => !v)}
             className={cn(
-              "min-h-11 flex-1 cursor-pointer rounded-lg border font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
+              "min-h-11 flex-1 cursor-pointer rounded-[10px] border font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
               oneHanded ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule bg-tm-panel text-tm-dim",
             )}
           >
@@ -594,7 +597,7 @@ function KitchenCard({ kitchen }: { kitchen: FuelData["kitchen"] }) {
             aria-pressed={!canStand}
             onClick={() => setCanStand((v) => !v)}
             className={cn(
-              "min-h-11 flex-1 cursor-pointer rounded-lg border font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
+              "min-h-11 flex-1 cursor-pointer rounded-[10px] border font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
               !canStand ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule bg-tm-panel text-tm-dim",
             )}
           >
@@ -604,13 +607,13 @@ function KitchenCard({ kitchen }: { kitchen: FuelData["kitchen"] }) {
         <div className="flex gap-1.5">
           <button
             onClick={() => apply(false)}
-            className="min-h-11 flex-1 cursor-pointer rounded-lg border border-tm-rule bg-tm-panel font-tm-mono text-[11.5px] tracking-[0.12em] uppercase"
+            className="min-h-11 flex-1 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel font-tm-mono text-[11.5px] tracking-[0.12em] uppercase transition-transform duration-150 active:scale-[0.98]"
           >
             Save kitchen
           </button>
           <button
             onClick={() => apply(true)}
-            className="min-h-11 flex-1 cursor-pointer rounded-lg bg-tm-ink font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase"
+            className="min-h-11 flex-1 cursor-pointer rounded-[10px] bg-tm-ink font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
           >
             Generate for today
           </button>
@@ -669,7 +672,7 @@ function SlotBlock({ slot }: { slot: SlotView }) {
                     onClick={() => actions.setFoodEaten(e.id, !e.eaten)}
                     aria-pressed={e.eaten}
                     className={cn(
-                      "flex min-h-11 flex-1 cursor-pointer items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left",
+                      "flex min-h-11 flex-1 cursor-pointer items-center justify-between gap-2 rounded-[10px] border px-3 py-2 text-left transition-transform duration-150 active:scale-[0.98]",
                       e.eaten
                         ? "border-tm-green bg-tm-green-faint"
                         : "border-tm-rule bg-tm-panel",
@@ -689,7 +692,7 @@ function SlotBlock({ slot }: { slot: SlotView }) {
                     <button
                       onClick={() => setSwapFor(swapFor === e.id ? null : e.id)}
                       aria-expanded={swapFor === e.id}
-                      className="min-h-11 shrink-0 cursor-pointer rounded-lg border border-tm-rule bg-tm-panel px-2 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-dim uppercase"
+                      className="min-h-11 shrink-0 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-2 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-dim uppercase transition-transform duration-150 active:scale-[0.98]"
                     >
                       Swap
                     </button>
@@ -697,7 +700,7 @@ function SlotBlock({ slot }: { slot: SlotView }) {
                   <button
                     onClick={() => actions.removeFood(e.id)}
                     aria-label={`Remove ${e.name} from ${slot.label.toLowerCase()}`}
-                    className="min-h-11 w-11 shrink-0 cursor-pointer rounded-lg border border-tm-rule bg-tm-panel font-tm-mono text-sm text-tm-dim"
+                    className="min-h-11 w-11 shrink-0 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel font-tm-mono text-sm text-tm-dim transition-transform duration-150 active:scale-[0.98]"
                   >
                     ×
                   </button>
@@ -711,7 +714,7 @@ function SlotBlock({ slot }: { slot: SlotView }) {
                           actions.swapFood(e.id, s.key);
                           setSwapFor(null);
                         }}
-                        className="min-h-11 cursor-pointer rounded-lg border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] uppercase"
+                        className="min-h-11 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] uppercase transition-transform duration-150 active:scale-[0.98]"
                       >
                         {s.name}
                       </button>
@@ -735,7 +738,7 @@ function WeekStrip({ week, targetKcal }: { week: FuelData["week"]; targetKcal: n
 
   return (
     <Card>
-      <Eyebrow color="bg-tm-dim2">Week — intake vs target</Eyebrow>
+      <Eyebrow color="bg-tm-dim2">Week</Eyebrow>
       <svg
         viewBox={`0 0 ${W} ${H}`}
         className="w-full"

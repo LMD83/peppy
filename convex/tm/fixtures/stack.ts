@@ -171,10 +171,10 @@ export function buildStackFixtures(today: string): StackFixtures {
       active: true,
     },
 
-    /* Conor — survival. The med and the deficiency correction, nothing else. */
+    /* Artur — survival. The med and the deficiency correction, nothing else. */
     {
-      id: "pi_conor_levo",
-      userSlug: "conor",
+      id: "pi_artur_levo",
+      userSlug: "artur",
       ...fromCatalogue("levothyroxine"),
       dose: 75,
       timings: ["am"],
@@ -185,8 +185,8 @@ export function buildStackFixtures(today: string): StackFixtures {
       active: true,
     },
     {
-      id: "pi_conor_vitd",
-      userSlug: "conor",
+      id: "pi_artur_vitd",
+      userSlug: "artur",
       ...fromCatalogue("vitamin_d3"),
       dose: 2000,
       timings: ["am"],

@@ -8,7 +8,7 @@
  * measured thresholds for any individual. Treat them as a starting range.
  */
 
-import { CATALOGUE } from "./exercise-catalogue";
+import { CATALOGUE } from "./exerciseCatalogue";
 
 export type Muscle =
   | "chest"
@@ -118,7 +118,7 @@ export type Exercise = {
   cue: string;
 };
 
-/** Catalogue lives in exercise-catalogue.ts so this file stays the public API. */
+/** Catalogue lives in exerciseCatalogue.ts so this file stays the public API. */
 export const EXERCISES: Exercise[] = CATALOGUE;
 
 export const EXERCISE_BY_KEY: Record<string, Exercise> = Object.fromEntries(

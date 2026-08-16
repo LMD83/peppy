@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useId, useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useTimento } from "../_lib/backend";
@@ -10,6 +10,7 @@ export function Scoreboard() {
   const { today, actions, date } = useTimento();
   const [confirmMode, setConfirmMode] = useState(false);
   const [fileOpen, setFileOpen] = useState(false);
+  const modePanelId = useId();
   if (!today) return null;
 
   const { user, stats, latestKg, deltaKg, dayNumber } = today;
@@ -49,12 +50,13 @@ export function Scoreboard() {
           </p>
         )}
         <button
-          onClick={() => setConfirmMode(true)}
+          type="button"
+          onClick={() => setConfirmMode((open) => !open)}
           aria-expanded={confirmMode}
+          aria-controls={modePanelId}
           className={cn(
             "mt-3 inline-flex min-h-11 cursor-pointer items-center rounded-[22px] border px-4 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
-            // ink on amber-lift 8.13:1 · #c9cdd4 on ink3 9.38:1
-            survival ? "border-tm-amber-lift bg-tm-amber-lift text-tm-ink" : "border-tm-inkrule bg-tm-ink3 text-[#c9cdd4]",
+            survival ? "border-tm-amber-lift bg-tm-amber-lift text-tm-ink" : "border-tm-inkrule bg-tm-ink3 text-tm-onink",
           )}
         >
           {user.mode} mode ⇄
@@ -72,10 +74,16 @@ export function Scoreboard() {
           ))}
         </dl>
         {confirmMode && (
-          <ModeSwitcher current={user.mode} date={date} onClose={() => setConfirmMode(false)} onPick={(m, review) => {
-            actions.setMode(m, undefined, review);
-            setConfirmMode(false);
-          }} />
+          <ModeSwitcher
+            id={modePanelId}
+            current={user.mode}
+            date={date}
+            onClose={() => setConfirmMode(false)}
+            onPick={(m, review) => {
+              actions.setMode(m, undefined, review);
+              setConfirmMode(false);
+            }}
+          />
         )}
         <TmSheet open={fileOpen} onClose={() => setFileOpen(false)} title="File" label="File menu">
           <div className="flex flex-col gap-3">
@@ -107,11 +115,13 @@ export function Scoreboard() {
 }
 
 function ModeSwitcher({
+  id,
   current,
   date,
   onClose,
   onPick,
 }: {
+  id: string;
   current: "cut" | "maintain" | "survival";
   date: string;
   onClose: () => void;
@@ -123,26 +133,36 @@ function ModeSwitcher({
     { mode: "survival" as const, blurb: "Three checks only. Ceiling re-anchors. An executed decision, not a lapse." },
   ];
   const defaultReview = `${Number(date.slice(0, 4))}-${date.slice(5, 7)}-${date.slice(8, 10)}`;
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   return (
-    <div role="dialog" aria-label="Switch mode" className="mt-3 rounded-lg border border-tm-inkrule bg-tm-ink3 p-3">
+    <div id={id} className="mt-3 rounded-lg border border-tm-inkrule bg-tm-ink3 p-3">
       <p className="mb-2 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-onink uppercase">Switch mode. Takes effect now</p>
       <div className="flex flex-col gap-1.5">
         {options.map((o) => (
           <button
             key={o.mode}
+            type="button"
             disabled={o.mode === current}
             onClick={() => onPick(o.mode, o.mode === "survival" ? nextReview(defaultReview) : undefined)}
-            className={cn(
-              "min-h-11 cursor-pointer rounded-md border border-tm-inkrule px-3 py-2.5 text-left disabled:opacity-40",
-              "bg-tm-ink2 text-[14px] text-[#e6e8ec]",
-            )}
+            className="min-h-11 cursor-pointer rounded-md border border-tm-inkrule bg-tm-ink2 px-3 py-2.5 text-left text-[14px] text-white disabled:opacity-40"
           >
             <span className="font-tm-mono text-[11.5px] tracking-[0.12em] uppercase">{o.mode}</span>
             <span className="mt-0.5 block text-[14px] leading-snug text-tm-onink">{o.blurb}</span>
           </button>
         ))}
       </div>
-      <button onClick={onClose} className="mt-2 min-h-11 w-full cursor-pointer rounded-md font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-onink uppercase">
+      <button type="button" onClick={onClose} className="mt-2 min-h-11 w-full cursor-pointer rounded-md font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-onink uppercase">
         Keep {current}
       </button>
     </div>

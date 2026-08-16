@@ -105,7 +105,9 @@ export class DemoDb {
   supplyRows: SupplyRow[];
   contacts: ContactRow[];
   pushSubs: { id: string; userSlug: string; endpoint: string; p256dh: string; auth: string; label: string; createdDate: string; failures: number }[];
-  reminderPrefs: { userSlug: string; enabled: boolean; quietFrom: string; quietTo: string; doses: boolean; supply: boolean; checkins: boolean; maxPerDay: number }[];
+  reminderPrefs: { userSlug: string; enabled: boolean; quietFrom: string; quietTo: string; doses: boolean; supply: boolean; checkins: boolean; maxPerDay: number; email: string }[];
+  sentReminders: { userSlug: string; key: string; at: number }[];
+  delivery: { push: boolean; email: boolean; vapidPublicKey: string };
   captures: { id: string; userSlug: string; date: string; kind: "dose" | "meal" | "organiser"; storageId: string; note?: string; at: number }[];
   pantry: { id: string; userSlug: string; foodKey: string; grams: number; updatedDate: string }[];
   ingestTokens: { id: string; userSlug: string; token: string; label: string; createdDate: string; lastUsedAt?: number; revoked: boolean }[];
@@ -149,6 +151,8 @@ export class DemoDb {
     this.savedMenus = [];
     this.pushSubs = [];
     this.reminderPrefs = [];
+    this.sentReminders = [];
+    this.delivery = { push: false, email: false, vapidPublicKey: "" };
     this.captures = [];
     this.users = fx.users.map((u) => ({
       ...u,
@@ -607,6 +611,13 @@ export class DemoDb {
   setReminderPrefs(slug: string, prefs: Parameters<typeof remind.setPrefs>[2]) {
     remind.setPrefs(this, slug, prefs);
     this.bump();
+  }
+  setDelivery(delivery: { push: boolean; email: boolean; vapidPublicKey: string }) {
+    this.delivery = delivery;
+    this.bump();
+  }
+  sweepReminders(slug: string, date: string) {
+    return remind.sweepOpenTab(this, slug, date);
   }
   saveCapture(slug: string, date: string, kind: "dose" | "meal" | "organiser", storageId: string, note?: string) {
     remind.saveCapture(this, slug, date, kind, storageId, note);

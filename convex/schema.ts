@@ -184,6 +184,8 @@ export default defineSchema({
     checkins: v.boolean(),
     /** A missed reminder is never repeated more than this in a day. */
     maxPerDay: v.number(),
+    /** Optional delivery address. Empty or missing means push only. */
+    email: v.optional(v.string()),
   }).index("by_userId", ["userId"]),
 
   /** A photo is evidence attached to something you logged — never an identification. */

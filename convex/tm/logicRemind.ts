@@ -1,4 +1,5 @@
 import { MODE_CHECKS, type TmMode } from "./lib";
+import { cleanEmail } from "./logicEmail";
 // The captures screen is its own slice: what a photo means, what may label it,
 // and what is never shared all live there. Reminders only carry the finished
 // view through, so there is exactly one set of rules about photos in the app.
@@ -72,6 +73,8 @@ export type ReminderPrefs = {
   checkins: boolean;
   /** Ceiling on notifications in a day. A pile is not a reminder system. */
   maxPerDay: number;
+  /** Delivery address. Empty means email is not a channel for this file. */
+  email: string;
 };
 
 /**
@@ -86,6 +89,7 @@ export const DEFAULT_PREFS: ReminderPrefs = {
   supply: true,
   checkins: true,
   maxPerDay: 4,
+  email: "",
 };
 
 export const MIN_PER_DAY = 1;
@@ -99,6 +103,7 @@ export type PrefsPatch = {
   supply?: boolean;
   checkins?: boolean;
   maxPerDay?: number;
+  email?: string;
 };
 
 /** A stored row, a partial patch and nothing at all all land on the same shape. */
@@ -112,6 +117,7 @@ export function normalisePrefs(patch: PrefsPatch | null | undefined, base = DEFA
     supply: p.supply ?? base.supply,
     checkins: p.checkins ?? base.checkins,
     maxPerDay: clampInt(p.maxPerDay ?? base.maxPerDay, MIN_PER_DAY, MAX_PER_DAY),
+    email: cleanEmail(p.email ?? base.email),
   };
 }
 
@@ -582,8 +588,8 @@ export const REMIND_NOTE =
 export const IOS_NOTE =
   "On an iPhone or iPad, notifications only work once the app is added to the Home Screen: open it in Safari, tap Share, then Add to Home Screen, and turn reminders on from there. Apple allows no other route, and there is no background timer on iOS at all — which is why the schedule runs on the server rather than in this tab.";
 
-export const DEMO_NOTE =
-  "This is the demo copy of the app. There is no server behind it, so nothing can actually be sent — the preview below is real, the delivery is not.";
+export const NO_KEYS_NOTE =
+  "This copy of the app has no send keys configured, so it cannot send anything yet.";
 
 export type RemindViewInput = {
   mode: TmMode;
@@ -598,8 +604,10 @@ export type RemindViewInput = {
   doses: DueDose[];
   supply: DueSupply[];
   checkins: DueCheckin[];
-  /** Whether this deployment can actually deliver: VAPID configured, server present. */
-  serverReady: boolean;
+  /** Web-push keys are present. */
+  pushReady: boolean;
+  /** Resend key is present. */
+  emailSupported: boolean;
   vapidPublicKey: string;
   demo: boolean;
 };
@@ -617,6 +625,7 @@ export type RemindView = {
   survivalHeld: ReminderCard[];
   overCap: ReminderCard[];
   vapidPublicKey: string;
+  emailSupported: boolean;
   ready: boolean;
   /** Why reminders cannot fire yet, in plain words. Empty when they can. */
   blockers: string[];
@@ -645,25 +654,28 @@ export function buildRemindView(input: RemindViewInput): RemindView {
 
   const subscriptions = input.subscriptions.map(subscriptionView);
   const healthy = subscriptions.filter((s) => s.healthy);
+  const hasEmail = input.prefs.email !== "";
+  const canPush = input.pushReady && healthy.length > 0;
+  const canEmail = input.emailSupported && hasEmail;
+  const supported = input.pushReady || input.emailSupported;
 
   const blockers: string[] = [];
-  if (input.demo) blockers.push(DEMO_NOTE);
-  else if (!input.serverReady) {
-    blockers.push(
-      "This copy of the app has no push keys configured on the server, so it cannot send anything yet.",
-    );
-  }
+  if (!supported) blockers.push(NO_KEYS_NOTE);
   if (!input.prefs.enabled) blockers.push("Reminders are switched off for your file.");
-  if (healthy.length === 0) {
-    blockers.push("No device has been set up to receive them yet.");
+  if (!canPush && !canEmail) {
+    if (hasEmail && !input.emailSupported) {
+      blockers.push("An email is on the file, but this copy of the app has no email key, so mail will not go out.");
+    } else if (healthy.length === 0) {
+      blockers.push("No device has been set up, and no email is on the file.");
+    }
   } else if (subscriptions.length > healthy.length) {
     blockers.push("One of your devices has stopped accepting reminders.");
   }
 
-  const ready = input.serverReady && !input.demo && input.prefs.enabled && healthy.length > 0;
+  const ready = supported && input.prefs.enabled && (canPush || canEmail);
 
   return {
-    supported: input.serverReady && !input.demo,
+    supported,
     permission: healthy.length > 0 ? "granted" : "unknown",
     subscriptions,
     prefs: input.prefs,
@@ -672,6 +684,7 @@ export function buildRemindView(input: RemindViewInput): RemindView {
     survivalHeld: plan.survivalHeld,
     overCap: plan.overCap,
     vapidPublicKey: input.vapidPublicKey,
+    emailSupported: input.emailSupported,
     ready,
     blockers,
     note: REMIND_NOTE,

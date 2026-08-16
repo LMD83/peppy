@@ -13,6 +13,7 @@ import {
   type FoodShelf,
 } from "./data/foods";
 import { MENUS, type MenuDef } from "./data/menus";
+import { PRODUCTS, type ProductRetailer } from "./data/products";
 
 /**
  * Pure fuel logic — energy balance, macro targets, meal-plan generation.
@@ -1017,6 +1018,17 @@ export type MenuOption = {
   saved: boolean;
 };
 
+export type ProductOption = {
+  key: string;
+  foodKey: string;
+  name: string;
+  brand: string;
+  packG: number;
+  packLabel: string;
+  retailer: ProductRetailer;
+  allowed: boolean;
+};
+
 export type FuelView = {
   targets: FuelTargets;
   totals: FuelTotals;
@@ -1030,6 +1042,7 @@ export type FuelView = {
   foods: FoodOption[];
   recentFoods: FoodOption[];
   menus: MenuOption[];
+  products: ProductOption[];
   leftoverKcal: number;
   survival: boolean;
   kitchen: KitchenView;
@@ -1291,6 +1304,24 @@ export function buildFuelView(input: FuelViewInput): FuelView {
 
   const leftoverKcal = survival ? 0 : weeklyLeftoverKcal(week.days, targets.kcal);
 
+  const products: ProductOption[] = [];
+  if (!survival) {
+    for (const p of PRODUCTS) {
+      const food = byKey.get(p.foodKey);
+      if (!food) continue;
+      products.push({
+        key: p.key,
+        foodKey: p.foodKey,
+        name: p.name,
+        brand: p.brand,
+        packG: p.packG,
+        packLabel: p.packLabel,
+        retailer: p.retailer,
+        allowed: foodAllowed(food, kitchen),
+      });
+    }
+  }
+
   const proposal = survival
     ? null
     : buildPlanView(planDay(targets, input.foods, input.date, kitchen, catalogueMenus), input.foods);
@@ -1313,6 +1344,7 @@ export function buildFuelView(input: FuelViewInput): FuelView {
     foods,
     recentFoods,
     menus: survival ? [] : menuViews,
+    products,
     leftoverKcal,
     survival,
     kitchen: kitchenView,

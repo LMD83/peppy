@@ -2,14 +2,20 @@ import { MODE_CHECKS, daysBetween } from "@convex/tm/lib";
 import { dosesForDate, type DoseLog, type StackItem } from "@convex/tm/logicStack";
 import { buildSupplyView, type SupplyRow as SupplyLogicRow } from "@convex/tm/logicSupply";
 import type { CaptureKind } from "@convex/tm/logicCapture";
+import { SWEEP_MINUTES } from "@convex/tm/logicPush";
+import type { DeliverRequest } from "@convex/tm/logicEmail";
 import {
+  APP_TIMEZONE,
   buildRemindView,
   checkinsFor,
+  localNow,
   normalisePrefs,
+  planReminders,
   type AssessmentHistory,
   type PrefsPatch,
   type SubscriptionRow,
 } from "@convex/tm/logicRemind";
+import { postDeliver } from "../deliver-client";
 // The captures screen is the capture slice's, in both backends. This module
 // carries it through; it does not keep a second copy of the rules.
 import * as capture from "./capture";
@@ -21,11 +27,9 @@ import type { RemindData } from "../types";
  * shape — the view type is derived from the Convex query, so any drift is a
  * build error rather than a bug.
  *
- * One deliberate difference, and it is the honest one: `demo: true`. There is
- * no server behind this copy of the app, so nothing can actually be delivered.
- * The preview is real — it is computed by exactly the rules the sweep uses —
- * but the tab says plainly that nothing will fire, rather than showing a switch
- * that lies.
+ * Delivery goes through `/api/remind` while this tab is open. The preview is
+ * the same `planReminders` output the route sends. Closed-tab delivery still
+ * needs Convex.
  */
 
 function checksFor(db: DemoDb, slug: string, date: string) {
@@ -102,11 +106,56 @@ export function view(db: DemoDb, slug: string, date: string): RemindData {
     doses,
     supply,
     checkins,
-    // No server, no keys, no delivery. Said out loud rather than implied.
-    serverReady: false,
-    vapidPublicKey: "",
+    pushReady: db.delivery.push,
+    emailSupported: db.delivery.email,
+    vapidPublicKey: db.delivery.vapidPublicKey,
     demo: true,
   });
+}
+
+export function buildDeliverPayload(db: DemoDb, slug: string, date: string): (DeliverRequest & { keys: string[] }) | null {
+  const prefs = prefsFor(db, slug);
+  if (!prefs.enabled) return null;
+  const { mode, doses, supply, checkins } = gather(db, slug, date);
+  const { time } = localNow(Date.now(), APP_TIMEZONE);
+  const sent = db.sentReminders.filter((s) => s.userSlug === slug).map((s) => ({ key: s.key, at: s.at }));
+  const plan = planReminders({
+    mode,
+    prefs,
+    doses,
+    supply,
+    checkins,
+    now: { date, time, windowMinutes: SWEEP_MINUTES },
+    sent,
+  });
+  if (plan.send.length === 0) return null;
+
+  const targets = db.pushSubs
+    .filter((s) => s.userSlug === slug && s.failures < 3)
+    .map((s) => ({ endpoint: s.endpoint, p256dh: s.p256dh, auth: s.auth }));
+  if (prefs.email === "" && targets.length === 0) return null;
+
+  return {
+    email: prefs.email,
+    targets,
+    notifications: plan.send.map((r) => ({
+      title: r.title,
+      body: r.body,
+      tab: r.tab,
+      tag: `${r.kind}:${r.tab}`,
+    })),
+    keys: plan.send.map((r) => r.key),
+  };
+}
+
+export async function sweepOpenTab(db: DemoDb, slug: string, date: string): Promise<void> {
+  const payload = buildDeliverPayload(db, slug, date);
+  if (payload === null) return;
+  const { keys, ...body } = payload;
+  const ok = await postDeliver(body);
+  if (!ok) return;
+  const at = Date.now();
+  for (const key of keys) db.sentReminders.push({ userSlug: slug, key, at });
 }
 
 export function saveSubscription(

@@ -113,6 +113,7 @@ export type TimentoActions = {
     doses?: boolean;
     supply?: boolean;
     checkins?: boolean;
+    email?: string;
   }) => void;
 
   /* visual check-ins */

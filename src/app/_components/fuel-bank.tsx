@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ALLERGEN_LABELS, GROUP_ORDER, SHELF_LABELS, type FoodEquipment } from "@convex/tm/data/foods";
+import { ALLERGEN_LABELS, SHELF_LABELS, type FoodEquipment } from "@convex/tm/data/foods";
+import { RETAILER_LABELS, type ProductRetailer } from "@convex/tm/data/products";
 import { remainingAfter } from "@convex/tm/logicFuel";
+import { AISLE_LABELS, AISLE_ORDER, aisleFor, type Aisle } from "@convex/tm/logicShop";
 import { cn } from "@/lib/utils";
 import { useTimento } from "../_lib/backend";
 import type { FuelData, MealSlot } from "../_lib/types";
@@ -10,8 +12,11 @@ import { Card, Eyebrow } from "./ui";
 
 type FoodOption = FuelData["foods"][number];
 type MenuOption = FuelData["menus"][number];
+type ProductOption = FuelData["products"][number];
 
 const SLOT_ORDER: MealSlot[] = ["breakfast", "lunch", "dinner", "snack"];
+const AISLES = AISLE_ORDER.filter((a): a is Exclude<Aisle, "household"> => a !== "household");
+type Browse = "recent" | "all" | Exclude<Aisle, "household">;
 
 function fmt(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(1);
@@ -22,64 +27,93 @@ function costOf(item: { equipment: FoodEquipment; hands: number; standingMinutes
   return `${time} · ${item.equipment} · ${item.hands === 1 ? "one-handed" : "two hands"}`;
 }
 
+function shopLabel(retailer: ProductRetailer): string {
+  return RETAILER_LABELS[retailer];
+}
+
 export function FuelBank({
   foods,
   recentFoods,
   menus,
+  products,
   remaining,
   portions,
 }: {
   foods: FoodOption[];
   recentFoods: FoodOption[];
   menus: MenuOption[];
+  products: ProductOption[];
   remaining: FuelData["remaining"];
   portions: "hands" | "grams";
 }) {
   const { actions } = useTimento();
   const [query, setQuery] = useState("");
   const [slot, setSlot] = useState<MealSlot>("lunch");
-  const [group, setGroup] = useState<(typeof GROUP_ORDER)[number] | "all" | "recent">("recent");
-  const [picked, setPicked] = useState<FoodOption | null>(null);
+  const [browse, setBrowse] = useState<Browse>("recent");
+  const [picked, setPicked] = useState<ProductOption | null>(null);
   const [grams, setGrams] = useState("");
+
+  const foodBy = useMemo(() => new Map(foods.map((f) => [f.key, f])), [foods]);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const byReach = (a: FoodOption, b: FoodOption) => Number(b.allowed) - Number(a.allowed);
-    if (q.length === 0 && group === "recent") {
-      return (recentFoods.length > 0 ? recentFoods : foods.filter((f) => f.allowed).slice(0, 8)).slice(0, 8);
-    }
-    const pool =
-      group === "all" || group === "recent" ? foods : foods.filter((f) => f.group === group);
-    if (q.length === 0) {
-      return pool.filter((f) => f.allowed).slice(0, 10);
-    }
-    return pool
-      .filter(
-        (f) =>
-          f.name.toLowerCase().includes(q) ||
-          f.tags.some((t) => t.includes(q)) ||
-          f.shelf.includes(q) ||
-          f.effort.includes(q),
-      )
-      .sort(byReach)
-      .slice(0, 10);
-  }, [foods, recentFoods, query, group]);
+    const parent = (p: ProductOption) => foodBy.get(p.foodKey);
+    const byReach = (a: ProductOption, b: ProductOption) => Number(b.allowed) - Number(a.allowed);
 
-  const adding = picked
-    ? {
-        kcal: Math.round((picked.kcalPer100 * Number(grams || picked.portionG)) / 100),
-        proteinG: Math.round(((picked.proteinPer100G * Number(grams || picked.portionG)) / 100) * 10) / 10,
-        carbsG: 0,
-        fatG: 0,
-        fiberG: 0,
-        sodiumMg: Math.round((picked.sodiumPer100Mg * Number(grams || picked.portionG)) / 100),
-      }
-    : null;
+    const matches = (p: ProductOption) => {
+      const food = parent(p);
+      if (!food) return false;
+      if (q.length === 0) return true;
+      return (
+        p.name.toLowerCase().includes(q) ||
+        p.brand.toLowerCase().includes(q) ||
+        p.packLabel.toLowerCase().includes(q) ||
+        shopLabel(p.retailer).toLowerCase().includes(q) ||
+        food.name.toLowerCase().includes(q) ||
+        food.tags.some((t) => t.includes(q)) ||
+        food.shelf.includes(q) ||
+        food.effort.includes(q)
+      );
+    };
+
+    if (q.length === 0 && browse === "recent") {
+      const recentKeys = new Set(recentFoods.map((f) => f.key));
+      const recents = products.filter((p) => recentKeys.has(p.foodKey) && p.allowed);
+      if (recents.length > 0) return recents.slice(0, 12);
+      return products.filter((p) => p.allowed).slice(0, 12);
+    }
+
+    const pool =
+      browse === "all" || browse === "recent"
+        ? products
+        : products.filter((p) => {
+            const food = parent(p);
+            return food ? aisleFor(food) === browse : false;
+          });
+
+    const hit = pool.filter(matches).sort(byReach);
+    if (q.length === 0) return hit.filter((p) => p.allowed).slice(0, 16);
+    return hit.slice(0, 16);
+  }, [foodBy, products, recentFoods, query, browse]);
+
+  const pickedFood = picked ? foodBy.get(picked.foodKey) : undefined;
+  const adding =
+    picked && pickedFood
+      ? {
+          kcal: Math.round((pickedFood.kcalPer100 * Number(grams || picked.packG)) / 100),
+          proteinG:
+            Math.round(((pickedFood.proteinPer100G * Number(grams || picked.packG)) / 100) * 10) / 10,
+          carbsG: 0,
+          fatG: 0,
+          fiberG: 0,
+          sodiumMg: Math.round((pickedFood.sodiumPer100Mg * Number(grams || picked.packG)) / 100),
+        }
+      : null;
   const after = adding ? remainingAfter(remaining, adding) : null;
 
   const log = (g: number) => {
     if (!picked || !Number.isFinite(g) || g <= 0) return;
-    actions.logFood(slot, picked.key, Math.round(g));
+    actions.logFood(slot, picked.foodKey, Math.round(g));
     setPicked(null);
     setQuery("");
     setGrams("");
@@ -107,7 +141,7 @@ export function FuelBank({
             });
             return (
               <div key={menu.key} className="flex items-stretch gap-1.5">
-                <div className="flex min-h-11 flex-1 flex-col justify-center rounded-lg border border-tm-rule bg-tm-panel px-3 py-2">
+                <div className="flex min-h-11 flex-1 flex-col justify-center rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2">
                   <span className="text-sm font-medium">{menu.name}</span>
                   <span className="font-tm-mono text-[11.5px] text-tm-dim">
                     {menu.kcal} kcal · {fmt(menu.proteinG)} g protein · {menu.effortSummary}
@@ -121,7 +155,7 @@ export function FuelBank({
                 </div>
                 <button
                   onClick={() => actions.logMenu(menu.slot, menu.items)}
-                  className="min-h-11 shrink-0 cursor-pointer rounded-lg bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase"
+                  className="min-h-11 shrink-0 cursor-pointer rounded-[10px] bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
                 >
                   Log
                 </button>
@@ -132,8 +166,12 @@ export function FuelBank({
       </Card>
 
       <Card>
-        <Eyebrow color="bg-tm-blue">Food bank</Eyebrow>
-        <div className="flex gap-1.5" role="radiogroup" aria-label="Meal slot">
+        <Eyebrow color="bg-tm-blue">Catalogue</Eyebrow>
+        <p className="text-sm text-tm-dim">
+          Packs from a Tesco, Aldi and Lidl trolley. Nutrients are the staple&apos;s, not a lab
+          reading of the pack in your hand.
+        </p>
+        <div className="mt-2 flex gap-1.5" role="radiogroup" aria-label="Meal slot">
           {SLOT_ORDER.map((s) => (
             <button
               key={s}
@@ -141,7 +179,7 @@ export function FuelBank({
               aria-checked={slot === s}
               onClick={() => setSlot(s)}
               className={cn(
-                "min-h-11 flex-1 cursor-pointer rounded-lg border font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
+                "min-h-11 flex-1 cursor-pointer rounded-[10px] border font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
                 slot === s ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule bg-tm-panel text-tm-dim",
               )}
             >
@@ -150,22 +188,22 @@ export function FuelBank({
           ))}
         </div>
 
-        <div className="mt-2 flex flex-wrap gap-1.5" role="radiogroup" aria-label="Browse foods by">
-          {(["recent", "all", ...GROUP_ORDER] as const).map((g) => (
+        <div className="mt-2 flex flex-wrap gap-1.5" role="radiogroup" aria-label="Browse catalogue by">
+          {(["recent", "all", ...AISLES] as const).map((g) => (
             <button
               key={g}
               role="radio"
-              aria-checked={group === g}
+              aria-checked={browse === g}
               onClick={() => {
-                setGroup(g);
+                setBrowse(g);
                 setPicked(null);
               }}
               className={cn(
-                "min-h-11 cursor-pointer rounded-lg border px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
-                group === g ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule bg-tm-panel text-tm-dim",
+                "min-h-11 cursor-pointer rounded-[10px] border px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
+                browse === g ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule bg-tm-panel text-tm-dim",
               )}
             >
-              {g}
+              {g === "recent" || g === "all" ? g : AISLE_LABELS[g]}
             </button>
           ))}
         </div>
@@ -176,42 +214,44 @@ export function FuelBank({
             setQuery(e.target.value);
             setPicked(null);
           }}
-          placeholder="Search — name, freezer, cupboard, none"
-          aria-label="Search foods"
-          className="mt-2 min-h-11 w-full rounded-lg border border-tm-rule bg-tm-panel px-3 py-2 text-sm outline-none focus:border-tm-ink"
+          placeholder="Search: brand, pack, Tesco, freezer"
+          aria-label="Search catalogue"
+          className="mt-2 min-h-11 w-full rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 py-2 text-sm focus:border-tm-ink"
         />
 
-        {picked === null ? (
+        {picked === null || !pickedFood ? (
           <div className="mt-2 flex flex-col gap-1.5">
             {results.length === 0 && (
-              <p className="text-sm text-tm-dim">
-                Nothing in the file matches. The catalogue holds staples only — no invented foods.
-              </p>
+              <p className="text-sm text-tm-dim">Nothing in the catalogue matches. No invented foods.</p>
             )}
-            {results.map((f) => (
-              <button
-                key={f.key}
-                onClick={() => {
-                  setPicked(f);
-                  setGrams(String(f.portionG));
-                }}
-                className="flex min-h-11 cursor-pointer flex-col justify-center rounded-lg border border-tm-rule bg-tm-panel px-3 py-2 text-left"
-              >
-                <span className="flex flex-wrap items-baseline justify-between gap-x-2">
-                  <span className="text-sm font-medium">{f.name}</span>
-                  <span className="font-tm-mono text-[11.5px] text-tm-dim">
-                    {f.kcalPer100} kcal · {fmt(f.proteinPer100G)} p /100 g
+            {results.map((p) => {
+              const food = foodBy.get(p.foodKey);
+              if (!food) return null;
+              return (
+                <button
+                  key={p.key}
+                  onClick={() => {
+                    setPicked(p);
+                    setGrams(String(p.packG));
+                  }}
+                  className="flex min-h-11 cursor-pointer flex-col justify-center rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2 text-left transition-transform duration-150 active:scale-[0.98]"
+                >
+                  <span className="flex flex-wrap items-baseline justify-between gap-x-2">
+                    <span className="text-sm font-medium">{p.name}</span>
+                    <span className="font-tm-mono text-[11.5px] text-tm-dim">
+                      {food.kcalPer100} kcal · {fmt(food.proteinPer100G)} p /100 g
+                    </span>
                   </span>
-                </span>
-                <span className="font-tm-mono text-[11.5px] text-tm-dim">
-                  {costOf(f)} · {SHELF_LABELS[f.shelf]}
-                  {f.allowed ? "" : " · outside today's kitchen"}
-                </span>
-              </button>
-            ))}
+                  <span className="font-tm-mono text-[11.5px] text-tm-dim">
+                    {p.brand} · {p.packLabel} · {shopLabel(p.retailer)} · {SHELF_LABELS[food.shelf]}
+                    {p.allowed ? "" : " · outside today's kitchen"}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         ) : (
-          <div className="mt-2 rounded-lg bg-tm-soft p-3">
+          <div className="mt-2 rounded-[10px] bg-tm-soft p-3">
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-sm font-semibold">{picked.name}</span>
               <button
@@ -222,29 +262,36 @@ export function FuelBank({
               </button>
             </div>
             <p className="font-tm-mono text-[11.5px] text-tm-dim">
-              {costOf(picked)} · {SHELF_LABELS[picked.shelf]}
-              {picked.allergens.length > 0
-                ? ` · contains ${picked.allergens.map((a) => ALLERGEN_LABELS[a].toLowerCase()).join(", ")}`
+              {picked.brand} · {picked.packLabel} · {shopLabel(picked.retailer)} · {costOf(pickedFood)} ·{" "}
+              {SHELF_LABELS[pickedFood.shelf]}
+              {pickedFood.allergens.length > 0
+                ? ` · contains ${pickedFood.allergens.map((a) => ALLERGEN_LABELS[a].toLowerCase()).join(", ")}`
                 : ""}
             </p>
             {after && (
               <p className="mt-1 text-sm">
-                {adding?.kcal} kcal · {fmt(adding?.proteinG ?? 0)} g protein — leaves {fmt(Math.max(0, after.kcal))}{" "}
+                {adding?.kcal} kcal · {fmt(adding?.proteinG ?? 0)} g protein. Leaves {fmt(Math.max(0, after.kcal))}{" "}
                 kcal / {fmt(Math.max(0, after.proteinG))} g protein
               </p>
             )}
             <div className="mt-2 flex flex-wrap gap-1.5">
               <button
-                onClick={() => log(picked.portionG)}
-                className="min-h-11 cursor-pointer rounded-lg border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase"
+                onClick={() => log(picked.packG)}
+                className="min-h-11 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]"
+              >
+                Log pack · {picked.packLabel}
+              </button>
+              <button
+                onClick={() => log(pickedFood.portionG)}
+                className="min-h-11 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]"
               >
                 {portions === "hands"
-                  ? `${picked.handPortion} · ${picked.portionLabel}`
-                  : `${picked.portionLabel} · ${picked.portionG} g`}
+                  ? `${pickedFood.handPortion} · ${pickedFood.portionLabel}`
+                  : `${pickedFood.portionLabel} · ${pickedFood.portionG} g`}
               </button>
               <button
                 onClick={() => log(100)}
-                className="min-h-11 cursor-pointer rounded-lg border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase"
+                className="min-h-11 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]"
               >
                 100 g
               </button>
@@ -262,18 +309,18 @@ export function FuelBank({
                 inputMode="numeric"
                 aria-label="Grams"
                 placeholder="g"
-                className="min-h-11 w-24 rounded-lg border border-tm-rule bg-tm-panel px-3 py-2 font-tm-mono text-sm outline-none focus:border-tm-ink"
+                className="min-h-11 w-24 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 py-2 font-tm-mono text-sm focus:border-tm-ink"
               />
               <button
                 type="submit"
-                className="min-h-11 flex-1 cursor-pointer rounded-lg bg-tm-ink px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase"
+                className="min-h-11 flex-1 cursor-pointer rounded-[10px] bg-tm-ink px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
               >
                 Log to {slot}
               </button>
             </form>
             <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
-              Reference values per 100 g, not an analysis of your shopping. Weigh it or accept the
-              estimate — both are recorded the same way.
+              Reference values per 100 g of the staple, not an analysis of this pack. Weigh it or
+              accept the estimate. Both are recorded the same way.
             </p>
           </div>
         )}

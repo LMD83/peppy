@@ -12,13 +12,13 @@ NEXT_PUBLIC_TIMENTO_DEMO=1 npm run dev:frontend
 ```
 
 Open <http://localhost:3000>. Demo mode uses an in-memory backend and fixture
-data — no Convex setup needed. Demo passcodes: **Liam 2580**, **Conor 1379**.
+data — no Convex setup needed. Demo passcodes: **Liam 2580**, **Artur 1379**.
 
 To run against a live Convex backend instead:
 
 ```bash
 npm run dev            # starts `convex dev` and `next dev` together
-npx convex run tm/seed:run '{"passcodes": {"liam": "…", "conor": "…"}}'
+npx convex run tm/seed:run '{"passcodes": {"liam": "…", "artur": "…"}}'
 ```
 
 Leave `NEXT_PUBLIC_TIMENTO_DEMO` unset (or `0`) so the app talks to Convex.

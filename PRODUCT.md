@@ -8,7 +8,7 @@ web
 
 ## Users
 
-Primary users are a two-person crew holding a shared performance protocol together — typically training partners or household co-holders under sleep debt, evening craving pressure, and seasonal load. The job: open the file, complete today's checks, log the urge without spiraling, and keep the partner accountable without exposing private body data. Seeded names (Liam / Conor) are fixtures for demo and tests, not the permanent cast of the product.
+Primary users are a two-person crew holding a shared performance protocol together — typically training partners or household co-holders under sleep debt, evening craving pressure, and seasonal load. The job: open the file, complete today's checks, log the urge without spiraling, and keep the partner accountable without exposing private body data. Seeded names (Liam / Artur) are fixtures for demo and tests, not the permanent cast of the product.
 
 ## Product Purpose
 

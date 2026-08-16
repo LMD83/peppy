@@ -62,14 +62,14 @@ export function MindTab() {
   if (mind.survival) {
     const top = mind.intentions[0] ?? null;
     return (
-      <div className="flex flex-col gap-3 pt-4">
+      <div className="flex flex-col gap-4 pt-5">
         {mind.safetyNotice.active && <SafetyCard text={mind.safetyNotice.text} />}
         <EncouragementCard encouragement={mind.encouragement} survival />
         <DueCard due={mind.due} instruments={mind.instruments} survival />
         {top && <IntentionCard intention={top} survival />}
         <Card tone="amber">
-          <p className="text-[12.5px] text-tm-amber-ink">
-            Two short check-ins, one pre-written plan. Nothing else is offered on the floor — a worse
+          <p className="text-[14px] text-tm-amber-ink">
+            Two short check-ins, one pre-written plan. Nothing else is offered on the floor. A worse
             week is not the week to add questionnaires.
           </p>
         </Card>
@@ -78,13 +78,17 @@ export function MindTab() {
   }
 
   return (
-    <div className="flex flex-col gap-3 pt-4">
+    <div className="flex flex-col gap-4 pt-5 lg:grid lg:grid-cols-12 lg:items-start lg:gap-6">
+      <div className="flex flex-col gap-3 lg:col-span-7">
       {mind.safetyNotice.active && <SafetyCard text={mind.safetyNotice.text} />}
       <EncouragementCard encouragement={mind.encouragement} survival={false} />
       <DueCard due={mind.due} instruments={mind.instruments} survival={false} />
       <HistoryCard history={mind.history} />
+      </div>
+      <div className="flex flex-col gap-3 lg:col-span-5">
       <IntentionsCard intentions={mind.intentions} suggestions={mind.suggestions} />
       <ReflectionCard prompt={mind.weeklyPrompt} reflections={mind.reflections} />
+      </div>
     </div>
   );
 }
@@ -134,18 +138,18 @@ function MindSkeleton() {
 function SafetyCard({ text }: { text: string }) {
   return (
     <Card tone="amber">
-      <Eyebrow color="bg-tm-amber">Support — surfaced by your own answer</Eyebrow>
-      <p className="text-[13px] text-tm-amber-ink">{text}</p>
+      <Eyebrow color="bg-tm-amber">Support</Eyebrow>
+      <p className="text-[14px] text-tm-amber-ink">{text}</p>
       <div className="mt-2.5 flex gap-2">
         <a
           href="tel:116123"
-          className="flex min-h-11 flex-1 items-center justify-center rounded-lg border border-tm-amber bg-tm-panel px-3 font-tm-mono text-[11px] tracking-[0.1em] text-tm-amber uppercase"
+          className="flex min-h-11 flex-1 items-center justify-center rounded-[10px] border border-tm-amber bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-amber uppercase"
         >
           Samaritans 116 123
         </a>
         <a
           href="tel:112"
-          className="flex min-h-11 flex-1 items-center justify-center rounded-lg border border-tm-amber bg-tm-panel px-3 font-tm-mono text-[11px] tracking-[0.1em] text-tm-amber uppercase"
+          className="flex min-h-11 flex-1 items-center justify-center rounded-[10px] border border-tm-amber bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-amber uppercase"
         >
           Emergency 112
         </a>
@@ -164,8 +168,8 @@ function EncouragementCard({
   return (
     <Card tone={survival ? "amber" : "default"}>
       <Eyebrow color={survival ? "bg-tm-amber" : TONE_BAR[encouragement.tone]}>Today</Eyebrow>
-      <p className="font-tm-disp text-[19px] leading-snug">{encouragement.headline}</p>
-      <p className={cn("mt-1.5 text-[12.5px]", survival ? "text-tm-amber-ink" : "text-tm-ink")}>
+      <p className="font-tm-disp text-2xl leading-[1.15] tracking-tight">{encouragement.headline}</p>
+      <p className={cn("mt-2 max-w-[65ch] text-[14px] leading-relaxed", survival ? "text-tm-amber-ink" : "text-tm-ink")}>
         {encouragement.body}
       </p>
     </Card>
@@ -207,7 +211,7 @@ function DueCard({
             <button
               key={d.key}
               onClick={() => setOpen(d.key)}
-              className="flex min-h-11 cursor-pointer items-center justify-between rounded-lg border border-tm-rule bg-tm-panel px-3.5 py-2.5 text-left"
+              className="flex min-h-11 cursor-pointer items-center justify-between rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3.5 py-2.5 text-left transition-transform duration-150 active:scale-[0.98]"
             >
               <span>
                 <span className="block text-[13px] font-medium">{d.name}</span>
@@ -280,7 +284,7 @@ function Questionnaire({ instrument, onClose }: { instrument: InstrumentView; on
                       setAnswers((prev) => prev.map((a, n) => (n === i ? value : a)))
                     }
                     className={cn(
-                      "h-10 flex-1 cursor-pointer rounded-md border font-tm-mono text-[11px]",
+                      "h-11 flex-1 cursor-pointer rounded-[10px] border font-tm-mono text-[11.5px] transition-transform duration-150 active:scale-[0.98]",
                       chosen === value
                         ? "border-tm-ink bg-tm-ink text-white"
                         : "border-tm-rule bg-tm-panel text-tm-dim",
@@ -305,7 +309,7 @@ function Questionnaire({ instrument, onClose }: { instrument: InstrumentView; on
           onClick={submit}
           disabled={!complete}
           className={cn(
-            "min-h-11 flex-1 cursor-pointer rounded-lg px-4 font-tm-mono text-[11px] tracking-[0.12em] uppercase",
+            "min-h-11 flex-1 cursor-pointer rounded-[10px] px-4 font-tm-mono text-[11.5px] tracking-[0.12em] uppercase transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
             complete ? "bg-tm-ink text-white" : "bg-tm-soft text-tm-dim2",
           )}
         >
@@ -313,7 +317,7 @@ function Questionnaire({ instrument, onClose }: { instrument: InstrumentView; on
         </button>
         <button
           onClick={onClose}
-          className="min-h-11 cursor-pointer rounded-lg border border-tm-rule px-4 font-tm-mono text-[11px] tracking-[0.12em] text-tm-dim uppercase"
+          className="min-h-11 cursor-pointer rounded-[10px] border border-tm-rule px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase transition-transform duration-150 active:scale-[0.98]"
         >
           Close
         </button>
@@ -420,7 +424,7 @@ function IntentionsCard({
         </span>
       </div>
       <p className="mt-1 mb-2 text-[11.5px] text-tm-dim">
-        Pre-deciding the response beats deciding in the moment — moderate-to-strong evidence, and the
+        Pre-deciding the response beats deciding in the moment. Moderate-to-strong evidence, and the
         moment is exactly when the deciding machinery is worst.
       </p>
       {intentions.length === 0 ? (
@@ -440,7 +444,7 @@ function IntentionsCard({
 function IntentionRow({ intention }: { intention: IntentionView }) {
   const { actions } = useTimento();
   return (
-    <div className="rounded-lg border border-tm-rule bg-tm-panel px-3 py-2.5">
+    <div className="rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2.5">
       <p className="text-[12.5px] leading-snug">
         <span className="font-tm-mono text-[10px] text-tm-dim">IF </span>
         {intention.trigger}
@@ -454,7 +458,7 @@ function IntentionRow({ intention }: { intention: IntentionView }) {
         <button
           onClick={() => actions.markIntentionWin(intention.id)}
           aria-label={`Log a win for: if ${intention.trigger} then ${intention.action}`}
-          className="min-h-11 cursor-pointer rounded-lg border border-tm-green px-3 font-tm-mono text-[10px] tracking-[0.12em] text-tm-green uppercase"
+          className="min-h-11 cursor-pointer rounded-[10px] border border-tm-green px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-green uppercase transition-transform duration-150 active:scale-[0.98]"
         >
           Ran it
         </button>
@@ -499,7 +503,7 @@ function IntentionBuilder({ suggestions }: { suggestions: Suggestion[] }) {
             onChange={(e) => setTrigger(e.target.value)}
             placeholder="it's 21:00 and I'm tired"
             aria-label="If — the situation"
-            className="min-h-11 flex-1 rounded-lg border border-tm-rule bg-tm-panel px-3 text-[12.5px] outline-none focus:border-tm-ink"
+            className="min-h-11 flex-1 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-[14px] focus:border-tm-ink"
           />
         </label>
         <label className="flex items-center gap-2">
@@ -509,7 +513,7 @@ function IntentionBuilder({ suggestions }: { suggestions: Suggestion[] }) {
             onChange={(e) => setAction(e.target.value)}
             placeholder="run the close-out ritual, then go up"
             aria-label="Then — the pre-decided action"
-            className="min-h-11 flex-1 rounded-lg border border-tm-rule bg-tm-panel px-3 text-[12.5px] outline-none focus:border-tm-ink"
+            className="min-h-11 flex-1 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-[14px] focus:border-tm-ink"
           />
         </label>
       </div>
@@ -529,7 +533,7 @@ function IntentionBuilder({ suggestions }: { suggestions: Suggestion[] }) {
                   setAction(s.action);
                 }}
                 aria-label={`Use suggestion: if ${s.trigger} then ${s.action}`}
-                className="min-h-11 cursor-pointer rounded-lg bg-tm-soft px-3 py-2 text-left text-[12px] leading-snug"
+                className="min-h-11 cursor-pointer rounded-[10px] bg-tm-soft px-3 py-2 text-left text-[12px] leading-snug transition-transform duration-150 active:scale-[0.98]"
               >
                 <span className="font-tm-mono text-[9.5px] tracking-[0.1em] text-tm-dim uppercase">
                   {s.signal}{" "}
@@ -545,7 +549,7 @@ function IntentionBuilder({ suggestions }: { suggestions: Suggestion[] }) {
         type="submit"
         disabled={!ready}
         className={cn(
-          "mt-2.5 min-h-11 w-full cursor-pointer rounded-lg px-4 font-tm-mono text-[11px] tracking-[0.12em] uppercase",
+          "mt-2.5 min-h-11 w-full cursor-pointer rounded-[10px] px-4 font-tm-mono text-[11.5px] tracking-[0.12em] uppercase transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
           ready ? "bg-tm-ink text-white" : "bg-tm-soft text-tm-dim2",
         )}
       >
@@ -581,7 +585,7 @@ function ReflectionCard({
 
   return (
     <Card>
-      <Eyebrow color="bg-tm-yellow">Reflection — today&apos;s prompt</Eyebrow>
+      <Eyebrow color="bg-tm-yellow">Reflection</Eyebrow>
       <p className="text-[13px] font-medium">{todays ? todays.prompt : asked}</p>
       {!todays && (
         <button
@@ -593,10 +597,10 @@ function ReflectionCard({
       )}
 
       {todays ? (
-        <div className="mt-2 rounded-lg bg-tm-soft px-3 py-2.5">
-          <p className="text-[12.5px]">{todays.response}</p>
+        <div className="mt-2 rounded-[10px] bg-tm-soft px-3 py-2.5">
+          <p className="text-[14px]">{todays.response}</p>
           {todays.win && (
-            <p className="mt-1 font-tm-mono text-[10px] text-tm-green">win — {todays.win}</p>
+            <p className="mt-1 font-tm-mono text-[11.5px] text-tm-green">win · {todays.win}</p>
           )}
           <p className="mt-1 font-tm-mono text-[9.5px] text-tm-dim">logged today</p>
         </div>
@@ -617,20 +621,20 @@ function ReflectionCard({
             rows={3}
             aria-label="Reflection response"
             placeholder="Two lines is plenty."
-            className="w-full rounded-lg border border-tm-rule bg-tm-panel px-3 py-2 text-[12.5px] outline-none focus:border-tm-ink"
+            className="w-full rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 py-2 text-[14px] focus:border-tm-ink"
           />
           <input
             value={win}
             onChange={(e) => setWin(e.target.value)}
             placeholder="one win today (optional)"
             aria-label="One win today, optional"
-            className="mt-1.5 min-h-11 w-full rounded-lg border border-tm-rule bg-tm-panel px-3 text-[12.5px] outline-none focus:border-tm-ink"
+            className="mt-1.5 min-h-11 w-full rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-[14px] focus:border-tm-ink"
           />
           <button
             type="submit"
             disabled={!ready}
             className={cn(
-              "mt-2 min-h-11 w-full cursor-pointer rounded-lg px-4 font-tm-mono text-[11px] tracking-[0.12em] uppercase",
+              "mt-2 min-h-11 w-full cursor-pointer rounded-[10px] px-4 font-tm-mono text-[11.5px] tracking-[0.12em] uppercase transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
               ready ? "bg-tm-ink text-white" : "bg-tm-soft text-tm-dim2",
             )}
           >
@@ -647,7 +651,7 @@ function ReflectionCard({
               <div key={r.date}>
                 <p className="font-tm-mono text-[9.5px] text-tm-dim">{r.date}</p>
                 <p className="text-[12px] leading-snug">{r.response}</p>
-                {r.win && <p className="font-tm-mono text-[10px] text-tm-green">win — {r.win}</p>}
+                {r.win && <p className="font-tm-mono text-[11.5px] text-tm-green">win · {r.win}</p>}
               </div>
             ))}
           </div>

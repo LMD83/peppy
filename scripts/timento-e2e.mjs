@@ -33,7 +33,7 @@ async function check(name, fn) {
 
 async function login(page, slug, passcode) {
   await page.goto(`${BASE}/`);
-  await page.getByRole("button", { name: slug === "liam" ? "Liam" : "Conor", exact: true }).click();
+  await page.getByRole("button", { name: slug === "liam" ? "Liam" : "Artur", exact: true }).click();
   await page.getByPlaceholder("••••").fill(passcode);
   await page.getByRole("button", { name: /open the file/i }).click();
   await page.getByRole("heading", { level: 1 }).waitFor();
@@ -253,7 +253,7 @@ for (const [label, viewport] of [
     await page.screenshot({ path: `${SHOTS}/${label}-14-shop.png`, fullPage: true });
   });
 
-  await check("reminders: previews honestly and never claims it can send", async () => {
+  await check("reminders: previews honestly when it cannot send", async () => {
     await goTab(page, "More");
     await page.getByRole("button", { name: /^Reminders/ }).first().click({ timeout: NAV_TIMEOUT });
     await page.waitForFunction(
@@ -262,9 +262,9 @@ for (const [label, viewport] of [
       { timeout: NAV_TIMEOUT },
     );
     const body = await page.locator("main").innerText();
-    // The demo has no server behind it. A switch that lies about delivery is
-    // worse than no switch, so the screen has to say so.
-    if (!/demo|cannot|no server|not.*sent/i.test(body)) {
+    // CI has no send keys. A switch that lies about delivery is worse than no
+    // switch, so the screen has to say it cannot send.
+    if (!/cannot|no send keys|not.*sent|no device|no email/i.test(body)) {
       throw new Error("reminders screen does not admit it cannot deliver");
     }
     await page.screenshot({ path: `${SHOTS}/${label}-16-remind.png`, fullPage: true });
@@ -347,7 +347,7 @@ for (const [label, viewport] of [
 
   await check("crew tab: partner card + nudge lands in feed", async () => {
     await goTab(page, "Crew");
-    await page.getByText("Conor").first().waitFor();
+    await page.getByText("Artur").first().waitFor();
     const shared = await page.getByLabel("Crew feed").textContent();
     await page.getByRole("button", { name: "Floor's holding" }).click();
     await page.waitForTimeout(200);
@@ -412,13 +412,13 @@ for (const [label, viewport] of [
     await page.getByRole("heading", { level: 1 }).waitFor();
   });
 
-  await check("logout → conor sees survival file, not liam's data", async () => {
+  await check("logout → artur sees survival file, not liam's data", async () => {
     await signOut(page);
-    await login(page, "conor", "1379");
+    await login(page, "artur", "1379");
     await page.getByText(/Floor protocol — hold < 96/i).waitFor();
     const body = await page.textContent("body");
-    if (body.includes("92.8")) throw new Error("liam's weight visible in conor session");
-    await page.screenshot({ path: `${SHOTS}/${label}-8-conor.png`, fullPage: true });
+    if (body.includes("92.8")) throw new Error("liam's weight visible in artur session");
+    await page.screenshot({ path: `${SHOTS}/${label}-8-artur.png`, fullPage: true });
     await signOut(page);
   });
 

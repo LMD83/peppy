@@ -8,6 +8,7 @@ import {
   type FoodDef,
 } from "../convex/tm/data/foods";
 import { MENUS, menuByKey } from "../convex/tm/data/menus";
+import { PRODUCTS, RETAILERS, productByKey } from "../convex/tm/data/products";
 import {
   ACTIVITY_MULTIPLIERS,
   DEFAULT_KITCHEN,
@@ -98,6 +99,37 @@ describe("food catalogue", () => {
   it("looks up by key and returns undefined for a stranger", () => {
     expect(foodByKey("skyr")?.name).toBe("Skyr, natural");
     expect(foodByKey("unicorn_steak")).toBeUndefined();
+  });
+});
+
+describe("product catalogue", () => {
+  it("stocks a full trolley with unique keys", () => {
+    expect(PRODUCTS.length).toBeGreaterThanOrEqual(280);
+    expect(PRODUCTS.length).toBeLessThanOrEqual(420);
+    expect(new Set(PRODUCTS.map((p) => p.key)).size).toBe(PRODUCTS.length);
+  });
+
+  it("points every product at a known food, with a real pack", () => {
+    const foodKeys = new Set(FOODS.map((f) => f.key));
+    for (const p of PRODUCTS) {
+      expect(foodKeys.has(p.foodKey), p.key).toBe(true);
+      expect(p.packG, p.key).toBeGreaterThan(0);
+      expect(p.name.length, p.key).toBeGreaterThan(0);
+      expect(p.brand.length, p.key).toBeGreaterThan(0);
+      expect(p.packLabel.length, p.key).toBeGreaterThan(0);
+      expect(RETAILERS, p.key).toContain(p.retailer);
+    }
+  });
+
+  it("covers every staple with at least one pack", () => {
+    const stocked = new Set(PRODUCTS.map((p) => p.foodKey));
+    for (const f of FOODS) expect(stocked.has(f.key), f.key).toBe(true);
+  });
+
+  it("looks up by key and returns undefined for a stranger", () => {
+    const first = PRODUCTS[0];
+    expect(productByKey(first.key)?.foodKey).toBe(first.foodKey);
+    expect(productByKey("unicorn_steak_300")).toBeUndefined();
   });
 });
 
@@ -449,15 +481,15 @@ describe("fixtures", () => {
     expect(todayRows.some((r) => r.planned && !r.eaten)).toBe(true);
   });
 
-  it("keeps conor on the floor — no plan rows, protein-forward", () => {
-    const conor = fx.mealEntries.filter((r) => r.userSlug === "conor");
-    expect(conor.length).toBeGreaterThan(0);
-    expect(conor.every((r) => !r.planned)).toBe(true);
-    expect(conor.some((r) => r.date === TODAY && r.eaten)).toBe(true);
+  it("keeps artur on the floor — no plan rows, protein-forward", () => {
+    const artur = fx.mealEntries.filter((r) => r.userSlug === "artur");
+    expect(artur.length).toBeGreaterThan(0);
+    expect(artur.every((r) => !r.planned)).toBe(true);
+    expect(artur.some((r) => r.date === TODAY && r.eaten)).toBe(true);
   });
 
   it("seeds targets and weekly estimates for both users", () => {
-    expect(new Set(fx.nutritionTargets.map((t) => t.userSlug))).toEqual(new Set(["liam", "conor"]));
+    expect(new Set(fx.nutritionTargets.map((t) => t.userSlug))).toEqual(new Set(["liam", "artur"]));
     expect(fx.energyEstimates.length).toBeGreaterThanOrEqual(2);
     for (const t of fx.nutritionTargets) expect(t.sodiumMgMax).toBe(SODIUM_MG_MAX);
   });
@@ -932,11 +964,11 @@ describe("kitchen fixtures", () => {
     }
   });
 
-  it("keeps conor's kitchen to the one he can use on the floor", () => {
-    const conor = kitchenProfileFor("conor");
-    expect(conor.hands).toBe(1);
-    expect(EQUIPMENT_RANK[conor.equipment]).toBeLessThanOrEqual(EQUIPMENT_RANK.microwave);
-    expect(conor.minutes).toBeLessThanOrEqual(10);
+  it("keeps artur's kitchen to the one he can use on the floor", () => {
+    const artur = kitchenProfileFor("artur");
+    expect(artur.hands).toBe(1);
+    expect(EQUIPMENT_RANK[artur.equipment]).toBeLessThanOrEqual(EQUIPMENT_RANK.microwave);
+    expect(artur.minutes).toBeLessThanOrEqual(10);
   });
 
   it("hands anybody it does not know a full kitchen rather than a locked one", () => {
@@ -944,7 +976,7 @@ describe("kitchen fixtures", () => {
   });
 
   it("ships the profiles with the rest of the fixtures", () => {
-    expect(fx.kitchenProfiles.map((p) => p.userSlug).sort()).toEqual(["conor", "liam"]);
+    expect(fx.kitchenProfiles.map((p) => p.userSlug).sort()).toEqual(["artur", "liam"]);
   });
 
   it("plans liam a day his own exclusions allow", () => {
@@ -1109,10 +1141,30 @@ describe("fuel view — bank and leftover", () => {
     expect(view.survival).toBe(false);
   });
 
+  it("exposes the product catalogue, allowed only when the parent food is", () => {
+    const view = buildFuelView({
+      ...base,
+      windowEntries: [],
+      kitchen: {
+        ...DEFAULT_KITCHEN,
+        excludeAllergens: ["crustaceans"],
+      },
+    });
+    expect(view.products.length).toBeGreaterThanOrEqual(280);
+    const prawn = view.products.find((p) => p.foodKey === "prawns_cooked");
+    expect(prawn).toBeDefined();
+    expect(prawn?.allowed).toBe(false);
+    const skyr = view.products.find((p) => p.foodKey === "skyr");
+    expect(skyr?.allowed).toBe(true);
+    expect(skyr?.brand.length).toBeGreaterThan(0);
+    expect(skyr?.packG).toBeGreaterThan(0);
+  });
+
   it("hides leftover and menus on the floor", () => {
     const view = buildFuelView({ ...base, mode: "survival", windowEntries: [] });
     expect(view.survival).toBe(true);
     expect(view.leftoverKcal).toBe(0);
     expect(view.proposal).toBeNull();
+    expect(view.products).toEqual([]);
   });
 });

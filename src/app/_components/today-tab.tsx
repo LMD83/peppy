@@ -209,8 +209,7 @@ function KitchenCard() {
         disabled={today.day.ritualDone}
         className={cn(
           "mt-2.5 min-h-11 w-full cursor-pointer rounded-lg px-3 py-2.5 text-left text-[14px]",
-          // tm-green on #e8f1eb is 5.20:1 after the retune (was 4.38:1).
-          today.day.ritualDone ? "bg-[#e8f1eb] text-tm-green" : "bg-tm-soft text-tm-ink",
+          today.day.ritualDone ? "bg-tm-green-faint text-tm-green" : "bg-tm-soft text-tm-ink",
         )}
       >
         <b>20:15 close-out ritual:</b> skyr · 2 squares dark · decaf. Same cue, same reward, swapped routine.

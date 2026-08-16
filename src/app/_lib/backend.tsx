@@ -1,10 +1,12 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useSyncExternalStore } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useSyncExternalStore } from "react";
 import { ConvexProvider, ConvexReactClient, useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { DemoDb } from "./demo-db";
+import { fetchDeliverCapability } from "./deliver-client";
+import { SWEEP_MINUTES } from "@convex/tm/logicPush";
 import {
   localToday,
   type CravingEntry,
@@ -142,6 +144,25 @@ function DemoBackend({ children }: { children: React.ReactNode }) {
   );
 
   const slug = session?.slug ?? null;
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchDeliverCapability().then((cap) => {
+      if (!cancelled) db.setDelivery(cap);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [db]);
+
+  useEffect(() => {
+    if (!slug) return;
+    const id = window.setInterval(() => {
+      void db.sweepReminders(slug, date);
+    }, SWEEP_MINUTES * 60 * 1000);
+    return () => window.clearInterval(id);
+  }, [db, slug, date]);
+
   const actions: TimentoActions = useMemo(
     () => ({
       login: async (loginSlug: string, passcode: string) => {

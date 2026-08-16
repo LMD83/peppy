@@ -64,7 +64,7 @@ export type FuelFixtures = {
  * two safe foods, one allergen exclusion and one never-again. Twenty-five
  * minutes and one pan — a real weeknight, not a cookery show.
  *
- * Conor: on the floor. Ten minutes, a microwave, one hand, and the four things
+ * Artur: on the floor. Ten minutes, a microwave, one hand, and the four things
  * he actually eats sitting at the top of every list.
  */
 export const KITCHEN_PROFILES: KitchenProfileRow[] = [
@@ -81,7 +81,7 @@ export const KITCHEN_PROFILES: KitchenProfileRow[] = [
     neverAgain: ["tempeh"],
   },
   {
-    userSlug: "conor",
+    userSlug: "artur",
     minutes: 10,
     equipment: "microwave",
     hands: 1,
@@ -152,7 +152,7 @@ const LIAM_MENUS: MenuItem[][] = [
 ];
 
 /** Survival cadence: protein and a closed kitchen. Nothing optional. */
-const CONOR_MENU: MenuItem[] = [
+const ARTUR_MENU: MenuItem[] = [
   ["breakfast", "skyr", 170],
   ["breakfast", "oats", 60],
   ["dinner", "chicken_breast", 160],
@@ -197,13 +197,13 @@ export function buildFuelFixtures(today: string): FuelFixtures {
     push("liam", today, item, !eaten, eaten);
   }
 
-  // Conor — floor protocol, six days back, breakfast in today.
+  // Artur — floor protocol, six days back, breakfast in today.
   for (let back = 6; back >= 1; back--) {
     const date = addDays(today, -back);
-    for (const item of CONOR_MENU) push("conor", date, item, false, true);
+    for (const item of ARTUR_MENU) push("artur", date, item, false, true);
   }
-  for (const item of CONOR_MENU) {
-    if (item[0] === "breakfast") push("conor", today, item, false, true);
+  for (const item of ARTUR_MENU) {
+    if (item[0] === "breakfast") push("artur", today, item, false, true);
   }
 
   const nutritionTargets: NutritionTargetRow[] = [
@@ -219,7 +219,7 @@ export function buildFuelFixtures(today: string): FuelFixtures {
       basis: "adaptive",
     },
     {
-      userSlug: "conor",
+      userSlug: "artur",
       effectiveFrom: addDays(today, -12),
       kcal: 2600,
       proteinG: 152,
@@ -247,7 +247,7 @@ export function buildFuelFixtures(today: string): FuelFixtures {
       weightSlopeKgPerWeek: -0.55,
     },
     {
-      userSlug: "conor",
+      userSlug: "artur",
       weekStart: addDays(today, -7),
       tdeeKcal: 2650,
       avgIntakeKcal: 2580,

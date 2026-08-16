@@ -6,6 +6,7 @@ import {
   type FoodGroup,
   type FoodShelf,
 } from "./data/foods";
+import { packsFromProducts } from "./data/products";
 import { HANDOFF_NOTE, retailerDescriptors, type RetailerDescriptor } from "./data/retailers";
 import { addDays, type TmMode } from "./lib";
 import { shoppingList, type SimpleEntry } from "./logicFuel";
@@ -73,7 +74,7 @@ export const AISLE_LABELS: Record<Aisle, string> = {
  * veg; tinned tuna is cupboard, not the fish counter. Fresh and bagged produce
  * both live in the produce chiller, so they stay one stop.
  */
-export function aisleFor(food: FoodDef): Aisle {
+export function aisleFor(food: Pick<FoodDef, "shelf" | "group">): Aisle {
   if (food.shelf === "freezer") return "frozen";
   if (food.shelf === "cupboard") return "cupboard";
   if (food.group === "veg" || food.group === "fruit") return "produce";
@@ -88,10 +89,9 @@ export function aisleFor(food: FoodDef): Aisle {
 export type PackSize = { grams: number; label: string };
 
 /**
- * Typical Irish pack sizes, ascending. These are what a normal shelf offers,
- * not a claim about the pack in your hand — the shelf edge always wins, and the
- * UI says so. Wrong by one pack size costs a person nothing; being told to buy
- * 137 g of mince costs them the whole feature.
+ * Fallback pack sizes when a food has no product rows. `packsFor` prefers the
+ * unique sizes on PRODUCTS — typical Irish shelf packs, not a claim about the
+ * pack in your hand. The shelf edge always wins, and the UI says so.
  */
 export const FOOD_PACKS: Record<string, PackSize[]> = {
   /* meat & fish — counter and pre-pack */
@@ -199,6 +199,8 @@ export const GROUP_PACKS: Record<FoodGroup, PackSize[]> = {
 };
 
 export function packsFor(food: FoodDef): PackSize[] {
+  const fromProducts = packsFromProducts(food.key);
+  if (fromProducts.length > 0) return fromProducts;
   const packs = FOOD_PACKS[food.key] ?? GROUP_PACKS[food.group];
   return [...packs].sort((a, b) => a.grams - b.grams);
 }

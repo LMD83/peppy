@@ -60,11 +60,6 @@ const T = tokens();
 /** A hex literal used directly in a component, not (yet) a token. */
 const LITERAL = {
   white: "#ffffff",
-  "cut-chip": "#e8f1eb", // ui.tsx ModeBadge cut
-  "maintain-chip": "#e9eff8", // ui.tsx ModeBadge maintain
-  "error-chip": "#faeceb", // login.tsx error panel
-  "header-body": "#c9cdd4", // login.tsx blurb, scoreboard mode chip
-  "switch-body": "#e6e8ec", // scoreboard.tsx ModeSwitcher option
 } as const;
 
 function colour(ref: string): string {
@@ -97,7 +92,8 @@ describe("globals.css exposes the tokens the app is built on", () => {
     for (const name of [
       "tm-paper", "tm-panel", "tm-ink", "tm-ink2", "tm-ink3", "tm-dim", "tm-dim2",
       "tm-onink", "tm-rule", "tm-rule-strong", "tm-grid", "tm-soft", "tm-blue",
-      "tm-red", "tm-green", "tm-green-faint", "tm-yellow", "tm-amber",
+      "tm-red", "tm-green", "tm-green-faint", "tm-blue-faint", "tm-red-bg",
+      "tm-yellow", "tm-amber",
       "tm-amber-bg", "tm-amber-ink", "tm-amber-lift", "tm-purple", "tm-focus",
     ]) {
       expect(T[name], `--color-${name} missing from globals.css`).toMatch(/^#[0-9a-f]{6}$/);
@@ -135,9 +131,9 @@ const TEXT_PAIRS: Pair[] = [
   ["tm-yellow", "tm-grid", 4.5, "research: unclear markers"],
   ["tm-amber-ink", "tm-amber-bg", 4.5, "every survival/tripwire paragraph"],
   ["tm-amber-ink", "tm-panel", 4.5, "mind encouragement copy"],
-  ["tm-green", "cut-chip", 4.5, "ModeBadge cut, kitchen ritual done"],
-  ["tm-blue", "maintain-chip", 4.5, "ModeBadge maintain"],
-  ["tm-red", "error-chip", 4.5, "login error panel"],
+  ["tm-green", "tm-green-faint", 4.5, "ModeBadge cut, kitchen ritual done"],
+  ["tm-blue", "tm-blue-faint", 4.5, "ModeBadge maintain"],
+  ["tm-red", "tm-red-bg", 4.5, "login error panel"],
 
   // Reversed: white or ink sitting ON a filled control.
   ["white", "tm-amber", 4.5, "SURVIVAL: the ticked floor check — the worst screen in the app"],
@@ -151,9 +147,7 @@ const TEXT_PAIRS: Pair[] = [
   ["tm-onink", "tm-ink2", 4.5, "stat sub-labels"],
   ["tm-onink", "tm-ink3", 4.5, "mode switcher copy"],
   ["tm-amber-lift", "tm-ink", 4.5, "SURVIVAL: 'executing as designed' in the header"],
-  ["header-body", "tm-ink", 4.5, "login blurb"],
-  ["header-body", "tm-ink3", 4.5, "the mode chip label"],
-  ["switch-body", "tm-ink2", 4.5, "mode switcher option name"],
+  ["white", "tm-ink2", 4.5, "mode switcher option name"],
 ];
 
 describe("1.4.3 — text contrast", () => {
@@ -227,6 +221,15 @@ describe("the stylesheet carries the rest of the floor", () => {
     expect(CSS).toContain("@media (prefers-reduced-motion: reduce)");
     expect(CSS).toContain("@media (prefers-contrast: more)");
     expect(CSS).toContain("@media (forced-colors: active)");
+  });
+
+  it("stills pulse and the breathe fill without a global 0.01ms kill", () => {
+    const reduced = CSS.slice(CSS.indexOf("@media (prefers-reduced-motion: reduce)"));
+    const block = reduced.slice(0, reduced.indexOf("@media (prefers-contrast"));
+    expect(block).toContain(".animate-pulse");
+    expect(block).toContain('[role="timer"] .transition-all');
+    expect(block).not.toMatch(/\*\s*,\s*\n\s*\*::before/);
+    expect(block).not.toContain("0.01ms");
   });
 
   it("restores a state boundary when forced colours drop the background", () => {

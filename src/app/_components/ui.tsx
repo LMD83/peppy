@@ -1,7 +1,10 @@
 "use client";
 
-import { useId } from "react";
+import { useEffect, useId, useRef } from "react";
 import { cn } from "@/lib/utils";
+
+const SHEET_FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /** Narrow on a phone, a real file on a desk. Not a dashboard. */
 export const fileWidth = "mx-auto w-full max-w-md lg:max-w-3xl";
@@ -141,12 +144,12 @@ export function BigChoice({
 
 /**
  * Contrast on each pairing (see globals.css for the palette rationale):
- * green on #e8f1eb 5.20:1 · blue on #e9eff8 5.46:1 · amber on amber-bg 5.23:1.
+ * green on green-faint 4.85:1 · blue on blue-faint 5.46:1 · amber on amber-bg 5.23:1.
  */
 export function ModeBadge({ mode }: { mode: "cut" | "maintain" | "survival" }) {
   const styles = {
-    cut: "border-tm-green bg-[#e8f1eb] text-tm-green",
-    maintain: "border-tm-blue bg-[#e9eff8] text-tm-blue",
+    cut: "border-tm-green bg-tm-green-faint text-tm-green",
+    maintain: "border-tm-blue bg-tm-blue-faint text-tm-blue",
     survival: "border-tm-amber bg-tm-amber-bg text-tm-amber",
   } as const;
   return (
@@ -220,6 +223,7 @@ export function TmChip({
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={cn(
         "min-h-11 cursor-pointer rounded-[20px] border px-3.5 py-2 font-tm-mono text-[11.5px] transition-[transform,opacity] duration-150 active:scale-[0.98] active:opacity-80",
         tone === "green"
@@ -250,33 +254,82 @@ export function TmSheet({
   children: React.ReactNode;
   label: string;
 }) {
+  const titleId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    closeRef.current?.focus();
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const nodes = [...(panelRef.current?.querySelectorAll<HTMLElement>(SHEET_FOCUSABLE) ?? [])];
+      if (nodes.length === 0) {
+        e.preventDefault();
+        return;
+      }
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      previous?.focus();
+    };
+  }, [open]);
+
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center" role="presentation">
       <button
         type="button"
-        aria-label="Dismiss"
+        tabIndex={-1}
+        aria-hidden
         className="absolute inset-0 cursor-pointer bg-tm-ink/40"
         onClick={onClose}
       />
       <div
+        ref={panelRef}
         role="dialog"
-        aria-label={label}
         aria-modal="true"
+        aria-label={label}
+        aria-labelledby={title ? titleId : undefined}
         className="relative z-10 mx-4 mb-4 w-full max-w-md rounded-[14px] border border-tm-rule bg-tm-panel p-4 shadow-[0_8px_32px_rgba(21,23,28,0.18)] sm:mb-0"
       >
-        {title && (
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <h2 className="font-tm-mono text-[11px] tracking-[0.15em] text-tm-dim uppercase">{title}</h2>
-            <button
-              type="button"
-              onClick={onClose}
-              className="min-h-11 cursor-pointer px-1 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase"
-            >
-              Close
-            </button>
-          </div>
-        )}
+        <div className="mb-3 flex items-center justify-between gap-3">
+          {title ? (
+            <h2 id={titleId} className="font-tm-mono text-[11.5px] tracking-[0.15em] text-tm-dim uppercase">
+              {title}
+            </h2>
+          ) : (
+            <span />
+          )}
+          <button
+            ref={closeRef}
+            type="button"
+            onClick={onClose}
+            className="min-h-11 cursor-pointer px-1 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase"
+          >
+            Close
+          </button>
+        </div>
         {children}
       </div>
     </div>

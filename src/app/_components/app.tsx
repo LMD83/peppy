@@ -1,6 +1,7 @@
 "use client";
 
 import { Component, useEffect, useState, type ReactNode } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { plain } from "@convex/tm/logicEasy";
 import { cn } from "@/lib/utils";
@@ -8,21 +9,34 @@ import { TimentoProvider, clearStoredSession, useTimento } from "../_lib/backend
 import { Login } from "./login";
 import { Scoreboard } from "./scoreboard";
 import { TodayTab } from "./today-tab";
-import { CrewTab } from "./crew-tab";
-import { ProgressTab } from "./progress-tab";
-import { ResearchTab } from "./research-tab";
-import { FuelTab } from "./fuel-tab";
-import { TrainTab } from "./train-tab";
-import { StackTab } from "./stack-tab";
-import { SupplyPanel } from "./supply-tab";
-import { LabsTab } from "./labs-tab";
-import { MindTab } from "./mind-tab";
-import { SettingsTab } from "./settings-tab";
-import { HandsFreePanel } from "./handsfree-tab";
-import { ShopPanel } from "./shop-tab";
-import { RemindPanel } from "./remind-tab";
-import { CapturePanel } from "./capture-tab";
+import { FileNavProvider } from "./file-nav";
 import { fileWidth } from "./ui";
+
+function TabBusy() {
+  return (
+    <div className="flex flex-col gap-3 pt-4" aria-busy="true">
+      <p role="status" className="sr-only">
+        Loading section…
+      </p>
+      <div className="h-24 rounded-[10px] border border-tm-rule bg-tm-panel" />
+    </div>
+  );
+}
+
+const CrewTab = dynamic(() => import("./crew-tab").then((m) => m.CrewTab), { loading: TabBusy });
+const ProgressTab = dynamic(() => import("./progress-tab").then((m) => m.ProgressTab), { loading: TabBusy });
+const ResearchTab = dynamic(() => import("./research-tab").then((m) => m.ResearchTab), { loading: TabBusy });
+const FuelTab = dynamic(() => import("./fuel-tab").then((m) => m.FuelTab), { loading: TabBusy });
+const TrainTab = dynamic(() => import("./train-tab").then((m) => m.TrainTab), { loading: TabBusy });
+const StackTab = dynamic(() => import("./stack-tab").then((m) => m.StackTab), { loading: TabBusy });
+const SupplyPanel = dynamic(() => import("./supply-tab").then((m) => m.SupplyPanel), { loading: TabBusy });
+const LabsTab = dynamic(() => import("./labs-tab").then((m) => m.LabsTab), { loading: TabBusy });
+const MindTab = dynamic(() => import("./mind-tab").then((m) => m.MindTab), { loading: TabBusy });
+const SettingsTab = dynamic(() => import("./settings-tab").then((m) => m.SettingsTab), { loading: TabBusy });
+const HandsFreePanel = dynamic(() => import("./handsfree-tab").then((m) => m.HandsFreePanel), { loading: TabBusy });
+const ShopPanel = dynamic(() => import("./shop-tab").then((m) => m.ShopPanel), { loading: TabBusy });
+const RemindPanel = dynamic(() => import("./remind-tab").then((m) => m.RemindPanel), { loading: TabBusy });
+const CapturePanel = dynamic(() => import("./capture-tab").then((m) => m.CapturePanel), { loading: TabBusy });
 
 /*
   Bottom nav.
@@ -139,7 +153,7 @@ function NavRow({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="flex min-h-16 w-full cursor-pointer items-center justify-between gap-3 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-4 py-3 text-left text-[17px] font-medium text-tm-ink"
+      className="flex min-h-16 w-full cursor-pointer items-center justify-between gap-3 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-4 py-3 text-left text-[17px] font-medium text-tm-ink transition-transform duration-150 active:scale-[0.98]"
     >
       <span className="min-w-0">{label}</span>
       <span aria-hidden className="shrink-0 font-tm-mono text-[17px] text-tm-dim">
@@ -170,8 +184,8 @@ function MoreShelf({
   onSettings: () => void;
 }) {
   return (
-    <div className="flex flex-col gap-2 pt-4">
-      <h2 className="font-tm-mono text-[11.5px] tracking-[0.15em] text-tm-dim uppercase">
+    <div className="flex flex-col gap-2 pt-5">
+      <h2 className="font-tm-disp text-2xl leading-[1.1] tracking-tight uppercase">
         {easy ? "Everything else" : "More"}
       </h2>
       {/* Easy mode flattens the whole app into this list. Standard mode already
@@ -215,7 +229,12 @@ function Shell() {
     return () => root.removeAttribute("data-easy");
   }, [easy]);
 
-  if (!authReady) return <div className="min-h-screen bg-tm-paper" aria-busy="true" />;
+  if (!authReady)
+    return (
+      <div className="min-h-screen bg-tm-paper" role="status" aria-busy="true">
+        <p className="sr-only">Opening file…</p>
+      </div>
+    );
   if (!session) return <Login />;
   if (!today)
     return (
@@ -244,9 +263,16 @@ function Shell() {
   const navCurrent: TabId = navItems.some((n) => n.id === tab) ? tab : "more";
 
   return (
+    <FileNavProvider value={(t) => setTab(t)}>
     <div className="min-h-screen pb-[84px]">
+      <a
+        href="#tm-main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:inline-flex focus:min-h-11 focus:items-center focus:rounded-[10px] focus:bg-tm-ink focus:px-4 focus:font-tm-mono focus:text-[11.5px] focus:tracking-[0.15em] focus:text-white focus:uppercase"
+      >
+        Skip to checks
+      </a>
       <Scoreboard />
-      <main className={cn(fileWidth, "px-4")}>
+      <main id="tm-main" className={cn(fileWidth, "px-4")}>
         {subItems && <SubNav items={subItems} value={subValue} onChange={setSub} />}
         {tab === "more" && (
           <MoreShelf
@@ -288,7 +314,7 @@ function Shell() {
               onClick={() => setTab(t.id)}
               aria-current={navCurrent === t.id ? "page" : undefined}
               className={cn(
-                "min-h-14 flex-1 cursor-pointer pt-3 pb-4 font-tm-mono text-[11.5px] tracking-[0.04em] uppercase",
+                "min-h-14 min-w-0 flex-1 cursor-pointer px-0.5 pt-3 pb-4 font-tm-mono text-[11.5px] leading-none tracking-[0.02em] whitespace-nowrap uppercase",
                 navCurrent === t.id ? "text-tm-ink" : "text-tm-dim",
               )}
             >
@@ -299,6 +325,7 @@ function Shell() {
         </div>
       </nav>
     </div>
+    </FileNavProvider>
   );
 }
 

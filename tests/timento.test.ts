@@ -35,8 +35,8 @@ async function seeded() {
   const t = convexTest(schema, modules);
   await t.mutation(internal.tm.seed.run, { today: TODAY });
   const liam = await loginOk(t, "liam", "2580");
-  const conor = await loginOk(t, "conor", "1379");
-  return { t, liam, conor };
+  const artur = await loginOk(t, "artur", "1379");
+  return { t, liam, artur };
 }
 
 describe("auth", () => {
@@ -85,8 +85,8 @@ describe("auth", () => {
 
 describe("privacy split (query level)", () => {
   it("crew board exposes only the shared projection — no weights, BP or labs", async () => {
-    const { t, conor } = await seeded();
-    const board = await t.query(api.tm.crew.board, { token: conor, date: TODAY });
+    const { t, artur } = await seeded();
+    const board = await t.query(api.tm.crew.board, { token: artur, date: TODAY });
     expect(board).toHaveLength(2);
     // The board is an allow-list: a field only appears because a granted scope
     // named it. `link` carries the consent state, `supplyState` is the coarse
@@ -125,30 +125,30 @@ describe("privacy split (query level)", () => {
   });
 
   it("partner session cannot read the owner's raw logs in either direction", async () => {
-    const { t, liam, conor } = await seeded();
-    // Conor's session: every owner-scoped query resolves to CONOR's rows only.
-    const conorResearch = await t.query(api.tm.research.get, { token: conor, date: TODAY });
-    expect(conorResearch.labs).toHaveLength(0); // Liam has labs; Conor sees none of them.
-    expect(conorResearch.markers).toHaveLength(0);
-    const conorProgress = await t.query(api.tm.progress.get, { token: conor, date: TODAY });
-    expect(conorProgress.series.map((s) => s.actual)).not.toContain(92.8); // Liam's weight
+    const { t, liam, artur } = await seeded();
+    // Artur's session: every owner-scoped query resolves to ARTUR's rows only.
+    const arturResearch = await t.query(api.tm.research.get, { token: artur, date: TODAY });
+    expect(arturResearch.labs).toHaveLength(0); // Liam has labs; Artur sees none of them.
+    expect(arturResearch.markers).toHaveLength(0);
+    const arturProgress = await t.query(api.tm.progress.get, { token: artur, date: TODAY });
+    expect(arturProgress.series.map((s) => s.actual)).not.toContain(92.8); // Liam's weight
 
-    // And the reverse: Liam cannot see Conor's weigh-ins.
+    // And the reverse: Liam cannot see Artur's weigh-ins.
     const liamProgress = await t.query(api.tm.progress.get, { token: liam, date: TODAY });
-    expect(liamProgress.series.map((s) => s.actual)).not.toContain(94.8); // Conor's weight
+    expect(liamProgress.series.map((s) => s.actual)).not.toContain(94.8); // Artur's weight
     // There is no API surface that accepts another user's id — privacy by construction.
   });
 });
 
 describe("today + checks engine", () => {
   it("materializes mode-aware checks and toggles them", async () => {
-    const { t, liam, conor } = await seeded();
+    const { t, liam, artur } = await seeded();
     const liamToday = await t.query(api.tm.today.get, { token: liam, date: TODAY });
     expect(liamToday.checks).toHaveLength(5);
     expect(liamToday.stats.todayDone).toBe(3);
-    const conorToday = await t.query(api.tm.today.get, { token: conor, date: TODAY });
-    expect(conorToday.checks).toHaveLength(3);
-    expect(conorToday.stats.todayDone).toBe(3);
+    const arturToday = await t.query(api.tm.today.get, { token: artur, date: TODAY });
+    expect(arturToday.checks).toHaveLength(3);
+    expect(arturToday.stats.todayDone).toBe(3);
 
     await t.mutation(api.tm.today.toggleCheck, { token: liam, date: TODAY, key: "steps" });
     const after = await t.query(api.tm.today.get, { token: liam, date: TODAY });
@@ -217,9 +217,9 @@ describe("mode engine", () => {
   });
 
   it("logState persists only the scalar that was tapped", async () => {
-    const { t, conor } = await seeded();
-    await t.mutation(api.tm.today.logState, { token: conor, date: TODAY, stress: 4 });
-    const today = await t.query(api.tm.today.get, { token: conor, date: TODAY });
+    const { t, artur } = await seeded();
+    await t.mutation(api.tm.today.logState, { token: artur, date: TODAY, stress: 4 });
+    const today = await t.query(api.tm.today.get, { token: artur, date: TODAY });
     expect(today.day.stress).toBe(4);
     expect(today.day.energy).toBeNull(); // never fabricated
   });
@@ -254,22 +254,22 @@ describe("research engine", () => {
   });
 
   it("logCraving feeds the map", async () => {
-    const { t, conor } = await seeded();
+    const { t, artur } = await seeded();
     await t.mutation(api.tm.today.logCraving, {
-      token: conor,
+      token: artur,
       date: TODAY,
       time: "21:12",
       signal: "tired",
       afterState: "relief",
       action: "rode",
     });
-    const research = await t.query(api.tm.research.get, { token: conor, date: TODAY });
+    const research = await t.query(api.tm.research.get, { token: artur, date: TODAY });
     expect(research.totalCravings).toBe(1);
     expect(research.engine).toBe("insufficient"); // needs ≥6 logs for a read-out
   });
 
   it("undoCraving removes only the owner's row", async () => {
-    const { t, liam, conor } = await seeded();
+    const { t, liam, artur } = await seeded();
     await t.mutation(api.tm.today.logCraving, {
       token: liam,
       date: TODAY,
@@ -282,7 +282,7 @@ describe("research engine", () => {
     const last = liamToday.cravingsToday[liamToday.cravingsToday.length - 1];
     const cravingId = last.id as Id<"tm_cravings">;
     await expect(
-      t.mutation(api.tm.today.undoCraving, { token: conor, id: cravingId }),
+      t.mutation(api.tm.today.undoCraving, { token: artur, id: cravingId }),
     ).rejects.toThrow(/Not found/);
     await t.mutation(api.tm.today.undoCraving, { token: liam, id: cravingId });
     const after = await t.query(api.tm.today.get, { token: liam, date: TODAY });
@@ -290,11 +290,11 @@ describe("research engine", () => {
   });
 
   it("markSessionDone is owner-only and never appears on the crew board", async () => {
-    const { t, liam, conor } = await seeded();
+    const { t, liam, artur } = await seeded();
     await t.mutation(api.tm.today.markSessionDone, { token: liam, date: TODAY });
     const today = await t.query(api.tm.today.get, { token: liam, date: TODAY });
     expect(today.day.sessionDone).toBe(true);
-    const board = await t.query(api.tm.crew.board, { token: conor, date: TODAY });
+    const board = await t.query(api.tm.crew.board, { token: artur, date: TODAY });
     expect(JSON.stringify(board)).not.toMatch(/sessionDone/);
   });
 

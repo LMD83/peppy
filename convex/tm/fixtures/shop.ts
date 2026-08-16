@@ -12,7 +12,7 @@ import { addDays } from "../lib";
  * The spread is deliberate. Liam has cupboard staples in quantity (the oats and
  * the rice are never the reason for a trip), one part-used chilled tub that
  * covers today but not the week, and nothing fresh — so the list he sees is
- * mostly produce and protein, which is what a real list looks like. Conor is at
+ * mostly produce and protein, which is what a real list looks like. Artur is at
  * his floor: his cupboard is empty here on purpose, because the floor's job is
  * a short list, not an inventory.
  */

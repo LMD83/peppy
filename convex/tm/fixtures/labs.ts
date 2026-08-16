@@ -5,7 +5,7 @@ import { addDays } from "../lib";
 
 /**
  * Labs fixtures — three draws for Liam across a cut, one recent basic panel for
- * Conor while he rehabs a knee.
+ * Artur while he rehabs a knee.
  *
  * Row shapes are redeclared here rather than imported: Convex code must not
  * reach into src/. They are field-identical to src/app/_lib/demo/rows.ts,
@@ -139,8 +139,8 @@ const LIAM_RECENT: Draw[] = [
   ["vitamin_d", 44],
 ];
 
-/** Conor: the basics, drawn two weeks after knee surgery. */
-const CONOR_BASICS: Draw[] = [
+/** Artur: the basics, drawn two weeks after knee surgery. */
+const ARTUR_BASICS: Draw[] = [
   ["haemoglobin", 138],
   ["haematocrit", 0.42],
   ["mcv", 89],
@@ -196,7 +196,7 @@ export function buildLabsFixtures(today: string): LabsFixtures {
   add("lp_1", "liam", addDays(today, -180), "Full baseline", "Randox Health", true, LIAM_BASELINE);
   add("lp_2", "liam", addDays(today, -90), "Mid-cut recheck", "Randox Health", true, LIAM_MID);
   add("lp_3", "liam", addDays(today, -10), "Cut checkpoint", "Randox Health", true, LIAM_RECENT);
-  add("lp_4", "conor", addDays(today, -14), "Post-op basics", "Beacon Hospital", false, CONOR_BASICS);
+  add("lp_4", "artur", addDays(today, -14), "Post-op basics", "Beacon Hospital", false, ARTUR_BASICS);
 
   return { labPanels, labResults };
 }
