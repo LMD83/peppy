@@ -37,7 +37,9 @@ website-clone template, which is where the scaffolding notes below come from.
 - **Crew views share a projection only** — adherence and streaks, never absolute weights or another user's raw entries. `tests/timento.test.ts` asserts this at the query boundary; keep those tests passing when touching `convex/tm`.
 - **Survival mode is a floor, not a lite mode** — exactly three checks, no macro tracking. See `/why` for the mechanism behind each design choice.
 - **Demo mode must keep working** — `NEXT_PUBLIC_TIMENTO_DEMO=1` runs the app off an in-memory backend with fixtures, no Convex required. The e2e click-suite runs against it.
-- **Verify by running it** — `npx vitest run` for backend logic, `node scripts/timento-e2e.mjs` for the click-suite across mobile and desktop.
+- **Verify by running it** — `npx vitest run` for backend logic, `npm run e2e` for the click-suite across mobile and desktop, `npm run a11y` for the accessibility sweep. Both browser suites take a base URL and run against the deployed build in CI.
+- **Accessibility is a gate, not an audit** — `scripts/timento-a11y.mjs` walks all 21 screens at 320/390/1280, in both a11y profiles and the survival floor, and fails the build on any WCAG 2.2 AA violation, any text under the 11.5px floor, or any sideways scroll at 320px. Two rules to keep it honest: SVG text is painted through the viewBox transform, so it is invisible to the CSS type-floor net and must be sized with `axisFontSize(viewBoxWidth)` from `charts.tsx`; and `opacity` on a container multiplies the contrast of every string inside it, which is how disputed markers fell under 4.5:1. `tests/a11y-floor-guard.test.ts` enforces both statically. Automated tooling catches ~57% of real issues — this is the floor beneath a manual pass, never a substitute for one.
+- **Nothing here diagnoses or prescribes** — the stack tracks only what the user configured, assessments are scored server-side and framed as tracked-and-correlated, and evidence strength is labelled wherever a claim is made. A PHQ-9 self-harm answer surfaces real support (999/112, Samaritans 116 123); it is never presented as a risk assessment.
 
 ## Project Structure
 ```
@@ -56,10 +58,49 @@ src/
 convex/
   schema.ts         # tm_* tables
   tm/               # auth, today, crew, progress, research, seed
+    <slice>.ts      # query + mutations per domain slice
+    logic-<slice>.ts# pure domain logic, shared with the demo backend
+    data/           # static catalogues (foods, exercises, compounds, markers, instruments)
+    fixtures/       # per-slice fixture builder + seeder, composed by fixtures.ts
 tests/              # vitest suite (logic + cross-user privacy proofs)
 public/             # PWA manifest and icons
 scripts/            # e2e click-suite, icon generation, sync scripts
 ```
+
+## Domain slices
+Five verticals sit behind the Fuel, Train, Body (Stack/Bloods/Trend) and Mind tabs:
+**fuel** (adaptive TDEE, macro targets, meal plan), **train** (mesocycle, RIR progression,
+MEV/MAV/MRV volume), **stack** (meds/peptides/supplements, cycles, dose adherence,
+reconstitution), **labs** (panels, reference vs optimal bands, trends, rechecks) and
+**mind** (PHQ-9/GAD-7/PSS-10/WHO-5/ISI/AUDIT-C/PACS, implementation intentions, reflection).
+
+Four more reach their own screens from the More shelf: **supply** (counts, run-out dates,
+refill sheet), **shop** (aisle-ordered list, packs, retailer hand-off), **remind** (what is
+worth interrupting someone for — quiet hours, once-only, the survival floor) and **capture**
+(a photo as evidence, never as an identification). `remind` and `capture` share one Convex
+module, `convex/tm/remind.ts`, because backend.tsx wires their mutations together; the rules
+stay in their own `logicRemind.ts` / `logicCapture.ts`, and `remind.get` carries the whole
+capture view through under `capture`.
+
+Reminders are wired end to end and gated on one thing only: VAPID keys. `convex/crons.ts` holds
+the schedule, `convex/tm/push.ts` does the sending, and the two are separate modules because
+`web-push` needs Node built-ins — `push.ts` carries `"use node";`, which means it may export
+**actions only**, so the queries and mutations stay in `remind.ts` and the cron stays in
+`crons.ts` (Convex analyses that file in the default runtime). Without
+`VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`/`VAPID_SUBJECT`, `remind.get` reports `supported: false`
+so the tab says so rather than showing a switch that lies, and the sweep logs one line and
+touches no subscription — a deployment that cannot deliver must never mark anything delivered
+or charge a device a failure it did not earn.
+
+The push payload is a contract with `public/sw.js` that nothing validates at build time: rename
+a key and the worker silently shows "A reminder from your file." `tests/push.test.ts` asserts
+the two ends agree, so keep it passing when touching either.
+
+Each slice owns a fixed set of files and never edits another's. The rule that keeps the two
+backends honest: **all arithmetic lives in `logic-<slice>.ts`**, and both `convex/tm/<slice>.ts`
+and `src/app/_lib/demo/<slice>.ts` call it to build the same view model — the demo module
+imports its return type from the Convex query, so a drift is a compile error, not a bug.
+`src/app/_lib/demo/rows.ts` is the row-shape contract fixtures must match.
 
 ## MOST IMPORTANT NOTES
 - When launching Claude Code agent teams, ALWAYS have each teammate work in their own worktree branch and merge everyone's work at the end, resolving any merge conflicts smartly since you are basically serving the orchestrator role and have full context to our goals, work given, work achieved, and desired outcomes.

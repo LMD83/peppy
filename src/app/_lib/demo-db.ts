@@ -1,4 +1,5 @@
 import { buildFixtures, type Fixtures, type FixtureUser } from "@convex/tm/fixtures";
+import { projectToday } from "@convex/tm/logicEasy";
 import { MODE_CHECKS, SESSION_PLAN, addDays, daysBetween, type TmMode } from "@convex/tm/lib";
 import {
   buildTriggerMap,
@@ -15,10 +16,49 @@ import type {
   CravingEntry,
   CrewData,
   FeedData,
+  FuelData,
+  LabResultInput,
+  LabsData,
+  MealSlot,
+  MindData,
   ProgressData,
   ResearchData,
+  StackData,
+  HandsFreeData,
+  RemindData,
+  ShopData,
+  SupplyData,
   TodayData,
+  TrainData,
 } from "./types";
+import type { FoodEquipment } from "@convex/tm/data/foods";
+import type {
+  AssessmentRow,
+  DoseLogRow,
+  EnergyEstimateRow,
+  IntentionRow,
+  LabPanelRow,
+  LabResultRow,
+  MealEntryRow,
+  MesocycleRow,
+  NutritionTargetRow,
+  ProgramBlockRow,
+  ProtocolItemRow,
+  ReflectionRow,
+  SetLogRow,
+  VolumeLandmarkRow,
+} from "./demo/rows";
+import type { ContactRow, CrewLinkRow, SupplyRow } from "./demo/rows-wave1";
+import * as fuel from "./demo/fuel";
+import * as train from "./demo/train";
+import * as stack from "./demo/stack";
+import * as labsView from "./demo/labs";
+import * as mind from "./demo/mind";
+import * as consent from "./demo/consent";
+import * as supply from "./demo/supply";
+import * as ingest from "./demo/ingest";
+import * as shop from "./demo/shop";
+import * as remind from "./demo/remind";
 
 /**
  * In-memory demo backend. Serves the same view models as the Convex queries,
@@ -27,26 +67,80 @@ import type {
  * (NEXT_PUBLIC_TIMENTO_DEMO=1); state lives for the page session only.
  */
 
-type DemoUser = FixtureUser & { modeSinceMut: string; modeMut: TmMode; reviewDateMut?: string; ceilingMut: number };
+type DemoUser = FixtureUser & { a11yProfileMut?: "standard" | "easy" } & { modeSinceMut: string; modeMut: TmMode; reviewDateMut?: string; ceilingMut: number };
 
 type DemoCraving = Fixtures["cravings"][number] & { id: string };
 
 export class DemoDb {
-  private users: DemoUser[];
-  private days: Fixtures["days"];
-  private checks: Fixtures["checks"];
-  private cravings: DemoCraving[];
-  private lifts: Fixtures["lifts"];
-  private labs: Fixtures["labs"];
-  private markers: Fixtures["markers"];
-  private experiments: Fixtures["experiments"];
-  private feedRows: { userSlug: string; name: string; message: string; at: number }[];
+  users: DemoUser[];
+  days: Fixtures["days"];
+  checks: Fixtures["checks"];
+  cravings: DemoCraving[];
+  lifts: Fixtures["lifts"];
+  labs: Fixtures["labs"];
+  markers: Fixtures["markers"];
+  experiments: Fixtures["experiments"];
+  feedRows: { userSlug: string; name: string; message: string; at: number }[];
+
+  /* Domain tables — same shapes the Convex seed inserts. */
+  nutritionTargets: NutritionTargetRow[];
+  mealEntries: MealEntryRow[];
+  energyEstimates: EnergyEstimateRow[];
+  mesocycles: MesocycleRow[];
+  programBlocks: ProgramBlockRow[];
+  setLogs: SetLogRow[];
+  volumeLandmarks: VolumeLandmarkRow[];
+  protocolItems: ProtocolItemRow[];
+  doseLogs: DoseLogRow[];
+  labPanels: LabPanelRow[];
+  labResults: LabResultRow[];
+  assessments: AssessmentRow[];
+  intentions: IntentionRow[];
+  reflections: ReflectionRow[];
+  crewLinks: CrewLinkRow[];
+  supplyRows: SupplyRow[];
+  contacts: ContactRow[];
+  pushSubs: { id: string; userSlug: string; endpoint: string; p256dh: string; auth: string; label: string; createdDate: string; failures: number }[];
+  reminderPrefs: { userSlug: string; enabled: boolean; quietFrom: string; quietTo: string; doses: boolean; supply: boolean; checkins: boolean; maxPerDay: number }[];
+  captures: { id: string; userSlug: string; date: string; kind: "dose" | "meal" | "organiser"; storageId: string; note?: string; at: number }[];
+  pantry: { id: string; userSlug: string; foodKey: string; grams: number; updatedDate: string }[];
+  ingestTokens: { id: string; userSlug: string; token: string; label: string; createdDate: string; lastUsedAt?: number; revoked: boolean }[];
+
   private listeners = new Set<() => void>();
+  private idSeq = 0;
   private cravingSeq = 0;
   version = 0;
 
+  /** Stable-per-session id for rows the demo creates at runtime. */
+  newId(prefix: string): string {
+    this.idSeq += 1;
+    return `${prefix}_${this.idSeq}`;
+  }
+
   constructor(today: string) {
     const fx = buildFixtures(today);
+    this.nutritionTargets = [...fx.nutritionTargets];
+    this.mealEntries = [...fx.mealEntries];
+    this.energyEstimates = [...fx.energyEstimates];
+    this.mesocycles = [...fx.mesocycles];
+    this.programBlocks = [...fx.programBlocks];
+    this.setLogs = [...fx.setLogs];
+    this.volumeLandmarks = [...fx.volumeLandmarks];
+    this.protocolItems = [...fx.protocolItems];
+    this.doseLogs = [...fx.doseLogs];
+    this.labPanels = [...fx.labPanels];
+    this.labResults = [...fx.labResults];
+    this.assessments = [...fx.assessments];
+    this.intentions = [...fx.intentions];
+    this.reflections = [...fx.reflections];
+    this.crewLinks = [...fx.crewLinks];
+    this.supplyRows = [...fx.supplyRows];
+    this.contacts = [...fx.contacts];
+    this.ingestTokens = [];
+    this.pantry = [...fx.pantry];
+    this.pushSubs = [];
+    this.reminderPrefs = [];
+    this.captures = [];
     this.users = fx.users.map((u) => ({
       ...u,
       modeMut: u.mode,
@@ -140,7 +234,9 @@ export class DemoDb {
             }),
           };
 
-    return {
+    return projectToday(
+      {
+
       user: {
         slug: user.slug,
         name: user.name,
@@ -180,28 +276,16 @@ export class DemoDb {
       },
       session,
       tripwire: tripwireFor(user.modeMut, user.goalKg, weighed[0]?.weightKg),
-    };
+      },
+      user.a11yProfileMut ?? "standard",
+    );
+
   }
 
   crew(viewerSlug: string, date: string): CrewData {
-    const members = this.users.map((u) => {
-      const stats = computeStreakAndAdherence(this.wallFor(u, date), date);
-      return {
-        slug: u.slug,
-        name: u.name,
-        isYou: u.slug === viewerSlug,
-        mode: u.modeMut,
-        modeSince: u.modeSinceMut,
-        reviewDate: u.reviewDateMut ?? null,
-        daysInMode: daysBetween(u.modeSinceMut, date),
-        streak: stats.streak,
-        adherence7: stats.adherence7,
-        todayDone: stats.todayDone,
-        todayTotal: stats.todayTotal,
-      };
-    });
-    members.sort((a, b) => (a.isYou === b.isYou ? 0 : a.isYou ? -1 : 1));
-    return members;
+    // Projection and scope enforcement live in the consent slice, so the demo
+    // and Convex backends can only ever disclose the same fields.
+    return consent.view(this, viewerSlug, date);
   }
 
   feed(): FeedData {
@@ -362,6 +446,162 @@ export class DemoDb {
     const trimmed = message.trim().slice(0, 200);
     if (!trimmed) return;
     this.feedRows.push({ userSlug: slug, name: user.name, message: trimmed, at: Date.now() });
+    this.bump();
+  }
+
+  /* ===== Domain slices — views and mutations live in ./demo/<domain>.ts,
+     mirroring the matching convex/tm/<domain>.ts handlers. ===== */
+
+  fuel(slug: string, date: string): FuelData {
+    return fuel.view(this, slug, date);
+  }
+  train(slug: string, date: string): TrainData {
+    return train.view(this, slug, date);
+  }
+  stack(slug: string, date: string): StackData {
+    return stack.view(this, slug, date);
+  }
+  labsView(slug: string, date: string): LabsData {
+    return labsView.view(this, slug, date);
+  }
+  mind(slug: string, date: string): MindData {
+    return mind.view(this, slug, date);
+  }
+
+  logFood(slug: string, date: string, slot: MealSlot, foodKey: string, grams: number) {
+    fuel.logFood(this, slug, date, slot, foodKey, grams);
+    this.bump();
+  }
+  setFoodEaten(entryId: string, eaten: boolean) {
+    fuel.setFoodEaten(this, entryId, eaten);
+    this.bump();
+  }
+  removeFood(entryId: string) {
+    fuel.removeFood(this, entryId);
+    this.bump();
+  }
+  generateMealPlan(
+    slug: string,
+    date: string,
+    today?: { minutes?: number; equipment?: FoodEquipment; oneHanded?: boolean; canStand?: boolean },
+  ) {
+    fuel.generatePlan(this, slug, date, today);
+    this.bump();
+  }
+
+  logSet(slug: string, date: string, exercise: string, setIndex: number, weightKg: number, reps: number, rir: number) {
+    train.logSet(this, slug, date, exercise, setIndex, weightKg, reps, rir);
+    this.bump();
+  }
+  startMesocycle(slug: string, date: string, goal: "hypertrophy" | "strength" | "recomp") {
+    train.startMesocycle(this, slug, date, goal);
+    this.bump();
+  }
+
+  logDose(slug: string, date: string, itemId: string, timing: string, taken: boolean, site?: string) {
+    stack.logDose(this, slug, date, itemId, timing, taken, site);
+    this.bump();
+  }
+  setStackItemActive(itemId: string, active: boolean) {
+    stack.setItemActive(this, itemId, active);
+    this.bump();
+  }
+
+  addLabPanel(slug: string, date: string, name: string, results: LabResultInput[], fasted?: boolean) {
+    labsView.addPanel(this, slug, date, name, results, fasted);
+    this.bump();
+  }
+
+  submitAssessment(slug: string, date: string, instrument: string, answers: number[]) {
+    mind.submitAssessment(this, slug, date, instrument, answers);
+    this.bump();
+  }
+  addIntention(slug: string, date: string, trigger: string, action: string) {
+    mind.addIntention(this, slug, date, trigger, action);
+    this.bump();
+  }
+  markIntentionWin(intentionId: string) {
+    mind.markIntentionWin(this, intentionId);
+    this.bump();
+  }
+  saveReflection(slug: string, date: string, prompt: string, response: string, win?: string) {
+    mind.saveReflection(this, slug, date, prompt, response, win);
+    this.bump();
+  }
+
+  remind(slug: string, date: string): RemindData {
+    return remind.view(this, slug, date);
+  }
+  savePushSubscription(slug: string, date: string, sub: { endpoint: string; p256dh: string; auth: string; label: string }) {
+    remind.saveSubscription(this, slug, date, sub);
+    this.bump();
+  }
+  removePushSubscription(endpoint: string) {
+    remind.removeSubscription(this, endpoint);
+    this.bump();
+  }
+  setReminderPrefs(slug: string, prefs: Parameters<typeof remind.setPrefs>[2]) {
+    remind.setPrefs(this, slug, prefs);
+    this.bump();
+  }
+  saveCapture(slug: string, date: string, kind: "dose" | "meal" | "organiser", storageId: string, note?: string) {
+    remind.saveCapture(this, slug, date, kind, storageId, note);
+    this.bump();
+  }
+  removeCapture(captureId: string) {
+    remind.removeCapture(this, captureId);
+    this.bump();
+  }
+
+  shop(slug: string, date: string): ShopData {
+    return shop.view(this, slug, date);
+  }
+  setPantry(slug: string, date: string, foodKey: string, grams: number) {
+    shop.setPantry(this, slug, date, foodKey, grams);
+    this.bump();
+  }
+  clearPantry(slug: string) {
+    shop.clearPantry(this, slug);
+    this.bump();
+  }
+
+  handsFree(slug: string, date: string): HandsFreeData {
+    return ingest.view(this, slug, date);
+  }
+  createIngestToken(slug: string, date: string, label: string) {
+    ingest.createToken(this, slug, date, label);
+    this.bump();
+  }
+  revokeIngestToken(tokenId: string) {
+    ingest.revokeToken(this, tokenId);
+    this.bump();
+  }
+  setA11yProfile(slug: string, profile: "standard" | "easy") {
+    this.user(slug).a11yProfileMut = profile;
+    this.bump();
+  }
+
+  supply(slug: string, date: string): SupplyData {
+    return supply.view(this, slug, date);
+  }
+  setSupplyCount(slug: string, date: string, itemId: string, onHand: number) {
+    supply.setCount(this, slug, date, itemId, onHand);
+    this.bump();
+  }
+  saveContact(slug: string, kind: "gp" | "pharmacy", name: string, phone: string) {
+    supply.saveContact(this, slug, kind, name, phone);
+    this.bump();
+  }
+  inviteCrew(slug: string, date: string, targetSlug: string, scopes: string[], relationship?: "crew" | "carer") {
+    consent.invite(this, slug, date, targetSlug, scopes, relationship);
+    this.bump();
+  }
+  respondToCrewInvite(slug: string, date: string, linkId: string, accept: boolean) {
+    consent.respond(this, slug, date, linkId, accept);
+    this.bump();
+  }
+  revokeCrewLink(slug: string, date: string, linkId: string) {
+    consent.revoke(this, slug, date, linkId);
     this.bump();
   }
 }

@@ -5,6 +5,32 @@ import { cn } from "@/lib/utils";
 
 /* Restrained ink-on-paper SVG charts. One axis, thin marks, recessive grid. */
 
+/**
+ * The narrowest this app's content column ever gets: a 320px viewport, less the
+ * page gutter and the card's own padding.
+ *
+ * Everything inside a viewBox is painted through the same scale factor
+ * (rendered width ÷ viewBox width), text included — so a chart label with a
+ * fixed `fontSize` renders *smallest on the smallest screen*, which is exactly
+ * backwards. The mass chart's date axis was 9px on a desktop and 6px on a
+ * 320px phone: the reader with the least room got the least legible chart.
+ *
+ * `axisFontSize` inverts that. Sizing a label from the narrowest column pins
+ * the worst case to the type floor and lets wider screens scale up from there,
+ * so the floor is a floor everywhere rather than only where there is room.
+ */
+// Measured, not assumed: at a 320px viewport the rendered chart box is 253.3px
+// once the page gutter and the card padding are taken out. Rounded down, so the
+// floor is cleared rather than met exactly and lost to a rounding step.
+export const NARROWEST_COLUMN_PX = 250;
+export const TYPE_FLOOR_PX = 11.5;
+
+export function axisFontSize(viewBoxWidth: number): number {
+  // Ceil, never round: rounding down loses the floor by a tenth of a pixel, and
+  // a floor you can round your way under is not a floor.
+  return Math.ceil(((TYPE_FLOOR_PX * viewBoxWidth) / NARROWEST_COLUMN_PX) * 10) / 10;
+}
+
 const SIGNAL_COLORS: Record<string, string> = {
   tired: "#c7373f",
   bored: "#b8860b",
@@ -28,7 +54,10 @@ export function MassChart({
 
   const W = 360;
   const H = 200;
-  const pad = { l: 34, r: 10, t: 10, b: 22 };
+  const ts = axisFontSize(W);
+  // Axis gutters are sized from the label, not guessed: left holds a 2-digit
+  // weight, bottom holds one line of date.
+  const pad = { l: ts * 2.2, r: 10, t: 10, b: ts * 1.9 };
   const values = series.flatMap((s) => [s.actual, s.target]).concat([ceilingKg]);
   const yMin = Math.floor(Math.min(...values)) - 1;
   const yMax = Math.ceil(Math.max(...values)) + 1;
@@ -66,19 +95,22 @@ export function MassChart({
         {gridLines
           .filter((v) => v % 2 === 0)
           .map((v) => (
-            <text key={v} x={pad.l - 6} y={y(v) + 3} textAnchor="end" fontSize="9" fill="#70747b" className="font-tm-mono">
+            <text key={v} x={pad.l - 6} y={y(v) + ts * 0.35} textAnchor="end" fontSize={ts} fill="var(--color-tm-dim)" className="font-tm-mono">
               {v}
             </text>
           ))}
+        {/* Four dates, not six. At the floor size a "08-01" is ~50 user units
+            wide and six of them collide — the first two literally overlapped.
+            A readable axis naming four days beats an unreadable one naming six. */}
         {series.map((s, i) =>
-          i % Math.ceil(series.length / 6) === 0 ? (
+          i % Math.ceil(series.length / 4) === 0 ? (
             <text
               key={s.date}
               x={x(i)}
-              y={H - 6}
+              y={H - ts * 0.4}
               textAnchor={i >= series.length - 1 ? "end" : i === 0 ? "start" : "middle"}
-              fontSize="8.5"
-              fill="#70747b"
+              fontSize={ts}
+              fill="var(--color-tm-dim)"
               className="font-tm-mono"
             >
               {s.date.slice(5)}
@@ -87,7 +119,7 @@ export function MassChart({
         )}
         <g clipPath={`url(#${clipId})`}>
           <line x1={pad.l} x2={W - pad.r} y1={y(ceilingKg)} y2={y(ceilingKg)} stroke="#c77d1f" strokeWidth="1.5" strokeDasharray="4 4" />
-          <path d={path("target")} fill="none" stroke="#70747b" strokeWidth="1.5" strokeDasharray="5 4" />
+          <path d={path("target")} fill="none" stroke="var(--color-tm-dim)" strokeWidth="1.5" strokeDasharray="5 4" />
           <path d={path("actual")} fill="none" stroke="#2b5fab" strokeWidth="2" />
         </g>
         {series.map((s, i) => (
@@ -96,11 +128,14 @@ export function MassChart({
         {hovered !== null && hover !== null && (
           <g>
             <line x1={x(hover)} x2={x(hover)} y1={pad.t} y2={H - pad.b} stroke="#15171c" strokeWidth="1" strokeDasharray="2 3" opacity="0.4" />
-            <g transform={`translate(${Math.min(x(hover) + 8, W - 108)}, ${pad.t + 4})`}>
-              <rect width="100" height="44" rx="6" fill="#15171c" />
-              <text x="8" y="15" fontSize="9" fill="#9ba0a8" className="font-tm-mono">{hovered.date}</text>
-              <text x="8" y="27" fontSize="9.5" fill="#ffffff" className="font-tm-mono">actual {hovered.actual.toFixed(1)} kg</text>
-              <text x="8" y="38" fontSize="9.5" fill="#c9cdd4" className="font-tm-mono">target {hovered.target.toFixed(1)} kg</text>
+            {/* The card grows with its text rather than clipping it: box and
+                baselines are both derived from ts, so this cannot drift out of
+                agreement with the axis it sits over. */}
+            <g transform={`translate(${Math.min(x(hover) + 8, W - ts * 9.4)}, ${pad.t + 4})`}>
+              <rect width={ts * 9} height={ts * 3.6} rx="6" fill="#15171c" />
+              <text x={ts * 0.5} y={ts * 1.1} fontSize={ts} fill="var(--color-tm-onink)" className="font-tm-mono">{hovered.date}</text>
+              <text x={ts * 0.5} y={ts * 2.2} fontSize={ts} fill="#ffffff" className="font-tm-mono">actual {hovered.actual.toFixed(1)} kg</text>
+              <text x={ts * 0.5} y={ts * 3.3} fontSize={ts} fill="var(--color-tm-onink)" className="font-tm-mono">target {hovered.target.toFixed(1)} kg</text>
             </g>
           </g>
         )}

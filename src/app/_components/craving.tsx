@@ -4,8 +4,8 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useTimento } from "../_lib/backend";
 import { localTime, type CravingEntry } from "../_lib/types";
-import { Card, Eyebrow, TmChip } from "./ui";
-import { BreathingTimerInline } from "./breathe";
+import { Card, Eyebrow } from "./ui";
+import { BreathingTimerInline } from "./today-tab";
 
 const SIGNALS: { key: CravingEntry["signal"]; label: string }[] = [
   { key: "tired", label: "Tired" },
@@ -30,13 +30,12 @@ const ACTIONS: { key: NonNullable<CravingEntry["action"]>; label: string }[] = [
 
 type Step = "idle" | "after" | "action" | "breathe" | "logged";
 
-export function CravingLogger({
-  embedded = false,
-  onDone,
-}: {
-  embedded?: boolean;
-  onDone?: () => void;
-} = {}) {
+/** 44×44 minimum (2.5.8), on every control in this card — including the three
+ *  that used to be bare underlined words a few pixels tall. */
+const CHIP = "inline-flex min-h-11 cursor-pointer items-center rounded-[22px] border px-4 font-tm-mono text-[12.5px]";
+const QUIET = "inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center px-3 font-tm-mono text-[12.5px] text-tm-dim underline";
+
+export function CravingLogger() {
   const { today, actions } = useTimento();
   const [step, setStep] = useState<Step>("idle");
   const [signal, setSignal] = useState<CravingEntry["signal"] | null>(null);
@@ -46,6 +45,11 @@ export function CravingLogger({
 
   const logs = today.cravingsToday;
   const count = logs.length;
+
+  const undoLast = () => {
+    const last = logs[logs.length - 1];
+    if (last) actions.undoCraving(last.id);
+  };
 
   const commit = (action?: CravingEntry["action"]) => {
     if (!signal) return;
@@ -62,10 +66,7 @@ export function CravingLogger({
     if (action === "rode") setStep("breathe");
     else {
       setStep("logged");
-      setTimeout(() => {
-        setStep("idle");
-        onDone?.();
-      }, 1200);
+      setTimeout(() => setStep("idle"), 2000);
     }
   };
 
@@ -74,45 +75,42 @@ export function CravingLogger({
     setSignal(null);
     setEmotionWord("");
     setAfterState(undefined);
-    onDone?.();
   };
 
-  const undoLast = () => {
-    const last = logs[logs.length - 1];
-    if (last) actions.undoCraving(last.id);
-  };
+  return (
+    <Card>
+      <Eyebrow color="bg-tm-red">Craving hit?</Eyebrow>
 
-  const body = (
-    <>
       {step === "idle" && (
         <>
           <div className="flex flex-wrap gap-2">
             {SIGNALS.map((s) => (
-              <TmChip
+              <button
                 key={s.key}
                 onClick={() => {
                   setSignal(s.key);
                   setStep("after");
                 }}
+                className={cn(CHIP, "border-tm-rule-strong bg-tm-soft")}
               >
                 {s.label}
-              </TmChip>
+              </button>
             ))}
           </div>
-          <p className="mt-2 font-tm-mono text-[10px] text-tm-dim">
+          <p className="mt-2.5 font-tm-mono text-[11.5px] leading-relaxed text-tm-dim">
             {count > 0 ? `${count} logged today · ` : ""}
-            Two taps per urge. Two weeks builds your trigger map. See Research.
+            Two taps per urge. Two weeks builds your trigger map — see Research.
           </p>
           {count > 0 && (
             <div className="mt-3 border-t border-tm-grid pt-3">
               <div className="mb-2 flex items-center justify-between">
-                <span className="font-tm-mono text-[10px] tracking-[0.12em] text-tm-dim uppercase">
+                <span className="font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase">
                   Today&apos;s log
                 </span>
                 <button
                   type="button"
                   onClick={undoLast}
-                  className="cursor-pointer font-tm-mono text-[10px] tracking-[0.1em] text-tm-red uppercase"
+                  className={cn(QUIET, "text-tm-red")}
                 >
                   Undo last
                 </button>
@@ -121,7 +119,7 @@ export function CravingLogger({
                 {logs.map((c) => (
                   <li
                     key={c.id}
-                    className="flex justify-between gap-2 font-tm-mono text-[11px] text-tm-ink"
+                    className="flex justify-between gap-2 font-tm-mono text-[11.5px] text-tm-ink"
                   >
                     <span>
                       {c.time} · {c.signal}
@@ -137,35 +135,33 @@ export function CravingLogger({
 
       {step === "after" && signal && (
         <div>
-          <p className="mb-2 text-[12.5px]">
-            <b>{SIGNALS.find((s) => s.key === signal)?.label}.</b> And after: what would eating it get you?
+          <p className="mb-2 text-[14px]">
+            <b>{SIGNALS.find((s) => s.key === signal)?.label}.</b> And after — what would eating it get you?
           </p>
           {signal === "emotion" && (
             <input
               value={emotionWord}
               onChange={(e) => setEmotionWord(e.target.value)}
               placeholder="one word for it"
-              className="mb-2 w-full rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2 text-sm text-tm-ink outline-none focus:border-tm-ink focus-visible:ring-2 focus-visible:ring-tm-ink/25"
+              aria-label="One word for the emotion"
+              className="mb-2 min-h-11 w-full rounded-lg border border-tm-rule-strong px-3 py-2 text-base outline-none focus:border-tm-ink"
             />
           )}
           <div className="flex flex-wrap gap-2">
             {AFTER.map((a) => (
-              <TmChip
+              <button
                 key={a.key}
                 onClick={() => {
                   setAfterState(a.key);
                   setStep("action");
                 }}
+                className={cn(CHIP, "border-tm-rule-strong bg-tm-soft")}
               >
                 {a.label}
-              </TmChip>
+              </button>
             ))}
           </div>
-          <button
-            type="button"
-            onClick={() => setStep("action")}
-            className="mt-2 cursor-pointer font-tm-mono text-[10px] text-tm-dim underline"
-          >
+          <button onClick={() => setStep("action")} className={cn(QUIET, "-ml-3 mt-1")}>
             skip
           </button>
         </div>
@@ -173,62 +169,43 @@ export function CravingLogger({
 
       {step === "action" && (
         <div>
-          <p className="mb-2 text-[12.5px]">What happened?</p>
+          <p className="mb-2 text-[14px]">What happened?</p>
           <div className="flex flex-wrap gap-2">
             {ACTIONS.map((a) => (
-              <TmChip
+              <button
                 key={a.key}
-                tone={a.key === "rode" ? "green" : "default"}
                 onClick={() => commit(a.key)}
-                className={cn(a.key === "rode" && "border-tm-green text-tm-green")}
+                className={cn(
+                  CHIP,
+                  a.key === "rode" ? "border-tm-green text-tm-green" : "border-tm-rule-strong bg-tm-soft",
+                )}
               >
                 {a.label}
-              </TmChip>
+              </button>
             ))}
-            <button
-              type="button"
-              onClick={() => commit(undefined)}
-              className="cursor-pointer px-2 font-tm-mono text-[10px] text-tm-dim underline"
-            >
+            <button onClick={() => commit(undefined)} className={QUIET}>
               just log it
             </button>
           </div>
-          <p className="mt-2 font-tm-mono text-[10px] text-tm-dim">
-            Riding it out opens the 2-minute breathing timer.
-          </p>
+          <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">Riding it out opens the 2-minute breathing timer.</p>
         </div>
       )}
 
       {step === "breathe" && (
         <div>
-          <p className="text-[12.5px]">
-            <b>Urge surfing.</b> Double inhale, long exhale. The wave peaks and passes.
-          </p>
+          <p className="text-[14px]"><b>Urge surfing.</b> Double inhale, long exhale. The wave peaks and passes.</p>
           <BreathingTimerInline onDone={reset} />
-          <button
-            type="button"
-            onClick={reset}
-            className="mt-2 w-full cursor-pointer py-1 font-tm-mono text-[10px] text-tm-dim underline"
-          >
+          <button onClick={reset} className={cn(QUIET, "mt-2 w-full")}>
             done early
           </button>
         </div>
       )}
 
       {step === "logged" && (
-        <p role="status" className="py-2 text-center font-tm-mono text-[11px] text-tm-green">
+        <p role="status" className="py-2 text-center font-tm-mono text-[14px] text-tm-green">
           Logged; loop continues.
         </p>
       )}
-    </>
-  );
-
-  if (embedded) return <div>{body}</div>;
-
-  return (
-    <Card>
-      <Eyebrow color="bg-tm-red">Craving hit?</Eyebrow>
-      {body}
     </Card>
   );
 }

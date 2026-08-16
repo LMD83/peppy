@@ -1,8 +1,8 @@
 "use client";
 
-import { Component, useState, type ReactNode } from "react";
+import { Component, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { ChartNoAxesColumn, FlaskConical, Sun, Users, Wind, Utensils, Flame } from "lucide-react";
+import { plain } from "@convex/tm/logicEasy";
 import { cn } from "@/lib/utils";
 import { TimentoProvider, clearStoredSession, useTimento } from "../_lib/backend";
 import { Login } from "./login";
@@ -11,31 +11,216 @@ import { TodayTab } from "./today-tab";
 import { CrewTab } from "./crew-tab";
 import { ProgressTab } from "./progress-tab";
 import { ResearchTab } from "./research-tab";
-import { CravingLogger } from "./craving";
-import { BreathingTimerInline } from "./breathe";
-import { TmButton, TmSheet } from "./ui";
+import { FuelTab } from "./fuel-tab";
+import { TrainTab } from "./train-tab";
+import { StackTab } from "./stack-tab";
+import { SupplyPanel } from "./supply-tab";
+import { LabsTab } from "./labs-tab";
+import { MindTab } from "./mind-tab";
+import { SettingsTab } from "./settings-tab";
+import { HandsFreePanel } from "./handsfree-tab";
+import { ShopPanel } from "./shop-tab";
+import { RemindPanel } from "./remind-tab";
+import { CapturePanel } from "./capture-tab";
 
+/*
+  Bottom nav.
+
+  "More" is the seventh item and it is the same idea in both profiles: the
+  overflow shelf. In standard mode it holds Settings, so the six sections the
+  e2e suite drives (Today/Fuel/Train/Body/Mind/Crew) keep their exact positions
+  and exact accessible names. In easy mode the nav collapses to Today + More and
+  the shelf holds everything else as a plain list of big rows.
+
+  Two items is the whole point: a person who wants one decision per screen
+  should not have to choose between six destinations before they have chosen
+  anything at all. It is a collapse, never a second UI — the same Shell renders
+  the same tab components either way.
+*/
 const TABS = [
-  { id: "today", label: "Today", Icon: Sun },
-  { id: "crew", label: "Crew", Icon: Users },
-  { id: "progress", label: "Progress", Icon: ChartNoAxesColumn },
-  { id: "research", label: "Research", Icon: FlaskConical },
+  { id: "today", label: "Today" },
+  { id: "fuel", label: "Fuel" },
+  { id: "train", label: "Train" },
+  { id: "body", label: "Body" },
+  { id: "mind", label: "Mind" },
+  { id: "crew", label: "Crew" },
 ] as const;
 
-type TabId = (typeof TABS)[number]["id"];
-type SheetId = "craving" | "breathe" | "ritual" | "file" | null;
+type TabId =
+  | (typeof TABS)[number]["id"]
+  | "more"
+  | "settings"
+  | "handsfree"
+  | "shop"
+  | "remind"
+  | "capture";
+
+const MORE_TAB = { id: "more", label: "More" } as const;
+
+/** Destinations the bottom nav already reaches, so the shelf need not repeat them. */
+const NAV_TAB_IDS: ReadonlySet<string> = new Set(TABS.map((t) => t.id));
+const NAV_STANDARD: readonly { id: TabId; label: string }[] = [...TABS, MORE_TAB];
+const NAV_EASY: readonly { id: TabId; label: string }[] = [{ id: "today", label: "Today" }, MORE_TAB];
+
+/* Second-level views, so the bottom bar stays at thumb-sized targets. */
+const SUB: Partial<Record<TabId, { id: string; label: string }[]>> = {
+  body: [
+    { id: "stack", label: "Stack" },
+    { id: "supply", label: "Supply" },
+    { id: "labs", label: "Bloods" },
+    { id: "trend", label: "Trend" },
+  ],
+  mind: [
+    { id: "checkin", label: "Check-in" },
+    { id: "craving", label: "Craving" },
+  ],
+};
+
+/** Every destination the More shelf can send you to, as one flat list. */
+type Destination = { key: string; label: string; tab: TabId; sub?: string };
+
+const DESTINATIONS: Destination[] = [
+  { key: "fuel", label: "Fuel", tab: "fuel" },
+  { key: "train", label: "Train", tab: "train" },
+  { key: "stack", label: "Stack", tab: "body", sub: "stack" },
+  { key: "supply", label: "Supply", tab: "body", sub: "supply" },
+  { key: "labs", label: "Bloods", tab: "body", sub: "labs" },
+  { key: "trend", label: "Trend", tab: "body", sub: "trend" },
+  { key: "checkin", label: "Check-in", tab: "mind", sub: "checkin" },
+  { key: "craving", label: "Craving", tab: "mind", sub: "craving" },
+  { key: "crew", label: "Crew", tab: "crew" },
+  { key: "shop", label: "Shopping", tab: "shop" },
+  { key: "handsfree", label: "Hands-free", tab: "handsfree" },
+  { key: "remind", label: "Reminders", tab: "remind" },
+  { key: "capture", label: "Photos", tab: "capture" },
+];
+
+function SubNav({
+  items,
+  value,
+  onChange,
+}: {
+  items: { id: string; label: string }[];
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  return (
+    // flex-wrap: four chips at 44px tall overflow a 320px viewport (1.4.10).
+    // They wrap onto a second row instead of scrolling the page sideways.
+    <div className="mb-3 flex flex-wrap gap-1.5" role="tablist">
+      {items.map((s) => (
+        <button
+          key={s.id}
+          role="tab"
+          aria-selected={value === s.id}
+          onClick={() => onChange(s.id)}
+          className={cn(
+            // min-h-11 = 44px (2.5.8 Target Size). rule-strong, not rule, so the
+            // unselected chip has a 3:1 boundary rather than a 1.27:1 one.
+            "inline-flex min-h-11 cursor-pointer items-center rounded-[8px] border px-3.5 font-tm-mono text-[11.5px] tracking-[0.12em] uppercase",
+            value === s.id
+              ? "border-tm-ink bg-tm-ink text-white"
+              : "border-tm-rule-strong bg-tm-panel text-tm-dim",
+          )}
+        >
+          {s.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * One big row in the More shelf. 64px tall, whole row is the target, and the
+ * chevron is a shape rather than a colour so it survives forced-colours.
+ */
+function NavRow({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex min-h-16 w-full cursor-pointer items-center justify-between gap-3 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-4 py-3 text-left text-[17px] font-medium text-tm-ink"
+    >
+      <span className="min-w-0">{label}</span>
+      <span aria-hidden className="shrink-0 font-tm-mono text-[17px] text-tm-dim">
+        →
+      </span>
+    </button>
+  );
+}
+
+/**
+ * The More shelf.
+ *
+ * In easy mode it is the whole rest of the app as one flat list of plain words
+ * — no sub-tabs, no nesting, one tap per destination. Flat matters more than
+ * short here: a two-level menu is two decisions, and the second one is always
+ * the one people get wrong.
+ *
+ * Easy mode relabels the rows with logicEasy's plain-language map ("Bloods" →
+ * "Blood tests"). Standard mode keeps every original name exactly as it is.
+ */
+function MoreShelf({
+  easy,
+  onGo,
+  onSettings,
+}: {
+  easy: boolean;
+  onGo: (d: Destination) => void;
+  onSettings: () => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2 pt-4">
+      <h2 className="font-tm-mono text-[11.5px] tracking-[0.15em] text-tm-dim uppercase">
+        {easy ? "Everything else" : "More"}
+      </h2>
+      {/* Easy mode flattens the whole app into this list. Standard mode already
+          reaches most of it from the bottom nav, so the shelf carries exactly
+          what the nav cannot — otherwise a destination has no route at all. */}
+      {(easy ? DESTINATIONS : DESTINATIONS.filter((d) => !NAV_TAB_IDS.has(d.tab))).map((d) => (
+        <NavRow key={d.key} label={easy ? plain(d.label) : d.label} onClick={() => onGo(d)} />
+      ))}
+      <NavRow label="Settings" onClick={onSettings} />
+      <p className="pt-1 pb-2 text-center">
+        <Link
+          href="/why"
+          className="inline-flex min-h-11 items-center justify-center px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim underline uppercase"
+        >
+          Why this design
+        </Link>
+      </p>
+    </div>
+  );
+}
 
 function Shell() {
-  const { session, authReady, today, actions } = useTimento();
+  const { session, authReady, today } = useTimento();
   const [tab, setTab] = useState<TabId>("today");
-  const [sheet, setSheet] = useState<SheetId>(null);
+  const [bodyView, setBodyView] = useState("stack");
+  const [mindView, setMindView] = useState("checkin");
+
+  /*
+    The stylesheet's half of easy mode ([data-easy="1"] in globals.css) — type
+    scale, target sizes, spacing. It goes on <html> because the lever is the
+    root font-size: every rem-based utility in the app then scales with it,
+    which is how density arrives through tokens instead of a forked component
+    tree. The query still decides WHAT is on the screen; this only decides how
+    big it is.
+  */
+  const easy = today?.a11y.profile === "easy";
+  useEffect(() => {
+    const root = document.documentElement;
+    if (easy) root.setAttribute("data-easy", "1");
+    else root.removeAttribute("data-easy");
+    return () => root.removeAttribute("data-easy");
+  }, [easy]);
 
   if (!authReady) return <div className="min-h-screen bg-tm-paper" aria-busy="true" />;
   if (!session) return <Login />;
   if (!today)
     return (
       <div
-        className="flex min-h-screen items-center justify-center bg-tm-paper font-tm-mono text-[11px] tracking-[0.15em] text-tm-dim uppercase"
+        className="flex min-h-screen items-center justify-center bg-tm-paper font-tm-mono text-[11.5px] tracking-[0.15em] text-tm-dim uppercase"
+        role="status"
         aria-busy="true"
       >
         Loading file…
@@ -43,129 +228,75 @@ function Shell() {
     );
 
   const survival = today.user.mode === "survival";
+  // The nav indicator is a 3px bar — a non-text UI element, so 3:1 is the bar.
+  // amber-lift sits on the white nav at 1.9:1, so the light-surface amber is
+  // right here; it clears 5.77:1 on panel.
   const accent = survival ? "bg-tm-amber" : "bg-tm-green";
+  // Easy mode reaches a sub-view directly from the More shelf, so the row of
+  // chips would be a second navigation for the same choice. It goes.
+  const subItems = easy ? undefined : SUB[tab];
+  const subValue = tab === "body" ? bodyView : mindView;
+  const setSub = tab === "body" ? setBodyView : setMindView;
+  const navItems = easy ? NAV_EASY : NAV_STANDARD;
+  // Settings, and every easy-mode destination, was reached through More — so
+  // More is what stays lit. A nav with nothing current is a lost user.
+  const navCurrent: TabId = navItems.some((n) => n.id === tab) ? tab : "more";
 
   return (
-    <div className="min-h-screen pb-[152px]">
-      <Scoreboard onOpenFile={() => setSheet("file")} />
+    <div className="min-h-screen pb-[84px]">
+      <Scoreboard />
       <main className="mx-auto max-w-md px-4">
+        {subItems && <SubNav items={subItems} value={subValue} onChange={setSub} />}
+        {tab === "more" && (
+          <MoreShelf
+            easy={easy}
+            onGo={(d) => {
+              if (d.sub) (d.tab === "body" ? setBodyView : setMindView)(d.sub);
+              setTab(d.tab);
+            }}
+            onSettings={() => setTab("settings")}
+          />
+        )}
+        {tab === "settings" && <SettingsTab />}
+        {tab === "handsfree" && <HandsFreePanel />}
+        {tab === "shop" && <ShopPanel />}
+        {tab === "remind" && <RemindPanel />}
+        {tab === "capture" && <CapturePanel />}
         {tab === "today" && <TodayTab />}
+        {tab === "fuel" && <FuelTab />}
+        {tab === "train" && <TrainTab />}
+        {tab === "body" && bodyView === "stack" && <StackTab />}
+        {tab === "body" && bodyView === "supply" && <SupplyPanel />}
+        {tab === "body" && bodyView === "labs" && <LabsTab />}
+        {tab === "body" && bodyView === "trend" && <ProgressTab />}
+        {tab === "mind" && mindView === "checkin" && <MindTab />}
+        {tab === "mind" && mindView === "craving" && <ResearchTab />}
         {tab === "crew" && <CrewTab />}
-        {tab === "progress" && <ProgressTab />}
-        {tab === "research" && <ResearchTab />}
       </main>
-
-      <div className="fixed inset-x-0 bottom-16 z-20 border-t border-tm-rule bg-tm-panel/95 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-md gap-2 px-3 py-2">
-          <button
-            type="button"
-            onClick={() => setSheet("craving")}
-            aria-label="Quick log craving"
-            className="flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[10px] border border-tm-rule bg-tm-soft font-tm-mono text-[10px] tracking-[0.1em] text-tm-ink uppercase transition-[transform,opacity] duration-150 active:scale-[0.98] active:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tm-ink/25"
-          >
-            <Flame className="size-3.5" aria-hidden />
-            Craving
-          </button>
-          <button
-            type="button"
-            onClick={() => setSheet("breathe")}
-            aria-label="Quick breathe"
-            className="flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[10px] border border-tm-rule bg-tm-soft font-tm-mono text-[10px] tracking-[0.1em] text-tm-ink uppercase transition-[transform,opacity] duration-150 active:scale-[0.98] active:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tm-ink/25"
-          >
-            <Wind className="size-3.5" aria-hidden />
-            Breathe
-          </button>
-          <button
-            type="button"
-            disabled={today.day.ritualDone}
-            onClick={() => setSheet("ritual")}
-            aria-label="Quick ritual"
-            className="flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[10px] border border-tm-rule bg-tm-soft font-tm-mono text-[10px] tracking-[0.1em] text-tm-ink uppercase transition-[transform,opacity] duration-150 active:scale-[0.98] active:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tm-ink/25 disabled:opacity-40 disabled:active:scale-100"
-          >
-            <Utensils className="size-3.5" aria-hidden />
-            Ritual
-          </button>
-        </div>
-      </div>
-
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-tm-rule bg-tm-panel" aria-label="Sections">
+      {/*
+        Sign-out used to live here, flush against "Crew" — a 30px-wide target
+        with no confirmation, one thumb-slip from ending the session. It now
+        lives in the header (scoreboard.tsx), away from the navigation thumb
+        zone, still named "Sign out".
+      */}
+      <nav className="fixed inset-x-0 bottom-0 border-t border-tm-rule bg-tm-panel" aria-label="Sections">
         <div className="mx-auto flex max-w-md">
-          {TABS.map((t) => (
+          {navItems.map((t) => (
             <button
               key={t.id}
-              type="button"
               onClick={() => setTab(t.id)}
-              aria-current={tab === t.id ? "page" : undefined}
+              aria-current={navCurrent === t.id ? "page" : undefined}
               className={cn(
-                "flex flex-1 cursor-pointer flex-col items-center gap-1 pt-2.5 pb-3 font-tm-mono text-[10px] tracking-[0.12em] uppercase transition-opacity duration-150 active:opacity-70",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tm-ink/20",
-                tab === t.id ? "text-tm-ink" : "text-tm-dim",
+                "min-h-14 flex-1 cursor-pointer pt-3 pb-4 font-tm-mono text-[11.5px] tracking-[0.04em] uppercase",
+                navCurrent === t.id ? "text-tm-ink" : "text-tm-dim",
               )}
             >
-              <span className={cn("mb-0.5 block h-[3px] w-8 rounded-full", tab === t.id ? accent : "bg-transparent")} />
-              <t.Icon className="size-4" aria-hidden strokeWidth={tab === t.id ? 2.25 : 1.75} />
+              <span className={cn("mx-auto mb-1.5 block h-[3px] w-6 rounded-full", navCurrent === t.id ? accent : "bg-transparent")} />
               {t.label}
             </button>
           ))}
         </div>
       </nav>
-
-      <TmSheet open={sheet === "file"} onClose={() => setSheet(null)} title="File" label="File menu">
-        <div className="flex flex-col gap-3">
-          <p className="font-tm-mono text-[12px] text-tm-ink">
-            Kitchen closes <b>{today.user.kitchenClose}</b>
-          </p>
-          <Link
-            href="/why"
-            className="font-tm-mono text-[11px] tracking-[0.12em] text-tm-dim uppercase underline decoration-tm-rule underline-offset-4"
-            onClick={() => setSheet(null)}
-          >
-            Why this design
-          </Link>
-          <TmButton
-            variant="danger"
-            aria-label="Sign out"
-            onClick={() => {
-              setSheet(null);
-              actions.logout();
-            }}
-          >
-            Sign out
-          </TmButton>
-        </div>
-      </TmSheet>
-
-      <TmSheet open={sheet === "craving"} onClose={() => setSheet(null)} title="Craving hit?" label="Log craving">
-        <CravingLogger embedded onDone={() => setSheet(null)} />
-      </TmSheet>
-
-      <TmSheet open={sheet === "breathe"} onClose={() => setSheet(null)} title="2-min breathe" label="Breathing timer">
-        <p className="mb-2 text-[12.5px]">Double inhale, long exhale. The wave peaks and passes.</p>
-        <BreathingTimerInline onDone={() => setSheet(null)} />
-        <button
-          type="button"
-          onClick={() => setSheet(null)}
-          className="mt-2 w-full cursor-pointer py-1 font-tm-mono text-[10px] text-tm-dim underline"
-        >
-          done early
-        </button>
-      </TmSheet>
-
-      <TmSheet open={sheet === "ritual"} onClose={() => setSheet(null)} title="Close-out ritual" label="Close-out ritual">
-        <p className="text-[12.5px]">
-          <b>20:15:</b> skyr · 2 squares dark · decaf. Same cue, same reward, swapped routine.
-        </p>
-        <TmButton
-          className="mt-3 w-full"
-          disabled={today.day.ritualDone}
-          onClick={() => {
-            actions.markRitual();
-            setSheet(null);
-          }}
-        >
-          {today.day.ritualDone ? "Already done" : "Mark ritual done"}
-        </TmButton>
-      </TmSheet>
     </div>
   );
 }
@@ -191,13 +322,12 @@ class SessionRecoveryBoundary extends Component<{ children: ReactNode }, { faile
     if (this.state.failed) {
       return (
         <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-tm-paper px-6 text-center">
-          <p className="font-tm-mono text-[11px] tracking-[0.15em] text-tm-dim uppercase">
-            Session expired. Signed out.
+          <p role="alert" className="font-tm-mono text-[11.5px] tracking-[0.15em] text-tm-dim uppercase">
+            Session expired — signed out
           </p>
           <button
-            type="button"
             onClick={() => this.setState({ failed: false })}
-            className="cursor-pointer rounded-[10px] bg-tm-ink px-5 py-2.5 font-tm-mono text-[11px] tracking-[0.15em] text-white uppercase"
+            className="inline-flex min-h-11 cursor-pointer items-center rounded-[10px] bg-tm-ink px-5 font-tm-mono text-[11.5px] tracking-[0.15em] text-white uppercase"
           >
             Back to sign-in
           </button>

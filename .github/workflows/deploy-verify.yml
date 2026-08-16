@@ -7,17 +7,21 @@ on:
         description: Base URL of the deployment to verify
         required: false
         default: https://peppy-liams-projects-eb2f3bfa.vercel.app
-  push:
-    branches:
-      - claude/timento-workflow-nodejs-i16q2e
-    paths:
-      - .github/workflows/deploy-verify.yml
-      - scripts/timento-e2e.mjs
+  # Every deployment announces itself here, so preview and production alike get
+  # the same click-suite against the URL that was actually deployed. There is no
+  # push trigger on purpose: it ran the branch's tests against production, which
+  # fails whenever the branch adds a check for a feature production lacks — the
+  # tests belong to the code being deployed, not to whatever is live.
+  deployment_status:
 
 jobs:
   smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # deployment_status fires for pending/error too; only verify a live one.
+    if: >-
+      github.event_name != 'deployment_status' ||
+      github.event.deployment_status.state == 'success'
 
     steps:
       - name: Checkout
@@ -31,12 +35,22 @@ jobs:
 
       - name: Probe pages
         run: |
-          base="${{ github.event.inputs.url || 'https://peppy-liams-projects-eb2f3bfa.vercel.app' }}"
+          base="${{ github.event.deployment_status.environment_url || github.event.inputs.url || 'https://peppy-liams-projects-eb2f3bfa.vercel.app' }}"
+          base="${base%/}"
+          echo "Verifying $base (event: ${{ github.event_name }})"
           echo "base=$base" >> "$GITHUB_ENV"
           for path in / /why; do
-            code=$(curl -sL -o /tmp/page.html -w '%{http_code}' "$base$path")
+            code=$(curl -sL -o /tmp/page.html -D /tmp/head.txt -w '%{http_code}' "$base$path")
             echo "== $path -> $code"; head -c 300 /tmp/page.html; echo; echo
-            test "$code" = "200" || { echo "::error::$path returned $code"; exit 1; }
+            if [ "$code" != "200" ]; then
+              # Vercel names the failure class in its own headers — without them a
+              # 500 here is indistinguishable from a bad build, a crashed function
+              # and a missing deployment.
+              echo "--- response headers"
+              grep -iE '^(x-vercel-error|x-vercel-id|x-vercel-cache|server|location|age):' /tmp/head.txt || cat /tmp/head.txt
+              echo "::error::$path returned $code"
+              exit 1
+            fi
           done
           # Real app markup, not Vercel's SSO interstitial.
           curl -sL "$base/" | grep -qi "performance file" || { echo "::error::/ serving non-app HTML (deployment protection?)"; exit 1; }
@@ -55,10 +69,20 @@ jobs:
       - name: E2E click-suite against deployment
         run: node scripts/timento-e2e.mjs "$base" e2e-shots
 
+      # Runs against the deployed build rather than a dev server, because the
+      # thing that has to be accessible is the thing people actually load. Walks
+      # every screen at 320/390/1280, in both accessibility profiles and in the
+      # survival floor, and fails on any WCAG 2.2 AA violation, any text under
+      # the type floor, or any sideways scroll at 320px.
+      - name: Accessibility sweep against deployment
+        run: node scripts/timento-a11y.mjs "$base" a11y-shots
+
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: deploy-verify-shots
-          path: e2e-shots/
+          path: |
+            e2e-shots/
+            a11y-shots/
           if-no-files-found: ignore

@@ -57,5 +57,4 @@ temp/
 
 # Local/CI e2e screenshot output
 e2e-shots/
-
-.vercel
+a11y-shots/

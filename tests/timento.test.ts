@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { convexTest } from "convex-test";
 import { api, internal } from "../convex/_generated/api";
+import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 
 // Module map for convex-test (avoids import.meta.glob so repo-wide tsc stays clean).
@@ -87,26 +88,40 @@ describe("privacy split (query level)", () => {
     const { t, conor } = await seeded();
     const board = await t.query(api.tm.crew.board, { token: conor, date: TODAY });
     expect(board).toHaveLength(2);
+    // The board is an allow-list: a field only appears because a granted scope
+    // named it. `link` carries the consent state, `supplyState` is the coarse
+    // flag the "supply" scope permits — never a medicine, dose or count.
+    const allowed = [
+      "slug",
+      "name",
+      "isYou",
+      "mode",
+      "modeSince",
+      "reviewDate",
+      "daysInMode",
+      "streak",
+      "adherence7",
+      "todayDone",
+      "todayTotal",
+      "link",
+      "supplyState",
+    ].sort();
     for (const member of board) {
-      expect(Object.keys(member).sort()).toEqual(
-        [
-          "slug",
-          "name",
-          "isYou",
-          "mode",
-          "modeSince",
-          "reviewDate",
-          "daysInMode",
-          "streak",
-          "adherence7",
-          "todayDone",
-          "todayTotal",
-        ].sort(),
-      );
+      // Subset, not equality: a member with narrower scopes legitimately carries
+      // fewer fields, and that direction is never a leak.
+      const keys = Object.keys(member).sort();
+      expect(allowed).toEqual(expect.arrayContaining(keys));
+      if ("supplyState" in member) {
+        expect(["ok", "order-due", null]).toContain(
+          (member as { supplyState: string | null }).supplyState,
+        );
+      }
     }
     const serialized = JSON.stringify(board);
     expect(serialized).not.toMatch(/92\.8|weight|kg|ldl|lab/i);
     expect(serialized).not.toMatch(/tired|emotion|cue|bored|hungry|sessionDone/i);
+    // Nothing from the stack may cross, by name or by number.
+    expect(serialized).not.toMatch(/metformin|creatine|bpc|vitamin|mg\b|tablet/i);
   });
 
   it("partner session cannot read the owner's raw logs in either direction", async () => {
@@ -265,10 +280,11 @@ describe("research engine", () => {
     const liamToday = await t.query(api.tm.today.get, { token: liam, date: TODAY });
     expect(liamToday.cravingsToday.length).toBeGreaterThan(0);
     const last = liamToday.cravingsToday[liamToday.cravingsToday.length - 1];
+    const cravingId = last.id as Id<"tm_cravings">;
     await expect(
-      t.mutation(api.tm.today.undoCraving, { token: conor, id: last.id }),
+      t.mutation(api.tm.today.undoCraving, { token: conor, id: cravingId }),
     ).rejects.toThrow(/Not found/);
-    await t.mutation(api.tm.today.undoCraving, { token: liam, id: last.id });
+    await t.mutation(api.tm.today.undoCraving, { token: liam, id: cravingId });
     const after = await t.query(api.tm.today.get, { token: liam, date: TODAY });
     expect(after.cravingsToday.find((c) => c.id === last.id)).toBeUndefined();
   });

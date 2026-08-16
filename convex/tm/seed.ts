@@ -7,6 +7,14 @@ import { v } from "convex/values";
 import { internalMutation } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
 import { buildFixtures } from "./fixtures";
+import { seedFuel } from "./fixtures/fuel";
+import { seedTrain } from "./fixtures/train";
+import { seedStack } from "./fixtures/stack";
+import { seedLabs } from "./fixtures/labs";
+import { seedMind } from "./fixtures/mind";
+import { seedConsent } from "./fixtures/consent";
+import { seedSupply } from "./fixtures/supply";
+import { seedShop } from "./fixtures/shop";
 import { isoDate, randomToken, sha256Hex } from "./lib";
 
 const TM_TABLES = [
@@ -21,6 +29,24 @@ const TM_TABLES = [
   "tm_experiments",
   "tm_crewFeed",
   "tm_modeEvents",
+  "tm_nutritionTargets",
+  "tm_mealEntries",
+  "tm_energyEstimates",
+  "tm_mesocycles",
+  "tm_programBlocks",
+  "tm_setLogs",
+  "tm_volumeLandmarks",
+  "tm_protocolItems",
+  "tm_doseLogs",
+  "tm_labPanels",
+  "tm_labResults",
+  "tm_assessments",
+  "tm_intentions",
+  "tm_reflections",
+  "tm_crewLinks",
+  "tm_supply",
+  "tm_contacts",
+  "tm_pantry",
   "tm_users",
 ] as const;
 
@@ -82,6 +108,16 @@ export const run = internalMutation({
     }
     for (const { userSlug, ...row } of fx.modeEvents)
       await ctx.db.insert("tm_modeEvents", { userId: uid(userSlug), ...row });
+
+    // Domain slices seed their own tables (foreign keys resolved internally).
+    await seedFuel(ctx, uid, fx);
+    await seedTrain(ctx, uid, fx);
+    await seedStack(ctx, uid, fx);
+    await seedLabs(ctx, uid, fx);
+    await seedMind(ctx, uid, fx);
+    await seedConsent(ctx, uid, fx);
+    await seedSupply(ctx, uid, fx);
+    await seedShop(ctx, uid, fx);
 
     return null;
   },

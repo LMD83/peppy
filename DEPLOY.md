@@ -15,10 +15,22 @@ owner can mint).
   real app HTML (confirmed by a `deploy-verify` probe on 2026-08-13). It was
   previously behind Vercel Authentication, which is why earlier smoke runs saw
   the login interstitial.
-- **Production is serving a stale build**: the last deploy predates the move of
-  Timento to the site root, so `/` still renders the old storefront and `/why`
-  404s. Deploys here are manual file-tree uploads — the project has no Git
-  integration — so nothing redeploys on push or on merge.
+- **Production is serving a stale build, and it now returns 500.** As of
+  2026-08-13 the deployment answers `/` with a Next.js error page
+  (`id="__next_error__"`) and *no* `x-vercel-error` header, which rules out a
+  platform fault: the function ran and the application threw during server
+  render. Every probe since has reported the same deployment id
+  (`dpl_F7eMzNNvZUe7S2zAUqydt8u3kpbY`), so **nothing has been redeployed** —
+  deploys here are manual file-tree uploads and the project has no Git
+  integration, so neither a push nor a merge to `master` changes what is live.
+- The most likely cause was reproduced locally: with `NEXT_PUBLIC_TIMENTO_DEMO`
+  unset (or not `1`) and `NEXT_PUBLIC_CONVEX_URL` holding a placeholder or
+  otherwise unusable value, `new ConvexReactClient(url)` throws inside render
+  and `next build` exits with `Export encountered an error on /page: /`.
+  `src/app/_lib/backend.tsx` now validates the endpoint first and falls back to
+  the demo backend instead of taking the site down — but **that fix only helps
+  once something redeploys.** Setting `NEXT_PUBLIC_TIMENTO_DEMO=1` in the Vercel
+  project's environment variables fixes the same failure without a code change.
 - The Claude Vercel connector cannot see project `peppy` (it isn't in the
   connector's granted project list — `get_project` returns 404), and this
   container holds no Vercel token, so redeploys cannot be driven from a
@@ -79,10 +91,80 @@ All commands run from a checkout where you've done `npx convex login`
    passcodes from step 3, and a second browser signed in as the other user
    should see only the shared crew projection.
 
+## Reminders: one step left, and it is yours
+
+Reminders are wired end to end. `convex/crons.ts` sweeps every 30 minutes,
+`convex/tm/remind.ts` decides what is due using the same pure module the
+Reminders tab previews from, and `convex/tm/push.ts` signs and sends it with
+`web-push`. The client half — service worker, subscription, iOS install
+gating — is in place too.
+
+**The only thing missing is the keys**, because a VAPID keypair is an identity
+for your deployment and is not something to generate into a repo.
+
+```sh
+npx web-push generate-vapid-keys
+npx convex env set VAPID_PUBLIC_KEY  <public>                --prod
+npx convex env set VAPID_PRIVATE_KEY <private>               --prod
+npx convex env set VAPID_SUBJECT     mailto:you@example.com  --prod
+```
+
+Then redeploy the frontend. `NEXT_PUBLIC_CONVEX_URL` already carries the public
+key to the browser through `remind.get`, so no client env var is needed.
+
+Until those are set, the sweep logs one line naming the missing variables and
+leaves every subscription untouched — nothing is marked delivered and no device
+is charged a failure it did not earn, because the failure is the deployment's.
+The tab says the same thing rather than showing a switch that lies.
+
+**Do not remove `web-push` from `dependencies`.** The import in `push.ts` is
+static, so an uninstalled package fails `npx convex deploy` rather than quietly
+sending nothing at 8am. That is deliberate: it was a dynamic import precisely so
+it *could* degrade quietly, and moving the failure to deploy time is the point.
+
+**Verifying it actually works** — the tab's "send a test" button draws a
+notification from the worker already running in the browser. That proves the
+worker, the icons and the permission; it does **not** prove the server can reach
+a shut tab. For that, from a checkout:
+
+```sh
+npx convex run tm/push:sweep '{"windowMinutes": 1440}' --prod
+```
+
+It returns `{users, notifications, sent, reason}` — `reason: "no-vapid"` means
+the keys are not set, `"nothing-due"` means nobody had anything owing in the
+window, and `"sent"` with a non-zero `sent` means a push left the server.
+
+### iOS
+
+Notifications only work once the app is added to the Home Screen (Safari →
+Share → Add to Home Screen). Apple allows no other route, and iOS has neither
+Background Sync nor Periodic Sync — which is why the schedule lives on the
+server and the device only receives.
+
+**iOS**: notifications only work once the app is added to the Home Screen
+(Safari → Share → Add to Home Screen). Apple allows no other route, and iOS has
+neither Background Sync nor Periodic Sync — which is why the schedule lives on
+the server and the device only receives.
+
 ## Docker path
 
 `next.config.ts` keeps `output: "standalone"` for Docker/self-hosted builds;
 the flag is skipped automatically on Vercel (`process.env.VERCEL`).
+
+## Known build fragility: fonts are fetched at build time
+
+`src/app/layout.tsx` uses `next/font/google`, which downloads Archivo Black and
+IBM Plex from `fonts.gstatic.com` **during the build**. A network blip on the
+runner therefore fails the whole build with a wall of
+`Module not found: Can't resolve '@vercel/turbopack-next/internal/font/google/font'`
+against generated `…module.css` files. Seen on CI 2026-08-15 on a commit that
+changed only workflow YAML, minutes after the same tree built clean.
+
+It is transient — re-run the job and it passes. The durable fix is to vendor the
+`.woff2` files into `public/` and switch to `next/font/local`, which removes the
+build-time network dependency from every CI run *and* every Vercel deploy. Worth
+doing the next time this costs anyone ten minutes.
 
 ## Redeploying the frontend from this repo
 

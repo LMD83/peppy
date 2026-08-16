@@ -3,8 +3,11 @@ import { mutation, query } from "../_generated/server";
 import { MODE_CHECKS, SESSION_PLAN, daysBetween } from "./lib";
 import { adherenceStats, checksForDate, requireUser } from "./db";
 import { overloadFlag, tripwireFor } from "./logic";
+import { profileOf, projectToday, type TodayPayload } from "./logicEasy";
 
 const dateArg = v.string();
+
+const a11yProfileArg = v.union(v.literal("standard"), v.literal("easy"));
 
 export const get = query({
   args: { token: v.string(), date: dateArg },
@@ -66,7 +69,7 @@ export const get = query({
     // Maintain-mode tripwires with pre-written responses.
     const tripwire = tripwireFor(user.mode, user.goalKg, latestWeighed?.weightKg);
 
-    return {
+    const payload: TodayPayload = {
       user: {
         slug: user.slug,
         name: user.name,
@@ -100,6 +103,36 @@ export const get = query({
       session,
       tripwire,
     };
+
+    /*
+      Easy mode is applied HERE, on the way out, for the same reason survival
+      mode is: a CSS class cannot deliver one decision per screen. The client
+      renders what it is handed — it never gets a longer list and hides part of
+      it, so nothing that was removed can leak back through a stylesheet, a
+      wider viewport or a component that forgot to check.
+
+      Survival has already collapsed `checks` to three and `session` to null
+      above, so the two compose by construction: the projection only ever
+      removes, and there is no path in it that puts back something survival took.
+    */
+    return projectToday(payload, profileOf(user));
+  },
+});
+
+/**
+ * Turn easy mode on or off.
+ *
+ * The person's own choice, made in Settings, and nothing else may write it —
+ * there is no heuristic anywhere in this codebase that infers someone needs
+ * easy mode from their data. It is also not an achievement: no crew feed row,
+ * no nudge, nobody else is told.
+ */
+export const setA11yProfile = mutation({
+  args: { token: v.string(), profile: a11yProfileArg },
+  handler: async (ctx, { token, profile }) => {
+    const user = await requireUser(ctx, token);
+    await ctx.db.patch("tm_users", user._id, { a11yProfile: profile });
+    return null;
   },
 });
 
