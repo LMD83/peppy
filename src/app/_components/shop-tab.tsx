@@ -331,7 +331,7 @@ function ShopBody({ shop, date, easy }: { shop: ShopData; date: string; easy: bo
             </div>
           </Card>
 
-          <NoteCard shop={shop} />
+          <NoteCard shop={shop} showHandoff={shop.retailers.length === 0} />
         </div>
       </div>
     </div>
@@ -655,12 +655,19 @@ function PrintList({ shop }: { shop: ShopData }) {
   );
 }
 
-function NoteCard({ shop }: { shop: ShopData }) {
+/**
+ * `showHandoff` defaults to true: when there is no retailer chooser on screen
+ * (no retailers configured, or nothing to buy), this note is the only place
+ * the hand-off sentence can live, and zero copies of it is a worse failure
+ * than one repeat would ever have been. When RetailerCard is showing, that is
+ * the retailer-choice commitment point and owns the sentence instead.
+ */
+function NoteCard({ shop, showHandoff = true }: { shop: ShopData; showHandoff?: boolean }) {
   return (
     <Card className="print:hidden">
       <Eyebrow color="bg-tm-dim2">How this list was built</Eyebrow>
       <p className="text-[14px]">{shop.note}</p>
-      <p className="mt-2 text-[14px] text-tm-dim">{shop.handoffNote}</p>
+      {showHandoff && <p className="mt-2 text-[14px] text-tm-dim">{shop.handoffNote}</p>}
     </Card>
   );
 }

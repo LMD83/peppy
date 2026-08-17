@@ -175,7 +175,11 @@ function DemoBackend({ children }: { children: React.ReactNode }) {
       logWeight: (kg: number) => slug && db.logWeight(slug, date, kg),
       logState: (patch: { stress?: number; energy?: number }) => slug && db.logState(slug, date, patch),
       markRitual: () => slug && db.markRitual(slug, date),
-      logCraving: (entry: CravingEntry) => slug && db.logCraving(slug, date, entry),
+      logCraving: async (entry: CravingEntry): Promise<string | null> => {
+        if (!slug) return null;
+        return db.logCraving(slug, date, entry);
+      },
+      enrichCraving: (id, patch) => slug && db.enrichCraving(slug, id, patch),
       undoCraving: (id: string) => slug && db.undoCraving(slug, id),
       markSessionDone: () => slug && db.markSessionDone(slug, date),
       setMode: (mode, reason, reviewDate) => slug && db.setMode(slug, date, mode, reason, reviewDate),
@@ -289,6 +293,7 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
   const stateMut = useMutation(api.tm.today.logState);
   const ritualMut = useMutation(api.tm.today.markRitual);
   const cravingMut = useMutation(api.tm.today.logCraving);
+  const enrichCravingMut = useMutation(api.tm.today.enrichCraving);
   const undoCravingMut = useMutation(api.tm.today.undoCraving);
   const sessionDoneMut = useMutation(api.tm.today.markSessionDone);
   const modeMut = useMutation(api.tm.today.setMode);
@@ -358,7 +363,13 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
       logWeight: (weightKg: number) => token && void weightMut({ token, date, weightKg }),
       logState: (patch: { stress?: number; energy?: number }) => token && void stateMut({ token, date, ...patch }),
       markRitual: () => token && void ritualMut({ token, date }),
-      logCraving: (entry: CravingEntry) => token && void cravingMut({ token, date, ...entry }),
+      logCraving: async (entry: CravingEntry): Promise<string | null> => {
+        if (!token) return null;
+        const id = await cravingMut({ token, date, ...entry });
+        return id;
+      },
+      enrichCraving: (id, patch) =>
+        token && void enrichCravingMut({ token, id: id as Id<"tm_cravings">, ...patch }),
       undoCraving: (id: string) => token && void undoCravingMut({ token, id: id as Id<"tm_cravings"> }),
       markSessionDone: () => token && void sessionDoneMut({ token, date }),
       setMode: (mode, reason, reviewDate) => token && void modeMut({ token, date, mode, reason, reviewDate }),
@@ -428,6 +439,7 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
       stateMut,
       ritualMut,
       cravingMut,
+      enrichCravingMut,
       undoCravingMut,
       sessionDoneMut,
       modeMut,

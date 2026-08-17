@@ -250,7 +250,13 @@ function RechecksCard({ rechecks }: { rechecks: LabRecheck[] }) {
         {rechecks.map((r) => (
           <li
             key={r.marker}
-            className="flex items-center justify-between border-b border-tm-rule py-2 last:border-0"
+            // flex-wrap + gap-x-2, the same fix as PanelHistory below: a long
+            // marker name plus the overdue figure can exactly fill a desktop
+            // sidebar column with nothing left for justify-between to space
+            // out, and the two run together with zero gap. The explicit gap
+            // is a floor that survives that, and wrap gives the figure its
+            // own line rather than touching the name.
+            className="flex flex-wrap items-center justify-between gap-x-2 border-b border-tm-rule py-2 last:border-0"
           >
             <span className="text-[13px] font-medium">{r.name}</span>
             <span className="font-tm-mono text-[11.5px] text-tm-amber-ink">

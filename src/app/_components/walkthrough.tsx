@@ -111,8 +111,13 @@ export function Walkthrough({
   const stop = STOPS[Math.min(step, STOPS.length - 1)];
   const last = step >= STOPS.length - 1;
 
-  // Each stop shows the real screen it talks about.
+  // Each stop shows the real screen it talks about. Scrolling to the top
+  // first means the coach card — which is pinned above the bottom nav and
+  // covers the page tail — only ever occludes the part of the screen its own
+  // stop isn't narrating, instead of landing mid-scroll over the exact
+  // control (e.g. LOG SET) it is describing.
   useEffect(() => {
+    window.scrollTo(0, 0);
     onNavigate({ tab: stop.tab, sub: stop.sub });
     // Navigation is the stop's side effect; re-running on onNavigate identity
     // churn would fight the user's own tapping between steps.

@@ -10,7 +10,7 @@ const ENGINE_COPY: Record<string, string> = {
   emotion: "Engine read-out: emotion-dominant. The fix is naming the feeling and the substitute ritual, not a stricter plan.",
   cue: "Engine read-out: cue-dominant. The fix is environment design: remove the cue, close the kitchen.",
   mixed: "Engine read-out: mixed. Keep logging. The dominant channel usually declares itself by week three.",
-  insufficient: "Not enough logs yet for a read-out. Two taps per urge; the map does the rest.",
+  insufficient: "Not enough logs yet for a read-out. One tap per urge; the map does the rest.",
 };
 
 const STATUS_STYLE: Record<string, string> = {

@@ -419,8 +419,25 @@ export class DemoDb {
     this.bump();
   }
 
-  logCraving(slug: string, date: string, entry: CravingEntry) {
-    this.cravings.push({ userSlug: slug, date, id: `demo-c-${++this.cravingSeq}`, ...entry });
+  /** Committed on the signal tap alone — mirrors convex/tm/today.ts:logCraving. */
+  logCraving(slug: string, date: string, entry: CravingEntry): string {
+    const id = `demo-c-${++this.cravingSeq}`;
+    this.cravings.push({ userSlug: slug, date, id, ...entry });
+    this.bump();
+    return id;
+  }
+
+  /** Patches an already-committed entry — mirrors convex/tm/today.ts:enrichCraving. */
+  enrichCraving(
+    slug: string,
+    id: string,
+    patch: { emotionWord?: string; afterState?: CravingEntry["afterState"]; action?: CravingEntry["action"] },
+  ) {
+    const row = this.cravings.find((c) => c.id === id && c.userSlug === slug);
+    if (!row) return;
+    if (patch.emotionWord !== undefined) row.emotionWord = patch.emotionWord;
+    if (patch.afterState !== undefined) row.afterState = patch.afterState;
+    if (patch.action !== undefined) row.action = patch.action;
     this.bump();
   }
 

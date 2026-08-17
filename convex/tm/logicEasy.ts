@@ -109,6 +109,39 @@ export function easyCardOrder(profile: A11yProfile, mode: TmMode): TodayCardId[]
   return [...(mode === "survival" ? EASY_SURVIVAL_CARDS : EASY_CARDS)];
 }
 
+/* ===== stakes by clock ==================================================== */
+
+/** The craving hour starts when the kitchen fight does. */
+export const EVENING_FROM_HOUR = 20;
+/** Scales mean nothing after breakfast. */
+export const MORNING_UNTIL_HOUR = 10;
+
+/**
+ * Reorder a card list for the hour on the person's own clock.
+ *
+ * Reorder only: the result holds exactly the cards it was given, so every
+ * removal upstream (easy, survival) survives untouched — this function cannot
+ * add, drop or duplicate a card. The hour is an argument because queries stay
+ *_deterministic; the client reads its own clock and passes it in. An hour
+ * outside 0–23 (the server render, which has no clock) means the file order
+ * stands.
+ *
+ * Two rules, nothing else:
+ *  - evening (20:00 on): the craving card rises to sit directly under the
+ *    checks card, because that is the hour it exists for.
+ *  - morning (before 10:00): the weigh-in rises the same way.
+ * Everything unranked keeps its file order — the sort is stable.
+ */
+export function todayCardOrder(cards: readonly TodayCardId[], hourOfDay: number): TodayCardId[] {
+  if (!Number.isInteger(hourOfDay) || hourOfDay < 0 || hourOfDay > 23) return [...cards];
+  const rank = (id: TodayCardId): number => {
+    if (hourOfDay >= EVENING_FROM_HOUR && id === "craving") return -1;
+    if (hourOfDay < MORNING_UNTIL_HOUR && id === "weigh") return -1;
+    return 0;
+  };
+  return [...cards].sort((a, b) => rank(a) - rank(b));
+}
+
 /* ===== plain language ===================================================== */
 
 /**
@@ -291,4 +324,50 @@ export function projectToday(payload: TodayPayload, profile: A11yProfile): Today
       mode: payload.user.mode,
     }),
   };
+}
+
+/* ===== next action, with a destination ==================================== */
+
+/**
+ * Where tapping the file's to-do line should land. A deliberately small
+ * subset of the shell's nav surface — only the places a next action can
+ * plausibly point at — kept local so this backend module never has to import
+ * from the client's nav types.
+ */
+export type NextActionDestination = {
+  tab: "today" | "fuel" | "train" | "body" | "mind";
+  sub?: "stack";
+};
+
+export type NextActionWithDestination = NextAction & NextActionDestination;
+
+/**
+ * Check key → the tab that shows the work behind it. Every one of these
+ * checks is still ticked on Today (that control is not moving), but "next:
+ * session done" reads as a dead end if tapping it doesn't at least land you
+ * where the session lives. Keys with no screen of their own — steps,
+ * weigh-in — are answered right on Today, so they default there.
+ */
+const CHECK_DESTINATIONS: Partial<Record<string, NextActionDestination>> = {
+  session: { tab: "train" },
+  plan: { tab: "fuel" },
+  salt: { tab: "fuel" },
+  kitchen: { tab: "fuel" },
+  protein: { tab: "fuel" },
+  supps: { tab: "body", sub: "stack" },
+};
+
+/**
+ * `nextAction`'s output, plus where tapping it should go. This never
+ * recomputes what's next — it takes the same `NextAction` both profiles
+ * already produce and only adds a destination on top, so the scoreboard's
+ * NEXT stamp can navigate without forking the arithmetic that decided what's
+ * next.
+ */
+export function withDestination(action: NextAction): NextActionWithDestination {
+  const destination: NextActionDestination =
+    action.kind === "check" && action.key
+      ? (CHECK_DESTINATIONS[action.key] ?? { tab: "today" })
+      : { tab: "today" };
+  return { ...action, ...destination };
 }

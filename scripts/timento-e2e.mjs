@@ -117,7 +117,9 @@ for (const [label, viewport] of [
   });
 
   await check("toggle a check updates adherence", async () => {
-    const steps = page.getByRole("button", { name: /8k\+ steps/i });
+    // Scoped to main: the scoreboard's NEXT stamp legitimately names the same
+    // action ("Next: 8k+ steps"), so an unscoped lookup matches the header too.
+    const steps = page.locator("main").getByRole("button", { name: /8k\+ steps/i });
     await steps.click();
     await page.waitForTimeout(150);
     const pressed = await steps.getAttribute("aria-pressed");

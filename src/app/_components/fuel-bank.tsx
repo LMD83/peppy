@@ -31,6 +31,44 @@ function shopLabel(retailer: ProductRetailer): string {
   return RETAILER_LABELS[retailer];
 }
 
+/**
+ * The Bloods disclosure (labs-tab's GroupCard), reused across the fuel surface
+ * for its weekly and one-time jobs: a real button, aria-expanded, a count in
+ * the header, and no memory — every visit starts folded. The daily job never
+ * sits behind one.
+ */
+export function Disclosure({
+  label,
+  color,
+  count,
+  children,
+}: {
+  label: string;
+  color: string;
+  count: string;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Card>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex min-h-11 w-full cursor-pointer flex-wrap items-center justify-between gap-x-3 gap-y-1 text-left"
+      >
+        <Eyebrow color={color} className="mb-0">
+          {label}
+        </Eyebrow>
+        <span className="font-tm-mono text-[11.5px] text-tm-dim">
+          {count} {open ? "−" : "+"}
+        </span>
+      </button>
+      {open && <div className="mt-2">{children}</div>}
+    </Card>
+  );
+}
+
 export function FuelBank({
   foods,
   recentFoods,
@@ -123,8 +161,7 @@ export function FuelBank({
 
   return (
     <>
-      <Card>
-        <Eyebrow color="bg-tm-blue">Menus</Eyebrow>
+      <Disclosure label="Menus" color="bg-tm-blue" count={String(slotMenus.length)}>
         <p className="text-sm text-tm-dim">
           A named meal, one tap. The planner uses these when it generates a day.
         </p>
@@ -163,10 +200,9 @@ export function FuelBank({
             );
           })}
         </div>
-      </Card>
+      </Disclosure>
 
-      <Card>
-        <Eyebrow color="bg-tm-blue">Catalogue</Eyebrow>
+      <Disclosure label="Catalogue" color="bg-tm-blue" count={String(results.length)}>
         <p className="text-sm text-tm-dim">
           Packs from a Tesco, Aldi and Lidl trolley. Nutrients are the staple&apos;s, not a lab
           reading of the pack in your hand.
@@ -234,11 +270,14 @@ export function FuelBank({
                     setPicked(p);
                     setGrams(String(p.packG));
                   }}
-                  className="flex min-h-11 cursor-pointer flex-col justify-center rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2 text-left transition-transform duration-150 active:scale-[0.98]"
+                  className="flex min-h-11 w-full cursor-pointer flex-col justify-center rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2 text-left transition-transform duration-150 active:scale-[0.98]"
                 >
-                  <span className="flex flex-wrap items-baseline justify-between gap-x-2">
-                    <span className="text-sm font-medium">{p.name}</span>
-                    <span className="font-tm-mono text-[11.5px] text-tm-dim">
+                  {/* Name truncates, the kcal figure holds one stable position —
+                      short and long names used to place macros differently
+                      (inline vs. wrapped to line 2), so kcal never lined up. */}
+                  <span className="flex items-baseline justify-between gap-2">
+                    <span className="min-w-0 truncate text-sm font-medium">{p.name}</span>
+                    <span className="shrink-0 font-tm-mono text-[11.5px] text-tm-dim">
                       {food.kcalPer100} kcal · {fmt(food.proteinPer100G)} p /100 g
                     </span>
                   </span>
@@ -324,7 +363,7 @@ export function FuelBank({
             </p>
           </div>
         )}
-      </Card>
+      </Disclosure>
     </>
   );
 }

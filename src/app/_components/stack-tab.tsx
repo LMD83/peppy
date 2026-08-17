@@ -10,6 +10,7 @@ import {
 import { ReconstitutionError, reconstitution } from "@convex/tm/logicStack";
 import { useTimento } from "../_lib/backend";
 import type { StackData } from "../_lib/types";
+import { useFileNav } from "./file-nav";
 import { Card, Eyebrow, Stat } from "./ui";
 
 type ItemView = StackData["items"][number];
@@ -117,7 +118,8 @@ export function StackTab() {
 /* ===== the compact card for Today ===== */
 
 export function StackTodayCard() {
-  const { stack } = useTimento();
+  const { stack, actions } = useTimento();
+  const go = useFileNav();
   if (!stack) {
     return <div className="h-24 rounded-[10px] border border-tm-rule bg-tm-panel" aria-busy="true" />;
   }
@@ -127,21 +129,43 @@ export function StackTodayCard() {
 
   return (
     <Card tone={stack.survival ? "amber" : "default"}>
-      <Eyebrow color={stack.survival ? "bg-tm-amber" : "bg-tm-green"}>
-        {stack.survival ? "Stack — floor" : "Stack"}
-      </Eyebrow>
-      <div className="flex items-end justify-between gap-2">
-        <Stat value={`${stack.takenCount}/${stack.dueCount}`} label="doses today" />
-        <Stat value={`${stack.adherence7.pct}%`} label="7-day adherence" />
-        <Stat value={`${stack.cycles.length}`} label="cycles running" />
-      </div>
-      <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
-        {next
-          ? `next up — ${next.timingLabel.toLowerCase()} · ${next.name.toLowerCase()}`
-          : stack.dueCount === 0
-            ? "nothing scheduled today"
-            : "every scheduled dose logged"}
-      </p>
+      {/* The card body is the navigate action; the tick below is the one
+          named-dose action — a button cannot nest a button, so the two live
+          side by side rather than one wrapping the other. */}
+      <button
+        type="button"
+        onClick={() => go("body", "stack")}
+        aria-label="Open Stack"
+        className="block w-full cursor-pointer text-left"
+      >
+        <Eyebrow color={stack.survival ? "bg-tm-amber" : "bg-tm-green"}>
+          {stack.survival ? "Stack — floor" : "Stack"}
+        </Eyebrow>
+        <div className="flex items-end justify-between gap-2">
+          <Stat value={`${stack.takenCount}/${stack.dueCount}`} label="doses today" />
+          <Stat value={`${stack.adherence7.pct}%`} label="7-day adherence" />
+          <Stat value={`${stack.cycles.length}`} label="cycles running" />
+        </div>
+      </button>
+      {next ? (
+        <div className="mt-2 flex items-stretch gap-2">
+          <p className="flex flex-1 items-center font-tm-mono text-[11.5px] text-tm-dim">
+            next up — {next.timingLabel.toLowerCase()} · {next.name.toLowerCase()}
+          </p>
+          <button
+            type="button"
+            onClick={() => actions.logDose(next.itemId, next.timing, true, next.site ?? undefined)}
+            aria-label={`Log ${next.name} as taken`}
+            className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[10px] bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+          >
+            Log it
+          </button>
+        </div>
+      ) : (
+        <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
+          {stack.dueCount === 0 ? "nothing scheduled today" : "every scheduled dose logged"}
+        </p>
+      )}
     </Card>
   );
 }

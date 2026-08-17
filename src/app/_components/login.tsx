@@ -110,7 +110,8 @@ export function Login() {
           <button
             type="submit"
             disabled={busy || passcode.length === 0}
-            className="mt-5 min-h-12 w-full cursor-pointer rounded-[10px] bg-tm-ink py-3.5 font-tm-mono text-[13px] tracking-[0.15em] text-white uppercase transition-transform duration-150 active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100"
+            aria-disabled={busy || passcode.length === 0}
+            className="mt-5 min-h-12 w-full cursor-pointer rounded-[10px] bg-tm-ink py-3.5 font-tm-mono text-[13px] tracking-[0.15em] text-white uppercase transition-transform duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100"
           >
             {busy ? "Checking…" : "Open the file"}
           </button>

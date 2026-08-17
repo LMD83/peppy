@@ -426,9 +426,27 @@ function BlockCard({
         >
           {change && (
             <div className="flex gap-1.5">
-              <NumField label={`${exerciseName(block.exercise)} weight in kilograms`} placeholder="kg" value={kg} onChange={setKg} />
-              <NumField label={`${exerciseName(block.exercise)} reps`} placeholder="reps" value={reps} onChange={setReps} />
-              <NumField label={`${exerciseName(block.exercise)} reps in reserve`} placeholder="rir" value={rir} onChange={setRir} />
+              <NumField
+                label={`${exerciseName(block.exercise)} weight in kilograms`}
+                microlabel="KG"
+                placeholder="kg"
+                value={kg}
+                onChange={setKg}
+              />
+              <NumField
+                label={`${exerciseName(block.exercise)} reps`}
+                microlabel="REPS"
+                placeholder="reps"
+                value={reps}
+                onChange={setReps}
+              />
+              <NumField
+                label={`${exerciseName(block.exercise)} reps in reserve`}
+                microlabel="RIR"
+                placeholder="rir"
+                value={rir}
+                onChange={setRir}
+              />
             </div>
           )}
           <button
@@ -537,26 +555,41 @@ function DetailsShelf({ train }: { train: TrainData }) {
   );
 }
 
+/**
+ * The placeholder ("kg" / "reps" / "rir") is only visible while the field is
+ * empty, and these fields open prefilled with the suggested load — so once a
+ * number is in there, the placeholder is gone and the field is a bare
+ * digit with no name. The microlabel above it says what it is regardless of
+ * whether there is a value inside, in the same 11.5px mono-eyebrow grammar
+ * every other label on this screen uses.
+ */
 function NumField({
   label,
+  microlabel,
   placeholder,
   value,
   onChange,
 }: {
   label: string;
+  microlabel: string;
   placeholder: string;
   value: string;
   onChange: (v: string) => void;
 }) {
   return (
-    <input
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      inputMode="decimal"
-      aria-label={label}
-      placeholder={placeholder}
-      className="min-h-11 w-14 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-2 text-center font-tm-mono text-[13px] focus:border-tm-ink"
-    />
+    <label className="flex flex-col items-center gap-1">
+      <span aria-hidden className="font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-dim uppercase">
+        {microlabel}
+      </span>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        inputMode="decimal"
+        aria-label={label}
+        placeholder={placeholder}
+        className="min-h-11 w-14 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-2 text-center font-tm-mono text-[13px] focus:border-tm-ink"
+      />
+    </label>
   );
 }
 

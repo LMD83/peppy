@@ -47,6 +47,7 @@ export type Fixtures = {
     date: string;
     time: string;
     signal: "tired" | "emotion" | "cue" | "bored" | "hungry";
+    emotionWord?: string;
     afterState?: "relief" | "guilt" | "numb" | "satisfied";
     action?: "rode" | "substitute" | "ate";
   }[];

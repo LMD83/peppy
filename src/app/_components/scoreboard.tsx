@@ -2,8 +2,10 @@
 
 import { useEffect, useId, useState } from "react";
 import Link from "next/link";
+import { withDestination } from "@convex/tm/logicEasy";
 import { cn } from "@/lib/utils";
 import { useTimento } from "../_lib/backend";
+import { useFileNav } from "./file-nav";
 import { fileWidth, TmButton, TmSheet } from "./ui";
 
 export function Scoreboard() {
@@ -11,11 +13,16 @@ export function Scoreboard() {
   const [confirmMode, setConfirmMode] = useState(false);
   const [fileOpen, setFileOpen] = useState(false);
   const modePanelId = useId();
+  const goFileNav = useFileNav();
   if (!today) return null;
 
   const { user, stats, latestKg, deltaKg, dayNumber } = today;
   const survival = user.mode === "survival";
   const title = survival ? `Floor protocol — hold < ${user.ceilingKg}` : user.protocolTitle;
+  // The file's own to-do line, reused rather than reforecast — nextAction is
+  // computed once, in logicEasy.ts, for both profiles; this only adds where
+  // tapping it should go.
+  const next = withDestination(today.nextAction);
 
   // Swatches are aria-hidden decoration, but they still have to be visible:
   // tm-onink replaces tm-dim2 here because dim2 is now a dark-on-light grey.
@@ -59,7 +66,7 @@ export function Scoreboard() {
             survival ? "border-tm-amber-lift bg-tm-amber-lift text-tm-ink" : "border-tm-inkrule bg-tm-ink3 text-tm-onink",
           )}
         >
-          {user.mode} mode ⇄
+          {user.mode} mode ⇄ · change
         </button>
         <dl className="mt-3 flex overflow-hidden rounded-[10px] border border-tm-inkrule bg-tm-ink2">
           {cells.map(([label, value, sub, color], i) => (
@@ -73,6 +80,33 @@ export function Scoreboard() {
             </div>
           ))}
         </dl>
+        {/*
+          The file's own to-do line as a fourth, tappable header element —
+          never an empty hole: when nothing is left, it still names the day
+          in the app's voice instead of going quiet.
+        */}
+        <button
+          type="button"
+          onClick={() => goFileNav(next.tab, next.sub)}
+          /*
+            Named "Next: …", not just the action. The same words appear on the
+            control that performs the work — a bare label here would put two
+            identically-named buttons on one screen, which reads to a screen
+            reader as the same control twice.
+          */
+          aria-label={next.kind === "rest" ? "The day is executed as designed" : `Next: ${next.label}`}
+          className="mt-2 flex min-h-11 w-full cursor-pointer items-center justify-between gap-3 rounded-[10px] border border-tm-inkrule bg-tm-ink2 px-3.5 py-2.5 text-left transition-transform duration-150 active:scale-[0.98]"
+        >
+          <span className="min-w-0">
+            <span className="block font-tm-mono text-[11.5px] tracking-[0.15em] text-tm-onink uppercase">Next</span>
+            <span className="mt-0.5 block truncate text-[15px] font-medium text-white">
+              {next.kind === "rest" ? "EXECUTED AS DESIGNED" : next.label}
+            </span>
+          </span>
+          <span aria-hidden className="shrink-0 font-tm-mono text-[15px] text-tm-onink">
+            →
+          </span>
+        </button>
         {confirmMode && (
           <ModeSwitcher
             id={modePanelId}

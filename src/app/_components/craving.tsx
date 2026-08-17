@@ -40,7 +40,8 @@ export function CravingLogger() {
   const [step, setStep] = useState<Step>("idle");
   const [signal, setSignal] = useState<CravingEntry["signal"] | null>(null);
   const [emotionWord, setEmotionWord] = useState("");
-  const [afterState, setAfterState] = useState<CravingEntry["afterState"]>(undefined);
+  const [entryId, setEntryId] = useState<string | null>(null);
+  const [loggedAt, setLoggedAt] = useState("");
   if (!today) return null;
 
   const logs = today.cravingsToday;
@@ -51,30 +52,51 @@ export function CravingLogger() {
     if (last) actions.undoCraving(last.id);
   };
 
-  const commit = (action?: CravingEntry["action"]) => {
-    if (!signal) return;
-    actions.logCraving({
-      time: localTime(),
-      signal,
-      emotionWord: signal === "emotion" && emotionWord.trim() ? emotionWord.trim() : undefined,
-      afterState,
-      action,
-    });
-    setSignal(null);
-    setEmotionWord("");
-    setAfterState(undefined);
-    if (action === "rode") setStep("breathe");
-    else {
-      setStep("logged");
-      setTimeout(() => setStep("idle"), 2000);
-    }
-  };
-
   const reset = () => {
     setStep("idle");
     setSignal(null);
     setEmotionWord("");
-    setAfterState(undefined);
+    setEntryId(null);
+  };
+
+  /**
+   * The whole P0: the write happens here, on the very first tap — time and
+   * signal, guaranteed saved. Everything past this point only enriches a row
+   * that already exists; walking away mid-flow leaves nothing missing from
+   * the map.
+   */
+  const commitSignal = async (key: CravingEntry["signal"]) => {
+    setSignal(key);
+    const time = localTime();
+    const id = await actions.logCraving({ time, signal: key });
+    if (!id) {
+      setSignal(null);
+      return;
+    }
+    setLoggedAt(time);
+    setEntryId(id);
+    setStep("after");
+  };
+
+  const commitAfter = (after?: CravingEntry["afterState"]) => {
+    if (entryId) {
+      const trimmed = signal === "emotion" && emotionWord.trim() ? emotionWord.trim() : undefined;
+      actions.enrichCraving(entryId, { afterState: after, emotionWord: trimmed });
+    }
+    setStep("action");
+  };
+
+  const commitAction = (action?: CravingEntry["action"]) => {
+    if (entryId && action !== undefined) actions.enrichCraving(entryId, { action });
+    const goBreathe = action === "rode";
+    setSignal(null);
+    setEmotionWord("");
+    setEntryId(null);
+    if (goBreathe) setStep("breathe");
+    else {
+      setStep("logged");
+      setTimeout(() => setStep("idle"), 2000);
+    }
   };
 
   return (
@@ -87,19 +109,19 @@ export function CravingLogger() {
             {SIGNALS.map((s) => (
               <button
                 key={s.key}
-                onClick={() => {
-                  setSignal(s.key);
-                  setStep("after");
-                }}
+                onClick={() => void commitSignal(s.key)}
                 className={cn(CHIP, "border-tm-rule-strong bg-tm-soft")}
               >
                 {s.label}
               </button>
             ))}
           </div>
-          <p className="mt-2.5 font-tm-mono text-[11.5px] leading-relaxed text-tm-dim">
+          <button type="button" onClick={() => setStep("breathe")} className={cn(QUIET, "-ml-3 mt-1")}>
+            Breathe 2 min
+          </button>
+          <p className="mt-1 font-tm-mono text-[11.5px] leading-relaxed text-tm-dim">
             {count > 0 ? `${count} logged today · ` : ""}
-            Two taps per urge. Two weeks builds your trigger map — see Research.
+            One tap logs it. Two weeks builds the full picture — see Trigger map.
           </p>
           {count > 0 && (
             <div className="mt-3 border-t border-tm-grid pt-3">
@@ -135,6 +157,9 @@ export function CravingLogger() {
 
       {step === "after" && signal && (
         <div>
+          <p role="status" className="mb-2 font-tm-mono text-[11.5px] text-tm-green">
+            Logged {loggedAt} — the map has it.
+          </p>
           <p className="mb-2 text-[14px]">
             <b>{SIGNALS.find((s) => s.key === signal)?.label}.</b> And after — what would eating it get you?
           </p>
@@ -151,17 +176,14 @@ export function CravingLogger() {
             {AFTER.map((a) => (
               <button
                 key={a.key}
-                onClick={() => {
-                  setAfterState(a.key);
-                  setStep("action");
-                }}
+                onClick={() => commitAfter(a.key)}
                 className={cn(CHIP, "border-tm-rule-strong bg-tm-soft")}
               >
                 {a.label}
               </button>
             ))}
           </div>
-          <button onClick={() => setStep("action")} className={cn(QUIET, "-ml-3 mt-1")}>
+          <button onClick={() => commitAfter(undefined)} className={cn(QUIET, "-ml-3 mt-1")}>
             skip
           </button>
         </div>
@@ -174,7 +196,7 @@ export function CravingLogger() {
             {ACTIONS.map((a) => (
               <button
                 key={a.key}
-                onClick={() => commit(a.key)}
+                onClick={() => commitAction(a.key)}
                 className={cn(
                   CHIP,
                   a.key === "rode" ? "border-tm-green text-tm-green" : "border-tm-rule-strong bg-tm-soft",
@@ -183,7 +205,7 @@ export function CravingLogger() {
                 {a.label}
               </button>
             ))}
-            <button onClick={() => commit(undefined)} className={QUIET}>
+            <button onClick={() => commitAction(undefined)} className={QUIET}>
               just log it
             </button>
           </div>

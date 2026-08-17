@@ -3,8 +3,6 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import {
-  CARER_NEVER,
-  NEVER_SHARED,
   SCOPE_DESCRIPTIONS,
   SCOPE_LABELS,
   allowedScopesFor,
@@ -129,29 +127,34 @@ export function CrewTab() {
           </div>
 
           {m.link.youSee.length > 0 ? (
-            <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule sm:grid-cols-3">
+            // flex-wrap, not a fixed grid: a fixed grid-cols implies a track for
+            // every cell whether or not an item fills it, and a filler track
+            // paints the container's own bg-tm-rule — a dead grey cell where
+            // the item count doesn't divide evenly. Flex items grow to close
+            // the gap instead, so there is never a cell with nothing in it.
+            <div className="mt-4 flex flex-wrap gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
               {m.streak !== undefined && (
-                <div className="bg-tm-panel px-3 py-3">
+                <div className="min-w-[104px] flex-1 bg-tm-panel px-3 py-3">
                   <Stat value={`${m.streak}`} label="Streak" />
                 </div>
               )}
               {m.adherence7 !== undefined && (
-                <div className="bg-tm-panel px-3 py-3">
+                <div className="min-w-[104px] flex-1 bg-tm-panel px-3 py-3">
                   <Stat value={`${m.adherence7}%`} label="7-day" />
                 </div>
               )}
               {m.todayDone !== undefined && (
-                <div className="bg-tm-panel px-3 py-3">
+                <div className="min-w-[104px] flex-1 bg-tm-panel px-3 py-3">
                   <Stat value={`${m.todayDone}/${m.todayTotal}`} label="Today" />
                 </div>
               )}
               {m.mode === "survival" && m.daysInMode !== undefined && (
-                <div className="bg-tm-panel px-3 py-3">
+                <div className="min-w-[104px] flex-1 bg-tm-panel px-3 py-3">
                   <Stat value={`${m.daysInMode}`} label="Days on floor" />
                 </div>
               )}
               {m.supplyState && m.supplyState !== "none" && (
-                <div className="bg-tm-panel px-3 py-3">
+                <div className="min-w-[104px] flex-1 bg-tm-panel px-3 py-3">
                   <Stat value={SUPPLY_COPY[m.supplyState]} label="Supply" />
                 </div>
               )}
@@ -612,9 +615,6 @@ function InviteForm({
         {chosen.length === 0
           ? `${name} would see nothing yet. Tick at least one.`
           : grantSentence(name, chosen, relationship)}
-      </p>
-      <p className="mt-1 text-[13px] text-tm-dim">
-        {relationship === "carer" ? `Never ${CARER_NEVER}.` : NEVER_SHARED}
       </p>
 
       <button
