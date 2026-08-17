@@ -257,10 +257,21 @@ export function TmSheet({
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  /*
+    A latest-callback ref, so the keydown listener below subscribes on `open`
+    alone and does not tear down and re-attach every time the parent hands us a
+    new `onClose` identity.
+
+    Refreshed in an effect rather than assigned during render: writing a ref
+    while rendering is a side effect in the render phase, which React may run
+    twice or discard, and react-hooks/refs fails the build for it. The listener
+    only ever reads `.current` from an event handler — after commit — so
+    updating it after commit is soon enough.
+  */
   const onCloseRef = useRef(onClose);
   useEffect(() => {
     onCloseRef.current = onClose;
-  }, [onClose]);
+  });
 
   useEffect(() => {
     if (!open) return;

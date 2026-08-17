@@ -199,6 +199,21 @@ async function checkTargetSize(page, screen) {
           if (lr.width >= r.width && lr.height >= r.height) r = lr;
         }
 
+        // A skip link is 1x1 and clipped until it takes focus, at which point it
+        // becomes a full-size control. That is the correct implementation of a
+        // skip link, not a 1px target — so anything too small is focused and
+        // re-measured, and judged at the size it has when it can actually be
+        // activated. Condemning the hidden state would make this gate punish
+        // exactly the accessibility work it exists to encourage.
+        if (r.width + 0.5 < aa || r.height + 0.5 < aa) {
+          const active = document.activeElement;
+          el.focus?.({ preventScroll: true });
+          const focused = el.getBoundingClientRect();
+          if (active instanceof HTMLElement) active.focus?.({ preventScroll: true });
+          else el.blur?.();
+          if (focused.width > r.width || focused.height > r.height) r = focused;
+        }
+
         const name = (el.getAttribute("aria-label") || el.textContent || el.tagName)
           .trim()
           .slice(0, 30);
