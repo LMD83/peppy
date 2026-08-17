@@ -6,7 +6,7 @@ import webpush from "web-push";
 import { internal } from "../_generated/api";
 import { internalAction } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
-import type { SweepBatch } from "./remind";
+import type { SweepBatch, SweepNotification } from "./remind";
 import { emailFromEnv, emailMessage } from "./logicEmail";
 import {
   blockedLog,
@@ -90,6 +90,35 @@ export const sweep = internalAction({
     let sent = 0;
 
     for (const batch of batches) {
+      // The plan only *asks* for Taken hand-offs — sweepPlan is a query and
+      // cannot write. Grants are minted here, one per notification, and only
+      // when a push can actually carry the button: an email has no buttons,
+      // and a credential nothing can use is pure exposure.
+      let notes: SweepNotification[] = batch.notifications;
+      if (keys !== null && batch.targets.length > 0) {
+        const pending: { date: string; doses: { itemId: Id<"tm_protocolItems">; timing: string }[] }[] = [];
+        for (const note of batch.notifications) {
+          if (note.grant !== undefined) pending.push({ date: note.grant.date, doses: note.grant.doses });
+        }
+        if (pending.length > 0) {
+          const tokens: string[] = await ctx.runMutation(internal.tm.remind.mintTakenGrants, {
+            userId: batch.userId,
+            nowMs,
+            grants: pending,
+          });
+          let next = 0;
+          notes = batch.notifications.map((note): SweepNotification => {
+            if (note.grant === undefined) return note;
+            const url = note.grant.url;
+            const token = tokens[next];
+            next += 1;
+            const { grant: _grant, ...wire } = note;
+            // A token that failed to come back drops the button, never the note.
+            return token === undefined ? wire : { ...wire, taken: { url, token } };
+          });
+        }
+      }
+
       if (keys !== null) {
         for (const target of batch.targets) {
           const subscription = {
@@ -101,7 +130,7 @@ export const sweep = internalAction({
           // rather than stacks, so a device never receives a pile — but a device
           // that has just failed is not asked again in the same sweep either.
           let outcome: "ok" | "gone" | "failed" = "ok";
-          for (const note of batch.notifications) {
+          for (const note of notes) {
             try {
               await webpush.sendNotification(subscription, encodePayload(note));
               sent += 1;
@@ -120,7 +149,7 @@ export const sweep = internalAction({
       }
 
       if (mailer !== null && batch.email !== "") {
-        for (const note of batch.notifications) {
+        for (const note of notes) {
           const msg = emailMessage(batch.email, note);
           const { error } = await mailer.emails.send({
             from,

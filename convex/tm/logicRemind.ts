@@ -485,6 +485,17 @@ export function doseSourcePairs(sourceKeys: string[]): { itemId: string; timing:
   return out;
 }
 
+/* ===== the "Taken" grant ===== */
+
+/** A reminder lives at most a day; the grant must not outlive the notification's usefulness. */
+export const GRANT_TTL_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Distinct from the ingest prefix on purpose: a grant is single-use and dies in
+ * a day, and must never be mistakable for the Shortcut's long-lived credential.
+ */
+export const GRANT_TOKEN_PREFIX = "tmg_";
+
 export function sortReminders(rows: Reminder[]): Reminder[] {
   return [...rows].sort((a, b) => minutesOf(a.at) - minutesOf(b.at) || a.key.localeCompare(b.key));
 }

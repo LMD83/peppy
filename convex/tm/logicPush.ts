@@ -27,21 +27,19 @@ export const SWEEP_MINUTES = 30;
 
 /* ===== what goes on the wire ===== */
 
-/** One exact dose the notification named. Never a guess, never a category. */
-export type TakenDose = { itemId: string; timing: string };
-
 /**
  * Everything the worker needs to log a dose from the lock screen: where to
- * POST, the revocable ingest token that authorises it, and the exact doses the
- * notification spoke about. The token is the same credential the phone Shortcut
- * carries — revoking it on the Hands-free tab kills this button too, which is
- * the point of a separate credential.
+ * POST, and the single-use grant token that authorises it. The doses the
+ * notification named live server-side on the grant (tm_takenGrants), keyed by
+ * this token — nothing about them travels. The token spends itself on first
+ * use and expires within a day, so a payload read out of the OS notification
+ * store after the fact — by another same-origin script, or after sign-out —
+ * is worth at most one tap at exactly the doses the notification named, and
+ * usually worth nothing at all.
  */
 export type TakenPost = {
   url: string;
   token: string;
-  date: string;
-  doses: TakenDose[];
 };
 
 /** The shape convex/tm/remind.ts hands to the sweep for one notification. */
@@ -69,9 +67,13 @@ export const MAX_ACTIONS = 2;
 /** Lock-screen buttons truncate hard. One word each. */
 export const MAX_ACTION_TITLE = 12;
 
-/** What a lock screen may offer per kind. A dose can be answered; the rest opened. */
-export function actionsFor(kind: string | undefined): PushAction[] {
-  if (kind === "dose") {
+/**
+ * What a lock screen may offer. The "Taken" button appears only when a grant
+ * hand-off is actually attached — a button that could not log what it names
+ * would either lie or silently log a subset, and both are worse than "Open".
+ */
+export function actionsFor(hasTaken: boolean): PushAction[] {
+  if (hasTaken) {
     return [
       { action: "taken", title: "Taken" },
       { action: "open", title: "Open" },
@@ -83,12 +85,14 @@ export function actionsFor(kind: string | undefined): PushAction[] {
 /**
  * Exactly the keys public/sw.js reads, and no others.
  *
- * Nothing clinical and nothing identifying travels in a push payload: the title
- * and body are already the person's own schedule in their own words, and `tab`
- * is a route. A push payload is encrypted in transit but it lands in an OS
- * notification store, so it carries what a lock screen may show — plus, for a
- * dose, the revocable token and exact subject the "Taken" button needs, which
- * the store holds but never displays.
+ * What actually travels, plainly: the title and body of a dose, script or
+ * recheck reminder name compounds and markers, and land on a lock screen — by
+ * design, because a reminder that will not say what it is about reminds nobody,
+ * and both newer kinds are switchable per user for anyone who wants the lock
+ * screen quieter. `tab` is a route. The only credential is `taken.token`, a
+ * single-use grant scoped server-side to the exact doses this notification
+ * names; the OS store holds it, no lock screen shows it, and it is spent or
+ * expired by the time it could be worth stealing.
  */
 export type PushPayload = {
   title: string;
@@ -100,21 +104,41 @@ export type PushPayload = {
 };
 
 export function notificationPayload(note: Notification): PushPayload {
+  // The POST rides only on a dose — the one kind whose button writes anything.
+  const taken = note.kind === "dose" ? note.taken : undefined;
   const base: PushPayload = {
     title: note.title,
     body: note.body,
     tab: note.tab,
     tag: note.tag,
-    actions: actionsFor(note.kind),
+    actions: actionsFor(taken !== undefined),
   };
-  // The POST rides only on a dose — the one kind whose button writes anything.
-  if (note.kind === "dose" && note.taken !== undefined) return { ...base, taken: note.taken };
+  if (taken !== undefined) return { ...base, taken };
   return base;
 }
 
-/** The bytes actually sent. Separate from the object so a test can read them. */
+/**
+ * Ceiling on one encoded payload. Push services reject near 4 KB, and a
+ * rejected send counts as a delivery failure — three of those in a row retire
+ * the device and silently end its medicine reminders. Comfortably under the
+ * hard limit, with headroom for the encryption overhead.
+ */
+export const PAYLOAD_MAX_BYTES = 3500;
+
+const payloadBytes = new TextEncoder();
+
+/**
+ * The bytes actually sent. Separate from the object so a test can read them.
+ *
+ * An oversized payload sheds the grant hand-off (and with it the "Taken"
+ * button) rather than risk rejection: the tap then opens the app, which is the
+ * honest degradation. The words are never truncated — they are the reminder.
+ */
 export function encodePayload(note: Notification): string {
-  return JSON.stringify(notificationPayload(note));
+  const full = JSON.stringify(notificationPayload(note));
+  if (payloadBytes.encode(full).length <= PAYLOAD_MAX_BYTES) return full;
+  const { taken: _dropped, ...stripped } = note;
+  return JSON.stringify(notificationPayload(stripped));
 }
 
 /* ===== what a failure means ===== */

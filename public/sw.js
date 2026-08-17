@@ -16,7 +16,7 @@
 
 /* Bump on every behavioural change. The version is visible on the Reminders tab
    so "which worker is actually running" is answerable without DevTools. */
-const SW_VERSION = "timento-sw-2";
+const SW_VERSION = "timento-sw-3";
 
 const DEFAULT_TITLE = "Timento";
 const DEFAULT_BODY = "A reminder from your file.";
@@ -59,10 +59,20 @@ function parsePayload(event) {
   }
 }
 
-/* Buttons, where the platform draws them. Chromium caps a notification at
-   Notification.maxActions (two on Android); iOS Safari draws none and maxActions
-   is 0, so the slice leaves nothing — which is correct, because on iOS the tap
-   itself is the whole interface and the deep link below carries it. */
+/* How many buttons this platform will actually draw. Chromium caps at
+   Notification.maxActions (two on Android); iOS Safari draws none and reports 0.
+   A platform that will not say (Firefox, older Safari) gets 0, not 2: those
+   platforms draw no buttons anyway, and the safe direction for an unknown is
+   to withhold the credential, never to store one nothing can spend. */
+function platformMaxActions() {
+  return typeof Notification !== "undefined" && typeof Notification.maxActions === "number"
+    ? Notification.maxActions
+    : 0;
+}
+
+/* Buttons, where the platform draws them. On iOS the slice leaves nothing —
+   which is correct, because there the tap itself is the whole interface and
+   the deep link below carries it. */
 function cleanActions(raw) {
   if (!Array.isArray(raw)) return [];
   const out = [];
@@ -71,29 +81,27 @@ function cleanActions(raw) {
       out.push({ action: a.action, title: a.title });
     }
   }
-  const max =
-    typeof Notification !== "undefined" && typeof Notification.maxActions === "number"
-      ? Notification.maxActions
-      : 2;
-  return out.slice(0, Math.min(2, max));
+  return out.slice(0, Math.min(2, platformMaxActions()));
 }
 
-/* The "Taken" hand-off: only a fully-formed one is kept. A half-formed one is
-   dropped so the button degrades to opening the app, never to a wrong write. */
+/* The "Taken" hand-off: a single-use grant token, and the exact ingest endpoint
+   it may be posted to — nothing else. The URL must parse, be https:, with the
+   path exactly /ingest/dose-taken; anything off-shape drops the WHOLE hand-off,
+   atomically, so the button degrades to opening the app — never to a partial
+   acceptance. The shape check is belt and braces, not the security boundary:
+   forging a payload at all requires the subscription's own encryption keys,
+   which never leave the server. */
 function cleanTaken(raw) {
   if (!raw || typeof raw !== "object") return null;
-  if (typeof raw.url !== "string" || typeof raw.token !== "string" || typeof raw.date !== "string") {
+  if (typeof raw.url !== "string" || typeof raw.token !== "string" || raw.token === "") return null;
+  let url;
+  try {
+    url = new URL(raw.url);
+  } catch (_err) {
     return null;
   }
-  if (!Array.isArray(raw.doses) || raw.doses.length === 0) return null;
-  const doses = [];
-  for (const d of raw.doses) {
-    if (d && typeof d.itemId === "string" && typeof d.timing === "string") {
-      doses.push({ itemId: d.itemId, timing: d.timing });
-    }
-  }
-  if (doses.length === 0) return null;
-  return { url: raw.url, token: raw.token, date: raw.date, doses };
+  if (url.protocol !== "https:" || url.pathname !== "/ingest/dose-taken") return null;
+  return { url: url.href, token: raw.token };
 }
 
 self.addEventListener("push", (event) => {
@@ -108,11 +116,12 @@ self.addEventListener("push", (event) => {
      whole slice is trying to avoid; the server throttles, and so does this. */
   const tag = typeof payload.tag === "string" && payload.tag !== "" ? payload.tag : `timento-${tab}`;
 
-  const taken = cleanTaken(payload.taken);
-  /* Nothing clinical, nothing identifying — the payload is already the person's
-     own words back at them. This carries the route, and for a dose the revocable
-     token and exact subject the "Taken" button posts. The OS stores it; no lock
-     screen shows it. */
+  /* A platform that draws no buttons (iOS: maxActions is 0) gets no credential
+     either — a token stored where no button can spend it is pure exposure, not
+     a feature. Elsewhere, the stored data carries the route and, for a dose,
+     the single-use grant the "Taken" button posts. The OS stores it; no lock
+     screen shows it; one tap or one day and it is dead regardless. */
+  const taken = platformMaxActions() > 0 ? cleanTaken(payload.taken) : null;
   const data = taken
     ? { tab, url: `/?tab=${encodeURIComponent(tab)}`, version: SW_VERSION, taken }
     : { tab, url: `/?tab=${encodeURIComponent(tab)}`, version: SW_VERSION };
@@ -164,29 +173,37 @@ self.addEventListener("notificationclick", (event) => {
   const data = event.notification.data || {};
 
   /* "Taken" logs the exact doses the notification named, without opening the
-     app: one POST, authorised by the same revocable token the phone Shortcut
-     carries. Anything short of a confirmed write falls back to opening the
-     right screen — a tap must never be silently lost. */
-  if (event.action === "taken" && data.taken) {
+     app: one POST of the single-use grant, whose doses live server-side. The
+     write is confirmed, not assumed — anything short of ok with wrote > 0 (a
+     network error, a spent or expired grant, a dose the file no longer holds)
+     falls back to opening the right screen. A tap must never be silently lost,
+     and a second tap of the same notification lands in the app by design. */
+  if (event.action === "taken") {
+    if (!data.taken) {
+      /* The button fired but the hand-off never travelled (stripped for size,
+         or the payload was off-shape). The app is the honest destination. */
+      event.waitUntil(focusOrOpen(data));
+      return;
+    }
     event.waitUntil(
       fetch(data.taken.url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          token: data.taken.token,
-          date: data.taken.date,
-          doses: data.taken.doses,
-        }),
+        body: JSON.stringify({ token: data.taken.token }),
       })
-        .then((res) => (res.ok ? undefined : focusOrOpen(data)))
+        .then((res) => (res.ok ? res.json() : null))
+        .then((reply) =>
+          reply && reply.ok === true && typeof reply.wrote === "number" && reply.wrote > 0
+            ? undefined
+            : focusOrOpen(data),
+        )
         .catch(() => focusOrOpen(data)),
     );
     return;
   }
 
-  /* Everything else — the plain tap, "open", and "taken" on a payload that
-     carried no way to post (iOS never even shows the button) — lands on the
-     screen the reminder was about. */
+  /* Everything else — the plain tap and "open" — lands on the screen the
+     reminder was about. */
   event.waitUntil(focusOrOpen(data));
 });
 

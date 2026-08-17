@@ -156,6 +156,25 @@ export default defineSchema({
     .index("by_token", ["token"])
     .index("by_userId", ["userId"]),
 
+  /**
+   * Single-use, short-lived credential behind one notification's "Taken"
+   * button. A push payload lands in the OS notification store, where any
+   * same-origin script can read it and where it survives sign-out — so it
+   * carries this, never the long-lived ingest token. The doses live here,
+   * server-side; the payload holds only the opaque token.
+   */
+  tm_takenGrants: defineTable({
+    userId: v.id("tm_users"),
+    token: v.string(),
+    date: v.string(),
+    doses: v.array(v.object({ itemId: v.id("tm_protocolItems"), timing: v.string() })),
+    expiresAt: v.number(),
+    /** Set on first spend. A grant with this stamp answers 401, not a write. */
+    usedAt: v.optional(v.number()),
+  })
+    .index("by_token", ["token"])
+    .index("by_userId", ["userId"]),
+
   /* ===== Reminders — the promise the app has been making without a way to keep it ===== */
 
   tm_pushSubscriptions: defineTable({

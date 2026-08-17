@@ -4,6 +4,7 @@ import { join } from "node:path";
 import {
   MAX_ACTIONS,
   MAX_ACTION_TITLE,
+  PAYLOAD_MAX_BYTES,
   actionsFor,
   blockedLog,
   blockedReport,
@@ -37,9 +38,7 @@ function note(over: Partial<Notification> = {}): Notification {
 function takenPost(): TakenPost {
   return {
     url: "https://x.convex.site/ingest/dose-taken",
-    token: "tmk_secret",
-    date: "2026-08-16",
-    doses: [{ itemId: "item1", timing: "am" }],
+    token: "tmg_single-use-grant",
   };
 }
 
@@ -48,12 +47,20 @@ function takenPost(): TakenPost {
 describe("the payload matches what public/sw.js actually reads", () => {
   const sw = readFileSync(join(process.cwd(), "public", "sw.js"), "utf8");
 
-  it("sends exactly the five keys the worker looks for", () => {
+  it("sends exactly the five keys the worker looks for, six with a grant", () => {
     expect(Object.keys(notificationPayload(note())).sort()).toEqual([
       "actions",
       "body",
       "tab",
       "tag",
+      "title",
+    ]);
+    expect(Object.keys(notificationPayload(note({ taken: takenPost() }))).sort()).toEqual([
+      "actions",
+      "body",
+      "tab",
+      "tag",
+      "taken",
       "title",
     ]);
   });
@@ -67,6 +74,19 @@ describe("the payload matches what public/sw.js actually reads", () => {
     }
   });
 
+  it("carries the grant as a bare { url, token } — no date, no doses", () => {
+    // The doses the notification named live server-side on the grant row. The
+    // payload holding them would let a stolen token be replayed with meaning;
+    // holding only an opaque single-use token, it is worth at most one tap at
+    // exactly what the server already decided.
+    const payload = notificationPayload(note({ taken: takenPost() }));
+    expect(payload.taken).toEqual({
+      url: "https://x.convex.site/ingest/dose-taken",
+      token: "tmg_single-use-grant",
+    });
+    expect(Object.keys(payload.taken ?? {}).sort()).toEqual(["token", "url"]);
+  });
+
   it("carries no key the worker would ignore", () => {
     // `key` is the sweep's own idempotency handle and has no business on a lock
     // screen; it stays server-side. `kind` collapses into the actions list.
@@ -76,7 +96,7 @@ describe("the payload matches what public/sw.js actually reads", () => {
   });
 
   it("encodes to JSON the worker can parse", () => {
-    const parsed: unknown = JSON.parse(encodePayload(note()));
+    const parsed: unknown = JSON.parse(encodePayload(note({ taken: takenPost() })));
     expect(parsed).toEqual({
       title: "Time for your morning dose",
       body: "Metformin. Tap it off when it's done.",
@@ -86,6 +106,7 @@ describe("the payload matches what public/sw.js actually reads", () => {
         { action: "taken", title: "Taken" },
         { action: "open", title: "Open" },
       ],
+      taken: takenPost(),
     });
   });
 
@@ -100,25 +121,27 @@ describe("the payload matches what public/sw.js actually reads", () => {
 describe("what a lock screen may offer", () => {
   const sw = readFileSync(join(process.cwd(), "public", "sw.js"), "utf8");
 
-  it("gives a dose an answer and an open, and everything else an open only", () => {
-    expect(actionsFor("dose").map((a) => a.action)).toEqual(["taken", "open"]);
-    for (const kind of ["supply", "checkin", "recheck", "script", undefined]) {
-      expect(actionsFor(kind).map((a) => a.action)).toEqual(["open"]);
-    }
+  it("offers Taken only when a grant hand-off is attached", () => {
+    // The button is derived from the presence of the credential, never from the
+    // kind alone: a dose whose grant was withheld (over the cap, no site URL,
+    // stripped for size) gets an honest Open — never a button that would fail
+    // or silently log a subset.
+    expect(actionsFor(true).map((a) => a.action)).toEqual(["taken", "open"]);
+    expect(actionsFor(false).map((a) => a.action)).toEqual(["open"]);
   });
 
   it("never exceeds the two buttons Chromium will actually draw", () => {
     // iOS draws zero and Android draws two; a third button is a button that
     // silently vanishes on every platform there is.
     expect(MAX_ACTIONS).toBe(2);
-    for (const kind of ["dose", "supply", "checkin", "recheck", "script", undefined]) {
-      expect(actionsFor(kind).length).toBeLessThanOrEqual(MAX_ACTIONS);
+    for (const hasTaken of [true, false]) {
+      expect(actionsFor(hasTaken).length).toBeLessThanOrEqual(MAX_ACTIONS);
     }
   });
 
   it("keeps every title short enough for a lock-screen button", () => {
-    for (const kind of ["dose", "supply", "checkin", "recheck", "script", undefined]) {
-      for (const a of actionsFor(kind)) {
+    for (const hasTaken of [true, false]) {
+      for (const a of actionsFor(hasTaken)) {
         expect(a.title.length).toBeGreaterThan(0);
         expect(a.title.length).toBeLessThanOrEqual(MAX_ACTION_TITLE);
       }
@@ -131,23 +154,88 @@ describe("what a lock screen may offer", () => {
     expect(sw).toContain("maxActions");
   });
 
-  it("rides the taken hand-off only on a dose", () => {
+  it("rides the taken hand-off only on a dose, and only when a grant came", () => {
     const dose = notificationPayload(note({ taken: takenPost() }));
     expect(dose.taken).toEqual(takenPost());
-    const supply = notificationPayload(note({ kind: "supply", taken: takenPost() }));
-    expect(supply.taken).toBeUndefined();
+    expect(dose.actions.map((a) => a.action)).toEqual(["taken", "open"]);
+    // A dose without a grant, a non-dose smuggling one in: both get Open only.
     const bare = notificationPayload(note());
     expect(bare.taken).toBeUndefined();
+    expect(bare.actions.map((a) => a.action)).toEqual(["open"]);
+    const supply = notificationPayload(note({ kind: "supply", taken: takenPost() }));
+    expect(supply.taken).toBeUndefined();
+    expect(supply.actions.map((a) => a.action)).toEqual(["open"]);
   });
 
-  it("has the worker POST the hand-off and fall back to opening the app", () => {
-    // The click path: action "taken" fetches the exact doses to the ingest
-    // endpoint, and anything short of res.ok lands on the app instead. A tap
-    // is never silently lost.
+  it("has the worker store no credential where no button can spend it", () => {
+    // MEDIUM-1: on iOS (maxActions 0) the hand-off is dropped before it ever
+    // reaches the notification's stored data — a token nothing can use is pure
+    // exposure sitting in the OS store.
+    expect(sw).toContain("platformMaxActions() > 0 ? cleanTaken(payload.taken) : null");
+  });
+
+  it("has the worker accept only an https ingest URL, atomically", () => {
+    // LOW-1 and MEDIUM-3b: the URL must parse, be https:, with the path exactly
+    // the ingest endpoint, or the WHOLE hand-off is dropped — no partial
+    // acceptance. Forging the url at all requires subscription keys that never
+    // leave the server; this check is belt and braces.
+    expect(sw).toContain('url.protocol !== "https:"');
+    expect(sw).toContain('url.pathname !== "/ingest/dose-taken"');
+  });
+
+  it("withholds the credential when the platform will not say how many buttons it draws", () => {
+    // An unknown maxActions means no buttons on every real platform that omits
+    // it — so the fallback must be 0, never a stored token nothing can spend.
+    expect(sw).toMatch(/typeof Notification\.maxActions === "number"\s*\n?\s*\? Notification\.maxActions\s*\n?\s*: 0/);
+  });
+
+  it("has the worker POST the grant and fall back unless the write is confirmed", () => {
+    // MEDIUM-2: the click path posts `{ token }` and treats anything short of
+    // ok with wrote > 0 — a network error, a 401 on a spent grant, a dose the
+    // file no longer holds — as a tap that must land in the app instead.
     expect(sw).toContain('event.action === "taken"');
     expect(sw).toContain("fetch(data.taken.url");
-    expect(sw).toContain("res.ok ? undefined : focusOrOpen(data)");
+    expect(sw).toContain("JSON.stringify({ token: data.taken.token })");
+    expect(sw).toContain("reply.wrote > 0");
     expect(sw).toContain(".catch(() => focusOrOpen(data))");
+  });
+});
+
+/* ===== the size budget ===== */
+
+describe("an oversized payload sheds the grant, never the words", () => {
+  it("stays under the push service's hard limit", () => {
+    // A rejected send is a delivery failure, and three of those in a row retire
+    // the device — silently ending its medicine reminders. The budget sits
+    // under the ~4 KB rejection line with room for encryption overhead.
+    expect(PAYLOAD_MAX_BYTES).toBeLessThanOrEqual(3500);
+    expect(PAYLOAD_MAX_BYTES).toBeGreaterThan(1000);
+  });
+
+  it("keeps the grant on a normal-sized payload", () => {
+    const parsed = JSON.parse(encodePayload(note({ taken: takenPost() }))) as {
+      taken?: unknown;
+    };
+    expect(parsed.taken).toEqual(takenPost());
+  });
+
+  it("strips the grant and its button when the encoded payload exceeds the budget", () => {
+    const words = "x".repeat(PAYLOAD_MAX_BYTES);
+    const encoded = encodePayload(note({ body: words, taken: takenPost() }));
+    const parsed = JSON.parse(encoded) as {
+      title: string;
+      body: string;
+      actions: { action: string }[];
+      taken?: unknown;
+    };
+    // The hand-off and the Taken button go together — a button with no grant
+    // behind it would be a lie, and a grant with no button is pure exposure.
+    expect(parsed.taken).toBeUndefined();
+    expect(parsed.actions.map((a) => a.action)).toEqual(["open"]);
+    expect(encoded).not.toContain("tmg_");
+    // The words are the reminder; they are never truncated to make room.
+    expect(parsed.body).toBe(words);
+    expect(parsed.title).toBe("Time for your morning dose");
   });
 });
 
@@ -261,6 +349,15 @@ describe("the runtime split is the thing that makes delivery possible", () => {
     expect(push).not.toMatch(/\b(?<!internal)(query|mutation)\(\{/);
     // Only the first line counts — both files discuss the pragma in prose.
     expect(remind.startsWith('"use node"')).toBe(false);
+  });
+
+  it("mints grants through the mutation, because sweepPlan is a query", () => {
+    // A query cannot write. The plan asks for hand-offs; the action mints them
+    // through internal.tm.remind.mintTakenGrants and splices the tokens in.
+    // MEDIUM-4: the reminder slice no longer reads or stamps the long-lived
+    // ingest tokens at all — that credential is the Shortcut's alone now.
+    expect(push).toContain("internal.tm.remind.mintTakenGrants");
+    expect(remind).not.toContain("tm_ingestTokens");
   });
 
   it("does not put the pragma on crons.ts, which is analysed in the default runtime", () => {

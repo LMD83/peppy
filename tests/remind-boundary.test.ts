@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { convexTest } from "convex-test";
 import { api, internal } from "../convex/_generated/api";
+import type { Id } from "../convex/_generated/dataModel";
+import { GRANT_TTL_MS } from "../convex/tm/logicRemind";
 import schema from "../convex/schema";
 
 /**
@@ -347,137 +349,210 @@ describe("what the deployment can honestly promise", () => {
   });
 });
 
-describe("the Taken button logs the exact dose it names, and nothing else", () => {
-  /** Mint an ingest token for a user and hand back its opaque value. */
-  async function mintToken(t: Harness, session: string, slug: string) {
-    await t.mutation(api.tm.ingest.createToken, { token: session, date: TODAY, label: "Phone" });
+describe("the Taken grant logs the exact doses it names, once, and nothing else", () => {
+  async function userIdOf(t: Harness, slug: string): Promise<Id<"tm_users">> {
     return await t.run(async (ctx) => {
       const users = await ctx.db.query("tm_users").take(10);
-      const owner = users.find((u) => u.slug === slug)!;
-      const rows = await ctx.db
-        .query("tm_ingestTokens")
-        .withIndex("by_userId", (q) => q.eq("userId", owner._id))
-        .take(10);
-      return rows[0]!.token;
+      const owner = users.find((u) => u.slug === slug);
+      if (owner === undefined) throw new Error(`no user ${slug}`);
+      return owner._id;
     });
   }
 
   /** An item of the named user carrying the given timing, straight off the file. */
-  async function itemWithTiming(t: Harness, slug: string, timing: string) {
+  async function itemWithTiming(
+    t: Harness,
+    slug: string,
+    timing: string,
+  ): Promise<Id<"tm_protocolItems">> {
     return await t.run(async (ctx) => {
       const users = await ctx.db.query("tm_users").take(10);
-      const owner = users.find((u) => u.slug === slug)!;
+      const owner = users.find((u) => u.slug === slug);
+      if (owner === undefined) throw new Error(`no user ${slug}`);
       const items = await ctx.db
         .query("tm_protocolItems")
         .withIndex("by_userId", (q) => q.eq("userId", owner._id))
         .take(50);
-      const item = items.find((i) => i.active && i.timings.includes(timing))!;
-      return { itemId: item._id as string, ownerId: owner._id };
+      const item = items.find((i) => i.active && i.timings.includes(timing));
+      if (item === undefined) throw new Error(`no active ${timing} item for ${slug}`);
+      return item._id;
     });
   }
 
-  async function doseLogsFor(t: Harness, itemId: string, timing: string) {
+  /** Mint one grant the way push.sweep does, and hand back its opaque token. */
+  async function mintGrant(
+    t: Harness,
+    slug: string,
+    doses: { itemId: Id<"tm_protocolItems">; timing: string }[],
+    nowMs = Date.now(),
+  ): Promise<string> {
+    const userId = await userIdOf(t, slug);
+    const tokens = await t.mutation(internal.tm.remind.mintTakenGrants, {
+      userId,
+      nowMs,
+      grants: [{ date: TODAY, doses }],
+    });
+    const token = tokens[0];
+    if (token === undefined) throw new Error("no grant minted");
+    return token;
+  }
+
+  async function doseLogsFor(t: Harness, itemId: Id<"tm_protocolItems">, timing: string) {
     return await t.run(async (ctx) => {
       const rows = await ctx.db.query("tm_doseLogs").take(500);
-      return rows.filter((r) => (r.itemId as string) === itemId && r.date === TODAY && r.timing === timing);
+      return rows.filter((r) => r.itemId === itemId && r.date === TODAY && r.timing === timing);
     });
   }
 
-  it("writes the named dose once, and a second tap changes nothing", async () => {
-    const { t, liam } = await seeded();
-    const ingestToken = await mintToken(t, liam, "liam");
+  it("writes the named doses once; the same grant spent again gets nothing", async () => {
+    const { t } = await seeded();
     // Today's evening doses are unlogged in the fixtures — exactly the case a
     // lock-screen answer exists for.
-    const { itemId } = await itemWithTiming(t, "liam", "pm");
-    const args = { ingestToken, date: TODAY, doses: [{ itemId, timing: "pm" }] };
+    const itemId = await itemWithTiming(t, "liam", "pm");
+    const grant = await mintGrant(t, "liam", [{ itemId, timing: "pm" }]);
 
-    const first = await t.mutation(internal.tm.remind.doseTaken, args);
+    const first = await t.mutation(internal.tm.remind.doseTaken, { grantToken: grant });
     expect(first).toEqual({ ok: true, wrote: 1 });
     const logs = await doseLogsFor(t, itemId, "pm");
     expect(logs).toHaveLength(1);
     expect(logs[0]?.taken).toBe(true);
 
-    const second = await t.mutation(internal.tm.remind.doseTaken, args);
-    expect(second.ok).toBe(true);
+    // Single-use is the security property: a replayed token — a retried POST,
+    // a same-origin script reading the notification store after the fact — is
+    // refused outright, and the worker then opens the app instead.
+    const second = await t.mutation(internal.tm.remind.doseTaken, { grantToken: grant });
+    expect(second).toEqual({ ok: false, wrote: 0 });
     expect(await doseLogsFor(t, itemId, "pm")).toHaveLength(1);
   });
 
   it("refuses a timing the item does not carry — never a guess", async () => {
-    const { t, liam } = await seeded();
-    const ingestToken = await mintToken(t, liam, "liam");
-    const { itemId } = await itemWithTiming(t, "liam", "pm");
-    const res = await t.mutation(internal.tm.remind.doseTaken, {
-      ingestToken,
-      date: TODAY,
-      doses: [{ itemId, timing: "am" }],
-    });
+    const { t } = await seeded();
+    const itemId = await itemWithTiming(t, "liam", "pm");
+    const grant = await mintGrant(t, "liam", [{ itemId, timing: "am" }]);
+    const res = await t.mutation(internal.tm.remind.doseTaken, { grantToken: grant });
     expect(res).toEqual({ ok: true, wrote: 0 });
     expect(await doseLogsFor(t, itemId, "am")).toHaveLength(0);
   });
 
-  it("gives a forged or revoked token nothing", async () => {
-    const { t, liam } = await seeded();
-    const { itemId } = await itemWithTiming(t, "liam", "pm");
-    const forged = await t.mutation(internal.tm.remind.doseTaken, {
-      ingestToken: "tmk_forged",
-      date: TODAY,
-      doses: [{ itemId, timing: "pm" }],
-    });
+  it("gives a forged or expired grant nothing", async () => {
+    const { t } = await seeded();
+    const itemId = await itemWithTiming(t, "liam", "pm");
+
+    const forged = await t.mutation(internal.tm.remind.doseTaken, { grantToken: "tmg_forged" });
     expect(forged).toEqual({ ok: false, wrote: 0 });
 
-    const ingestToken = await mintToken(t, liam, "liam");
-    await t.run(async (ctx) => {
-      const rows = await ctx.db.query("tm_ingestTokens").take(10);
-      await ctx.db.patch("tm_ingestTokens", rows[0]!._id, { revoked: true });
-    });
-    const revoked = await t.mutation(internal.tm.remind.doseTaken, {
-      ingestToken,
-      date: TODAY,
-      doses: [{ itemId, timing: "pm" }],
-    });
-    expect(revoked).toEqual({ ok: false, wrote: 0 });
+    // A grant minted more than a TTL ago has outlived its notification's
+    // usefulness — whoever presents it now is not answering a reminder.
+    const stale = await mintGrant(
+      t,
+      "liam",
+      [{ itemId, timing: "pm" }],
+      Date.now() - GRANT_TTL_MS - 60_000,
+    );
+    const expired = await t.mutation(internal.tm.remind.doseTaken, { grantToken: stale });
+    expect(expired).toEqual({ ok: false, wrote: 0 });
     expect(await doseLogsFor(t, itemId, "pm")).toHaveLength(0);
   });
 
-  it("cannot touch another user's file, whatever ids it is handed", async () => {
-    const { t, liam } = await seeded();
-    const ingestToken = await mintToken(t, liam, "liam");
-    // Artur's levothyroxine is a morning med. Liam's token must not reach it.
-    const { itemId } = await itemWithTiming(t, "artur", "am");
-    const res = await t.mutation(internal.tm.remind.doseTaken, {
-      ingestToken,
-      date: TODAY,
-      doses: [{ itemId, timing: "am" }],
-    });
+  it("cannot touch another user's file, whatever ids the grant was handed", async () => {
+    const { t } = await seeded();
+    // Artur's levothyroxine is a morning med. A grant on Liam's file must not
+    // reach it, even if the pair somehow named it.
+    const itemId = await itemWithTiming(t, "artur", "am");
+    const grant = await mintGrant(t, "liam", [{ itemId, timing: "am" }]);
+    const res = await t.mutation(internal.tm.remind.doseTaken, { grantToken: grant });
     expect(res).toEqual({ ok: true, wrote: 0 });
     expect(await doseLogsFor(t, itemId, "am")).toHaveLength(0);
   });
 
-  it("answers the worker over HTTP: 400 for junk, 401 for a dead token, 200 for a live one", async () => {
-    const { t, liam } = await seeded();
-    const ingestToken = await mintToken(t, liam, "liam");
-    const { itemId } = await itemWithTiming(t, "liam", "pm");
+  it("writes nothing for an item that was paused or deleted after minting", async () => {
+    const { t } = await seeded();
+    const itemId = await itemWithTiming(t, "liam", "pm");
+
+    // Paused between the notification and the tap: the write is skipped, the
+    // response says so, and the worker's wrote-0 check opens the app instead.
+    const pausedGrant = await mintGrant(t, "liam", [{ itemId, timing: "pm" }]);
+    await t.run(async (ctx) => {
+      await ctx.db.patch("tm_protocolItems", itemId, { active: false });
+    });
+    const paused = await t.fetch("/ingest/dose-taken", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: pausedGrant }),
+    });
+    expect(paused.status).toBe(200);
+    expect((await paused.json()) as { ok: boolean; wrote: number }).toEqual({ ok: true, wrote: 0 });
+    expect(await doseLogsFor(t, itemId, "pm")).toHaveLength(0);
+
+    // Deleted outright: the dangling id resolves to nothing and nothing lands.
+    const deletedGrant = await mintGrant(t, "liam", [{ itemId, timing: "pm" }]);
+    await t.run(async (ctx) => {
+      await ctx.db.delete("tm_protocolItems", itemId);
+    });
+    const deleted = await t.mutation(internal.tm.remind.doseTaken, { grantToken: deletedGrant });
+    expect(deleted).toEqual({ ok: true, wrote: 0 });
+  });
+
+  it("cleans up spent and expired grants on the next mint", async () => {
+    const { t } = await seeded();
+    const itemId = await itemWithTiming(t, "liam", "pm");
+
+    const spent = await mintGrant(t, "liam", [{ itemId, timing: "pm" }]);
+    await t.mutation(internal.tm.remind.doseTaken, { grantToken: spent });
+    await mintGrant(t, "liam", [{ itemId, timing: "pm" }], Date.now() - GRANT_TTL_MS - 60_000);
+
+    // The next mint sweeps both out: a spent grant is evidence, not inventory,
+    // and an expired one is a credential nobody may ever present again.
+    await mintGrant(t, "liam", [{ itemId, timing: "pm" }]);
+    const remaining = await t.run(async (ctx) => await ctx.db.query("tm_takenGrants").take(10));
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0]?.usedAt).toBeUndefined();
+  });
+
+  it("answers the worker over HTTP: 400 for junk, 401 for a dead grant, 200 for a live one", async () => {
+    const { t } = await seeded();
+    const itemId = await itemWithTiming(t, "liam", "pm");
     const post = (body: unknown) =>
       t.fetch("/ingest/dose-taken", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: typeof body === "string" ? body : JSON.stringify(body),
       });
 
-    const junk = await post({ token: ingestToken, date: TODAY, doses: [] });
-    expect(junk.status).toBe(400);
+    // Every malformed shape is a 400 before a database is touched — a body
+    // that is not JSON, not an object, missing its token, or inflated past
+    // the raw-size cap all die at the door, not in the mutation.
+    const notJson = await post("not json at all");
+    expect(notJson.status).toBe(400);
+    const notObject = await post(JSON.stringify("just a string"));
+    expect(notObject.status).toBe(400);
+    const noToken = await post({});
+    expect(noToken.status).toBe(400);
+    const oversize = await post({ token: "tmg_x", padding: "y".repeat(4000) });
+    expect(oversize.status).toBe(400);
 
-    const dead = await post({ token: "tmk_forged", date: TODAY, doses: [{ itemId, timing: "pm" }] });
+    // The browser's preflight gets its 204 and the CORS grant, nothing more.
+    const preflight = await t.fetch("/ingest/dose-taken", { method: "OPTIONS" });
+    expect(preflight.status).toBe(204);
+    expect(preflight.headers.get("Access-Control-Allow-Origin")).toBe("*");
+
+    const dead = await post({ token: "tmg_forged" });
     expect(dead.status).toBe(401);
 
-    const live = await post({ token: ingestToken, date: TODAY, doses: [{ itemId, timing: "pm" }] });
+    const grant = await mintGrant(t, "liam", [{ itemId, timing: "pm" }]);
+    const live = await post({ token: grant });
     expect(live.status).toBe(200);
     const parsed = (await live.json()) as { ok: boolean; wrote: number };
     expect(parsed).toEqual({ ok: true, wrote: 1 });
     expect(await doseLogsFor(t, itemId, "pm")).toHaveLength(1);
+
+    // Single-use over the wire too: the same token again is a 401, which the
+    // worker answers by opening the app — the intended second-tap experience.
+    const replay = await post({ token: grant });
+    expect(replay.status).toBe(401);
   });
 
-  it("hands the sweep a Taken hand-off only for doses, and only with a live token", async () => {
+  it("plans grant hand-offs for dose notifications, and no payload carries an ingest token", async () => {
     const { t, liam } = await seeded();
     await t.mutation(api.tm.remind.setPrefs, { token: liam, enabled: true, maxPerDay: 8 });
     await t.mutation(api.tm.remind.saveSubscription, {
@@ -488,7 +563,13 @@ describe("the Taken button logs the exact dose it names, and nothing else", () =
       auth: "b",
       label: "Phone",
     });
-    const ingestToken = await mintToken(t, liam, "liam");
+    // A live ingest token on the file, minted the way the tab mints one. The
+    // proof of MEDIUM-4 is that the sweep now leaves it entirely alone.
+    await t.mutation(api.tm.ingest.createToken, { token: liam, date: TODAY, label: "Phone" });
+    const ingestTokens = await t.run(async (ctx) =>
+      (await ctx.db.query("tm_ingestTokens").take(10)).map((r) => r.token),
+    );
+    expect(ingestTokens.length).toBeGreaterThan(0);
 
     const previous = process.env.CONVEX_SITE_URL;
     process.env.CONVEX_SITE_URL = "https://x.convex.site";
@@ -503,13 +584,95 @@ describe("the Taken button logs the exact dose it names, and nothing else", () =
       const doseNotes = batches[0]!.notifications.filter((n) => n.kind === "dose");
       expect(doseNotes.length).toBeGreaterThan(0);
       for (const note of doseNotes) {
-        expect(note.taken?.url).toBe("https://x.convex.site/ingest/dose-taken");
-        expect(note.taken?.token).toBe(ingestToken);
-        expect(note.taken?.doses.length).toBeGreaterThan(0);
-        for (const d of note.taken?.doses ?? []) expect(d.timing).toBe("pm");
+        expect(note.grant?.url).toBe("https://x.convex.site/ingest/dose-taken");
+        expect(note.grant?.date).toBe(TODAY);
+        expect(note.grant?.doses.length).toBeGreaterThan(0);
+        for (const d of note.grant?.doses ?? []) expect(d.timing).toBe("pm");
+        // The plan itself carries no credential — a query cannot mint one.
+        expect(note.taken).toBeUndefined();
       }
-      // Nothing that is not a dose ever carries the hand-off.
+      // Nothing that is not a dose ever carries a hand-off.
       for (const note of batches[0]!.notifications.filter((n) => n.kind !== "dose")) {
+        expect(note.grant).toBeUndefined();
+        expect(note.taken).toBeUndefined();
+      }
+      // The whole batch, serialised: no long-lived credential anywhere in it.
+      const serialised = JSON.stringify(batches);
+      expect(serialised).not.toContain("tmnt_");
+      for (const token of ingestTokens) expect(serialised).not.toContain(token);
+
+      // And the hand-off works end to end: mint what the plan asked for, post
+      // it the way the worker would, watch the named doses land.
+      const first = doseNotes[0]!;
+      const tokens = await t.mutation(internal.tm.remind.mintTakenGrants, {
+        userId: await userIdOf(t, "liam"),
+        nowMs: Date.now(),
+        grants: [{ date: first.grant!.date, doses: first.grant!.doses }],
+      });
+      expect(tokens[0]).toMatch(/^tmg_/);
+      const res = await t.fetch("/ingest/dose-taken", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: tokens[0] }),
+      });
+      expect(res.status).toBe(200);
+      const parsed = (await res.json()) as { ok: boolean; wrote: number };
+      expect(parsed.ok).toBe(true);
+      expect(parsed.wrote).toBeGreaterThan(0);
+    } finally {
+      if (previous === undefined) delete process.env.CONVEX_SITE_URL;
+      else process.env.CONVEX_SITE_URL = previous;
+    }
+  });
+
+  it("hands no grant to a coalesced pile past the cap — never a button that logs a subset", async () => {
+    const { t, liam } = await seeded();
+    await t.mutation(api.tm.remind.setPrefs, { token: liam, enabled: true, maxPerDay: 8 });
+    await t.mutation(api.tm.remind.saveSubscription, {
+      token: liam,
+      date: TODAY,
+      endpoint: "https://push.example/ep",
+      p256dh: "a",
+      auth: "b",
+      label: "Phone",
+    });
+    // Inflate the evening past MAX_TAKEN_DOSES exact pairs. The coalesced
+    // notification still goes out — the words still matter — but a Taken
+    // button that could only log the first twenty would be a quiet lie.
+    await t.run(async (ctx) => {
+      const users = await ctx.db.query("tm_users").take(10);
+      const owner = users.find((u) => u.slug === "liam");
+      if (owner === undefined) throw new Error("no user liam");
+      for (let i = 0; i < 21; i++) {
+        await ctx.db.insert("tm_protocolItems", {
+          userId: owner._id,
+          name: `Trial compound ${i + 1}`,
+          kind: "supplement",
+          dose: 1,
+          unit: "capsule",
+          route: "oral",
+          timings: ["pm"],
+          scheduleType: "daily",
+          startDate: "2026-01-01",
+          withFood: false,
+          evidence: "limited",
+          cautions: [],
+          active: true,
+        });
+      }
+    });
+
+    const previous = process.env.CONVEX_SITE_URL;
+    process.env.CONVEX_SITE_URL = "https://x.convex.site";
+    try {
+      const batches = await t.query(internal.tm.remind.sweepPlan, {
+        nowMs: Date.parse("2026-08-13T17:30:00Z"),
+        windowMinutes: 30,
+      });
+      const doseNotes = batches[0]!.notifications.filter((n) => n.kind === "dose");
+      expect(doseNotes.length).toBeGreaterThan(0);
+      for (const note of doseNotes) {
+        expect(note.grant).toBeUndefined();
         expect(note.taken).toBeUndefined();
       }
     } finally {
@@ -518,7 +681,7 @@ describe("the Taken button logs the exact dose it names, and nothing else", () =
     }
   });
 
-  it("sends no hand-off at all when the file holds no ingest token", async () => {
+  it("plans no hand-off at all when no site URL is configured", async () => {
     const { t, liam } = await seeded();
     await t.mutation(api.tm.remind.setPrefs, { token: liam, enabled: true, maxPerDay: 8 });
     await t.mutation(api.tm.remind.saveSubscription, {
@@ -530,20 +693,20 @@ describe("the Taken button logs the exact dose it names, and nothing else", () =
       label: "Phone",
     });
     const previous = process.env.CONVEX_SITE_URL;
-    process.env.CONVEX_SITE_URL = "https://x.convex.site";
+    delete process.env.CONVEX_SITE_URL;
     try {
       const batches = await t.query(internal.tm.remind.sweepPlan, {
         nowMs: Date.parse("2026-08-13T17:30:00Z"),
         windowMinutes: 30,
       });
       for (const note of batches[0]?.notifications ?? []) {
-        // No credential on the file means no hand-off — the button then simply
-        // opens the app, which is the honest degradation.
+        // Nowhere for the button to post means no grant is ever minted — the
+        // button then simply opens the app, which is the honest degradation.
+        expect(note.grant).toBeUndefined();
         expect(note.taken).toBeUndefined();
       }
     } finally {
-      if (previous === undefined) delete process.env.CONVEX_SITE_URL;
-      else process.env.CONVEX_SITE_URL = previous;
+      if (previous !== undefined) process.env.CONVEX_SITE_URL = previous;
     }
   });
 });
