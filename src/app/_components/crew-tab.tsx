@@ -129,33 +129,23 @@ export function CrewTab() {
           </div>
 
           {m.link.youSee.length > 0 ? (
-            <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule sm:grid-cols-3">
+            <dl className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule sm:grid-cols-3">
               {m.streak !== undefined && (
-                <div className="bg-tm-panel px-3 py-3">
-                  <Stat value={`${m.streak}`} label="Streak" />
-                </div>
+                <Stat className="bg-tm-panel px-3 py-3" value={`${m.streak}`} label="Streak"/>
               )}
               {m.adherence7 !== undefined && (
-                <div className="bg-tm-panel px-3 py-3">
-                  <Stat value={`${m.adherence7}%`} label="7-day" />
-                </div>
+                <Stat className="bg-tm-panel px-3 py-3" value={`${m.adherence7}%`} label="7-day"/>
               )}
               {m.todayDone !== undefined && (
-                <div className="bg-tm-panel px-3 py-3">
-                  <Stat value={`${m.todayDone}/${m.todayTotal}`} label="Today" />
-                </div>
+                <Stat className="bg-tm-panel px-3 py-3" value={`${m.todayDone}/${m.todayTotal}`} label="Today"/>
               )}
               {m.mode === "survival" && m.daysInMode !== undefined && (
-                <div className="bg-tm-panel px-3 py-3">
-                  <Stat value={`${m.daysInMode}`} label="Days on floor" />
-                </div>
+                <Stat className="bg-tm-panel px-3 py-3" value={`${m.daysInMode}`} label="Days on floor"/>
               )}
               {m.supplyState && m.supplyState !== "none" && (
-                <div className="bg-tm-panel px-3 py-3">
-                  <Stat value={SUPPLY_COPY[m.supplyState]} label="Supply" />
-                </div>
+                <Stat className="bg-tm-panel px-3 py-3" value={SUPPLY_COPY[m.supplyState]} label="Supply"/>
               )}
-            </div>
+            </dl>
           ) : (
             <p className="mt-3 text-[14px] text-tm-dim">
               {m.name} shares nothing with you. That is their call, and it stays theirs.

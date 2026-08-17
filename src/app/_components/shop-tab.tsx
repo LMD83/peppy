@@ -254,17 +254,11 @@ function ShopBody({ shop, date, easy }: { shop: ShopData; date: string; easy: bo
                 {shop.days === 1 ? "today" : `${shop.days} days`}
               </span>
             </div>
-            <div className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
-              <div className="bg-tm-panel px-3 py-3">
-                <Stat value={String(shop.totals.toBuy)} label="to buy" />
-              </div>
-              <div className="bg-tm-panel px-3 py-3">
-                <Stat value={String(shop.totals.aisles)} label="aisles" />
-              </div>
-              <div className="bg-tm-panel px-3 py-3">
-                <Stat value={`${shop.totals.weightKg.toFixed(1)} kg`} label="to carry" />
-              </div>
-            </div>
+            <dl className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
+              <Stat className="bg-tm-panel px-3 py-3" value={String(shop.totals.toBuy)} label="to buy"/>
+              <Stat className="bg-tm-panel px-3 py-3" value={String(shop.totals.aisles)} label="aisles"/>
+              <Stat className="bg-tm-panel px-3 py-3" value={`${shop.totals.weightKg.toFixed(1)} kg`} label="to carry"/>
+            </dl>
             <p className="mt-2 text-[14px] text-tm-dim">
               Walk it in this order and it is one lap. {shop.totals.packs} pack
               {shop.totals.packs === 1 ? "" : "s"} into the trolley.
