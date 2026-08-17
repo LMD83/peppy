@@ -149,19 +149,21 @@ function FuelTabBody({
       <div className="flex flex-col gap-3 lg:col-span-7">
       <Card>
         <Eyebrow color="bg-tm-green">Energy</Eyebrow>
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <div className={cn("font-tm-disp text-[34px] leading-none", kcalLeft < 0 && "text-tm-red")}>
-              {fmt(Math.abs(kcalLeft))}
-            </div>
-            <div className="mt-1 font-tm-mono text-[11.5px] tracking-[0.16em] text-tm-dim uppercase">
+        <dl className="flex items-end justify-between gap-3">
+          {/* The hero number is its own dt/dd pair rather than two plain divs:
+              a <dl> may hold a <div>, but that div has to contain the term and
+              the description, not just styled text. Same shape as <Stat>, at a
+              size <Stat> does not offer. */}
+          <div className="flex flex-col-reverse">
+            <dt className="mt-1 font-tm-mono text-[11.5px] tracking-[0.16em] text-tm-dim uppercase">
               kcal {kcalLeft < 0 ? "over target" : "left"}
-            </div>
+            </dt>
+            <dd className={cn("font-tm-disp text-[34px] leading-none", kcalLeft < 0 && "text-tm-red")}>
+              {fmt(Math.abs(kcalLeft))}
+            </dd>
           </div>
-          <div className="text-right">
-            <Stat value={`${fuel.totals.kcal}`} label={`of ${fuel.targets.kcal} eaten`} />
-          </div>
-        </div>
+          <Stat className="text-right" value={`${fuel.totals.kcal}`} label={`of ${fuel.targets.kcal} eaten`}/>
+        </dl>
         <div className="mt-3 flex flex-col gap-2.5">
           <Bar label="Energy" value={fuel.totals.kcal} target={fuel.targets.kcal} unit="kcal" tone="fill-tm-green" ceiling />
           <Bar label="Protein" value={fuel.totals.proteinG} target={fuel.targets.proteinG} unit="g" tone="fill-tm-blue" />
@@ -346,10 +348,10 @@ export function FuelTodayCard() {
     return (
       <Card tone="amber">
         <Eyebrow color="bg-tm-amber">Fuel — floor</Eyebrow>
-        <div className="flex items-end justify-between gap-3">
+        <dl className="flex items-end justify-between gap-3">
           <Stat value={`${fmt(Math.max(0, fuel.remaining.proteinG))} g`} label="protein left" />
           <Stat value={today.user.kitchenClose} label="kitchen closes" />
-        </div>
+        </dl>
         <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
           {fuel.floor.items.length} things · {fuel.floor.effortSummary}
         </p>
@@ -387,11 +389,12 @@ export function FuelTodayCard() {
   return (
     <Card>
       <Eyebrow color="bg-tm-green">Fuel</Eyebrow>
-      <div className="flex items-end justify-between gap-2">
+      <dl className="flex items-end justify-between gap-2">
         <Stat value={`${fmt(Math.max(0, fuel.remaining.kcal))}`} label="kcal left" />
         <Stat value={`${fmt(Math.max(0, fuel.remaining.proteinG))} g`} label="protein left" />
         <Stat value={`${fuel.sodiumUsedMg}`} label={`of ${fuel.targets.sodiumMgMax} mg salt`} />
-      </div>
+      </dl>
+      {/* The write says itself — the tick below is silent otherwise. */}
       <p role="status" className="sr-only">
         {status}
       </p>
@@ -566,9 +569,9 @@ function TdeeCard({ tdee }: { tdee: FuelData["tdee"] }) {
           confidence {tdee.confidence}
         </span>
       </div>
-      <div className="mt-1.5">
+      <dl className="mt-1.5">
         <Stat value={`${tdee.tdeeKcal}`} label="kcal per day" />
-      </div>
+      </dl>
       <p className="mt-2 text-sm">{line}</p>
       {tdee.lastWeekly && (
         <p className="mt-1 font-tm-mono text-[11.5px] text-tm-dim">

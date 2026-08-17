@@ -52,14 +52,10 @@ export function StackTab() {
       <div className="flex flex-col gap-4 pt-5">
         <Card tone="amber">
           <Eyebrow color="bg-tm-amber">Stack, floor</Eyebrow>
-          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-amber bg-tm-amber">
-            <div className="bg-tm-amber-bg px-3 py-3">
-              <Stat value={`${stack.takenCount}/${stack.dueCount}`} label="doses taken today" />
-            </div>
-            <div className="bg-tm-amber-bg px-3 py-3">
-              <Stat value={`${stack.adherence30.pct}%`} label="30-day adherence" />
-            </div>
-          </div>
+          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-amber bg-tm-amber">
+            <Stat className="bg-tm-amber-bg px-3 py-3" value={`${stack.takenCount}/${stack.dueCount}`} label="doses taken today"/>
+            <Stat className="bg-tm-amber-bg px-3 py-3" value={`${stack.adherence30.pct}%`} label="30-day adherence"/>
+          </dl>
           <div className="mt-4">
             <DoseList doses={floor} />
           </div>
@@ -182,11 +178,12 @@ export function StackTodayCard() {
       <Eyebrow color={stack.survival ? "bg-tm-amber" : "bg-tm-green"}>
         {stack.survival ? "Stack — floor" : "Stack"}
       </Eyebrow>
-      <div className="flex items-end justify-between gap-2">
+      <dl className="flex items-end justify-between gap-2">
         <Stat value={`${takenCount}/${dueCount}`} label="doses today" />
         <Stat value={`${stack.adherence7.pct}%`} label="7-day adherence" />
         <Stat value={`${stack.cycles.length}`} label="cycles running" />
-      </div>
+      </dl>
+      {/* The write says itself — the tick below is silent otherwise. */}
       <p role="status" className="sr-only">
         {status}
       </p>
@@ -607,17 +604,11 @@ function ReconCalculator({ items }: { items: ItemView[] }) {
       </div>
 
       {result ? (
-        <div className="mt-3 grid grid-cols-3 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
-          <div className="bg-tm-soft px-3 py-2.5">
-            <Stat value={`${fmt(result.syringeUnits)}`} label="syringe units" />
-          </div>
-          <div className="bg-tm-soft px-3 py-2.5">
-            <Stat value={`${fmt(result.mlPerDose)} mL`} label="per dose" />
-          </div>
-          <div className="bg-tm-soft px-3 py-2.5">
-            <Stat value={`${fmt(result.mgPerMl)}`} label="mg per mL" />
-          </div>
-        </div>
+        <dl className="mt-3 grid grid-cols-3 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
+          <Stat className="bg-tm-soft px-3 py-2.5" value={`${fmt(result.syringeUnits)}`} label="syringe units"/>
+          <Stat className="bg-tm-soft px-3 py-2.5" value={`${fmt(result.mlPerDose)} mL`} label="per dose"/>
+          <Stat className="bg-tm-soft px-3 py-2.5" value={`${fmt(result.mgPerMl)}`} label="mg per mL"/>
+        </dl>
       ) : (
         <p className="mt-3 rounded-[10px] bg-tm-amber-bg px-3 py-2.5 text-[13px] text-tm-amber-ink">
           {error}

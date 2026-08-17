@@ -59,20 +59,16 @@ export function ProgressTab() {
       <Card className="lg:col-span-5">
         <Eyebrow color="bg-tm-green">Consistency, 14 days</Eyebrow>
         <ConsistencyWall wall={progress.wall} />
-        <div className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
-          <div className="bg-tm-panel px-3 py-3">
-            <Stat value={`${progress.adherence7}%`} label="7-day" />
-          </div>
-          <div className="bg-tm-panel px-3 py-3">
-            <Stat value={`${progress.streak}`} label="Streak" />
-          </div>
-          <div className="bg-tm-panel px-3 py-3">
+        <dl className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
+          <Stat className="bg-tm-panel px-3 py-3" value={`${progress.adherence7}%`} label="7-day"/>
+          <Stat className="bg-tm-panel px-3 py-3" value={`${progress.streak}`} label="Streak"/>
+          <dl className="bg-tm-panel px-3 py-3">
             <Stat
               value={`${Math.abs(progress.deltaKg).toFixed(1)}`}
               label={progress.deltaKg <= 0 ? "kg down" : "kg up"}
             />
-          </div>
-        </div>
+          </dl>
+        </dl>
       </Card>
     </div>
   );

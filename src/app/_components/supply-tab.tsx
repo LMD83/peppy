@@ -106,14 +106,10 @@ export function SupplyPanel() {
       ) : (
         <Card>
           <Eyebrow color="bg-tm-green">Supply</Eyebrow>
-          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
-            <div className="bg-tm-panel px-3 py-3">
-              <Stat value={String(supply.okCount)} label="items covered" />
-            </div>
-            <div className="bg-tm-panel px-3 py-3">
-              <Stat value="0" label="need ordering" />
-            </div>
-          </div>
+          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
+            <Stat className="bg-tm-panel px-3 py-3" value={String(supply.okCount)} label="items covered"/>
+            <Stat className="bg-tm-panel px-3 py-3" value="0" label="need ordering"/>
+          </dl>
           <p className="mt-3 text-[14px]">Nothing runs out soon. Recount when you open a box.</p>
         </Card>
       )}

@@ -160,11 +160,11 @@ export function MindTodayCard() {
           {mind.survival ? "Mind — floor" : "Mind"}
         </Eyebrow>
         <p className="text-[13px] font-semibold">{mind.encouragement.headline}</p>
-        <div className="mt-2 flex items-end justify-between gap-2">
+        <dl className="mt-2 flex items-end justify-between gap-2">
           <Stat value={`${mind.due.length}`} label="check-ins due" />
           <Stat value={`${mind.intentions.length}`} label="plans active" />
           <Stat value={`${wins}`} label="plan wins" />
-        </div>
+        </dl>
         {top && (
           <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
             if {top.trigger.toLowerCase()} → {top.action.toLowerCase()}

@@ -142,38 +142,46 @@ export function CrewTab() {
           </div>
 
           {m.link.youSee.length > 0 ? (
-            // flex-wrap, not a fixed grid: a fixed grid-cols implies a track for
-            // every cell whether or not an item fills it, and a filler track
-            // paints the container's own bg-tm-rule — a dead grey cell where
-            // the item count doesn't divide evenly. Flex items grow to close
-            // the gap instead, so there is never a cell with nothing in it.
-            <div className="mt-4 flex flex-wrap gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
+            /*
+              A description list, because that is what a label/value pair is —
+              Stat renders its own dt/dd inside a div, so the semantics survive
+              the axe rule about what a dl may directly contain.
+
+              flex-wrap rather than a fixed grid: grid-cols reserves a track per
+              cell whether or not an item fills it, and an empty track paints
+              the container's own bg-tm-rule — a dead grey cell whenever the
+              count does not divide evenly. Flex items grow to close the gap, so
+              there is never a cell with nothing in it.
+            */
+            <dl className="mt-4 flex flex-wrap gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
               {m.streak !== undefined && (
-                <div className="min-w-[104px] flex-1 bg-tm-panel px-3 py-3">
-                  <Stat value={`${m.streak}`} label="Streak" />
-                </div>
+                <Stat className="min-w-[104px] flex-1 bg-tm-panel px-3 py-3" value={`${m.streak}`} label="Streak" />
               )}
               {m.adherence7 !== undefined && (
-                <div className="min-w-[104px] flex-1 bg-tm-panel px-3 py-3">
-                  <Stat value={`${m.adherence7}%`} label="7-day" />
-                </div>
+                <Stat className="min-w-[104px] flex-1 bg-tm-panel px-3 py-3" value={`${m.adherence7}%`} label="7-day" />
               )}
               {m.todayDone !== undefined && (
-                <div className="min-w-[104px] flex-1 bg-tm-panel px-3 py-3">
-                  <Stat value={`${m.todayDone}/${m.todayTotal}`} label="Today" />
-                </div>
+                <Stat
+                  className="min-w-[104px] flex-1 bg-tm-panel px-3 py-3"
+                  value={`${m.todayDone}/${m.todayTotal}`}
+                  label="Today"
+                />
               )}
               {m.mode === "survival" && m.daysInMode !== undefined && (
-                <div className="min-w-[104px] flex-1 bg-tm-panel px-3 py-3">
-                  <Stat value={`${m.daysInMode}`} label="Days on floor" />
-                </div>
+                <Stat
+                  className="min-w-[104px] flex-1 bg-tm-panel px-3 py-3"
+                  value={`${m.daysInMode}`}
+                  label="Days on floor"
+                />
               )}
               {m.supplyState && m.supplyState !== "none" && (
-                <div className="min-w-[104px] flex-1 bg-tm-panel px-3 py-3">
-                  <Stat value={SUPPLY_COPY[m.supplyState]} label="Supply" />
-                </div>
+                <Stat
+                  className="min-w-[104px] flex-1 bg-tm-panel px-3 py-3"
+                  value={SUPPLY_COPY[m.supplyState]}
+                  label="Supply"
+                />
               )}
-            </div>
+            </dl>
           ) : (
             <p className="mt-3 text-[14px] text-tm-dim">
               {m.name} shares nothing with you. That is their call, and it stays theirs.

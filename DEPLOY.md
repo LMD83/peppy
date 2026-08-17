@@ -6,42 +6,70 @@ owner can mint).
 
 ## Current state
 
-- Vercel project `peppy` serves Timento at the site root
-  `https://peppy-liams-projects-eb2f3bfa.vercel.app` (`/` is the app, `/why`
-  the explainer). It runs in **demo mode** (in-memory backend, demo fixtures,
-  passcodes Liam 2580 / Artur 1379), configured by the committed
-  `.env.production`, which holds public values only.
-- **Deployment Protection is off** — the URL answers anonymous requests with
-  real app HTML (confirmed by a `deploy-verify` probe on 2026-08-13). It was
-  previously behind Vercel Authentication, which is why earlier smoke runs saw
-  the login interstitial.
-- **Production is serving a stale build, and it now returns 500.** As of
-  2026-08-13 the deployment answers `/` with a Next.js error page
-  (`id="__next_error__"`) and *no* `x-vercel-error` header, which rules out a
-  platform fault: the function ran and the application threw during server
-  render. Every probe since has reported the same deployment id
-  (`dpl_F7eMzNNvZUe7S2zAUqydt8u3kpbY`), so **nothing has been redeployed** —
-  deploys here are manual file-tree uploads and the project has no Git
-  integration, so neither a push nor a merge to `master` changes what is live.
-- The most likely cause was reproduced locally: with `NEXT_PUBLIC_TIMENTO_DEMO`
-  unset (or not `1`) and `NEXT_PUBLIC_CONVEX_URL` holding a placeholder or
-  otherwise unusable value, `new ConvexReactClient(url)` throws inside render
-  and `next build` exits with `Export encountered an error on /page: /`.
-  `src/app/_lib/backend.tsx` now validates the endpoint first and falls back to
-  the demo backend instead of taking the site down — but **that fix only helps
-  once something redeploys.** Setting `NEXT_PUBLIC_TIMENTO_DEMO=1` in the Vercel
-  project's environment variables fixes the same failure without a code change.
-- The Claude Vercel connector cannot see project `peppy` (it isn't in the
-  connector's granted project list — `get_project` returns 404), and this
-  container holds no Vercel token, so redeploys cannot be driven from a
-  session. To unblock automated deploys, either add `peppy` under the Vercel
-  integration's project access settings, or connect the project to the GitHub
-  repo so merges to `master` deploy themselves.
-- The Convex **prod** deployment for this project
-  (`patient-wildebeest-774`, dashboard: `boundless-synergy/peppy-c3b07`) exists
-  but has no functions pushed yet.
-- CI runs lint → typecheck → **vitest (Timento backend tests)** → build on
-  every PR.
+*Last verified 2026-08-16 against the Deploy verify runs on `master`. Everything
+below is either observed in a CI run or explicitly marked unverified — an
+earlier version of this section described a dead site long after it had
+recovered, which is worse than saying nothing.*
+
+- Vercel project `peppy` serves Timento (`/` is the app, `/why` the explainer).
+  It runs in **demo mode** — in-memory backend, demo fixtures, passcodes
+  Liam 2580 / Artur 1379 — configured by the committed `.env.production`, which
+  holds public values only. Those passcodes guard nothing real; they stop being
+  the login the moment Convex prod is seeded with real ones.
+- **Git-integrated deploys work.** A merge to `master` produces a Vercel
+  deployment, which emits a `deployment_status` webhook, which triggers the
+  Deploy verify workflow against that deployment's URL. Observed on `40dd6ee`,
+  `51047fd`, `35cc0ac` and `d8bbb39` — all green. The older note in this file
+  claiming deploys were manual file-tree uploads with no Git integration is
+  wrong and has been removed.
+- **The build is healthy and publicly reachable.** Deploy verify drives 26
+  click-suite checks and 63 accessibility screen-scans anonymously against each
+  new deployment and they pass, so Deployment Protection is off and the app
+  renders. The 2026-08-13 `500` (a `ConvexReactClient` constructed with an
+  unusable URL, throwing during server render) is fixed in
+  `src/app/_lib/backend.tsx`, which now validates the endpoint and falls back to
+  the demo backend rather than taking the site down.
+- **Unverified: the vanity alias.** Deploy verify probes the deployment-specific
+  URL the webhook hands it (e.g. `peppy-hcl1rw722-…vercel.app`), so a green run
+  proves *that deployment* is good — not that
+  `https://peppy-liams-projects-eb2f3bfa.vercel.app` is aliased to the newest
+  one. A Claude container cannot reach `*.vercel.app`, so this cannot be checked
+  from a session. One command settles it:
+
+  ```sh
+  curl -sI https://peppy-liams-projects-eb2f3bfa.vercel.app | head -1
+  ```
+
+- The Claude Vercel connector still cannot see project `peppy` (`get_project`
+  returns 404) and this container holds no Vercel token, so a *session* cannot
+  drive a redeploy. That no longer blocks anything, because merges deploy
+  themselves.
+- The Convex **prod** deployment (`patient-wildebeest-774`, dashboard:
+  `boundless-synergy/peppy-c3b07`) exists but **has no functions pushed yet**.
+  Everything backend-real waits on this — see the owner steps below.
+- **CI** runs lint → typecheck → vitest → Convex deploy check → build on every
+  PR. **Deploy verify** runs the click-suite and the accessibility sweep against
+  each deployment. The Convex step needs `CONVEX_DEPLOY_KEY` and warns rather
+  than failing when it is absent (see below).
+
+### Why there is a Convex deploy check
+
+Nothing in CI used to look at `convex/` at all. Vitest resolves those modules
+through Vite and `next build` ignores the directory, so two defects shipped
+green: thirteen `logic-*.ts` modules whose hyphenated paths Convex cannot
+address — they had never reached a deployment — and a `crons.ts` import that
+pulled `web-push` into the default runtime.
+
+`tests/convex-deployability.test.ts` now catches both classes in seconds without
+credentials: it checks every module path is a valid identifier, that the
+generated `api.d.ts` still matches the filesystem, and that no default-runtime
+module can reach a `"use node"` module through a value import — walking the
+whole import graph, so a second hop through a helper is caught too.
+
+`npx convex deploy --dry-run` is the authority for everything else. Add
+`CONVEX_DEPLOY_KEY` under **Settings → Secrets and variables → Actions** to
+switch it on; until then that CI step emits a warning annotation and passes, so
+a green tick never silently means "the backend is fine".
 
 ## Going fully live on Convex prod (owner steps)
 
@@ -53,6 +81,11 @@ All commands run from a checkout where you've done `npx convex login`
      `peppy-c3b07` → Production deployment → Settings → URL & Deploy Key →
      Generate. Key looks like `prod:patient-wildebeest-774|…`.
    - Or CLI: `npx convex deployment token create vercel-prod --prod`
+   - While you have it: add the same value as a **GitHub Actions secret** named
+     `CONVEX_DEPLOY_KEY` (repo → Settings → Secrets and variables → Actions).
+     That switches on the `Convex deploy check` step in CI, which runs
+     `npx convex deploy --dry-run` — it prints the configuration it would push
+     and deploys nothing, so it is safe on pull requests.
 
 2. **First push of functions + schema to prod** (do this once, before flipping
    the frontend): `npx convex deploy` (targets the project's default production
