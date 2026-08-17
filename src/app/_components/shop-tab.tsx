@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
 import { handoffLabel, retailerDriver } from "@convex/tm/data/retailers";
+import { readRetailer, subscribeRetailer, writeRetailer } from "../_lib/retailer-store";
 import { useTimento } from "../_lib/backend";
 import type { ShopData } from "../_lib/types";
 import { Card, Eyebrow, Stat } from "./ui";
@@ -98,46 +99,8 @@ function subscribeTicks(onChange: () => void): () => void {
   };
 }
 
-/* ===== the chosen shop, kept for good =====
- *
- * Same store, same pattern as the ticks, but no date on it: which supermarket
- * you use is not a fact about today. Answer it once and the chooser stays
- * answered — re-asking a settled question every visit is exactly the kind of
- * friction this app exists to remove.
- */
-
-const RETAILER_KEY = "tm.shop.retailer";
-
-const retailerListeners = new Set<() => void>();
-
-function readRetailer(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    return window.localStorage.getItem(RETAILER_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function writeRetailer(key: string | null): void {
-  if (typeof window === "undefined") return;
-  try {
-    if (key === null) window.localStorage.removeItem(RETAILER_KEY);
-    else window.localStorage.setItem(RETAILER_KEY, key);
-  } catch {
-    // A blocked store forgets the choice, never the list.
-  }
-  for (const listener of retailerListeners) listener();
-}
-
-function subscribeRetailer(onChange: () => void): () => void {
-  retailerListeners.add(onChange);
-  if (typeof window !== "undefined") window.addEventListener("storage", onChange);
-  return () => {
-    retailerListeners.delete(onChange);
-    if (typeof window !== "undefined") window.removeEventListener("storage", onChange);
-  };
-}
+/* The chosen supermarket lives in ../_lib/retailer-store — answered once,
+ * kept for good, and shared with the setup wizard. */
 
 function useTicks(date: string) {
   const keys = useSyncExternalStore(

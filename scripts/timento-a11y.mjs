@@ -320,6 +320,14 @@ for (const [label, viewport, reflow] of [
     await sweep(page, `${label}-${String(shelf).replace(/\W+/g, "")}`.toLowerCase(), { reflow });
   }
 
+  // The setup wizard's welcome screen — a full-screen takeover with no nav,
+  // so it is its own surface. "Not now" leaves the file untouched.
+  await goShelf(page, /^Set up my file/);
+  await page.waitForTimeout(200);
+  await sweep(page, `${label}-setup`, { reflow });
+  await page.getByRole("button", { name: "Not now", exact: true }).click();
+  await page.waitForTimeout(200);
+
   // The floor. The plan's sharpest finding was that the least legible screen we
   // shipped was the one for someone at their worst, so it is scanned explicitly.
   await goTab(page, "Today");

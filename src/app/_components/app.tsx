@@ -10,6 +10,7 @@ import { Login } from "./login";
 import { Scoreboard } from "./scoreboard";
 import { TodayTab } from "./today-tab";
 import { FileNavProvider } from "./file-nav";
+import { Onboarding } from "./onboarding";
 import { Walkthrough, type TourDestination } from "./walkthrough";
 import { Eyebrow, fileWidth } from "./ui";
 
@@ -147,11 +148,13 @@ function MoreShelf({
   onGo,
   onSettings,
   onTour,
+  onSetup,
 }: {
   easy: boolean;
   onGo: (d: Destination) => void;
   onSettings: () => void;
   onTour: () => void;
+  onSetup: () => void;
 }) {
   return (
     <div className="flex flex-col gap-2 pt-5">
@@ -159,6 +162,7 @@ function MoreShelf({
       {APPENDIX.map((d) => (
         <NavRow key={d.key} label={easy ? plain(d.label) : d.label} onClick={() => onGo(d)} />
       ))}
+      <NavRow label="Set up my file" onClick={onSetup} />
       <NavRow label="Walkthrough" onClick={onTour} />
       <NavRow label="Settings" onClick={onSettings} />
       <p className="pt-1 pb-2 text-center">
@@ -179,6 +183,7 @@ function Shell() {
   const [bodyView, setBodyView] = useState("stack");
   const [mindView, setMindView] = useState("checkin");
   const [tour, setTour] = useState(false);
+  const [setup, setSetup] = useState(false);
 
   /*
     The stylesheet's half of easy mode ([data-easy="1"] in globals.css) — type
@@ -213,6 +218,19 @@ function Shell() {
         Loading file…
       </div>
     );
+
+  // The wizard is a full-screen takeover: one question, no chrome competing
+  // with it. Everything it saves is already on the file when it closes.
+  if (setup) {
+    return (
+      <Onboarding
+        onClose={(dest) => {
+          setSetup(false);
+          if (dest) setTab(dest);
+        }}
+      />
+    );
+  }
 
   const survival = today.user.mode === "survival";
   // The nav indicator is a 3px bar — a non-text UI element, so 3:1 is the bar.
@@ -250,6 +268,7 @@ function Shell() {
             onGo={goDestination}
             onSettings={() => setTab("settings")}
             onTour={() => setTour(true)}
+            onSetup={() => setSetup(true)}
           />
         )}
         {tab === "settings" && <SettingsTab />}
