@@ -163,7 +163,7 @@ export function grantSentence(
   return relationship === "carer" ? carerSentence(name, scopes) : sharedLine(name, scopes);
 }
 
-/** "Conor can see: how often you hit your checks. Not your weight, not your medicines." */
+/** "Artur can see: how often you hit your checks. Not your weight, not your medicines." */
 export function sharedLine(name: string, scopes: readonly Scope[]): string {
   if (scopes.length === 0) return `${name} can see nothing of yours.`;
   const parts = orderScopes(scopes).map((s) => SCOPE_DESCRIPTIONS[s]);

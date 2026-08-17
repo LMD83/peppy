@@ -116,13 +116,14 @@ describe("the row handed to recordDelivery", () => {
 describe("a sweep that cannot deliver", () => {
   it("reports nothing sent, and says how much went undelivered", () => {
     const report = blockedReport(2, 5);
-    expect(report).toEqual({ users: 2, notifications: 5, sent: 0, reason: "no-vapid" });
+    expect(report).toEqual({ users: 2, notifications: 5, sent: 0, reason: "no-keys" });
   });
 
   it("names the cause and the remedy in the line it logs", () => {
     const line = blockedLog(2, 5);
     expect(line).toContain("5 notification(s) were due for 2 file(s)");
     expect(line).toContain("VAPID_PUBLIC_KEY");
+    expect(line).toContain("RESEND_API_KEY");
     expect(line).toContain("DEPLOY.md");
   });
 
@@ -137,7 +138,7 @@ describe("a sweep that cannot deliver", () => {
     // import is static, so an uninstalled package fails `npx convex deploy`
     // rather than silently sending nothing on a weekday morning.
     const logic = readFileSync(join(process.cwd(), "convex", "tm", "logicPush.ts"), "utf8");
-    expect(logic).toContain('"nothing-due" | "no-vapid" | "sent"');
+    expect(logic).toContain('"nothing-due" | "no-keys" | "sent"');
     const push = readFileSync(join(process.cwd(), "convex", "tm", "push.ts"), "utf8");
     expect(push).toContain('import webpush from "web-push"');
     expect(push).not.toContain("dynamicImport");

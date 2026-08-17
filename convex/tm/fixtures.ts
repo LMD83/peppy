@@ -32,7 +32,15 @@ export type FixtureUser = {
 
 export type Fixtures = {
   users: FixtureUser[];
-  days: { userSlug: string; date: string; weightKg?: number; stress?: number; energy?: number; ritualDone?: boolean }[];
+  days: {
+    userSlug: string;
+    date: string;
+    weightKg?: number;
+    stress?: number;
+    energy?: number;
+    ritualDone?: boolean;
+    sessionDone?: boolean;
+  }[];
   checks: { userSlug: string; date: string; key: string; done: boolean }[];
   cravings: {
     userSlug: string;
@@ -86,7 +94,7 @@ function wallChecks(userSlug: string, mode: TmMode, endDate: string, wall: numbe
 
 export function buildFixtures(today: string): Fixtures {
   const liamStart = addDays(today, -42);
-  const conorFloorSince = addDays(today, -12);
+  const arturFloorSince = addDays(today, -12);
 
   const users: FixtureUser[] = [
     {
@@ -103,11 +111,11 @@ export function buildFixtures(today: string): Fixtures {
       protocolTitle: "Cut protocol 95→85",
     },
     {
-      slug: "conor",
-      name: "Conor",
+      slug: "artur",
+      name: "Artur",
       passcode: "1379",
       mode: "survival",
-      modeSince: conorFloorSince,
+      modeSince: arturFloorSince,
       modeReason: "ACL rehab",
       reviewDate: addDays(today, 2),
       ceilingKg: 96,
@@ -141,18 +149,18 @@ export function buildFixtures(today: string): Fixtures {
     });
   }
   days.push({ userSlug: "liam", date: today, stress: 2, energy: 4 });
-  // Conor: survival cadence — three weigh-ins a week, held under the ceiling.
+  // Artur: survival cadence — three weigh-ins a week, held under the ceiling.
   [8, 5, 3, 1].forEach((back, i) =>
-    days.push({ userSlug: "conor", date: addDays(today, -back), weightKg: 94.8 - i * 0.1 }),
+    days.push({ userSlug: "artur", date: addDays(today, -back), weightKg: 94.8 - i * 0.1 }),
   );
 
   // Liam wall: streak of 9 full days before today; today 3 of 5 done.
   const liamWall = [5, 3, 5, 2, 5, 5, 5, 5, 5, 5, 5, 5, 5, 3];
-  // Conor wall: floor held the last 4 days straight; today already 3/3.
-  const conorWall = [2, 3, 3, 2, 3, 1, 2, 3, 2, 1, 3, 3, 3, 3];
+  // Artur wall: floor held the last 4 days straight; today already 3/3.
+  const arturWall = [2, 3, 3, 2, 3, 1, 2, 3, 2, 1, 3, 3, 3, 3];
   const checks = [
     ...wallChecks("liam", "cut", today, liamWall),
-    ...wallChecks("conor", "survival", today, conorWall),
+    ...wallChecks("artur", "survival", today, arturWall),
   ];
 
   // Craving logs — the enemy has a schedule: tired-dominant 21:00–22:00.
@@ -264,13 +272,13 @@ export function buildFixtures(today: string): Fixtures {
   ];
 
   const crewFeed: Fixtures["crewFeed"] = [
-    { userSlug: "conor", message: "Floor's holding" },
+    { userSlug: "artur", message: "Floor's holding" },
     { userSlug: "liam", message: "Proud of the boring days" },
-    { userSlug: "conor", message: "Kitchen closed. Day 12." },
+    { userSlug: "artur", message: "Kitchen closed. Day 12." },
   ];
 
   const modeEvents: Fixtures["modeEvents"] = [
-    { userSlug: "conor", date: conorFloorSince, mode: "survival", label: "ACL rehab — executed as designed" },
+    { userSlug: "artur", date: arturFloorSince, mode: "survival", label: "ACL rehab — executed as designed" },
   ];
 
   return {

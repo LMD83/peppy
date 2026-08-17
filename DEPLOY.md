@@ -13,7 +13,7 @@ recovered, which is worse than saying nothing.*
 
 - Vercel project `peppy` serves Timento (`/` is the app, `/why` the explainer).
   It runs in **demo mode** — in-memory backend, demo fixtures, passcodes
-  Liam 2580 / Conor 1379 — configured by the committed `.env.production`, which
+  Liam 2580 / Artur 1379 — configured by the committed `.env.production`, which
   holds public values only. Those passcodes guard nothing real; they stop being
   the login the moment Convex prod is seeded with real ones.
 - **Git-integrated deploys work.** A merge to `master` produces a Vercel
@@ -97,7 +97,7 @@ All commands run from a checkout where you've done `npx convex login`
    `tm_*` tables, so run it once at go-live only:
 
    ```sh
-   npx convex run tm/seed:run '{"passcodes": {"liam": "<real>", "conor": "<real>"}}' --prod
+   npx convex run tm/seed:run '{"passcodes": {"liam": "<real>", "artur": "<real>"}}' --prod
    ```
 
 4. **Backend secrets on prod** (all optional at deploy time; checkout/payments
@@ -145,10 +145,20 @@ npx convex env set VAPID_SUBJECT     mailto:you@example.com  --prod
 Then redeploy the frontend. `NEXT_PUBLIC_CONVEX_URL` already carries the public
 key to the browser through `remind.get`, so no client env var is needed.
 
+Email is an optional second channel for the same reminder plan (one mention,
+both transports). Set these on Convex for the closed-tab sweep, and on the
+Next.js host for demo / open-tab send:
+
+```sh
+npx convex env set RESEND_API_KEY     re_...                 --prod
+npx convex env set REMIND_EMAIL_FROM  "Timento <onboarding@resend.dev>" --prod
+```
+
 Until those are set, the sweep logs one line naming the missing variables and
 leaves every subscription untouched — nothing is marked delivered and no device
 is charged a failure it did not earn, because the failure is the deployment's.
-The tab says the same thing rather than showing a switch that lies.
+The tab says the same thing rather than showing a switch that lies. Demo can
+send while the app is open if the same keys are on the Next.js process.
 
 **Do not remove `web-push` from `dependencies`.** The import in `push.ts` is
 static, so an uninstalled package fails `npx convex deploy` rather than quietly

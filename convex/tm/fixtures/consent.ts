@@ -31,22 +31,22 @@ export function buildConsentFixtures(today: string): ConsentFixtures {
 
   return {
     crewLinks: [
-      // Liam shares everything with Conor, peer to peer.
+      // Liam shares everything with Artur, peer to peer.
       {
-        id: "cl_liam_conor",
+        id: "cl_liam_artur",
         ownerSlug: "liam",
-        viewerSlug: "conor",
+        viewerSlug: "artur",
         scopes: ["adherence", "mode", "supply"],
         relationship: "crew",
         status: "active",
         invitedDate: agreed,
         respondedDate: agreed,
       },
-      // Conor shares his checks and his mode — which is exactly what Liam's
+      // Artur shares his checks and his mode — which is exactly what Liam's
       // board showed before consent existed, so the demo reads unchanged.
       {
-        id: "cl_conor_liam",
-        ownerSlug: "conor",
+        id: "cl_artur_liam",
+        ownerSlug: "artur",
         viewerSlug: "liam",
         scopes: ["adherence", "mode"],
         relationship: "crew",
@@ -60,8 +60,8 @@ export function buildConsentFixtures(today: string): ConsentFixtures {
       // Liam has not answered. A pending invitation discloses nothing: until he
       // accepts, it buys a name, a date and a sentence, and no facts at all.
       {
-        id: "cl_conor_liam_carer",
-        ownerSlug: "conor",
+        id: "cl_artur_liam_carer",
+        ownerSlug: "artur",
         viewerSlug: "liam",
         scopes: ["adherence", "mode", "supply"],
         relationship: "carer",

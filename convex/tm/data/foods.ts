@@ -23,6 +23,8 @@
  * Static config, not user data — no row here belongs to anybody.
  */
 
+import { BANK_FOODS } from "./foodsBank";
+
 export type FoodGroup =
   | "protein"
   | "carb"
@@ -177,7 +179,7 @@ export const GROUP_ORDER: FoodGroup[] = [
   "convenience",
 ];
 
-export const FOODS: FoodDef[] = [
+const STAPLES: FoodDef[] = [
   /* ===== protein ===== */
   {
     key: "chicken_breast",
@@ -1536,6 +1538,9 @@ export const FOODS: FoodDef[] = [
     allergens: ["cereals-gluten"],
   },
 ];
+
+/** The full bank: original staples plus the second supermarket aisle. */
+export const FOODS: FoodDef[] = [...STAPLES, ...BANK_FOODS];
 
 const BY_KEY: Map<string, FoodDef> = new Map(FOODS.map((f) => [f.key, f]));
 

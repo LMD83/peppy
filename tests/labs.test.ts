@@ -346,9 +346,9 @@ describe("convertUnit", () => {
 });
 
 describe("labs fixtures", () => {
-  it("gives Liam three panels and Conor one", () => {
+  it("gives Liam three panels and Artur one", () => {
     expect(FX.labPanels.filter((p) => p.userSlug === "liam")).toHaveLength(3);
-    expect(FX.labPanels.filter((p) => p.userSlug === "conor")).toHaveLength(1);
+    expect(FX.labPanels.filter((p) => p.userSlug === "artur")).toHaveLength(1);
   });
 
   it("only ever records markers the catalogue knows", () => {
@@ -465,7 +465,7 @@ describe("buildLabsView — cut", () => {
 });
 
 describe("buildLabsView — survival is a floor", () => {
-  const view = viewFor("conor", "survival");
+  const view = viewFor("artur", "survival");
 
   it("keeps what is already owed", () => {
     expect(view.survival).toBe(true);
@@ -483,7 +483,7 @@ describe("buildLabsView — survival is a floor", () => {
   });
 
   it("shows the same markers as out of range whatever the mode", () => {
-    const cutView = viewFor("conor", "cut");
+    const cutView = viewFor("artur", "cut");
     expect(cutView.outOfRange.map((r) => r.marker)).toEqual(view.outOfRange.map((r) => r.marker));
     expect(cutView.panels.length).toBe(1);
   });

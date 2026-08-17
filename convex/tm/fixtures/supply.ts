@@ -13,7 +13,7 @@ import { addDays } from "../lib";
  * The spread is deliberate. Liam has one item comfortably stocked, one that
  * crosses its order-by date exactly today, and one prescription with no repeats
  * left — the case where ringing the pharmacy achieves nothing and only the
- * practice can move it. Conor, at his floor, has his single med with plenty
+ * practice can move it. Artur, at his floor, has his single med with plenty
  * left, so his supply surface stays silent.
  */
 
@@ -93,10 +93,10 @@ export function buildSupplyFixtures(today: string): SupplyFixtures {
       repeatsRemaining: 0,
     },
     {
-      // Conor's levothyroxine. Never skipped, and never close to running out.
-      id: "sp_conor_levo",
-      userSlug: "conor",
-      itemId: "pi_conor_levo",
+      // Artur's levothyroxine. Never skipped, and never close to running out.
+      id: "sp_artur_levo",
+      userSlug: "artur",
+      itemId: "pi_artur_levo",
       onHand: 84,
       unitsPerDose: 1,
       packSize: 84,
@@ -125,15 +125,15 @@ export function buildSupplyFixtures(today: string): SupplyFixtures {
       note: "They text when it is bagged; collect after 16:00.",
     },
     {
-      id: "ct_conor_gp",
-      userSlug: "conor",
+      id: "ct_artur_gp",
+      userSlug: "artur",
       kind: "gp",
       name: "Clontarf Road Medical",
       phone: "01 833 6274",
     },
     {
-      id: "ct_conor_pharmacy",
-      userSlug: "conor",
+      id: "ct_artur_pharmacy",
+      userSlug: "artur",
       kind: "pharmacy",
       name: "Vernon Pharmacy, Clontarf",
       phone: "01 853 4419",

@@ -32,11 +32,11 @@ export function axisFontSize(viewBoxWidth: number): number {
 }
 
 const SIGNAL_COLORS: Record<string, string> = {
-  tired: "#c7373f",
-  bored: "#b8860b",
-  emotion: "#2b5fab",
-  cue: "#2e7d4f",
-  hungry: "#8a5a9e",
+  tired: "var(--color-tm-red)",
+  bored: "var(--color-tm-yellow)",
+  emotion: "var(--color-tm-blue)",
+  cue: "var(--color-tm-green)",
+  hungry: "var(--color-tm-purple)",
 };
 const SIGNAL_ORDER = ["tired", "emotion", "cue", "bored", "hungry"];
 
@@ -90,7 +90,7 @@ export function MassChart({
           <rect x={pad.l} y={0} width={W - pad.l - pad.r} height={H} />
         </clipPath>
         {gridLines.map((v) => (
-          <line key={v} x1={pad.l} x2={W - pad.r} y1={y(v)} y2={y(v)} stroke="#eeefeb" strokeWidth="1" />
+          <line key={v} x1={pad.l} x2={W - pad.r} y1={y(v)} y2={y(v)} stroke="var(--color-tm-grid)" strokeWidth="1" />
         ))}
         {gridLines
           .filter((v) => v % 2 === 0)
@@ -118,23 +118,23 @@ export function MassChart({
           ) : null,
         )}
         <g clipPath={`url(#${clipId})`}>
-          <line x1={pad.l} x2={W - pad.r} y1={y(ceilingKg)} y2={y(ceilingKg)} stroke="#c77d1f" strokeWidth="1.5" strokeDasharray="4 4" />
+          <line x1={pad.l} x2={W - pad.r} y1={y(ceilingKg)} y2={y(ceilingKg)} stroke="var(--color-tm-amber)" strokeWidth="1.5" strokeDasharray="4 4" />
           <path d={path("target")} fill="none" stroke="var(--color-tm-dim)" strokeWidth="1.5" strokeDasharray="5 4" />
-          <path d={path("actual")} fill="none" stroke="#2b5fab" strokeWidth="2" />
+          <path d={path("actual")} fill="none" stroke="var(--color-tm-blue)" strokeWidth="2" />
         </g>
         {series.map((s, i) => (
-          <circle key={s.date} cx={x(i)} cy={y(s.actual)} r={hover === i ? 5 : 3.5} fill="#2b5fab" stroke="#ffffff" strokeWidth="1.5" />
+          <circle key={s.date} cx={x(i)} cy={y(s.actual)} r={hover === i ? 5 : 3.5} fill="var(--color-tm-blue)" stroke="var(--color-tm-panel)" strokeWidth="1.5" />
         ))}
         {hovered !== null && hover !== null && (
           <g>
-            <line x1={x(hover)} x2={x(hover)} y1={pad.t} y2={H - pad.b} stroke="#15171c" strokeWidth="1" strokeDasharray="2 3" opacity="0.4" />
+            <line x1={x(hover)} x2={x(hover)} y1={pad.t} y2={H - pad.b} stroke="var(--color-tm-ink)" strokeWidth="1" strokeDasharray="2 3" opacity="0.4" />
             {/* The card grows with its text rather than clipping it: box and
                 baselines are both derived from ts, so this cannot drift out of
                 agreement with the axis it sits over. */}
             <g transform={`translate(${Math.min(x(hover) + 8, W - ts * 9.4)}, ${pad.t + 4})`}>
-              <rect width={ts * 9} height={ts * 3.6} rx="6" fill="#15171c" />
+              <rect width={ts * 9} height={ts * 3.6} rx="6" fill="var(--color-tm-ink)" />
               <text x={ts * 0.5} y={ts * 1.1} fontSize={ts} fill="var(--color-tm-onink)" className="font-tm-mono">{hovered.date}</text>
-              <text x={ts * 0.5} y={ts * 2.2} fontSize={ts} fill="#ffffff" className="font-tm-mono">actual {hovered.actual.toFixed(1)} kg</text>
+              <text x={ts * 0.5} y={ts * 2.2} fontSize={ts} fill="var(--color-tm-panel)" className="font-tm-mono">actual {hovered.actual.toFixed(1)} kg</text>
               <text x={ts * 0.5} y={ts * 3.3} fontSize={ts} fill="var(--color-tm-onink)" className="font-tm-mono">target {hovered.target.toFixed(1)} kg</text>
             </g>
           </g>
@@ -175,7 +175,7 @@ export function TriggerMap({
   triggerMap: { hour: number; counts: Record<string, number> }[];
 }) {
   if (triggerMap.length === 0)
-    return <p className="py-6 text-center text-[12.5px] text-tm-dim">No craving logs yet — two weeks of taps builds the map.</p>;
+    return <p className="py-6 text-center text-[12.5px] text-tm-dim">No craving logs yet. Two weeks of taps builds the map.</p>;
   const max = Math.max(...triggerMap.map((t) => Object.values(t.counts).reduce((s, n) => s + n, 0)));
   const usedSignals = SIGNAL_ORDER.filter((s) => triggerMap.some((t) => (t.counts[s] ?? 0) > 0));
   return (
@@ -188,7 +188,7 @@ export function TriggerMap({
               <div
                 className="flex w-full flex-col-reverse justify-start gap-[2px]"
                 style={{ height: 72 }}
-                title={`${t.hour}:00 — ${usedSignals.map((s) => `${s} ${t.counts[s] ?? 0}`).join(", ")}`}
+                title={`${t.hour}:00: ${usedSignals.map((s) => `${s} ${t.counts[s] ?? 0}`).join(", ")}`}
               >
                 {usedSignals.map((s) =>
                   (t.counts[s] ?? 0) > 0 ? (
@@ -201,7 +201,7 @@ export function TriggerMap({
                 )}
               </div>
               <span className="font-tm-mono text-[8.5px] text-tm-dim">{t.hour}h</span>
-              <span className="sr-only">{`${t.hour}:00 — ${total} logs`}</span>
+              <span className="sr-only">{`${t.hour}:00, ${total} logs`}</span>
             </div>
           );
         })}

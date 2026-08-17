@@ -47,11 +47,8 @@ export type EnergyEstimateRow = {
 /**
  * The kitchen someone actually has, per user.
  *
- * Seam note: this has no table yet. Until the schema carries `tm_kitchenProfile`
- * the profile is static config keyed by slug, read identically by
- * convex/tm/fuel.ts and src/app/_lib/demo/fuel.ts through `kitchenProfileFor`,
- * so the two backends cannot drift. Nothing else in the fixture set depends on
- * it, so promoting it to a table is an additive change.
+ * Seeded into `tm_kitchenProfiles`. Both backends still fall back to
+ * `kitchenProfileFor` when no row has been written yet.
  */
 export type KitchenProfileRow = { userSlug: string } & KitchenProfile;
 
@@ -67,7 +64,7 @@ export type FuelFixtures = {
  * two safe foods, one allergen exclusion and one never-again. Twenty-five
  * minutes and one pan — a real weeknight, not a cookery show.
  *
- * Conor: on the floor. Ten minutes, a microwave, one hand, and the four things
+ * Artur: on the floor. Ten minutes, a microwave, one hand, and the four things
  * he actually eats sitting at the top of every list.
  */
 export const KITCHEN_PROFILES: KitchenProfileRow[] = [
@@ -84,7 +81,7 @@ export const KITCHEN_PROFILES: KitchenProfileRow[] = [
     neverAgain: ["tempeh"],
   },
   {
-    userSlug: "conor",
+    userSlug: "artur",
     minutes: 10,
     equipment: "microwave",
     hands: 1,
@@ -155,7 +152,7 @@ const LIAM_MENUS: MenuItem[][] = [
 ];
 
 /** Survival cadence: protein and a closed kitchen. Nothing optional. */
-const CONOR_MENU: MenuItem[] = [
+const ARTUR_MENU: MenuItem[] = [
   ["breakfast", "skyr", 170],
   ["breakfast", "oats", 60],
   ["dinner", "chicken_breast", 160],
@@ -200,13 +197,13 @@ export function buildFuelFixtures(today: string): FuelFixtures {
     push("liam", today, item, !eaten, eaten);
   }
 
-  // Conor — floor protocol, six days back, breakfast in today.
+  // Artur — floor protocol, six days back, breakfast in today.
   for (let back = 6; back >= 1; back--) {
     const date = addDays(today, -back);
-    for (const item of CONOR_MENU) push("conor", date, item, false, true);
+    for (const item of ARTUR_MENU) push("artur", date, item, false, true);
   }
-  for (const item of CONOR_MENU) {
-    if (item[0] === "breakfast") push("conor", today, item, false, true);
+  for (const item of ARTUR_MENU) {
+    if (item[0] === "breakfast") push("artur", today, item, false, true);
   }
 
   const nutritionTargets: NutritionTargetRow[] = [
@@ -222,7 +219,7 @@ export function buildFuelFixtures(today: string): FuelFixtures {
       basis: "adaptive",
     },
     {
-      userSlug: "conor",
+      userSlug: "artur",
       effectiveFrom: addDays(today, -12),
       kcal: 2600,
       proteinG: 152,
@@ -250,7 +247,7 @@ export function buildFuelFixtures(today: string): FuelFixtures {
       weightSlopeKgPerWeek: -0.55,
     },
     {
-      userSlug: "conor",
+      userSlug: "artur",
       weekStart: addDays(today, -7),
       tdeeKcal: 2650,
       avgIntakeKcal: 2580,
@@ -263,10 +260,6 @@ export function buildFuelFixtures(today: string): FuelFixtures {
 
 /**
  * Insert the fixtures, dropping the demo-only string ids.
- *
- * Kitchen profiles are deliberately not inserted: they have no table yet (see
- * KitchenProfileRow). Both backends read them from this module, so seeding is a
- * no-op for them rather than a silent half-state.
  */
 export async function seedFuel(
   ctx: MutationCtx,
@@ -304,6 +297,20 @@ export async function seedFuel(
       tdeeKcal: row.tdeeKcal,
       avgIntakeKcal: row.avgIntakeKcal,
       weightSlopeKgPerWeek: row.weightSlopeKgPerWeek,
+    });
+  }
+  for (const row of fx.kitchenProfiles) {
+    await ctx.db.insert("tm_kitchenProfiles", {
+      userId: uid(row.userSlug),
+      minutes: row.minutes,
+      equipment: row.equipment,
+      hands: row.hands,
+      canStand: row.canStand,
+      excludeAllergens: row.excludeAllergens,
+      safeFoodsOnly: row.safeFoodsOnly,
+      pinnedBreakfast: row.pinnedBreakfast ?? undefined,
+      safeFoods: row.safeFoods,
+      neverAgain: row.neverAgain,
     });
   }
 }

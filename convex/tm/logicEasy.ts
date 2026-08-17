@@ -127,6 +127,7 @@ export const plainLanguage: Record<string, string> = {
   "Check-in": "Questions",
   Compound: "Medicine or supplement",
   Craving: "Urges",
+  "Trigger map": "When urges hit",
   Crew: "People helping you",
   Cut: "Losing weight",
   Dose: "One tablet or shot",
@@ -217,11 +218,12 @@ export type TodayPayload = {
     stress: number | null;
     energy: number | null;
     ritualDone: boolean;
+    sessionDone: boolean;
   };
   latestKg: number;
   deltaKg: number;
   dayNumber: number;
-  cravingsToday: number;
+  cravingsToday: { id: string; time: string; signal: string; action: string | null }[];
   stats: { adherence7: number; streak: number; todayDone: number; todayTotal: number };
   session: TodaySession | null;
   tripwire: Tripwire | null;

@@ -33,7 +33,7 @@ async function check(name, fn) {
 
 async function login(page, slug, passcode) {
   await page.goto(`${BASE}/`);
-  await page.getByRole("button", { name: slug === "liam" ? "Liam" : "Conor", exact: true }).click();
+  await page.getByRole("button", { name: slug === "liam" ? "Liam" : "Artur", exact: true }).click();
   await page.getByPlaceholder("••••").fill(passcode);
   await page.getByRole("button", { name: /open the file/i }).click();
   await page.getByRole("heading", { level: 1 }).waitFor();
@@ -42,18 +42,48 @@ async function login(page, slug, passcode) {
 }
 
 /**
- * Bottom-nav tab, then an optional second-level tab inside it.
+ * Bottom-nav stamp, or Protocol shelf row.
  *
- * Short timeout on purpose: a tab that is missing is missing (a deployment
- * serving an older bundle), not slow. The default 30 s turns one stale build
- * into a ten-minute run that says nothing the first failure did not.
+ * Fuel / Train / Body / Mind are no longer stamps — they live on the Protocol
+ * story shelf. Callers can still say "Fuel" or "Body","Bloods"; this opens
+ * Protocol and clicks the row in main so a Today card with the same name is
+ * not the target. Short timeout on purpose: a missing stamp is missing.
  */
 const NAV_TIMEOUT = 8000;
 
+const PROTOCOL_ROW = {
+  Fuel: "Fuel",
+  Train: "Train",
+  Stack: "Stack",
+  Supply: "Supply",
+  Bloods: "Bloods",
+  Trend: "Trend",
+  "Check-in": "Check-in",
+  "Trigger map": "Trigger map",
+  Craving: "Trigger map",
+};
+
+function protocolRow(tab, sub) {
+  if (sub) return PROTOCOL_ROW[sub] ?? sub;
+  return PROTOCOL_ROW[tab] ?? null;
+}
+
 async function goTab(page, tab, sub) {
   await page.evaluate(() => window.scrollTo(0, 0));
-  await page.getByRole("button", { name: tab, exact: true }).click({ timeout: NAV_TIMEOUT });
-  if (sub) await page.getByRole("tab", { name: sub, exact: true }).click({ timeout: NAV_TIMEOUT });
+  const nav = page.getByRole("navigation", { name: "Sections" });
+  const row = protocolRow(tab, sub);
+  if (row) {
+    await nav.getByRole("button", { name: "Protocol", exact: true }).click({ timeout: NAV_TIMEOUT });
+    await page.locator("main").getByRole("button", { name: row, exact: true }).click({ timeout: NAV_TIMEOUT });
+    return;
+  }
+  await nav.getByRole("button", { name: tab, exact: true }).click({ timeout: NAV_TIMEOUT });
+}
+
+async function signOut(page) {
+  await page.getByRole("button", { name: "File menu" }).click();
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.getByText("Who's checking in").waitFor();
 }
 
 const browser = await chromium.launch({ executablePath }).catch(() => chromium.launch());
@@ -106,13 +136,40 @@ for (const [label, viewport] of [
     }
   });
 
+  await check("mark session done when a session card is present", async () => {
+    const btn = page.getByRole("button", { name: /mark session done/i });
+    if ((await btn.count()) > 0) {
+      await btn.click();
+      await page.getByRole("button", { name: /session logged/i }).waitFor();
+    }
+  });
+
+  await check("weigh-in log + correct overwrite", async () => {
+    await page.getByLabel("Weight in kilograms").fill("91.4");
+    await page.getByRole("button", { name: /^log$/i }).click();
+    await page.getByText(/Logged:.*91\.4/).waitFor();
+    await page.getByRole("button", { name: /correct/i }).click();
+    await page.getByLabel("Weight in kilograms").fill("91.2");
+    await page.getByRole("button", { name: /^log$/i }).click();
+    await page.getByText(/Logged:.*91\.2/).waitFor();
+  });
+
   await check("craving flow: tired → relief → rode it out → breathing timer", async () => {
-    await page.getByRole("button", { name: "Tired", exact: true }).click();
+    await page.getByRole("button", { name: "Tired", exact: true }).first().click();
     await page.getByRole("button", { name: "Relief", exact: true }).click();
     await page.getByRole("button", { name: "Rode it out", exact: true }).click();
     await page.getByRole("timer").waitFor();
     await page.screenshot({ path: `${SHOTS}/${label}-2-breathe.png` });
     await page.getByRole("button", { name: /done early/i }).click();
+  });
+
+  await check("undo last craving from today's log", async () => {
+    await page.getByLabel("Today's craving log").waitFor();
+    const before = await page.getByLabel("Today's craving log").locator("li").count();
+    await page.getByRole("button", { name: /undo last/i }).click();
+    await page.waitForTimeout(150);
+    const after = await page.getByLabel("Today's craving log").locator("li").count().catch(() => 0);
+    if (after >= before) throw new Error("undo did not remove a log");
   });
 
   await check("fuel: macro targets, adaptive energy, plan and food picker", async () => {
@@ -220,7 +277,7 @@ for (const [label, viewport] of [
     await page.screenshot({ path: `${SHOTS}/${label}-14-shop.png`, fullPage: true });
   });
 
-  await check("reminders: previews honestly and never claims it can send", async () => {
+  await check("reminders: previews honestly when it cannot send", async () => {
     await goTab(page, "More");
     await page.getByRole("button", { name: /^Reminders/ }).first().click({ timeout: NAV_TIMEOUT });
     await page.waitForFunction(
@@ -229,9 +286,9 @@ for (const [label, viewport] of [
       { timeout: NAV_TIMEOUT },
     );
     const body = await page.locator("main").innerText();
-    // The demo has no server behind it. A switch that lies about delivery is
-    // worse than no switch, so the screen has to say so.
-    if (!/demo|cannot|no server|not.*sent/i.test(body)) {
+    // CI has no send keys. A switch that lies about delivery is worse than no
+    // switch, so the screen has to say it cannot send.
+    if (!/cannot|no send keys|not.*sent|no device|no email/i.test(body)) {
       throw new Error("reminders screen does not admit it cannot deliver");
     }
     await page.screenshot({ path: `${SHOTS}/${label}-16-remind.png`, fullPage: true });
@@ -314,7 +371,7 @@ for (const [label, viewport] of [
 
   await check("crew tab: partner card + nudge lands in feed", async () => {
     await goTab(page, "Crew");
-    await page.getByText("Conor").first().waitFor();
+    await page.getByText("Artur").first().waitFor();
     const shared = await page.getByLabel("Crew feed").textContent();
     await page.getByRole("button", { name: "Floor's holding" }).click();
     await page.waitForTimeout(200);
@@ -323,10 +380,17 @@ for (const [label, viewport] of [
     await page.screenshot({ path: `${SHOTS}/${label}-3-crew.png`, fullPage: true });
   });
 
+  await check("custom crew message lands in feed", async () => {
+    await page.getByLabel("Custom crew message").fill("Hold the line");
+    await page.getByRole("button", { name: /^send$/i }).click();
+    await page.waitForTimeout(200);
+    const feed = await page.getByLabel("Crew feed").textContent();
+    if (!feed.includes("Hold the line")) throw new Error("custom nudge not in feed");
+  });
+
   await check("crew board carries no absolute weights (shared projection only)", async () => {
     const body = await page.textContent("body");
     if (/9[24]\.\d\s?kg/.test(body.replace(/Mass[\s\S]*?Day/, ""))) {
-      // scoreboard shows YOUR OWN mass; strip it before asserting the crew area
       throw new Error("weight-looking value in crew view");
     }
   });
@@ -352,15 +416,14 @@ for (const [label, viewport] of [
   await check("mode switch to survival: 3 checks, amber, executed-decision feed line", async () => {
     await goTab(page, "Today");
     await page.getByRole("button", { name: /cut mode ⇄/i }).click();
-    await page.getByRole("dialog").getByRole("button", { name: /survival/i }).click();
+    await page.getByRole("button", { name: /^survival\b/i }).click();
     await page.getByText(/Floor protocol — hold/i).waitFor();
     await page.getByText(/Floor checks — only these three exist/i).waitFor();
     const checkButtons = await page.getByRole("button", { name: /protein hit|steps|kitchen closed/i }).count();
     if (checkButtons < 3) throw new Error(`expected 3 floor checks, saw ${checkButtons}`);
     await page.screenshot({ path: `${SHOTS}/${label}-6-survival.png`, fullPage: true });
-    // switch back to cut for the next run
     await page.getByRole("button", { name: /survival mode ⇄/i }).click();
-    await page.getByRole("dialog").getByRole("button", { name: /^cut/i }).click();
+    await page.getByRole("button", { name: /^cut\b/i }).click();
     await page.getByText(/Cut protocol/i).waitFor();
   });
 
@@ -370,17 +433,17 @@ for (const [label, viewport] of [
     await page.getByText(/ghrelin/i).first().waitFor();
     await page.screenshot({ path: `${SHOTS}/${label}-7-why.png`, fullPage: true });
     await page.goto(`${BASE}/`);
+    await page.getByRole("heading", { level: 1 }).waitFor();
   });
 
-  await check("logout → conor sees survival file, not liam's data", async () => {
-    await page.getByRole("button", { name: "Sign out" }).click();
-    await page.getByText("Who's checking in").waitFor();
-    await login(page, "conor", "1379");
+  await check("logout → artur sees survival file, not liam's data", async () => {
+    await signOut(page);
+    await login(page, "artur", "1379");
     await page.getByText(/Floor protocol — hold < 96/i).waitFor();
     const body = await page.textContent("body");
-    if (body.includes("92.8")) throw new Error("liam's weight visible in conor session");
-    await page.screenshot({ path: `${SHOTS}/${label}-8-conor.png`, fullPage: true });
-    await page.getByRole("button", { name: "Sign out" }).click();
+    if (body.includes("92.8")) throw new Error("liam's weight visible in artur session");
+    await page.screenshot({ path: `${SHOTS}/${label}-8-artur.png`, fullPage: true });
+    await signOut(page);
   });
 
   await context.close();

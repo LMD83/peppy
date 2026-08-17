@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-16T10:45:00.000Z",
+  "title": "Design System: Timento",
+  "extensions": {
+    "colorMeta": {
+      "paper": { "role": "neutral", "displayName": "Cool Paper", "canonical": "#fafaf8", "tonalRamp": ["#15171c", "#2c313b", "#5f636a", "#63676e", "#e4e5e1", "#eeefeb", "#f3f3f0", "#fafaf8"] },
+      "panel": { "role": "neutral", "displayName": "Panel White", "canonical": "#ffffff", "tonalRamp": ["#15171c", "#2c313b", "#5f636a", "#63676e", "#e4e5e1", "#eeefeb", "#f3f3f0", "#ffffff"] },
+      "ink": { "role": "primary", "displayName": "File Ink", "canonical": "#15171c", "tonalRamp": ["#0a0b0d", "#15171c", "#1e222a", "#232730", "#2c313b", "#5f636a", "#a2a7af", "#e4e5e1"] },
+      "green": { "role": "secondary", "displayName": "Protocol Green", "canonical": "#297047", "tonalRamp": ["#143624", "#1f5a38", "#297047", "#4a9a6a", "#9cc4a9", "#dfeae2", "#e8f1eb", "#f3f8f4"] },
+      "amber": { "role": "secondary", "displayName": "Floor Amber", "canonical": "#8f5a15", "tonalRamp": ["#4b3f20", "#6b5a2e", "#8f5a15", "#e0a34e", "#e8c07a", "#fbf3e4", "#fdf8ee", "#fffdf8"] },
+      "blue": { "role": "tertiary", "displayName": "Measure Blue", "canonical": "#2b5fab", "tonalRamp": ["#142a4a", "#1e4280", "#2b5fab", "#4a7bc4", "#7a9fd6", "#e9eff8", "#f2f6fb", "#f8fafd"] },
+      "red": { "role": "tertiary", "displayName": "Alarm Red", "canonical": "#b8323a", "tonalRamp": ["#5a181c", "#8a242c", "#b8323a", "#d75a60", "#e89a9e", "#faeceb", "#fcf4f3", "#fefafa"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Protocol titles and large file numbers." },
+      "title": { "displayName": "Title", "purpose": "In-card section titles." },
+      "body": { "displayName": "Body", "purpose": "Explanatory copy and list rows." },
+      "label": { "displayName": "Mono stamp", "purpose": "Buttons, eyebrows, nav, chips — uppercase tracking, 11.5px floor." }
+    },
+    "shadows": [
+      { "name": "card-rest", "value": "0 1px 2px rgba(21,23,28,0.04)", "purpose": "Default card whisper." },
+      { "name": "sheet-lift", "value": "0 8px 32px rgba(21,23,28,0.18)", "purpose": "Modal sheet structure." }
+    ],
+    "motion": [
+      { "name": "press", "value": "opacity 150ms ease", "purpose": "Active press feedback on stamps/chips." },
+      { "name": "breathe-bar", "value": "width 1000ms linear", "purpose": "Breathing timer progress fill." }
+    ],
+    "breakpoints": [
+      { "name": "sheet-center", "value": "640px", "purpose": "Sheets switch from bottom sheet to centered dialog (sm:)." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Ink mono stamp for primary actions.",
+      "html": "<button class=\"ds-btn-primary\" type=\"button\">OPEN THE FILE</button>",
+      "css": ".ds-btn-primary { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:12px 16px; background:#15171c; color:#fff; border:none; border-radius:10px; font-family:\"IBM Plex Mono\",ui-monospace,monospace; font-size:11.5px; letter-spacing:0.15em; text-transform:uppercase; cursor:pointer; transition:opacity 150ms ease; } .ds-btn-primary:hover { opacity:0.9; } .ds-btn-primary:active { opacity:0.7; } .ds-btn-primary:focus-visible { outline:3px solid #3b82f6; outline-offset:2px; } .ds-btn-primary:disabled { opacity:0.4; cursor:not-allowed; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Bordered panel stamp for secondary actions.",
+      "html": "<button class=\"ds-btn-ghost\" type=\"button\">CORRECT</button>",
+      "css": ".ds-btn-ghost { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:12px 16px; background:#ffffff; color:#15171c; border:1px solid #888b85; border-radius:10px; font-family:\"IBM Plex Mono\",ui-monospace,monospace; font-size:11.5px; letter-spacing:0.15em; text-transform:uppercase; cursor:pointer; transition:opacity 150ms ease; } .ds-btn-ghost:hover { opacity:0.9; } .ds-btn-ghost:active { opacity:0.7; } .ds-btn-ghost:focus-visible { outline:3px solid #3b82f6; outline-offset:2px; }"
+    },
+    {
+      "name": "Chip",
+      "kind": "chip",
+      "refersTo": "chip-default",
+      "description": "Pill stamp for craving signals and nudges.",
+      "html": "<button class=\"ds-chip\" type=\"button\">TIRED</button>",
+      "css": ".ds-chip { min-height:44px; padding:8px 14px; background:#f3f3f0; color:#15171c; border:1px solid #888b85; border-radius:20px; font-family:\"IBM Plex Mono\",ui-monospace,monospace; font-size:11.5px; cursor:pointer; transition:opacity 150ms ease; } .ds-chip:active { opacity:0.7; } .ds-chip:focus-visible { outline:3px solid #3b82f6; outline-offset:2px; } .ds-chip.is-active { background:#15171c; color:#fff; border-color:#15171c; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card-default",
+      "description": "Default file card on panel stock.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-eyebrow\"><span class=\"ds-hash\"></span><span>TODAY'S CHECKS</span></div><p class=\"ds-body\">Complete the floor checks for this mode.</p></div>",
+      "css": ".ds-card { background:#ffffff; border:1px solid #e4e5e1; border-radius:10px; padding:16px; box-shadow:0 1px 2px rgba(21,23,28,0.04); color:#15171c; font-family:\"IBM Plex Sans\",system-ui,sans-serif; } .ds-eyebrow { display:flex; align-items:center; gap:8px; margin-bottom:8px; font-family:\"IBM Plex Mono\",ui-monospace,monospace; font-size:11.5px; letter-spacing:0.15em; text-transform:uppercase; color:#5f636a; } .ds-hash { display:inline-block; width:18px; height:4px; border-radius:1px; background:#297047; } .ds-body { margin:0; font-size:13px; line-height:1.45; }"
+    },
+    {
+      "name": "Amber Card",
+      "kind": "card",
+      "refersTo": "card-amber",
+      "description": "Tripwire / survival / review stock.",
+      "html": "<div class=\"ds-card-amber\"><div class=\"ds-eyebrow\"><span class=\"ds-hash\"></span><span>HARD TRIPWIRE</span></div><p class=\"ds-body\">Ceiling breached — floor protocol is available.</p></div>",
+      "css": ".ds-card-amber { background:#fbf3e4; border:1px solid #8f5a15; border-radius:10px; padding:16px; color:#6b5a2e; font-family:\"IBM Plex Sans\",system-ui,sans-serif; } .ds-card-amber .ds-eyebrow { display:flex; align-items:center; gap:8px; margin-bottom:8px; font-family:\"IBM Plex Mono\",ui-monospace,monospace; font-size:11.5px; letter-spacing:0.15em; text-transform:uppercase; color:#5f636a; } .ds-card-amber .ds-hash { display:inline-block; width:18px; height:4px; border-radius:1px; background:#8f5a15; } .ds-card-amber .ds-body { margin:0; font-size:13px; line-height:1.45; color:#6b5a2e; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input-default",
+      "description": "Weigh-in / passcode field on panel.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"kg\" aria-label=\"Weight in kilograms\" />",
+      "css": ".ds-input { min-height:44px; width:100%; max-width:120px; padding:8px 12px; background:#ffffff; color:#15171c; border:1px solid #888b85; border-radius:10px; font-family:\"IBM Plex Mono\",ui-monospace,monospace; font-size:14px; outline:none; } .ds-input:focus { border-color:#15171c; } .ds-input:focus-visible { outline:3px solid #3b82f6; outline-offset:2px; }"
+    },
+    {
+      "name": "Bottom Nav Item",
+      "kind": "nav",
+      "refersTo": "nav-tab",
+      "description": "Fixed tab with mode accent bar.",
+      "html": "<button class=\"ds-nav is-active\" type=\"button\"><span class=\"ds-nav-bar\"></span><span class=\"ds-nav-label\">TODAY</span></button>",
+      "css": ".ds-nav { display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px 8px 12px; background:#ffffff; border:none; color:#15171c; font-family:\"IBM Plex Mono\",ui-monospace,monospace; font-size:11.5px; letter-spacing:0.02em; text-transform:uppercase; cursor:pointer; } .ds-nav-bar { display:block; width:32px; height:3px; border-radius:999px; background:#297047; } .ds-nav:not(.is-active) { color:#5f636a; } .ds-nav:not(.is-active) .ds-nav-bar { background:transparent; } .ds-nav:focus-visible { outline:3px solid #3b82f6; outline-offset:2px; }"
+    },
+    {
+      "name": "Scoreboard Cell",
+      "kind": "custom",
+      "refersTo": "scoreboard-cell",
+      "description": "Dark file-tab cell inside the ink header.",
+      "html": "<div class=\"ds-score\"><div class=\"ds-score-label\">MASS</div><div class=\"ds-score-value\">91.2 kg</div><div class=\"ds-score-sub\"><span class=\"ds-score-hash\"></span>Δ -3.8 kg</div></div>",
+      "css": ".ds-score { background:#1e222a; color:#fff; padding:12px; border:1px solid #2c313b; font-family:\"IBM Plex Mono\",ui-monospace,monospace; } .ds-score-label { font-size:11.5px; letter-spacing:0.16em; text-transform:uppercase; color:#a2a7af; } .ds-score-value { margin:2px 0; font-family:\"Archivo Black\",sans-serif; font-size:22px; color:#fff; } .ds-score-sub { display:flex; align-items:center; gap:6px; font-size:11.5px; color:#a2a7af; } .ds-score-hash { display:inline-block; width:12px; height:3px; background:#2b5fab; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Performance File",
+    "overview": "Timento looks like a paper case file you open every day — cool off-white stock, near-black ink headers, mono uppercase stamps for sections and controls. Density is high but calm: stacked cards in a narrow column, not a dashboard wallpaper. Mode is the only drama — cut/maintain stay green-ink quiet; survival turns amber without becoming neon.\n\nThe system rejects wellness cream-serif kitsch, purple SaaS gradients, and glow-heavy dark dashboards. Evidence over pep talk: eyebrows with a short color hash mark, scoreboard cells as file tabs, sheets as clipped overlays rather than glassmorphism.",
+    "keyCharacteristics": [
+      "Paper / panel / ink neutrals with hairline rules",
+      "Archivo Black display + IBM Plex Sans body + IBM Plex Mono labels",
+      "Mode-aware green (execute) vs amber (floor)",
+      "Flat surfaces; one soft card shadow; deeper lift only on sheets",
+      "Mobile-first max-w-md column; fixed bottom nav (More is overflow)"
+    ],
+    "rules": [
+      { "name": "The One Stamp Rule", "body": "Saturated accents (green, amber, red, blue) mark state — never decorate empty chrome. Prefer ink + paper first.", "section": "colors" },
+      { "name": "The Floor Amber Rule", "body": "Amber means survival / tripwire / review. Do not use amber as a generic “warning yellow” for unrelated UI.", "section": "colors" },
+      { "name": "The Mono Stamp Rule", "body": "Interactive chrome and section labels speak in mono uppercase. Do not title-case primary buttons in sans.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "No glow, no multi-layer glass. Shadows appear only for cards (whisper) and sheets (structure).", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep the narrow performance-file column and paper/ink pairing.",
+      "Do use mono uppercase for chrome (buttons, nav, eyebrows).",
+      "Do reserve amber for survival / tripwire / review; green for executed progress.",
+      "Do keep primary controls ≥44px tall.",
+      "Do share crew projection only — never style partner weights into the UI."
+    ],
+    "donts": [
+      "Don't introduce purple gradients, glassmorphism, or neon dark themes.",
+      "Don't replace Archivo / IBM Plex with Inter/Roboto “default SaaS” stacks.",
+      "Don't add a fifth bottom-nav stamp; Protocol and More are shelves.",
+      "Don't decorate with emoji or sticker badges on the scoreboard.",
+      "Don't invent macro-tracking chrome that violates survival’s three-check floor.",
+      "Don't restore pre-AA hex (#c77d1f, #2e7d4f, #c7373f, #70747b, #9ba0a8, #b8860b)."
+    ]
+  }
+}

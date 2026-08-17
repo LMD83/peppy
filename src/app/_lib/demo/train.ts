@@ -1,28 +1,33 @@
 import { addDays } from "@convex/tm/lib";
 import {
   DEFAULT_LANDMARKS,
+  DEFAULT_TRAIN_PROFILE,
   EXERCISE_BY_KEY,
   MESO_DELOAD_WEEK,
-  MESO_TEMPLATES,
   MESO_WEEKS,
   MUSCLES,
+  formatFor,
   mesocycleName,
+  templatesFor,
   type Landmark,
   type MesoGoal,
-  type Muscle,
+  type TrainingProfile,
 } from "@convex/tm/data/exercises";
 import {
   e1rm,
-  lastSessionFor,
   mesoWeekFor,
-  progressionFor,
+  profileFromRow,
   prsFrom,
   readinessAdjust,
   roundHalf,
-  topSetFor,
+  sessionBlockFor,
+  sessionScale,
+  survivalMoveFor,
+  volumeLabel,
   volumeSetsByMuscle,
   volumeVerdict,
   type DatedSet,
+  type TrainVoice,
 } from "@convex/tm/logicTrain";
 import type { DemoDb } from "../demo-db";
 import type { TrainData } from "../types";
@@ -47,15 +52,23 @@ export function view(db: DemoDb, slug: string, date: string): TrainData {
       e1rm: e1rm(r.weightKg, r.reps, r.rir),
     }));
 
+  const profileRow = db.trainProfiles.find((r) => r.userSlug === slug);
+  const profile: TrainingProfile = profileRow ? profileFromRow(profileRow) : DEFAULT_TRAIN_PROFILE;
+  const voice: TrainVoice = user.a11yProfileMut === "easy" ? "easy" : "standard";
+  const format = formatFor(profile);
+
   if (user.modeMut === "survival") {
     return {
       mesocycle: null,
-      today: { dayName: "Floor — movement only", isRestDay: true, blocks: [] },
+      today: { dayName: "Floor — movement only", isRestDay: true, blocks: [], format },
       loggedSets,
       weeklyVolume: [],
       prs: [],
       readiness: { multiplier: 1, note: "floor mode — no load prescription" },
       survival: true,
+      profile,
+      voice,
+      survivalMove: survivalMoveFor(profile),
     };
   }
 
@@ -82,34 +95,11 @@ export function view(db: DemoDb, slug: string, date: string): TrainData {
         .sort((a, b) => a.orderIndex - b.orderIndex)
     : [];
 
-  const blocks = blockRows.map((b) => {
-    const exercise = EXERCISE_BY_KEY[b.exercise];
-    const last = lastSessionFor(history, b.exercise);
-    const top = topSetFor(history, b.exercise);
-    const progression = progressionFor(last?.sets ?? [], {
-      repLow: b.repLow,
-      repHigh: b.repHigh,
-      rirTarget: b.rirTarget,
-      loadStepKg: exercise?.loadStepKg ?? 2.5,
-    });
-    const scaled = roundHalf(progression.suggestionKg * readiness.multiplier);
-    const why =
-      readiness.multiplier < 1 && progression.suggestionKg > 0
-        ? `${progression.why} Readiness ×${readiness.multiplier.toFixed(2)} → ${scaled.toFixed(1)} kg today.`
-        : progression.why;
-    return {
-      exercise: b.exercise,
-      muscle: isMuscle(b.muscle) ? b.muscle : (exercise?.muscle ?? "core"),
-      sets: readiness.dropSet ? Math.max(1, b.sets - 1) : b.sets,
-      repLow: b.repLow,
-      repHigh: b.repHigh,
-      rirTarget: b.rirTarget,
-      lastTopSet: top ? { weightKg: top.weightKg, reps: top.reps, rir: top.rir } : null,
-      suggestionKg: scaled,
-      why,
-      e1rm: top?.e1rm ?? 0,
-    };
-  });
+  const scale = sessionScale(profile);
+  const blocks = blockRows
+    .map((b) => sessionBlockFor(b, profile, voice, history, readiness))
+    .filter((b): b is NonNullable<typeof b> => b !== null)
+    .slice(0, scale.maxBlocks);
 
   const landmarks = new Map<string, Landmark>(
     db.volumeLandmarks
@@ -126,7 +116,8 @@ export function view(db: DemoDb, slug: string, date: string): TrainData {
     const landmark = landmarks.get(muscle) ?? DEFAULT_LANDMARKS[muscle];
     const sets = setsByMuscle[muscle];
     const { verdict, note } = volumeVerdict(sets, landmark);
-    return { muscle, sets, ...landmark, verdict, note };
+    const labelled = volumeLabel(verdict, note, voice);
+    return { muscle, sets, ...landmark, verdict, note: labelled.note, verdictLabel: labelled.verdict };
   });
 
   const dayName = meso
@@ -147,17 +138,16 @@ export function view(db: DemoDb, slug: string, date: string): TrainData {
             phase: position.phase,
           }
         : null,
-    today: { dayName, isRestDay: blocks.length === 0, blocks },
+    today: { dayName, isRestDay: blocks.length === 0, blocks, format },
     loggedSets,
     weeklyVolume,
     prs: prsFrom(history).slice(0, 8),
     readiness: { multiplier: readiness.multiplier, note: readiness.note },
     survival: false,
+    profile,
+    voice,
+    survivalMove: null,
   };
-}
-
-function isMuscle(value: string): value is Muscle {
-  return (MUSCLES as string[]).includes(value);
 }
 
 export function logSet(
@@ -206,7 +196,47 @@ export function startMesocycle(db: DemoDb, slug: string, date: string, goal: Mes
     goal,
     status: "running",
   });
-  for (const block of MESO_TEMPLATES) {
+  const profileRow = db.trainProfiles.find((r) => r.userSlug === slug);
+  const profile = profileRow ? profileFromRow(profileRow) : DEFAULT_TRAIN_PROFILE;
+  for (const block of templatesFor(profile)) {
     db.programBlocks.push({ userSlug: slug, mesocycleId: id, ...block });
   }
+}
+
+export function saveProfile(
+  db: DemoDb,
+  slug: string,
+  raw: {
+    setting: string;
+    kit: string[];
+    experience: string;
+    ageBand: string;
+    minutes: number;
+    constraints: string[];
+  },
+) {
+  const profile = profileFromRow(raw);
+  const row = db.trainProfiles.find((r) => r.userSlug === slug);
+  if (row) {
+    row.setting = profile.setting;
+    row.kit = profile.kit;
+    row.experience = profile.experience;
+    row.ageBand = profile.ageBand;
+    row.minutes = profile.minutes;
+    row.constraints = profile.constraints;
+  } else {
+    db.trainProfiles.push({ userSlug: slug, ...profile });
+  }
+}
+
+export function swapBlock(db: DemoDb, slug: string, exercise: string, replacement: string) {
+  if (!EXERCISE_BY_KEY[replacement]) throw new Error("Unknown exercise");
+  const meso = db.mesocycles.find((m) => m.userSlug === slug && m.status === "running");
+  if (!meso) return;
+  const row = db.programBlocks.find(
+    (b) => b.userSlug === slug && b.mesocycleId === meso.id && b.exercise === exercise,
+  );
+  if (!row) return;
+  row.exercise = replacement;
+  row.muscle = EXERCISE_BY_KEY[replacement].muscle;
 }

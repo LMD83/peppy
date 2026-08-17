@@ -46,11 +46,11 @@ function payload(over: Partial<TodayPayload> = {}): TodayPayload {
       ...over.user,
     },
     checks: over.checks ?? checks(mode),
-    day: { weightKg: null, stress: null, energy: null, ritualDone: false, ...over.day },
+    day: { weightKg: null, stress: null, energy: null, ritualDone: false, sessionDone: false, ...over.day },
     latestKg: over.latestKg ?? 92.8,
     deltaKg: over.deltaKg ?? -2.2,
     dayNumber: over.dayNumber ?? 43,
-    cravingsToday: over.cravingsToday ?? 0,
+    cravingsToday: over.cravingsToday ?? [],
     stats: { adherence7: 86, streak: 9, todayDone: 3, todayTotal: 5, ...over.stats },
     session:
       over.session !== undefined
@@ -180,6 +180,7 @@ describe("plainLanguage", () => {
     expect(plain("Bloods")).toBe("Blood tests");
     expect(plain("Adherence")).toBe("How often you did it");
     expect(plain("Mesocycle")).toBe("Training block");
+    expect(plain("Trigger map")).toBe("When urges hit");
   });
 
   it("carries no jargon through to the plain side", () => {

@@ -8,6 +8,8 @@
  * measured thresholds for any individual. Treat them as a starting range.
  */
 
+import { CATALOGUE } from "./exerciseCatalogue";
+
 export type Muscle =
   | "chest"
   | "back"
@@ -44,7 +46,55 @@ export type Pattern =
   | "squat"
   | "hinge"
   | "lunge"
-  | "isolation";
+  | "isolation"
+  | "carry"
+  | "jump"
+  | "cond"
+  | "olympic";
+
+export type Setting = "home" | "gym" | "box";
+export type Kit =
+  | "none"
+  | "barbell"
+  | "dumbbell"
+  | "kettlebell"
+  | "machine"
+  | "cable"
+  | "band"
+  | "pull-up-bar"
+  | "bench"
+  | "box"
+  | "rower"
+  | "bike"
+  | "jump-rope"
+  | "rings"
+  | "wall-ball";
+export type Skill = "foundations" | "standard" | "skilled";
+export type Impact = "low" | "normal";
+export type Constraint = "knees" | "shoulders" | "floor" | "impact" | "overhead";
+export type SessionFormat = "sets" | "circuit" | "emom" | "amrap";
+export type Experience = "new" | "returning" | "trained";
+export type AgeBand = "under-40" | "40-59" | "60-plus";
+export type TrainVoice = "easy" | "standard";
+
+export type TrainingProfile = {
+  setting: Setting;
+  kit: Kit[];
+  experience: Experience;
+  ageBand: AgeBand;
+  minutes: number;
+  constraints: Constraint[];
+};
+
+/** Gym, full kit, trained — the profile Liam's fixtures already assume. */
+export const DEFAULT_TRAIN_PROFILE: TrainingProfile = {
+  setting: "gym",
+  kit: ["none", "barbell", "dumbbell", "machine", "cable", "bench", "pull-up-bar", "box"],
+  experience: "trained",
+  ageBand: "under-40",
+  minutes: 60,
+  constraints: [],
+};
 
 export type Exercise = {
   key: string;
@@ -57,80 +107,19 @@ export type Exercise = {
   isCompound: boolean;
   /** Smallest honest jump on this lift — drives double progression. */
   loadStepKg: number;
+  settings: Setting[];
+  kit: Kit[];
+  skill: Skill;
+  impact: Impact;
+  /** Stated constraints that make this lift a bad pick — never a diagnosis. */
+  blocks: Constraint[];
+  aliases: string[];
+  swaps: string[];
+  cue: string;
 };
 
-/** 2.5 kg on everything upper; 5 kg on lower compounds, where the jump is real. */
-export const EXERCISES: Exercise[] = [
-  /* ----- chest ----- */
-  { key: "bench-press", name: "Bench press", muscle: "chest", equipment: "barbell", pattern: "horizontal-push", defaultRepLow: 6, defaultRepHigh: 10, isCompound: true, loadStepKg: 2.5 },
-  { key: "incline-barbell-press", name: "Incline barbell press", muscle: "chest", equipment: "barbell", pattern: "horizontal-push", defaultRepLow: 6, defaultRepHigh: 10, isCompound: true, loadStepKg: 2.5 },
-  { key: "db-bench-press", name: "DB bench press", muscle: "chest", equipment: "dumbbell", pattern: "horizontal-push", defaultRepLow: 8, defaultRepHigh: 12, isCompound: true, loadStepKg: 2.5 },
-  { key: "incline-db-press", name: "Incline DB press", muscle: "chest", equipment: "dumbbell", pattern: "horizontal-push", defaultRepLow: 10, defaultRepHigh: 14, isCompound: true, loadStepKg: 2.5 },
-  { key: "machine-chest-press", name: "Machine chest press", muscle: "chest", equipment: "machine", pattern: "horizontal-push", defaultRepLow: 8, defaultRepHigh: 12, isCompound: true, loadStepKg: 2.5 },
-  { key: "cable-fly", name: "Cable fly", muscle: "chest", equipment: "cable", pattern: "isolation", defaultRepLow: 12, defaultRepHigh: 16, isCompound: false, loadStepKg: 2.5 },
-  { key: "dip", name: "Dip", muscle: "chest", equipment: "bodyweight", pattern: "horizontal-push", defaultRepLow: 6, defaultRepHigh: 12, isCompound: true, loadStepKg: 2.5 },
-
-  /* ----- back ----- */
-  { key: "barbell-row", name: "Barbell row", muscle: "back", equipment: "barbell", pattern: "horizontal-pull", defaultRepLow: 8, defaultRepHigh: 12, isCompound: true, loadStepKg: 2.5 },
-  { key: "chest-supported-row", name: "Chest-supported row", muscle: "back", equipment: "machine", pattern: "horizontal-pull", defaultRepLow: 10, defaultRepHigh: 14, isCompound: true, loadStepKg: 2.5 },
-  { key: "seated-cable-row", name: "Seated cable row", muscle: "back", equipment: "cable", pattern: "horizontal-pull", defaultRepLow: 10, defaultRepHigh: 14, isCompound: true, loadStepKg: 2.5 },
-  { key: "single-arm-db-row", name: "Single-arm DB row", muscle: "back", equipment: "dumbbell", pattern: "horizontal-pull", defaultRepLow: 8, defaultRepHigh: 12, isCompound: true, loadStepKg: 2.5 },
-  { key: "lat-pulldown", name: "Lat pulldown", muscle: "back", equipment: "cable", pattern: "vertical-pull", defaultRepLow: 10, defaultRepHigh: 14, isCompound: true, loadStepKg: 2.5 },
-  { key: "pull-up", name: "Pull-up", muscle: "back", equipment: "bodyweight", pattern: "vertical-pull", defaultRepLow: 5, defaultRepHigh: 10, isCompound: true, loadStepKg: 2.5 },
-  { key: "straight-arm-pulldown", name: "Straight-arm pulldown", muscle: "back", equipment: "cable", pattern: "isolation", defaultRepLow: 12, defaultRepHigh: 16, isCompound: false, loadStepKg: 2.5 },
-
-  /* ----- delts ----- */
-  { key: "overhead-press", name: "Overhead press", muscle: "delts", equipment: "barbell", pattern: "vertical-push", defaultRepLow: 8, defaultRepHigh: 12, isCompound: true, loadStepKg: 2.5 },
-  { key: "seated-db-press", name: "Seated DB press", muscle: "delts", equipment: "dumbbell", pattern: "vertical-push", defaultRepLow: 8, defaultRepHigh: 12, isCompound: true, loadStepKg: 2.5 },
-  { key: "db-lateral-raise", name: "DB lateral raise", muscle: "delts", equipment: "dumbbell", pattern: "isolation", defaultRepLow: 12, defaultRepHigh: 18, isCompound: false, loadStepKg: 2.5 },
-  { key: "cable-lateral-raise", name: "Cable lateral raise", muscle: "delts", equipment: "cable", pattern: "isolation", defaultRepLow: 12, defaultRepHigh: 18, isCompound: false, loadStepKg: 2.5 },
-  { key: "face-pull", name: "Face pull", muscle: "delts", equipment: "cable", pattern: "horizontal-pull", defaultRepLow: 15, defaultRepHigh: 20, isCompound: false, loadStepKg: 2.5 },
-  { key: "reverse-pec-deck", name: "Reverse pec deck", muscle: "delts", equipment: "machine", pattern: "isolation", defaultRepLow: 12, defaultRepHigh: 18, isCompound: false, loadStepKg: 2.5 },
-
-  /* ----- biceps ----- */
-  { key: "ez-bar-curl", name: "EZ-bar curl", muscle: "biceps", equipment: "barbell", pattern: "isolation", defaultRepLow: 8, defaultRepHigh: 12, isCompound: false, loadStepKg: 2.5 },
-  { key: "incline-db-curl", name: "Incline DB curl", muscle: "biceps", equipment: "dumbbell", pattern: "isolation", defaultRepLow: 10, defaultRepHigh: 14, isCompound: false, loadStepKg: 2.5 },
-  { key: "hammer-curl", name: "Hammer curl", muscle: "biceps", equipment: "dumbbell", pattern: "isolation", defaultRepLow: 10, defaultRepHigh: 14, isCompound: false, loadStepKg: 2.5 },
-  { key: "cable-curl", name: "Cable curl", muscle: "biceps", equipment: "cable", pattern: "isolation", defaultRepLow: 12, defaultRepHigh: 15, isCompound: false, loadStepKg: 2.5 },
-
-  /* ----- triceps ----- */
-  { key: "close-grip-bench", name: "Close-grip bench", muscle: "triceps", equipment: "barbell", pattern: "horizontal-push", defaultRepLow: 6, defaultRepHigh: 10, isCompound: true, loadStepKg: 2.5 },
-  { key: "triceps-pushdown", name: "Triceps pushdown", muscle: "triceps", equipment: "cable", pattern: "isolation", defaultRepLow: 12, defaultRepHigh: 15, isCompound: false, loadStepKg: 2.5 },
-  { key: "overhead-triceps-extension", name: "Overhead triceps extension", muscle: "triceps", equipment: "cable", pattern: "isolation", defaultRepLow: 10, defaultRepHigh: 14, isCompound: false, loadStepKg: 2.5 },
-  { key: "skull-crusher", name: "Skull crusher", muscle: "triceps", equipment: "barbell", pattern: "isolation", defaultRepLow: 8, defaultRepHigh: 12, isCompound: false, loadStepKg: 2.5 },
-
-  /* ----- quads ----- */
-  { key: "back-squat", name: "Back squat", muscle: "quads", equipment: "barbell", pattern: "squat", defaultRepLow: 5, defaultRepHigh: 8, isCompound: true, loadStepKg: 5 },
-  { key: "front-squat", name: "Front squat", muscle: "quads", equipment: "barbell", pattern: "squat", defaultRepLow: 5, defaultRepHigh: 8, isCompound: true, loadStepKg: 5 },
-  { key: "hack-squat", name: "Hack squat", muscle: "quads", equipment: "machine", pattern: "squat", defaultRepLow: 8, defaultRepHigh: 12, isCompound: true, loadStepKg: 5 },
-  { key: "leg-press", name: "Leg press", muscle: "quads", equipment: "machine", pattern: "squat", defaultRepLow: 10, defaultRepHigh: 15, isCompound: true, loadStepKg: 5 },
-  { key: "walking-lunge", name: "Walking lunge", muscle: "quads", equipment: "dumbbell", pattern: "lunge", defaultRepLow: 10, defaultRepHigh: 14, isCompound: true, loadStepKg: 5 },
-  { key: "bulgarian-split-squat", name: "Bulgarian split squat", muscle: "quads", equipment: "dumbbell", pattern: "lunge", defaultRepLow: 8, defaultRepHigh: 12, isCompound: true, loadStepKg: 5 },
-  { key: "leg-extension", name: "Leg extension", muscle: "quads", equipment: "machine", pattern: "isolation", defaultRepLow: 12, defaultRepHigh: 18, isCompound: false, loadStepKg: 2.5 },
-
-  /* ----- hamstrings ----- */
-  { key: "deadlift", name: "Deadlift", muscle: "hamstrings", equipment: "barbell", pattern: "hinge", defaultRepLow: 3, defaultRepHigh: 6, isCompound: true, loadStepKg: 5 },
-  { key: "romanian-deadlift", name: "Romanian deadlift", muscle: "hamstrings", equipment: "barbell", pattern: "hinge", defaultRepLow: 8, defaultRepHigh: 12, isCompound: true, loadStepKg: 5 },
-  { key: "good-morning", name: "Good morning", muscle: "hamstrings", equipment: "barbell", pattern: "hinge", defaultRepLow: 8, defaultRepHigh: 12, isCompound: true, loadStepKg: 5 },
-  { key: "leg-curl", name: "Seated leg curl", muscle: "hamstrings", equipment: "machine", pattern: "isolation", defaultRepLow: 10, defaultRepHigh: 15, isCompound: false, loadStepKg: 2.5 },
-  { key: "lying-leg-curl", name: "Lying leg curl", muscle: "hamstrings", equipment: "machine", pattern: "isolation", defaultRepLow: 10, defaultRepHigh: 15, isCompound: false, loadStepKg: 2.5 },
-
-  /* ----- glutes ----- */
-  { key: "hip-thrust", name: "Hip thrust", muscle: "glutes", equipment: "barbell", pattern: "hinge", defaultRepLow: 8, defaultRepHigh: 12, isCompound: true, loadStepKg: 5 },
-  { key: "cable-kickback", name: "Cable kickback", muscle: "glutes", equipment: "cable", pattern: "isolation", defaultRepLow: 12, defaultRepHigh: 18, isCompound: false, loadStepKg: 2.5 },
-  { key: "hip-abduction", name: "Hip abduction", muscle: "glutes", equipment: "machine", pattern: "isolation", defaultRepLow: 15, defaultRepHigh: 20, isCompound: false, loadStepKg: 2.5 },
-
-  /* ----- calves ----- */
-  { key: "standing-calf-raise", name: "Standing calf raise", muscle: "calves", equipment: "machine", pattern: "isolation", defaultRepLow: 10, defaultRepHigh: 15, isCompound: false, loadStepKg: 2.5 },
-  { key: "seated-calf-raise", name: "Seated calf raise", muscle: "calves", equipment: "machine", pattern: "isolation", defaultRepLow: 12, defaultRepHigh: 20, isCompound: false, loadStepKg: 2.5 },
-  { key: "leg-press-calf-raise", name: "Leg-press calf raise", muscle: "calves", equipment: "machine", pattern: "isolation", defaultRepLow: 12, defaultRepHigh: 18, isCompound: false, loadStepKg: 2.5 },
-
-  /* ----- core ----- */
-  { key: "hanging-leg-raise", name: "Hanging leg raise", muscle: "core", equipment: "bodyweight", pattern: "isolation", defaultRepLow: 10, defaultRepHigh: 15, isCompound: false, loadStepKg: 2.5 },
-  { key: "cable-crunch", name: "Cable crunch", muscle: "core", equipment: "cable", pattern: "isolation", defaultRepLow: 12, defaultRepHigh: 15, isCompound: false, loadStepKg: 2.5 },
-  { key: "ab-wheel", name: "Ab wheel", muscle: "core", equipment: "bodyweight", pattern: "isolation", defaultRepLow: 8, defaultRepHigh: 15, isCompound: false, loadStepKg: 2.5 },
-  { key: "pallof-press", name: "Pallof press", muscle: "core", equipment: "cable", pattern: "isolation", defaultRepLow: 10, defaultRepHigh: 15, isCompound: false, loadStepKg: 2.5 },
-];
+/** Catalogue lives in exerciseCatalogue.ts so this file stays the public API. */
+export const EXERCISES: Exercise[] = CATALOGUE;
 
 export const EXERCISE_BY_KEY: Record<string, Exercise> = Object.fromEntries(
   EXERCISES.map((e) => [e.key, e]),
@@ -230,4 +219,86 @@ export function templateForWeekday(weekday: number): MesoBlockTemplate[] {
 export function mesocycleName(goal: MesoGoal): string {
   const label = goal === "hypertrophy" ? "Hypertrophy" : goal === "strength" ? "Strength" : "Recomp";
   return `${label} · ${MESO_WEEKS} weeks`;
+}
+
+/** Three-day living-room circuit. Knee-friendly by default; swaps cover kit. */
+export const HOME_TEMPLATES: MesoBlockTemplate[] = [
+  { weekday: 1, dayName: "Home · circuit", exercise: "sit-to-stand", muscle: "quads", sets: 3, repLow: 8, repHigh: 12, rirTarget: 2, orderIndex: 0 },
+  { weekday: 1, dayName: "Home · circuit", exercise: "wall-push-up", muscle: "chest", sets: 3, repLow: 8, repHigh: 12, rirTarget: 2, orderIndex: 1 },
+  { weekday: 1, dayName: "Home · circuit", exercise: "towel-row", muscle: "back", sets: 3, repLow: 8, repHigh: 12, rirTarget: 2, orderIndex: 2 },
+  { weekday: 1, dayName: "Home · circuit", exercise: "glute-bridge", muscle: "glutes", sets: 3, repLow: 10, repHigh: 15, rirTarget: 2, orderIndex: 3 },
+  { weekday: 1, dayName: "Home · circuit", exercise: "dead-bug", muscle: "core", sets: 3, repLow: 8, repHigh: 12, rirTarget: 2, orderIndex: 4 },
+  { weekday: 1, dayName: "Home · circuit", exercise: "calf-raise-bw", muscle: "calves", sets: 3, repLow: 10, repHigh: 15, rirTarget: 1, orderIndex: 5 },
+
+  { weekday: 3, dayName: "Home · hinge", exercise: "hip-hinge", muscle: "hamstrings", sets: 3, repLow: 8, repHigh: 12, rirTarget: 2, orderIndex: 0 },
+  { weekday: 3, dayName: "Home · hinge", exercise: "incline-push-up", muscle: "chest", sets: 3, repLow: 6, repHigh: 12, rirTarget: 2, orderIndex: 1 },
+  { weekday: 3, dayName: "Home · hinge", exercise: "band-row", muscle: "back", sets: 3, repLow: 10, repHigh: 14, rirTarget: 2, orderIndex: 2 },
+  { weekday: 3, dayName: "Home · hinge", exercise: "step-up", muscle: "quads", sets: 3, repLow: 8, repHigh: 12, rirTarget: 2, orderIndex: 3 },
+  { weekday: 3, dayName: "Home · hinge", exercise: "bird-dog", muscle: "core", sets: 3, repLow: 8, repHigh: 12, rirTarget: 2, orderIndex: 4 },
+  { weekday: 3, dayName: "Home · hinge", exercise: "suitcase-carry-bag", muscle: "core", sets: 3, repLow: 8, repHigh: 12, rirTarget: 2, orderIndex: 5 },
+
+  { weekday: 5, dayName: "Home · carry", exercise: "goblet-squat", muscle: "quads", sets: 3, repLow: 8, repHigh: 12, rirTarget: 2, orderIndex: 0 },
+  { weekday: 5, dayName: "Home · carry", exercise: "db-floor-press", muscle: "chest", sets: 3, repLow: 8, repHigh: 12, rirTarget: 2, orderIndex: 1 },
+  { weekday: 5, dayName: "Home · carry", exercise: "band-pulldown", muscle: "back", sets: 3, repLow: 10, repHigh: 14, rirTarget: 2, orderIndex: 2 },
+  { weekday: 5, dayName: "Home · carry", exercise: "db-rdl", muscle: "hamstrings", sets: 3, repLow: 8, repHigh: 12, rirTarget: 2, orderIndex: 3 },
+  { weekday: 5, dayName: "Home · carry", exercise: "pallof-band", muscle: "core", sets: 3, repLow: 8, repHigh: 12, rirTarget: 2, orderIndex: 4 },
+  { weekday: 5, dayName: "Home · carry", exercise: "walk", muscle: "calves", sets: 2, repLow: 8, repHigh: 12, rirTarget: 3, orderIndex: 5 },
+];
+
+/** Three-day box engine. Step-ups not jumps, so a knees note still has a session. */
+export const BOX_TEMPLATES: MesoBlockTemplate[] = [
+  { weekday: 1, dayName: "Box · engine", exercise: "row-erg", muscle: "back", sets: 4, repLow: 8, repHigh: 12, rirTarget: 2, orderIndex: 0 },
+  { weekday: 1, dayName: "Box · engine", exercise: "box-step-up", muscle: "quads", sets: 4, repLow: 8, repHigh: 12, rirTarget: 2, orderIndex: 1 },
+  { weekday: 1, dayName: "Box · engine", exercise: "kb-swing", muscle: "hamstrings", sets: 4, repLow: 10, repHigh: 15, rirTarget: 2, orderIndex: 2 },
+  { weekday: 1, dayName: "Box · engine", exercise: "ring-row", muscle: "back", sets: 3, repLow: 8, repHigh: 12, rirTarget: 2, orderIndex: 3 },
+  { weekday: 1, dayName: "Box · engine", exercise: "sit-up-abmat", muscle: "core", sets: 3, repLow: 10, repHigh: 15, rirTarget: 1, orderIndex: 4 },
+
+  { weekday: 3, dayName: "Box · mixed", exercise: "thruster-db", muscle: "quads", sets: 4, repLow: 8, repHigh: 12, rirTarget: 2, orderIndex: 0 },
+  { weekday: 3, dayName: "Box · mixed", exercise: "jumping-pull-up", muscle: "back", sets: 4, repLow: 5, repHigh: 10, rirTarget: 2, orderIndex: 1 },
+  { weekday: 3, dayName: "Box · mixed", exercise: "burpee-step-back", muscle: "chest", sets: 3, repLow: 6, repHigh: 10, rirTarget: 2, orderIndex: 2 },
+  { weekday: 3, dayName: "Box · mixed", exercise: "single-under", muscle: "calves", sets: 3, repLow: 20, repHigh: 40, rirTarget: 2, orderIndex: 3 },
+  { weekday: 3, dayName: "Box · mixed", exercise: "hanging-knee-raise", muscle: "core", sets: 3, repLow: 8, repHigh: 12, rirTarget: 1, orderIndex: 4 },
+
+  { weekday: 5, dayName: "Box · strength", exercise: "front-squat", muscle: "quads", sets: 4, repLow: 5, repHigh: 8, rirTarget: 2, orderIndex: 0 },
+  { weekday: 5, dayName: "Box · strength", exercise: "push-press-db", muscle: "delts", sets: 4, repLow: 6, repHigh: 10, rirTarget: 2, orderIndex: 1 },
+  { weekday: 5, dayName: "Box · strength", exercise: "power-clean", muscle: "hamstrings", sets: 4, repLow: 3, repHigh: 6, rirTarget: 3, orderIndex: 2 },
+  { weekday: 5, dayName: "Box · strength", exercise: "ring-row", muscle: "back", sets: 3, repLow: 8, repHigh: 12, rirTarget: 2, orderIndex: 3 },
+  { weekday: 5, dayName: "Box · strength", exercise: "pallof-press", muscle: "core", sets: 3, repLow: 8, repHigh: 12, rirTarget: 2, orderIndex: 4 },
+];
+
+/** Machines and supported lifts — the gym file when someone is new, not a lighter meso. */
+export const GYM_FOUNDATIONS_TEMPLATES: MesoBlockTemplate[] = [
+  { weekday: 1, dayName: "Gym · foundations", exercise: "machine-chest-press", muscle: "chest", sets: 3, repLow: 8, repHigh: 12, rirTarget: 2, orderIndex: 0 },
+  { weekday: 1, dayName: "Gym · foundations", exercise: "seated-cable-row", muscle: "back", sets: 3, repLow: 10, repHigh: 14, rirTarget: 2, orderIndex: 1 },
+  { weekday: 1, dayName: "Gym · foundations", exercise: "seated-db-press", muscle: "delts", sets: 3, repLow: 8, repHigh: 12, rirTarget: 2, orderIndex: 2 },
+  { weekday: 1, dayName: "Gym · foundations", exercise: "leg-press", muscle: "quads", sets: 3, repLow: 10, repHigh: 15, rirTarget: 2, orderIndex: 3 },
+  { weekday: 1, dayName: "Gym · foundations", exercise: "leg-curl", muscle: "hamstrings", sets: 3, repLow: 10, repHigh: 15, rirTarget: 1, orderIndex: 4 },
+  { weekday: 1, dayName: "Gym · foundations", exercise: "cable-crunch", muscle: "core", sets: 3, repLow: 10, repHigh: 15, rirTarget: 1, orderIndex: 5 },
+
+  { weekday: 3, dayName: "Gym · foundations", exercise: "leg-press", muscle: "quads", sets: 3, repLow: 10, repHigh: 15, rirTarget: 2, orderIndex: 0 },
+  { weekday: 3, dayName: "Gym · foundations", exercise: "hip-thrust", muscle: "glutes", sets: 3, repLow: 8, repHigh: 12, rirTarget: 2, orderIndex: 1 },
+  { weekday: 3, dayName: "Gym · foundations", exercise: "chest-supported-row", muscle: "back", sets: 3, repLow: 10, repHigh: 14, rirTarget: 2, orderIndex: 2 },
+  { weekday: 3, dayName: "Gym · foundations", exercise: "machine-chest-press", muscle: "chest", sets: 3, repLow: 8, repHigh: 12, rirTarget: 2, orderIndex: 3 },
+  { weekday: 3, dayName: "Gym · foundations", exercise: "standing-calf-raise", muscle: "calves", sets: 3, repLow: 10, repHigh: 15, rirTarget: 1, orderIndex: 4 },
+  { weekday: 3, dayName: "Gym · foundations", exercise: "dead-bug", muscle: "core", sets: 3, repLow: 8, repHigh: 12, rirTarget: 2, orderIndex: 5 },
+
+  { weekday: 5, dayName: "Gym · foundations", exercise: "goblet-squat", muscle: "quads", sets: 3, repLow: 8, repHigh: 12, rirTarget: 2, orderIndex: 0 },
+  { weekday: 5, dayName: "Gym · foundations", exercise: "lat-pulldown", muscle: "back", sets: 3, repLow: 10, repHigh: 14, rirTarget: 2, orderIndex: 1 },
+  { weekday: 5, dayName: "Gym · foundations", exercise: "incline-db-press", muscle: "chest", sets: 3, repLow: 10, repHigh: 14, rirTarget: 2, orderIndex: 2 },
+  { weekday: 5, dayName: "Gym · foundations", exercise: "romanian-deadlift", muscle: "hamstrings", sets: 3, repLow: 8, repHigh: 12, rirTarget: 2, orderIndex: 3 },
+  { weekday: 5, dayName: "Gym · foundations", exercise: "face-pull", muscle: "delts", sets: 3, repLow: 12, repHigh: 18, rirTarget: 1, orderIndex: 4 },
+  { weekday: 5, dayName: "Gym · foundations", exercise: "pallof-press", muscle: "core", sets: 3, repLow: 8, repHigh: 12, rirTarget: 2, orderIndex: 5 },
+];
+
+export function templatesFor(profile: TrainingProfile): MesoBlockTemplate[] {
+  if (profile.setting === "home") return HOME_TEMPLATES;
+  if (profile.setting === "box") return BOX_TEMPLATES;
+  if (profile.experience === "new") return GYM_FOUNDATIONS_TEMPLATES;
+  return MESO_TEMPLATES;
+}
+
+export function formatFor(profile: TrainingProfile): SessionFormat {
+  if (profile.setting === "home") return "circuit";
+  if (profile.setting === "box") return "emom";
+  return "sets";
 }

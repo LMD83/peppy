@@ -2,7 +2,7 @@
 //   npx convex run tm/seed:run
 // Optionally pass a fixed date: npx convex run tm/seed:run '{"today": "2026-08-12"}'
 // On a REAL deployment, override the demo passcodes (they ship in the fixtures):
-//   npx convex run tm/seed:run '{"passcodes": {"liam": "…", "conor": "…"}}'
+//   npx convex run tm/seed:run '{"passcodes": {"liam": "…", "artur": "…"}}'
 import { v } from "convex/values";
 import { internalMutation } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
@@ -32,6 +32,8 @@ const TM_TABLES = [
   "tm_nutritionTargets",
   "tm_mealEntries",
   "tm_energyEstimates",
+  "tm_kitchenProfiles",
+  "tm_savedMenus",
   "tm_mesocycles",
   "tm_programBlocks",
   "tm_setLogs",

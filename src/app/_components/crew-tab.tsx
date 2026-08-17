@@ -56,14 +56,15 @@ const STEP_COPY: Record<CarerView["step"], string> = {
 };
 
 const SUPPLY_ANSWER: Record<CarerView["supply"], string> = {
-  "order-due": "Yes — something needs reordering",
-  ok: "No — nothing is running out",
+  "order-due": "Yes. Something needs reordering",
+  ok: "No. Nothing is running out",
   none: "Not shared with you",
 };
 
 export function CrewTab() {
   const { crew, feed, actions, today } = useTimento();
   const [sent, setSent] = useState<string | null>(null);
+  const [custom, setCustom] = useState("");
   const [undo, setUndo] = useState<{
     slug: string;
     name: string;
@@ -107,7 +108,13 @@ export function CrewTab() {
   const carersShown = easy ? yourCarers.slice(0, 1) : yourCarers;
 
   return (
-    <div className="flex flex-col gap-3 pt-4">
+    <div
+      className={cn(
+        "flex flex-col gap-4 pt-5",
+        !easy && "lg:grid lg:grid-cols-12 lg:items-start lg:gap-6",
+      )}
+    >
+      <div className="flex flex-col gap-3 lg:col-span-7">
       {helpingShown.map((m) =>
         m.link.carerView ? (
           <CarerSeat key={`seat-${m.slug}`} member={m} view={m.link.carerView} />
@@ -116,33 +123,47 @@ export function CrewTab() {
 
       {crewShown.map((m) => (
         <Card key={m.slug}>
-          <div className="flex items-center justify-between gap-2">
-            <span className="font-tm-mono text-[13px] font-medium">{m.name}</span>
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="font-tm-disp text-2xl leading-[1.1] tracking-tight uppercase">{m.name}</h2>
             {m.mode ? <ModeBadge mode={m.mode} /> : null}
           </div>
 
           {m.link.youSee.length > 0 ? (
-            <div className="mt-3 flex flex-wrap gap-x-6 gap-y-3">
-              {m.streak !== undefined && <Stat value={`${m.streak}`} label="Streak" />}
-              {m.adherence7 !== undefined && <Stat value={`${m.adherence7}%`} label="7-day" />}
+            <dl className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule sm:grid-cols-3">
+              {m.streak !== undefined && (
+                <div className="bg-tm-panel px-3 py-3">
+                  <Stat value={`${m.streak}`} label="Streak" />
+                </div>
+              )}
+              {m.adherence7 !== undefined && (
+                <div className="bg-tm-panel px-3 py-3">
+                  <Stat value={`${m.adherence7}%`} label="7-day" />
+                </div>
+              )}
               {m.todayDone !== undefined && (
-                <Stat value={`${m.todayDone}/${m.todayTotal}`} label="Today" />
+                <div className="bg-tm-panel px-3 py-3">
+                  <Stat value={`${m.todayDone}/${m.todayTotal}`} label="Today" />
+                </div>
               )}
               {m.mode === "survival" && m.daysInMode !== undefined && (
-                <Stat value={`${m.daysInMode}`} label="Days on floor" />
+                <div className="bg-tm-panel px-3 py-3">
+                  <Stat value={`${m.daysInMode}`} label="Days on floor" />
+                </div>
               )}
               {m.supplyState && m.supplyState !== "none" && (
-                <Stat value={SUPPLY_COPY[m.supplyState]} label="Supply" />
+                <div className="bg-tm-panel px-3 py-3">
+                  <Stat value={SUPPLY_COPY[m.supplyState]} label="Supply" />
+                </div>
               )}
-            </div>
+            </dl>
           ) : (
-            <p className="mt-2 text-[12.5px] text-tm-dim">
+            <p className="mt-3 text-[14px] text-tm-dim">
               {m.name} shares nothing with you. That is their call, and it stays theirs.
             </p>
           )}
 
           {m.mode === "survival" && m.modeSince && (
-            <p className="mt-2 font-tm-mono text-[10px] text-tm-dim">
+            <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
               floor since {m.modeSince}
               {m.reviewDate ? ` · review ${m.reviewDate}` : ""}
             </p>
@@ -156,9 +177,9 @@ export function CrewTab() {
       {carersShown.map((m) => (
         <Card key={`carer-${m.slug}`}>
           <Eyebrow color="bg-tm-blue">Carer</Eyebrow>
-          <div className="flex items-center justify-between gap-2">
-            <span className="font-tm-mono text-[13px] font-medium">{m.name}</span>
-            <span className="font-tm-mono text-[11px] text-tm-dim">helping you</span>
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="font-tm-disp text-2xl leading-[1.1] tracking-tight uppercase">{m.name}</h2>
+            <span className="pt-1 font-tm-mono text-[11.5px] text-tm-dim">helping you</span>
           </div>
           <p className="mt-2 text-[13px] leading-snug text-tm-ink">
             {carerSentence(m.name, m.link.theySee)}
@@ -209,20 +230,20 @@ export function CrewTab() {
                     : sharedLine(m.name, invite.scopes).replace(`${m.name} can see`, "You would see")}
                 </p>
                 <p className="mt-1 text-[12px] text-tm-dim">
-                  Sent {invite.invitedDate}. Nothing is shared until you accept — right now you can
+                  Sent {invite.invitedDate}. Nothing is shared until you accept. Right now you can
                   see their name and this sentence, and nothing else. Either of you can stop it at
                   any time.
                 </p>
                 <div className="mt-3 flex gap-2">
                   <button
                     onClick={() => actions.respondToCrewInvite(invite.linkId, true)}
-                    className="min-h-11 flex-1 cursor-pointer rounded-lg border border-tm-green bg-tm-green px-3 font-tm-mono text-[12px] text-white"
+                    className="min-h-11 flex-1 cursor-pointer rounded-[10px] border border-tm-green bg-tm-green px-3 font-tm-mono text-[12px] text-white transition-transform duration-150 active:scale-[0.98]"
                   >
                     Accept
                   </button>
                   <button
                     onClick={() => actions.respondToCrewInvite(invite.linkId, false)}
-                    className="min-h-11 flex-1 cursor-pointer rounded-lg border border-tm-rule px-3 font-tm-mono text-[12px] text-tm-dim"
+                    className="min-h-11 flex-1 cursor-pointer rounded-[10px] border border-tm-rule px-3 font-tm-mono text-[12px] text-tm-dim transition-transform duration-150 active:scale-[0.98]"
                   >
                     Decline
                   </button>
@@ -250,7 +271,7 @@ export function CrewTab() {
                   </span>
                   <button
                     onClick={() => actions.revokeCrewLink(invite.linkId)}
-                    className="min-h-11 shrink-0 cursor-pointer rounded-lg border border-tm-rule px-3 font-tm-mono text-[11px] text-tm-dim"
+                    className="min-h-11 shrink-0 cursor-pointer rounded-[10px] border border-tm-rule px-3 font-tm-mono text-[11px] text-tm-dim transition-transform duration-150 active:scale-[0.98]"
                   >
                     Withdraw
                   </button>
@@ -267,9 +288,10 @@ export function CrewTab() {
           onInvite={(slug, scopes, relationship) => actions.inviteCrew(slug, scopes, relationship)}
         />
       )}
+      </div>
 
-      <Card>
-        <Eyebrow color="bg-tm-green">Nudges — mode-aware</Eyebrow>
+      <Card className="lg:col-span-5">
+        <Eyebrow color="bg-tm-green">Nudges</Eyebrow>
         <div className="mb-3 flex flex-wrap gap-2">
           {(easy ? presets.slice(0, 2) : presets).map((n) => (
             <button
@@ -280,7 +302,7 @@ export function CrewTab() {
                 setTimeout(() => setSent(null), 1500);
               }}
               className={cn(
-                "min-h-11 cursor-pointer rounded-lg border px-3 font-tm-mono text-[11px]",
+                "min-h-11 cursor-pointer rounded-[10px] border px-3.5 font-tm-mono text-[11.5px] transition-[transform,opacity] duration-150 active:scale-[0.98]",
                 sent === n ? "border-tm-green bg-tm-green text-white" : "border-tm-green text-tm-green",
               )}
             >
@@ -288,11 +310,39 @@ export function CrewTab() {
             </button>
           ))}
         </div>
+        <form
+          className="mb-3 flex gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const trimmed = custom.trim();
+            if (!trimmed) return;
+            actions.nudge(trimmed);
+            setSent(trimmed);
+            setCustom("");
+            setTimeout(() => setSent(null), 1500);
+          }}
+        >
+          <input
+            value={custom}
+            onChange={(e) => setCustom(e.target.value.slice(0, 200))}
+            placeholder="Custom message"
+            aria-label="Custom crew message"
+            maxLength={200}
+            className="min-h-11 flex-1 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 py-2 text-[15px] text-tm-ink focus:border-tm-ink"
+          />
+          <button
+            type="submit"
+            disabled={custom.trim().length === 0}
+            className="min-h-11 cursor-pointer rounded-[10px] bg-tm-ink px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase transition-transform duration-150 active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100"
+          >
+            Send
+          </button>
+        </form>
         <ul aria-label="Crew feed">
           {(feed ?? []).slice(easy ? -4 : -8).map((f, i) => (
             <li
               key={`${f.at}-${i}`}
-              className="flex justify-between gap-3 border-b border-tm-grid py-1.5 font-tm-mono text-[11px] last:border-0"
+              className="flex justify-between gap-3 border-b border-tm-grid py-2.5 font-tm-mono text-[11.5px] last:border-0"
             >
               <span>
                 <b>{f.name}</b> · {f.message}
@@ -319,44 +369,44 @@ function CarerSeat({ member, view }: { member: Member; view: CarerView }) {
       ? `${view.checksDone} of ${view.checksTotal} done`
       : "Not shared with you";
   const floor =
-    view.floorHeld === null ? "" : view.floorHeld ? " — floor held" : " — not yet held";
+    view.floorHeld === null ? "" : view.floorHeld ? ". Floor held" : ". Not yet held";
 
   return (
     <Card tone={view.step === "reorder-due" ? "amber" : undefined}>
       <Eyebrow color="bg-tm-blue">Carer seat</Eyebrow>
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-tm-mono text-[13px] font-medium">{member.name}</span>
+      <div className="flex items-start justify-between gap-3">
+        <h2 className="font-tm-disp text-2xl leading-[1.1] tracking-tight uppercase">{member.name}</h2>
         {view.mode ? <ModeBadge mode={view.mode} /> : null}
       </div>
 
-      <dl className="mt-3 flex flex-col gap-3">
-        <div>
-          <dt className="font-tm-mono text-[11px] tracking-[0.1em] text-tm-dim uppercase">
+      <dl className="mt-4 divide-y divide-tm-grid border-y border-tm-grid">
+        <div className="py-3">
+          <dt className="font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-dim uppercase">
             Anything running out?
           </dt>
-          <dd className="text-[14px] leading-snug">{SUPPLY_ANSWER[view.supply]}</dd>
+          <dd className="mt-1 text-[15px] leading-snug">{SUPPLY_ANSWER[view.supply]}</dd>
         </div>
-        <div>
-          <dt className="font-tm-mono text-[11px] tracking-[0.1em] text-tm-dim uppercase">
+        <div className="py-3">
+          <dt className="font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-dim uppercase">
             Today&rsquo;s checks
           </dt>
-          <dd className="text-[14px] leading-snug">
+          <dd className="mt-1 text-[15px] leading-snug">
             {checks}
             {floor}
           </dd>
         </div>
-        <div>
-          <dt className="font-tm-mono text-[11px] tracking-[0.1em] text-tm-dim uppercase">
+        <div className="py-3">
+          <dt className="font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-dim uppercase">
             Anything to do?
           </dt>
-          <dd className="text-[14px] leading-snug">{STEP_COPY[view.step]}</dd>
+          <dd className="mt-1 text-[15px] leading-snug">{STEP_COPY[view.step]}</dd>
         </div>
       </dl>
 
       {view.mode === "survival" && view.daysInMode !== null && (
         <p className="mt-2 text-[12.5px] text-tm-dim">
           {member.name} has been on the floor {view.daysInMode} days. The floor is three checks and
-          nothing else — it is working as designed.
+          nothing else. It is working as designed.
         </p>
       )}
 
@@ -402,7 +452,7 @@ function Disclosure({
         {link.yourGrantId && (
           <button
             onClick={onStop}
-            className="min-h-11 cursor-pointer rounded-lg border border-tm-red px-3 font-tm-mono text-[11px] text-tm-red"
+            className="min-h-11 cursor-pointer rounded-[10px] border border-tm-red px-3 font-tm-mono text-[11px] text-tm-red transition-transform duration-150 active:scale-[0.98]"
           >
             Stop sharing with {member.name}
           </button>
@@ -410,7 +460,7 @@ function Disclosure({
         {link.theirGrantId && (
           <button
             onClick={() => link.theirGrantId && onStopSeeing(link.theirGrantId)}
-            className="min-h-11 cursor-pointer rounded-lg border border-tm-rule px-3 font-tm-mono text-[11px] text-tm-dim"
+            className="min-h-11 cursor-pointer rounded-[10px] border border-tm-rule px-3 font-tm-mono text-[11px] text-tm-dim transition-transform duration-150 active:scale-[0.98]"
           >
             Stop seeing {member.name}
           </button>
@@ -426,7 +476,7 @@ function HandBack({ linkId, name }: { linkId: string; name: string }) {
   return (
     <button
       onClick={() => actions.revokeCrewLink(linkId)}
-      className="mt-2 min-h-11 cursor-pointer rounded-lg border border-tm-rule px-3 font-tm-mono text-[11px] text-tm-dim"
+      className="mt-2 min-h-11 cursor-pointer rounded-[10px] border border-tm-rule px-3 font-tm-mono text-[11px] text-tm-dim transition-transform duration-150 active:scale-[0.98]"
     >
       Hand back {name}&rsquo;s seat
     </button>
@@ -442,17 +492,17 @@ function Undo({
 }) {
   const { actions } = useTimento();
   return (
-    <div className="mt-2 rounded-lg border border-tm-rule bg-tm-soft p-2.5">
+    <div className="mt-2 rounded-[10px] border border-tm-rule bg-tm-soft p-2.5">
       <p className="text-[12px] text-tm-dim">
         Stopped sharing with {undo.name}. It stopped the moment you tapped. Undo sends a fresh
-        invite — {undo.name} has to accept it again.
+        invite. {undo.name} has to accept it again.
       </p>
       <button
         onClick={() => {
           actions.inviteCrew(undo.slug, undo.scopes, undo.relationship);
           onDone();
         }}
-        className="mt-2 min-h-11 cursor-pointer rounded-lg border border-tm-green px-3 font-tm-mono text-[11px] text-tm-green"
+        className="mt-2 min-h-11 cursor-pointer rounded-[10px] border border-tm-green px-3 font-tm-mono text-[11px] text-tm-green transition-transform duration-150 active:scale-[0.98]"
       >
         Undo
       </button>
@@ -470,7 +520,7 @@ const RELATIONSHIP_COPY: Record<Relationship, { label: string; blurb: string }> 
   carer: {
     label: "Carer",
     blurb:
-      "Someone helping from outside. A carer can only ever be offered these three — cravings, check-ins and anything you write down have no setting here at all.",
+      "Someone helping from outside. A carer can only ever be offered these three. Cravings, check-ins and anything you write down have no setting here at all.",
   },
 };
 
@@ -503,7 +553,7 @@ function InviteForm({
             aria-pressed={target === c.slug}
             onClick={() => setTarget(c.slug)}
             className={cn(
-              "min-h-11 cursor-pointer rounded-lg border px-3 font-tm-mono text-[11px]",
+              "min-h-11 cursor-pointer rounded-[10px] border px-3 font-tm-mono text-[11px] transition-transform duration-150 active:scale-[0.98]",
               target === c.slug ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule text-tm-dim",
             )}
           >
@@ -525,7 +575,7 @@ function InviteForm({
               setScopes((prev) => prev.filter((s) => allowedScopesFor(r).includes(s)));
             }}
             className={cn(
-              "min-h-11 cursor-pointer rounded-lg border px-3 font-tm-mono text-[11.5px]",
+              "min-h-11 cursor-pointer rounded-[10px] border px-3 font-tm-mono text-[11.5px] transition-transform duration-150 active:scale-[0.98]",
               relationship === r ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule text-tm-dim",
             )}
           >
@@ -560,7 +610,7 @@ function InviteForm({
 
       <p className="mt-2 text-[12.5px] leading-snug text-tm-ink">
         {chosen.length === 0
-          ? `${name} would see nothing yet — tick at least one.`
+          ? `${name} would see nothing yet. Tick at least one.`
           : grantSentence(name, chosen, relationship)}
       </p>
       <p className="mt-1 text-[12px] text-tm-dim">
@@ -575,7 +625,7 @@ function InviteForm({
           setTimeout(() => setDone(false), 2000);
         }}
         className={cn(
-          "mt-3 min-h-11 w-full cursor-pointer rounded-lg border px-3 font-tm-mono text-[12px]",
+          "mt-3 min-h-11 w-full cursor-pointer rounded-[10px] border px-3 font-tm-mono text-[12px] transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
           chosen.length === 0
             ? "border-tm-rule text-tm-dim2"
             : "border-tm-green bg-tm-green text-white",
@@ -604,13 +654,15 @@ function scopeList(scopes: readonly Scope[]): string {
 
 function CrewSkeleton() {
   return (
-    <div className="flex flex-col gap-3 pt-4">
-      {[0, 1].map((i) => (
-        <Card key={i}>
-          <div className="h-3 w-24 rounded bg-tm-soft" />
-          <div className="mt-3 h-8 w-40 rounded bg-tm-soft" />
-        </Card>
-      ))}
+    <div className="flex flex-col gap-4 pt-5 lg:grid lg:grid-cols-12 lg:gap-6">
+      <Card className="lg:col-span-7">
+        <div className="h-7 w-32 rounded bg-tm-soft" />
+        <div className="mt-4 h-16 rounded-[10px] bg-tm-soft" />
+      </Card>
+      <Card className="lg:col-span-5">
+        <div className="h-3 w-20 rounded bg-tm-soft" />
+        <div className="mt-3 h-11 rounded-[10px] bg-tm-soft" />
+      </Card>
     </div>
   );
 }

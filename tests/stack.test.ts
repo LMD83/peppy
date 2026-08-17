@@ -554,16 +554,16 @@ describe("buildStackView", () => {
 describe("stack fixtures", () => {
   const fx = buildStackFixtures(TODAY);
 
-  it("gives Liam a full stack and Conor the floor", () => {
+  it("gives Liam a full stack and Artur the floor", () => {
     const liam = fx.protocolItems.filter((i) => i.userSlug === "liam");
-    const conor = fx.protocolItems.filter((i) => i.userSlug === "conor");
+    const artur = fx.protocolItems.filter((i) => i.userSlug === "artur");
     expect(liam.length).toBeGreaterThanOrEqual(7);
     expect(liam.some((i) => i.kind === "peptide" && i.recon !== undefined)).toBe(true);
     expect(liam.some((i) => i.kind === "med")).toBe(true);
     expect(liam.some((i) => i.scheduleType === "cycle")).toBe(true);
-    expect(conor).toHaveLength(2);
-    expect(conor.some((i) => i.kind === "med")).toBe(true);
-    expect(conor.every((i) => i.kind !== "peptide")).toBe(true);
+    expect(artur).toHaveLength(2);
+    expect(artur.some((i) => i.kind === "med")).toBe(true);
+    expect(artur.every((i) => i.kind !== "peptide")).toBe(true);
   });
 
   it("uses unique ids and only references real ones from the logs", () => {
@@ -608,7 +608,7 @@ describe("stack fixtures", () => {
     expect(today.every((l) => l.timing === "am" || l.timing === "pre-workout")).toBe(true);
   });
 
-  it("assembles into a view where Liam runs a cycle and Conor holds a floor", () => {
+  it("assembles into a view where Liam runs a cycle and Artur holds a floor", () => {
     const forUser = (slug: string) => ({
       items: fx.protocolItems
         .filter((i) => i.userSlug === slug)
@@ -626,12 +626,12 @@ describe("stack fixtures", () => {
     expect(liam.byKind.peptide[0].recon).not.toBeNull();
     expect(liam.adherence30.pct).toBeGreaterThan(70);
 
-    const conor = buildStackView({ mode: "survival", date: TODAY, ...forUser("conor") });
-    expect(conor.survival).toBe(true);
-    // Both of Conor's items are essential — a floor that defers nothing still holds.
-    expect(conor.dueToday.every((d) => !d.deferred)).toBe(true);
-    expect(conor.dueToday.some((d) => d.kind === "med")).toBe(true);
-    expect(conor.cycles).toHaveLength(0);
+    const artur = buildStackView({ mode: "survival", date: TODAY, ...forUser("artur") });
+    expect(artur.survival).toBe(true);
+    // Both of Artur's items are essential — a floor that defers nothing still holds.
+    expect(artur.dueToday.every((d) => !d.deferred)).toBe(true);
+    expect(artur.dueToday.some((d) => d.kind === "med")).toBe(true);
+    expect(artur.cycles).toHaveLength(0);
   });
 
   it("surfaces the statin pairs on Liam's file", () => {

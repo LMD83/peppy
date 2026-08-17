@@ -45,14 +45,14 @@ async function seeded() {
     if (!res.ok) throw new Error(`login failed: ${res.code}`);
     return res.token;
   };
-  return { t, liam: await login("liam", "2580"), conor: await login("conor", "1379") };
+  return { t, liam: await login("liam", "2580"), artur: await login("artur", "1379") };
 }
 
 const args = (token: string) => ({ token, date: TODAY });
 
 describe("seed", () => {
   it("populates every domain table for the crew", async () => {
-    const { t, liam, conor } = await seeded();
+    const { t, liam, artur } = await seeded();
     const fuel = await t.query(api.tm.fuel.get, args(liam));
     const train = await t.query(api.tm.train.get, args(liam));
     const stack = await t.query(api.tm.stack.get, args(liam));
@@ -70,10 +70,10 @@ describe("seed", () => {
     expect(mind.history.length).toBeGreaterThan(0);
     expect(mind.encouragement.headline).toBeTruthy();
 
-    // Conor is in survival: the floor holds, but a real medication is never hidden.
-    const conorStack = await t.query(api.tm.stack.get, args(conor));
-    expect(conorStack.survival).toBe(true);
-    expect(conorStack.dueToday.some((d) => d.kind === "med" && !d.deferred)).toBe(true);
+    // Artur is in survival: the floor holds, but a real medication is never hidden.
+    const arturStack = await t.query(api.tm.stack.get, args(artur));
+    expect(arturStack.survival).toBe(true);
+    expect(arturStack.dueToday.some((d) => d.kind === "med" && !d.deferred)).toBe(true);
   });
 });
 
@@ -91,15 +91,15 @@ describe("auth boundary", () => {
 
 describe("cross-user privacy", () => {
   it("refuses to mutate another user's meal entry", async () => {
-    const { t, liam, conor } = await seeded();
+    const { t, liam, artur } = await seeded();
     const liamEntry = (await t.query(api.tm.fuel.get, args(liam))).entries[0];
     expect(liamEntry).toBeDefined();
 
     await expect(
-      t.mutation(api.tm.fuel.setFoodEaten, { token: conor, entryId: liamEntry.id as Id<"tm_mealEntries">, eaten: true }),
+      t.mutation(api.tm.fuel.setFoodEaten, { token: artur, entryId: liamEntry.id as Id<"tm_mealEntries">, eaten: true }),
     ).rejects.toThrow();
     await expect(
-      t.mutation(api.tm.fuel.removeFood, { token: conor, entryId: liamEntry.id as Id<"tm_mealEntries"> }),
+      t.mutation(api.tm.fuel.removeFood, { token: artur, entryId: liamEntry.id as Id<"tm_mealEntries"> }),
     ).rejects.toThrow();
 
     // Liam's row is untouched by the attempt.
@@ -111,13 +111,13 @@ describe("cross-user privacy", () => {
   });
 
   it("refuses to log a dose against another user's stack item", async () => {
-    const { t, liam, conor } = await seeded();
+    const { t, liam, artur } = await seeded();
     const liamItem = (await t.query(api.tm.stack.get, args(liam))).items[0];
     expect(liamItem).toBeDefined();
 
     await expect(
       t.mutation(api.tm.stack.logDose, {
-        token: conor,
+        token: artur,
         date: TODAY,
         itemId: liamItem.id as Id<"tm_protocolItems">,
         timing: liamItem.timings[0],
@@ -125,7 +125,7 @@ describe("cross-user privacy", () => {
       }),
     ).rejects.toThrow();
     await expect(
-      t.mutation(api.tm.stack.setItemActive, { token: conor, itemId: liamItem.id as Id<"tm_protocolItems">, active: false }),
+      t.mutation(api.tm.stack.setItemActive, { token: artur, itemId: liamItem.id as Id<"tm_protocolItems">, active: false }),
     ).rejects.toThrow();
 
     const stillActive = (await t.query(api.tm.stack.get, args(liam))).items.find(
@@ -135,12 +135,12 @@ describe("cross-user privacy", () => {
   });
 
   it("refuses to claim a win on another user's intention", async () => {
-    const { t, liam, conor } = await seeded();
+    const { t, liam, artur } = await seeded();
     const liamIntention = (await t.query(api.tm.mind.get, args(liam))).intentions[0];
     expect(liamIntention).toBeDefined();
 
     await expect(
-      t.mutation(api.tm.mind.markIntentionWin, { token: conor, intentionId: liamIntention.id as Id<"tm_intentions"> }),
+      t.mutation(api.tm.mind.markIntentionWin, { token: artur, intentionId: liamIntention.id as Id<"tm_intentions"> }),
     ).rejects.toThrow();
 
     const after = (await t.query(api.tm.mind.get, args(liam))).intentions.find(
@@ -150,19 +150,19 @@ describe("cross-user privacy", () => {
   });
 
   it("never leaks the other user's rows into your own views", async () => {
-    const { t, liam, conor } = await seeded();
+    const { t, liam, artur } = await seeded();
 
-    // Conor logs a distinctive panel; it must not appear anywhere in Liam's file.
+    // Artur logs a distinctive panel; it must not appear anywhere in Liam's file.
     await t.mutation(api.tm.labs.addPanel, {
-      token: conor,
+      token: artur,
       date: TODAY,
-      name: "Conor private draw",
+      name: "Artur private draw",
       results: [{ marker: "hba1c", value: 41, unit: "mmol/mol" }],
     });
     const liamLabs = await t.query(api.tm.labs.get, args(liam));
-    expect(liamLabs.panels.some((p) => p.name === "Conor private draw")).toBe(false);
+    expect(liamLabs.panels.some((p) => p.name === "Artur private draw")).toBe(false);
 
-    // Liam logs a set; Conor's training view stays his own.
+    // Liam logs a set; Artur's training view stays his own.
     await t.mutation(api.tm.train.logSet, {
       token: liam,
       date: TODAY,
@@ -172,8 +172,8 @@ describe("cross-user privacy", () => {
       reps: 10,
       rir: 2,
     });
-    const conorTrain = await t.query(api.tm.train.get, args(conor));
-    expect(conorTrain.loggedSets.some((s) => s.weightKg === 80 && s.reps === 10)).toBe(false);
+    const arturTrain = await t.query(api.tm.train.get, args(artur));
+    expect(arturTrain.loggedSets.some((s) => s.weightKg === 80 && s.reps === 10)).toBe(false);
   });
 
   it("keeps the crew board a projection — no absolute weights from the new tables", async () => {

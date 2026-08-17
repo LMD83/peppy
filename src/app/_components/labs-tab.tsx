@@ -61,16 +61,20 @@ export function LabsTab() {
 
   if (labs.survival) {
     return (
-      <div className="flex flex-col gap-3 pt-4">
+      <div className="flex flex-col gap-4 pt-5">
         <Card tone="amber">
-          <Eyebrow color="bg-tm-amber">Bloods — floor</Eyebrow>
-          <div className="flex items-end justify-between gap-3">
-            <Stat value={String(labs.outOfRange.length)} label="outside range" />
-            <Stat value={String(labs.dueRechecks.length)} label="rechecks overdue" />
-          </div>
-          <p className="mt-2.5 text-[12.5px] text-tm-amber-ink">
+          <Eyebrow color="bg-tm-amber">Bloods, floor</Eyebrow>
+          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-amber bg-tm-amber">
+            <div className="bg-tm-amber-bg px-3 py-3">
+              <Stat value={String(labs.outOfRange.length)} label="outside range" />
+            </div>
+            <div className="bg-tm-amber-bg px-3 py-3">
+              <Stat value={String(labs.dueRechecks.length)} label="rechecks overdue" />
+            </div>
+          </dl>
+          <p className="mt-3 text-[14px] text-tm-amber-ink">
             Only what is already outside range and already owed. No panel history, no browsing, no
-            new draw to book — the floor holds the line, it does not add work.
+            new draw to book. The floor holds the line, it does not add work.
           </p>
         </Card>
 
@@ -93,25 +97,24 @@ export function LabsTab() {
   const latest = labs.panels[0] ?? null;
 
   return (
-    <div className="flex flex-col gap-3 pt-4">
+    <div className="flex flex-col gap-4 pt-5 lg:grid lg:grid-cols-12 lg:items-start lg:gap-6">
+      <div className="flex flex-col gap-3 lg:col-span-7">
       <LatestPanelCard panel={latest} results={labs.latestByMarker} />
 
       {labs.outOfRange.length > 0 && (
         <Card>
-          <Eyebrow color="bg-tm-red">Outside range — read these first</Eyebrow>
+          <Eyebrow color="bg-tm-red">Outside range</Eyebrow>
           <div className="flex flex-col">
             {labs.outOfRange.map((r) => (
               <MarkerRow key={r.marker} result={r} trend={trendByMarker.get(r.marker) ?? null} />
             ))}
           </div>
-          <p className="mt-2 font-tm-mono text-[10px] text-tm-dim">
-            A reference interval holds 95% of a healthy population — sitting outside one is a prompt
+          <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
+            A reference interval holds 95% of a healthy population. Sitting outside one is a prompt
             to look, not a diagnosis. Bring it to your GP, not to the internet.
           </p>
         </Card>
       )}
-
-      <RechecksCard rechecks={labs.dueRechecks} />
 
       {labs.byGroup.map((group) => (
         <GroupCard
@@ -123,8 +126,12 @@ export function LabsTab() {
       ))}
 
       <PanelHistory panels={labs.panels} />
+      </div>
 
+      <div className="flex flex-col gap-3 lg:col-span-5">
+      <RechecksCard rechecks={labs.dueRechecks} />
       <AddPanel templates={labs.templates} />
+      </div>
     </div>
   );
 }
@@ -205,18 +212,27 @@ function LatestPanelCard({ panel, results }: { panel: LabPanel | null; results: 
     <Card>
       <div className="flex items-center justify-between">
         <Eyebrow color="bg-tm-purple" className="mb-0">
-          Latest panel — {panel.name}
+          Latest panel
         </Eyebrow>
-        <span className="font-tm-mono text-[9px] tracking-[0.12em] text-tm-dim uppercase">
+        <span className="font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase">
           {panel.fasted === true ? "fasted" : panel.fasted === false ? "non-fasted" : "—"}
         </span>
       </div>
-      <div className="mt-1.5 flex items-end justify-between gap-2">
-        <Stat value={String(counts.out)} label="outside range" />
-        <Stat value={String(counts.borderline)} label="near a bound" />
-        <Stat value={String(counts.optimal)} label="optimal band" />
-        <Stat value={String(results.length)} label="markers on file" />
-      </div>
+      <h2 className="mt-2 font-tm-disp text-2xl leading-[1.1] tracking-tight uppercase">{panel.name}</h2>
+      <dl className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule sm:grid-cols-4">
+        <div className="bg-tm-panel px-3 py-3">
+          <Stat value={String(counts.out)} label="outside range" />
+        </div>
+        <div className="bg-tm-panel px-3 py-3">
+          <Stat value={String(counts.borderline)} label="near a bound" />
+        </div>
+        <div className="bg-tm-panel px-3 py-3">
+          <Stat value={String(counts.optimal)} label="optimal band" />
+        </div>
+        <div className="bg-tm-panel px-3 py-3">
+          <Stat value={String(results.length)} label="markers on file" />
+        </div>
+      </dl>
       <p className="mt-2 font-tm-mono text-[10px] text-tm-dim">
         drawn {panel.date}
         {panel.lab ? ` · ${panel.lab}` : ""} · {panel.results.length} results this panel
@@ -245,7 +261,7 @@ function RechecksCard({ rechecks }: { rechecks: LabRecheck[] }) {
       </ul>
       <p className="mt-2 font-tm-mono text-[10px] text-tm-amber-ink">
         Interval suggested from the flag on your own last draw. A prompt to book, never a
-        prescription — your GP sets what actually gets repeated.
+        prescription. Your GP sets what actually gets repeated.
       </p>
     </Card>
   );
@@ -324,12 +340,12 @@ function MarkerRow({ result, trend }: { result: LabResult; trend: LabTrend | nul
       </button>
 
       {open && (
-        <div className="mb-2 rounded-lg bg-tm-soft p-3">
+        <div className="mb-2 rounded-[10px] bg-tm-soft p-3">
           {trend && trend.points.length >= 2 && <Sparkline trend={trend} />}
           <p className="text-[12.5px]">{result.blurb}</p>
           {result.movedBy.length > 0 && (
             <p className="mt-1.5 font-tm-mono text-[10px] text-tm-dim">
-              moved by — {result.movedBy.join(" · ")}
+              moved by {result.movedBy.join(" · ")}
             </p>
           )}
           <p className="mt-1.5 font-tm-mono text-[10px] text-tm-dim">
@@ -487,7 +503,7 @@ function AddPanel({ templates }: { templates: LabTemplate[] }) {
               <button
                 key={t.key}
                 onClick={() => setTemplateKey(t.key)}
-                className="min-h-11 cursor-pointer rounded-lg border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[9.5px] tracking-[0.1em] uppercase"
+                className="min-h-11 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]"
               >
                 {t.name}
               </button>
@@ -495,7 +511,7 @@ function AddPanel({ templates }: { templates: LabTemplate[] }) {
           </div>
           <p className="mt-2 font-tm-mono text-[10px] text-tm-dim">
             Pick the panel your lab ran, type the numbers off the report. Units are fixed to the SI
-            values Irish labs print — no conversion guessing.
+            values Irish labs print. No conversion guessing.
           </p>
         </>
       ) : (
@@ -526,7 +542,7 @@ function AddPanel({ templates }: { templates: LabTemplate[] }) {
                     onChange={(e) => setValues((v) => ({ ...v, [m.key]: e.target.value }))}
                     inputMode="decimal"
                     placeholder="—"
-                    className="min-h-11 w-20 rounded-lg border border-tm-rule bg-tm-panel px-2 py-2 text-right font-tm-mono text-sm outline-none focus:border-tm-ink"
+                    className="min-h-11 w-20 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-2 py-2 text-right font-tm-mono text-sm focus:border-tm-ink"
                   />
                   <span className="w-16 font-tm-mono text-[10px] text-tm-dim">{m.unit}</span>
                 </div>
@@ -545,7 +561,7 @@ function AddPanel({ templates }: { templates: LabTemplate[] }) {
                 aria-checked={fasted === opt.on}
                 onClick={() => setFasted(opt.on)}
                 className={cn(
-                  "min-h-11 flex-1 cursor-pointer rounded-lg border font-tm-mono text-[9.5px] tracking-[0.1em] uppercase",
+                  "min-h-11 flex-1 cursor-pointer rounded-[10px] border font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
                   fasted === opt.on
                     ? "border-tm-ink bg-tm-ink text-white"
                     : "border-tm-rule bg-tm-panel text-tm-dim",
@@ -560,14 +576,14 @@ function AddPanel({ templates }: { templates: LabTemplate[] }) {
             onClick={save}
             disabled={filled.length === 0}
             className={cn(
-              "mt-2 min-h-11 w-full cursor-pointer rounded-lg px-4 font-tm-mono text-[10px] tracking-[0.12em] uppercase",
+              "mt-2 min-h-11 w-full cursor-pointer rounded-[10px] px-4 font-tm-mono text-[11.5px] tracking-[0.12em] uppercase transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
               filled.length === 0 ? "bg-tm-soft text-tm-dim" : "bg-tm-ink text-white",
             )}
           >
             Save {filled.length} {filled.length === 1 ? "result" : "results"}
           </button>
           <p className="mt-2 font-tm-mono text-[10px] text-tm-dim">
-            Blank rows are skipped — a panel records what was measured, never a gap filled in.
+            Blank rows are skipped. A panel records what was measured, never a gap filled in.
           </p>
         </>
       )}

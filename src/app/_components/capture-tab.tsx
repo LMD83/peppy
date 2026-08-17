@@ -152,11 +152,17 @@ function CaptureBody({ upload }: { upload: Uploader }) {
   const choices = kind === null ? [] : view.choices[kind];
 
   return (
-    <div className="flex flex-col gap-3 pt-4">
+    <div
+      className={cn(
+        "flex flex-col gap-4 pt-5",
+        !view.easy && "lg:grid lg:grid-cols-12 lg:items-start lg:gap-6",
+      )}
+    >
+      <div className="flex flex-col gap-3 lg:col-span-7">
       <Card>
         <Eyebrow color="bg-tm-blue">Visual check-in</Eyebrow>
         <p className="text-[14px]">
-          Take a photo of the organiser, a plate, or a box — then say what it is yourself. Timento
+          Take a photo of the organiser, a plate, or a box, then say what it is yourself. Timento
           never reads the picture.
         </p>
 
@@ -176,7 +182,7 @@ function CaptureBody({ upload }: { upload: Uploader }) {
             />
             {view.atLimit && (
               <p className="mt-2 text-[14px] text-tm-dim">
-                That is {view.limitPerDay} photos for today — enough evidence for one day. Delete one
+                That is {view.limitPerDay} photos for today. Enough evidence for one day. Delete one
                 below if you need room.
               </p>
             )}
@@ -218,7 +224,7 @@ function CaptureBody({ upload }: { upload: Uploader }) {
               type="button"
               onClick={reset}
               disabled={busy}
-              className="min-h-11 w-full cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 text-[14px] text-tm-dim"
+              className="min-h-11 w-full cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 text-[14px] text-tm-dim transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100"
             >
               Throw this photo away
             </button>
@@ -232,11 +238,13 @@ function CaptureBody({ upload }: { upload: Uploader }) {
         )}
         {savedLabel !== null && file === null && (
           <p role="status" className="mt-2 text-[14px]">
-            Saved — {savedLabel.toLowerCase()}.
+            Saved · {savedLabel.toLowerCase()}.
           </p>
         )}
       </Card>
+      </div>
 
+      <div className="flex flex-col gap-3 lg:col-span-5">
       <TodayStrip view={view} onDelete={actions.removeCapture} />
 
       <EarlierCard view={view} onDelete={actions.removeCapture} />
@@ -252,6 +260,7 @@ function CaptureBody({ upload }: { upload: Uploader }) {
         </ul>
         <p className="mt-2 text-[14px] text-tm-dim">{view.note}</p>
       </Card>
+      </div>
     </div>
   );
 }
@@ -310,7 +319,7 @@ function PickButton({
   return (
     <label
       className={cn(
-        "mt-3 flex min-h-16 w-full items-center justify-center gap-3 rounded-[10px] border px-4 py-3 text-[17px] font-medium",
+        "mt-3 flex min-h-16 w-full items-center justify-center gap-3 rounded-[10px] border px-4 py-3 text-[17px] font-medium transition-transform duration-150 active:scale-[0.98]",
         "focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-tm-ink",
         disabled
           ? "cursor-not-allowed border-tm-rule bg-tm-soft text-tm-dim"
@@ -375,7 +384,7 @@ function ConfirmStep({
         type="button"
         onClick={() => onChoose(escape)}
         disabled={busy}
-        className="min-h-11 w-full cursor-pointer rounded-[10px] border border-tm-rule-strong bg-tm-panel px-4 py-2 text-left text-[15px]"
+        className="min-h-11 w-full cursor-pointer rounded-[10px] border border-tm-rule-strong bg-tm-panel px-4 py-2 text-left text-[15px] transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100"
       >
         <span className="block font-medium">{escape.label}</span>
         <span className="block text-[14px] text-tm-dim">{escape.detail}</span>
@@ -421,7 +430,7 @@ function TodayStrip({ view, onDelete }: { view: CaptureView; onDelete: (id: stri
             <button
               type="button"
               onClick={() => onDelete(row.id)}
-              className="mt-1.5 min-h-11 w-full cursor-pointer rounded-lg border border-tm-red bg-tm-panel px-2 text-[14px] text-tm-red"
+              className="mt-1.5 min-h-11 w-full cursor-pointer rounded-[10px] border border-tm-red bg-tm-panel px-2 text-[14px] text-tm-red transition-transform duration-150 active:scale-[0.98]"
             >
               Delete this photo
             </button>
@@ -462,7 +471,7 @@ function EarlierCard({ view, onDelete }: { view: CaptureView; onDelete: (id: str
                   <button
                     type="button"
                     onClick={() => onDelete(row.id)}
-                    className="min-h-11 shrink-0 cursor-pointer rounded-lg border border-tm-red bg-tm-panel px-3 text-[14px] text-tm-red"
+                    className="min-h-11 shrink-0 cursor-pointer rounded-[10px] border border-tm-red bg-tm-panel px-3 text-[14px] text-tm-red transition-transform duration-150 active:scale-[0.98]"
                   >
                     Delete
                   </button>

@@ -32,6 +32,8 @@ import type {
   TrainData,
 } from "./types";
 import type { FoodEquipment } from "@convex/tm/data/foods";
+import { KITCHEN_PROFILES, type KitchenProfileRow } from "@convex/tm/fixtures/fuel";
+import type { SavedMenuRow } from "./demo/fuel";
 import type {
   AssessmentRow,
   DoseLogRow,
@@ -46,6 +48,7 @@ import type {
   ProtocolItemRow,
   ReflectionRow,
   SetLogRow,
+  TrainProfileRow,
   VolumeLandmarkRow,
 } from "./demo/rows";
 import type { ContactRow, CrewLinkRow, SupplyRow } from "./demo/rows-wave1";
@@ -69,11 +72,13 @@ import * as remind from "./demo/remind";
 
 type DemoUser = FixtureUser & { a11yProfileMut?: "standard" | "easy" } & { modeSinceMut: string; modeMut: TmMode; reviewDateMut?: string; ceilingMut: number };
 
+type DemoCraving = Fixtures["cravings"][number] & { id: string };
+
 export class DemoDb {
   users: DemoUser[];
   days: Fixtures["days"];
   checks: Fixtures["checks"];
-  cravings: Fixtures["cravings"];
+  cravings: DemoCraving[];
   lifts: Fixtures["lifts"];
   labs: Fixtures["labs"];
   markers: Fixtures["markers"];
@@ -88,6 +93,7 @@ export class DemoDb {
   programBlocks: ProgramBlockRow[];
   setLogs: SetLogRow[];
   volumeLandmarks: VolumeLandmarkRow[];
+  trainProfiles: TrainProfileRow[];
   protocolItems: ProtocolItemRow[];
   doseLogs: DoseLogRow[];
   labPanels: LabPanelRow[];
@@ -99,13 +105,18 @@ export class DemoDb {
   supplyRows: SupplyRow[];
   contacts: ContactRow[];
   pushSubs: { id: string; userSlug: string; endpoint: string; p256dh: string; auth: string; label: string; createdDate: string; failures: number }[];
-  reminderPrefs: { userSlug: string; enabled: boolean; quietFrom: string; quietTo: string; doses: boolean; supply: boolean; checkins: boolean; maxPerDay: number }[];
+  reminderPrefs: { userSlug: string; enabled: boolean; quietFrom: string; quietTo: string; doses: boolean; supply: boolean; checkins: boolean; maxPerDay: number; email: string }[];
+  sentReminders: { userSlug: string; key: string; at: number }[];
+  delivery: { push: boolean; email: boolean; vapidPublicKey: string };
   captures: { id: string; userSlug: string; date: string; kind: "dose" | "meal" | "organiser"; storageId: string; note?: string; at: number }[];
   pantry: { id: string; userSlug: string; foodKey: string; grams: number; updatedDate: string }[];
   ingestTokens: { id: string; userSlug: string; token: string; label: string; createdDate: string; lastUsedAt?: number; revoked: boolean }[];
+  kitchenProfiles: KitchenProfileRow[];
+  savedMenus: SavedMenuRow[];
 
   private listeners = new Set<() => void>();
   private idSeq = 0;
+  private cravingSeq = 0;
   version = 0;
 
   /** Stable-per-session id for rows the demo creates at runtime. */
@@ -123,6 +134,7 @@ export class DemoDb {
     this.programBlocks = [...fx.programBlocks];
     this.setLogs = [...fx.setLogs];
     this.volumeLandmarks = [...fx.volumeLandmarks];
+    this.trainProfiles = [...fx.trainProfiles];
     this.protocolItems = [...fx.protocolItems];
     this.doseLogs = [...fx.doseLogs];
     this.labPanels = [...fx.labPanels];
@@ -135,8 +147,12 @@ export class DemoDb {
     this.contacts = [...fx.contacts];
     this.ingestTokens = [];
     this.pantry = [...fx.pantry];
+    this.kitchenProfiles = KITCHEN_PROFILES.map((p) => ({ ...p }));
+    this.savedMenus = [];
     this.pushSubs = [];
     this.reminderPrefs = [];
+    this.sentReminders = [];
+    this.delivery = { push: false, email: false, vapidPublicKey: "" };
     this.captures = [];
     this.users = fx.users.map((u) => ({
       ...u,
@@ -147,7 +163,7 @@ export class DemoDb {
     }));
     this.days = [...fx.days];
     this.checks = [...fx.checks];
-    this.cravings = [...fx.cravings];
+    this.cravings = fx.cravings.map((c) => ({ ...c, id: `demo-c-${++this.cravingSeq}` }));
     this.lifts = [...fx.lifts];
     this.labs = [...fx.labs];
     this.markers = [...fx.markers];
@@ -252,11 +268,19 @@ export class DemoDb {
         stress: day?.stress ?? null,
         energy: day?.energy ?? null,
         ritualDone: day?.ritualDone ?? false,
+        sessionDone: day?.sessionDone ?? false,
       },
       latestKg,
       deltaKg: Math.round((latestKg - user.startKg) * 10) / 10,
       dayNumber: daysBetween(user.startDate, date) + 1,
-      cravingsToday: this.cravings.filter((c) => c.userSlug === slug && c.date === date).length,
+      cravingsToday: this.cravings
+        .filter((c) => c.userSlug === slug && c.date === date)
+        .map((c) => ({
+          id: c.id as TodayData["cravingsToday"][number]["id"],
+          time: c.time,
+          signal: c.signal,
+          action: c.action ?? null,
+        })),
       stats: {
         adherence7: stats.adherence7,
         streak: stats.streak,
@@ -396,7 +420,21 @@ export class DemoDb {
   }
 
   logCraving(slug: string, date: string, entry: CravingEntry) {
-    this.cravings.push({ userSlug: slug, date, ...entry });
+    this.cravings.push({ userSlug: slug, date, id: `demo-c-${++this.cravingSeq}`, ...entry });
+    this.bump();
+  }
+
+  undoCraving(slug: string, id: string) {
+    const idx = this.cravings.findIndex((c) => c.id === id && c.userSlug === slug);
+    if (idx < 0) return;
+    this.cravings.splice(idx, 1);
+    this.bump();
+  }
+
+  markSessionDone(slug: string, date: string) {
+    const user = this.user(slug);
+    if (user.modeMut === "survival") return;
+    this.dayRow(slug, date).sessionDone = true;
     this.bump();
   }
 
@@ -410,7 +448,7 @@ export class DemoDb {
     user.ceilingMut = user.ceilingKg;
     const message =
       mode === "survival"
-        ? `Survival mode on — floor protocol active${reviewDate ? `, review ${reviewDate}` : ""}. Executed as designed.`
+        ? `Survival mode on. Floor protocol active${reviewDate ? `, review ${reviewDate}` : ""}. Executed as designed.`
         : `Mode → ${mode}.`;
     this.feedRows.push({ userSlug: slug, name: user.name, message, at: Date.now() });
     this.bump();
@@ -463,6 +501,43 @@ export class DemoDb {
     fuel.generatePlan(this, slug, date, today);
     this.bump();
   }
+  logMenu(slug: string, date: string, slot: MealSlot, items: { foodKey: string; grams: number }[]) {
+    fuel.logMenu(this, slug, date, slot, items);
+    this.bump();
+  }
+  saveMenu(slug: string, name: string, slot: MealSlot, items: { foodKey: string; grams: number }[]) {
+    fuel.saveMenu(this, slug, name, slot, items);
+    this.bump();
+  }
+  copyYesterday(slug: string, date: string) {
+    fuel.copyYesterday(this, slug, date);
+    this.bump();
+  }
+  generateWeek(
+    slug: string,
+    date: string,
+    today?: { minutes?: number; equipment?: FoodEquipment; oneHanded?: boolean; canStand?: boolean },
+  ) {
+    fuel.generateWeek(this, slug, date, today);
+    this.bump();
+  }
+  setKitchen(
+    slug: string,
+    patch: {
+      minutes?: number;
+      equipment?: FoodEquipment;
+      oneHanded?: boolean;
+      canStand?: boolean;
+      pinnedBreakfast?: string | null;
+    },
+  ) {
+    fuel.setKitchen(this, slug, patch);
+    this.bump();
+  }
+  swapFood(entryId: string, foodKey: string) {
+    fuel.swapFood(this, entryId, foodKey);
+    this.bump();
+  }
 
   logSet(slug: string, date: string, exercise: string, setIndex: number, weightKg: number, reps: number, rir: number) {
     train.logSet(this, slug, date, exercise, setIndex, weightKg, reps, rir);
@@ -470,6 +545,24 @@ export class DemoDb {
   }
   startMesocycle(slug: string, date: string, goal: "hypertrophy" | "strength" | "recomp") {
     train.startMesocycle(this, slug, date, goal);
+    this.bump();
+  }
+  saveTrainProfile(
+    slug: string,
+    profile: {
+      setting: "home" | "gym" | "box";
+      kit: string[];
+      experience: "new" | "returning" | "trained";
+      ageBand: "under-40" | "40-59" | "60-plus";
+      minutes: number;
+      constraints: string[];
+    },
+  ) {
+    train.saveProfile(this, slug, profile);
+    this.bump();
+  }
+  swapTrainBlock(slug: string, exercise: string, replacement: string) {
+    train.swapBlock(this, slug, exercise, replacement);
     this.bump();
   }
 
@@ -518,6 +611,13 @@ export class DemoDb {
   setReminderPrefs(slug: string, prefs: Parameters<typeof remind.setPrefs>[2]) {
     remind.setPrefs(this, slug, prefs);
     this.bump();
+  }
+  setDelivery(delivery: { push: boolean; email: boolean; vapidPublicKey: string }) {
+    this.delivery = delivery;
+    this.bump();
+  }
+  sweepReminders(slug: string, date: string) {
+    return remind.sweepOpenTab(this, slug, date);
   }
   saveCapture(slug: string, date: string, kind: "dose" | "meal" | "organiser", storageId: string, note?: string) {
     remind.saveCapture(this, slug, date, kind, storageId, note);

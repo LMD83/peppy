@@ -55,19 +55,19 @@ export function SupplyPanel() {
 
   if (supply.survival) {
     return (
-      <div className="flex flex-col gap-3 pt-4">
+      <div className="flex flex-col gap-4 pt-5">
         {supply.attention.length === 0 ? (
           <Card>
             <Eyebrow color="bg-tm-green">Supply</Eyebrow>
-            <p className="text-[12.5px]">
+            <p className="text-[14px]">
               Nothing runs out soon. {supply.okCount} item{supply.okCount === 1 ? "" : "s"} counted
-              and covered — there is nothing here for you to do.
+              and covered. There is nothing here for you to do.
             </p>
           </Card>
         ) : (
           <>
             <Card tone="amber">
-              <Eyebrow color="bg-tm-amber">Supply — floor</Eyebrow>
+              <Eyebrow color="bg-tm-amber">Supply, floor</Eyebrow>
               <div className="flex flex-col gap-2">
                 {supply.attention.map((row) => (
                   <AttentionRow key={row.itemId} row={row} />
@@ -85,18 +85,19 @@ export function SupplyPanel() {
   }
 
   return (
-    <div className="flex flex-col gap-3 pt-4">
+    <div className="flex flex-col gap-4 pt-5 lg:grid lg:grid-cols-12 lg:items-start lg:gap-6">
+      <div className="flex flex-col gap-3 lg:col-span-7">
       {supply.attention.length > 0 ? (
         <Card tone="amber">
           <div className="flex items-center justify-between">
             <Eyebrow color="bg-tm-amber" className="mb-0">
               Needs ordering
             </Eyebrow>
-            <span className="font-tm-mono text-[10px] text-tm-dim">
+            <span className="font-tm-mono text-[11.5px] text-tm-dim">
               {supply.attention.length} of {supply.attention.length + supply.okCount}
             </span>
           </div>
-          <div className="mt-2 flex flex-col gap-2">
+          <div className="mt-3 flex flex-col gap-2">
             {supply.attention.map((row) => (
               <AttentionRow key={row.itemId} row={row} />
             ))}
@@ -105,24 +106,31 @@ export function SupplyPanel() {
       ) : (
         <Card>
           <Eyebrow color="bg-tm-green">Supply</Eyebrow>
-          <div className="flex items-end justify-between gap-3">
-            <Stat value={String(supply.okCount)} label="items covered" />
-            <Stat value="0" label="need ordering" />
-          </div>
-          <p className="mt-2 text-[12.5px]">Nothing runs out soon. Recount when you open a box.</p>
+          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
+            <div className="bg-tm-panel px-3 py-3">
+              <Stat value={String(supply.okCount)} label="items covered" />
+            </div>
+            <div className="bg-tm-panel px-3 py-3">
+              <Stat value="0" label="need ordering" />
+            </div>
+          </dl>
+          <p className="mt-3 text-[14px]">Nothing runs out soon. Recount when you open a box.</p>
         </Card>
       )}
 
       {supply.attention.length > 0 && <RefillCard supply={supply} />}
+      </div>
 
+      <div className="flex flex-col gap-3 lg:col-span-5">
       <StockedCard supply={supply} />
 
       <ContactsCard contacts={supply.contacts} />
 
       <Card>
         <Eyebrow color="bg-tm-dim2">How the count is worked out</Eyebrow>
-        <p className="text-[12.5px]">{supply.note}</p>
+        <p className="text-[14px]">{supply.note}</p>
       </Card>
+      </div>
     </div>
   );
 }
@@ -172,10 +180,10 @@ function SupplySkeleton() {
 
 function AttentionRow({ row }: { row: Row }) {
   return (
-    <div className="rounded-lg border border-tm-rule bg-tm-panel px-3 py-2.5">
+    <div className="rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2.5">
       <div className="flex items-start justify-between gap-2">
         <span className="min-w-0">
-          <span className="block truncate text-[13px] font-medium">{row.name}</span>
+          <span className="block truncate font-tm-disp text-lg leading-[1.1] tracking-tight uppercase">{row.name}</span>
           <span className="block font-tm-mono text-[10px] text-tm-dim">
             {fmt(row.dose)} {row.unit} · {row.scheduleLabel} · {fmt(row.unitsPerDay)}/day
           </span>
@@ -192,7 +200,7 @@ function AttentionRow({ row }: { row: Row }) {
 
       <p className="mt-1.5 text-[13px]">
         {row.status === "out"
-          ? "Nothing left for the next dose — order today."
+          ? "Nothing left for the next dose. Order today."
           : `${row.daysRemaining} day${row.daysRemaining === 1 ? "" : "s"} left. Runs out ${row.runOutDate}. Order by ${row.orderByDate}.`}
       </p>
 
@@ -211,7 +219,7 @@ function AttentionRow({ row }: { row: Row }) {
       {(row.gpReason !== null || row.expiringSoon) && (
         <p className="mt-1 font-tm-mono text-[10px] text-tm-dim">
           {row.gpReason ??
-            `script expires ${row.scriptExpiryDate} — ${row.daysToExpiry} days`}
+            `script expires ${row.scriptExpiryDate}. ${row.daysToExpiry} days`}
           {row.repeatsRemaining !== null && row.repeatsRemaining > 0
             ? ` · ${row.repeatsRemaining} repeat${row.repeatsRemaining === 1 ? "" : "s"} left`
             : ""}
@@ -247,7 +255,7 @@ function CountControl({ row }: { row: Row }) {
           type="button"
           onClick={() => step(-1)}
           aria-label={`One fewer ${row.name}`}
-          className="size-11 shrink-0 cursor-pointer rounded-lg border border-tm-rule bg-tm-panel font-tm-mono text-lg"
+          className="size-11 shrink-0 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel font-tm-mono text-lg transition-transform duration-150 active:scale-[0.98]"
         >
           −
         </button>
@@ -260,14 +268,14 @@ function CountControl({ row }: { row: Row }) {
               setSaved(false);
             }}
             inputMode="decimal"
-            className="min-h-11 w-full rounded-lg border border-tm-rule bg-tm-panel px-3 text-center font-tm-disp text-lg outline-none focus:border-tm-ink"
+            className="min-h-11 w-full rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-center font-tm-disp text-lg focus:border-tm-ink"
           />
         </label>
         <button
           type="button"
           onClick={() => step(1)}
           aria-label={`One more ${row.name}`}
-          className="size-11 shrink-0 cursor-pointer rounded-lg border border-tm-rule bg-tm-panel font-tm-mono text-lg"
+          className="size-11 shrink-0 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel font-tm-mono text-lg transition-transform duration-150 active:scale-[0.98]"
         >
           +
         </button>
@@ -280,7 +288,7 @@ function CountControl({ row }: { row: Row }) {
             setSaved(true);
           }}
           className={cn(
-            "min-h-11 shrink-0 cursor-pointer rounded-lg border px-3 font-tm-mono text-[10px] tracking-[0.12em] uppercase",
+            "min-h-11 shrink-0 cursor-pointer rounded-[10px] border px-3 font-tm-mono text-[11.5px] tracking-[0.12em] uppercase transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
             valid ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule bg-tm-soft text-tm-dim",
           )}
         >
@@ -290,7 +298,7 @@ function CountControl({ row }: { row: Row }) {
       <p className="mt-1 font-tm-mono text-[10px] text-tm-dim">
         {row.countAgeDays === 0
           ? `counted today · ${fmt(row.countedOnHand)} in the box`
-          : `counted ${row.countAgeDays} day${row.countAgeDays === 1 ? "" : "s"} ago — ${fmt(row.countedOnHand)} then, about ${fmt(row.onHand)} now`}
+          : `counted ${row.countAgeDays} day${row.countAgeDays === 1 ? "" : "s"} ago. ${fmt(row.countedOnHand)} then, about ${fmt(row.onHand)} now`}
       </p>
     </div>
   );
@@ -315,7 +323,7 @@ function RefillCard({ supply }: { supply: SupplyData }) {
 
   return (
     <Card>
-      <Eyebrow color="bg-tm-blue">The call — ready to read out</Eyebrow>
+      <Eyebrow color="bg-tm-blue">The call</Eyebrow>
       {/* A scrollable box has to be reachable by keyboard, or its content is
           only readable by people who can use a mouse or a finger (WCAG 2.1.1).
           tabIndex makes it a stop; the label says what the stop is for. */}
@@ -323,14 +331,14 @@ function RefillCard({ supply }: { supply: SupplyData }) {
         tabIndex={0}
         role="group"
         aria-label="The message to read out to the pharmacy"
-        className="max-h-56 overflow-auto rounded-lg border border-tm-rule bg-tm-soft px-3 py-2.5 font-tm-mono text-[11px] whitespace-pre-wrap"
+        className="max-h-56 overflow-auto rounded-[10px] border border-tm-rule bg-tm-soft px-3 py-2.5 font-tm-mono text-[11.5px] whitespace-pre-wrap"
       >
         {supply.refillMessage}
       </pre>
       <button
         type="button"
         onClick={copy}
-        className="mt-2 min-h-11 w-full cursor-pointer rounded-lg border border-tm-ink bg-tm-ink px-3 font-tm-mono text-[10px] tracking-[0.12em] text-white uppercase"
+        className="mt-2 min-h-11 w-full cursor-pointer rounded-[10px] border border-tm-ink bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
       >
         {copied ? "copied" : "copy the message"}
       </button>
@@ -353,7 +361,7 @@ function RefillCard({ supply }: { supply: SupplyData }) {
         )}
       </div>
       <p className="mt-2 font-tm-mono text-[10px] text-tm-dim">
-        The message names only what is already on your file — the item, its dose and how long is
+        The message names only what is already on your file: the item, its dose and how long is
         left. It asks for nothing else.
       </p>
     </Card>
@@ -375,7 +383,7 @@ function CallButton({
     <a
       href={telHref(contact.phone)}
       className={cn(
-        "flex min-h-11 items-center justify-between gap-2 rounded-lg border px-3 py-2",
+        "flex min-h-11 items-center justify-between gap-2 rounded-[10px] border px-3 py-2",
         emphasis ? "border-tm-red bg-tm-panel" : "border-tm-rule bg-tm-panel",
       )}
     >
@@ -446,7 +454,7 @@ function ContactsCard({ contacts }: { contacts: SupplyData["contacts"] }) {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="mt-2 min-h-11 w-full cursor-pointer rounded-lg border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[10px] tracking-[0.12em] text-tm-dim uppercase"
+        className="mt-2 min-h-11 w-full cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase transition-transform duration-150 active:scale-[0.98]"
       >
         {open ? "close" : "add or change a number"}
       </button>
@@ -476,7 +484,7 @@ function ContactForm({
             aria-checked={kind === k}
             onClick={() => setKind(k)}
             className={cn(
-              "min-h-11 flex-1 cursor-pointer rounded-lg border px-3 font-tm-mono text-[9.5px] tracking-[0.1em] uppercase",
+              "min-h-11 flex-1 cursor-pointer rounded-[10px] border px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
               kind === k
                 ? "border-tm-ink bg-tm-ink text-white"
                 : "border-tm-rule bg-tm-panel text-tm-dim",
@@ -491,7 +499,7 @@ function ContactForm({
         onChange={(e) => setName(e.target.value)}
         placeholder="Name"
         aria-label="Contact name"
-        className="min-h-11 w-full rounded-lg border border-tm-rule bg-tm-panel px-3 text-sm outline-none focus:border-tm-ink"
+        className="min-h-11 w-full rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-sm focus:border-tm-ink"
       />
       <input
         value={phone}
@@ -499,7 +507,7 @@ function ContactForm({
         placeholder="Phone"
         inputMode="tel"
         aria-label="Contact phone"
-        className="min-h-11 w-full rounded-lg border border-tm-rule bg-tm-panel px-3 font-tm-mono text-sm outline-none focus:border-tm-ink"
+        className="min-h-11 w-full rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 font-tm-mono text-sm focus:border-tm-ink"
       />
       <button
         type="button"
@@ -511,7 +519,7 @@ function ContactForm({
           setPhone("");
         }}
         className={cn(
-          "min-h-11 w-full cursor-pointer rounded-lg border px-3 font-tm-mono text-[10px] tracking-[0.12em] uppercase",
+          "min-h-11 w-full cursor-pointer rounded-[10px] border px-3 font-tm-mono text-[11.5px] tracking-[0.12em] uppercase transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
           valid ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule bg-tm-soft text-tm-dim",
         )}
       >

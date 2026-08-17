@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
+import { cleanEmail } from "@convex/tm/logicEmail";
 import { useTimento } from "../_lib/backend";
+import { postDeliver } from "../_lib/deliver-client";
 import type { RemindData } from "../_lib/types";
 import { Card, Eyebrow } from "./ui";
 
@@ -150,7 +152,7 @@ function Toggle({
       disabled={disabled}
       onClick={() => onChange(!on)}
       className={cn(
-        "flex min-h-14 w-full items-center justify-between gap-3 rounded-[10px] border px-4 py-3 text-left",
+        "flex min-h-14 w-full items-center justify-between gap-3 rounded-[10px] border px-4 py-3 text-left transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
         on ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule-strong bg-tm-panel text-tm-ink",
         disabled && "opacity-60",
       )}
@@ -289,25 +291,53 @@ function Remind({ data }: { data: RemindData }) {
    * the tab is shut, and it says so rather than letting a green tick imply it.
    */
   const testNotification = useCallback(() => {
-    if (!cap.notifications || cap.permission !== "granted") {
-      setStatus("Turn reminders on for this device first — there is nothing to test yet.");
-      return;
-    }
-    void navigator.serviceWorker.ready
-      .then((reg) =>
-        reg.showNotification("Timento — test", {
-          body: "This is what a reminder looks like on this device.",
-          tag: "timento-test",
-          icon: "/icon-192.png",
-        }),
-      )
-      .then(() =>
-        setStatus(
-          "Sent from this browser. That proves the notification works here; it does not prove the server can reach you with the tab closed.",
-        ),
-      )
-      .catch(() => setStatus("This device would not show a test notification."));
-  }, [cap.notifications, cap.permission]);
+    const note = {
+      title: "Timento — test",
+      body: "This is what a reminder looks like.",
+      tab: "today",
+      tag: "timento-test",
+    };
+    const send = async () => {
+      if (demo && (data.prefs.email !== "" || endpoint !== null)) {
+        let targets: { endpoint: string; p256dh: string; auth: string }[] = [];
+        if (cap.serviceWorker) {
+          const reg = await navigator.serviceWorker.ready;
+          const sub = await reg.pushManager.getSubscription();
+          if (sub) {
+            const json = sub.toJSON() as { keys?: { p256dh?: string; auth?: string } };
+            const p256dh = json.keys?.p256dh ?? encodeKey(sub.getKey("p256dh"));
+            const auth = json.keys?.auth ?? encodeKey(sub.getKey("auth"));
+            targets = [{ endpoint: sub.endpoint, p256dh, auth }];
+          }
+        }
+        const ok = await postDeliver({
+          email: data.prefs.email,
+          targets,
+          notifications: [note],
+        });
+        if (ok) {
+          setStatus(
+            "Sent. If an email is on the file it should arrive; a push lands only if this device is subscribed.",
+          );
+          return;
+        }
+      }
+      if (!cap.notifications || cap.permission !== "granted") {
+        setStatus("Turn reminders on, or add an email, first — there is nothing to test yet.");
+        return;
+      }
+      const reg = await navigator.serviceWorker.ready;
+      await reg.showNotification(note.title, {
+        body: "This is what a reminder looks like on this device.",
+        tag: note.tag,
+        icon: "/icon-192.png",
+      });
+      setStatus(
+        "Sent from this browser. That proves the notification works here; it does not prove the server can reach you with the tab closed.",
+      );
+    };
+    void send().catch(() => setStatus("This device would not show a test notification."));
+  }, [cap.notifications, cap.permission, cap.serviceWorker, data.prefs.email, demo, endpoint]);
 
   const browserBlockers = useMemo(() => {
     if (!cap.checked) return [];
@@ -331,44 +361,53 @@ function Remind({ data }: { data: RemindData }) {
   const subscribedHere = endpoint !== null;
 
   return (
-    <div className="flex flex-col gap-3 pt-4">
-      <p role="status" aria-live="polite" className="sr-only">
-        {status}
-      </p>
+    <div
+      className={cn(
+        "flex flex-col gap-4 pt-5",
+        !easy && "lg:grid lg:grid-cols-12 lg:items-start lg:gap-6",
+      )}
+    >
+      <div className="flex flex-col gap-3 lg:col-span-7">
+        <p role="status" aria-live="polite" className="sr-only">
+          {status}
+        </p>
+        <SwitchCard
+          data={data}
+          demo={demo}
+          blockers={[...data.blockers, ...browserBlockers]}
+          canSubscribe={canSubscribe}
+          subscribedHere={subscribedHere}
+          busy={busy}
+          onTurnOn={turnOn}
+          onTurnOff={turnOff}
+          onTest={testNotification}
+        />
 
-      <SwitchCard
-        data={data}
-        demo={demo}
-        blockers={[...data.blockers, ...browserBlockers]}
-        canSubscribe={canSubscribe}
-        subscribedHere={subscribedHere}
-        busy={busy}
-        onTurnOn={turnOn}
-        onTurnOff={turnOff}
-        onTest={testNotification}
-      />
+        {status !== "" && (
+          <Card>
+            <p className="text-[14px] leading-relaxed">{status}</p>
+          </Card>
+        )}
 
-      {status !== "" && (
+        <PreviewCard data={data} easy={easy} />
+        <EmailCard data={data} onChange={actions.setReminderPrefs} />
+      </div>
+
+      <div className="flex flex-col gap-3 lg:col-span-5">
+        {!easy && (
+          <>
+            <KindsCard data={data} onChange={actions.setReminderPrefs} />
+            <QuietCard data={data} onChange={actions.setReminderPrefs} />
+            <DevicesCard data={data} subscribedHere={subscribedHere} />
+          </>
+        )}
+
         <Card>
-          <p className="text-[14px] leading-relaxed">{status}</p>
+          <Eyebrow color="bg-tm-rule-strong">How this works</Eyebrow>
+          <p className="text-[14px] leading-relaxed">{data.iosNote}</p>
+          <p className="mt-2 text-[14px] leading-relaxed text-tm-dim">{data.note}</p>
         </Card>
-      )}
-
-      <PreviewCard data={data} easy={easy} />
-
-      {!easy && (
-        <>
-          <KindsCard data={data} onChange={actions.setReminderPrefs} />
-          <QuietCard data={data} onChange={actions.setReminderPrefs} />
-          <DevicesCard data={data} subscribedHere={subscribedHere} />
-        </>
-      )}
-
-      <Card>
-        <Eyebrow color="bg-tm-rule-strong">How this works</Eyebrow>
-        <p className="text-[14px] leading-relaxed">{data.iosNote}</p>
-        <p className="mt-2 text-[14px] leading-relaxed text-tm-dim">{data.note}</p>
-      </Card>
+      </div>
     </div>
   );
 }
@@ -396,7 +435,7 @@ function SwitchCard({
   onTurnOff: () => void;
   onTest: () => void;
 }) {
-  const live = data.ready && subscribedHere;
+  const live = data.ready;
   return (
     <Card tone={live ? "default" : "amber"}>
       <Eyebrow color={live ? "bg-tm-green" : "bg-tm-amber"}>
@@ -417,23 +456,18 @@ function SwitchCard({
         </ul>
       ) : (
         <p className="text-[14px] leading-relaxed">
-          The server holds the schedule and this device is set up to receive it. Nothing runs in this
-          tab, so closing it changes nothing.
+          {demo
+            ? "This tab holds the schedule while it is open. Closing it pauses demo delivery."
+            : "The server holds the schedule and this device is set up to receive it. Nothing runs in this tab, so closing it changes nothing."}
         </p>
       )}
 
-      {demo ? (
-        <p className="mt-3 rounded-lg border border-tm-rule bg-tm-soft px-3 py-2 text-[14px] leading-relaxed">
-          There is no switch here because there is nothing behind it. The preview below is computed by
-          exactly the rules the real server uses — that part is honest — but this copy of the app
-          cannot send anything to anybody.
-        </p>
-      ) : subscribedHere ? (
+      {subscribedHere || (data.prefs.enabled && data.prefs.email !== "") ? (
         <button
           type="button"
           onClick={onTurnOff}
           disabled={busy}
-          className="mt-3 min-h-14 w-full rounded-[10px] border border-tm-red bg-tm-panel px-4 text-[17px] font-medium text-tm-red disabled:opacity-60"
+          className="mt-3 min-h-14 w-full rounded-[10px] border border-tm-red bg-tm-panel px-4 text-[17px] font-medium text-tm-red transition-transform duration-150 active:scale-[0.98] disabled:opacity-60 disabled:active:scale-100"
         >
           Turn reminders off on this device
         </button>
@@ -442,21 +476,19 @@ function SwitchCard({
           type="button"
           onClick={onTurnOn}
           disabled={busy || !canSubscribe}
-          className="mt-3 min-h-14 w-full rounded-[10px] border border-tm-ink bg-tm-ink px-4 text-[17px] font-medium text-white disabled:border-tm-rule-strong disabled:bg-tm-soft disabled:text-tm-dim"
+          className="mt-3 min-h-14 w-full rounded-[10px] border border-tm-ink bg-tm-ink px-4 text-[17px] font-medium text-white transition-transform duration-150 active:scale-[0.98] disabled:border-tm-rule-strong disabled:bg-tm-soft disabled:text-tm-dim disabled:active:scale-100"
         >
           {busy ? "Setting up…" : "Turn reminders on for this device"}
         </button>
       )}
 
-      {!demo && (
-        <button
-          type="button"
-          onClick={onTest}
-          className="mt-2 min-h-14 w-full rounded-[10px] border border-tm-rule-strong bg-tm-panel px-4 text-[17px] font-medium text-tm-ink"
-        >
-          Show me what one looks like
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={onTest}
+        className="mt-2 min-h-14 w-full rounded-[10px] border border-tm-rule-strong bg-tm-panel px-4 text-[17px] font-medium text-tm-ink transition-transform duration-150 active:scale-[0.98]"
+      >
+        Show me what one looks like
+      </button>
     </Card>
   );
 }
@@ -479,7 +511,7 @@ function PreviewCard({ data, easy }: { data: RemindData; easy: boolean }) {
       ) : (
         <ul className="flex flex-col gap-2">
           {data.preview.map((r) => (
-            <li key={r.key} className="rounded-lg border border-tm-rule bg-tm-panel px-3 py-2.5">
+            <li key={r.key} className="rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2.5">
               <div className="flex items-baseline justify-between gap-2">
                 <span className="font-tm-mono text-[11.5px] tracking-[0.14em] text-tm-dim uppercase">
                   {r.at}
@@ -523,6 +555,36 @@ function PreviewCard({ data, easy }: { data: RemindData; easy: boolean }) {
 }
 
 type PrefsChange = Parameters<ReturnType<typeof useTimento>["actions"]["setReminderPrefs"]>[0];
+
+function EmailCard({ data, onChange }: { data: RemindData; onChange: (p: PrefsChange) => void }) {
+  return (
+    <Card>
+      <Eyebrow color="bg-tm-blue">Email</Eyebrow>
+      <p className="text-[14px] leading-relaxed">
+        Optional. The same words as a push, sent once. It stays on this file and is never shown to
+        crew.
+      </p>
+      <label className="mt-3 flex flex-col gap-1 text-[14px] font-medium">
+        Address
+        <input
+          type="email"
+          autoComplete="email"
+          defaultValue={data.prefs.email}
+          onBlur={(e) => {
+            const email = cleanEmail(e.target.value);
+            onChange({ email, ...(email !== "" ? { enabled: true } : {}) });
+          }}
+          className="min-h-11 rounded-lg border border-tm-rule-strong bg-tm-panel px-3 text-[15px]"
+        />
+      </label>
+      {!data.emailSupported && data.prefs.email !== "" ? (
+        <p className="mt-2 text-[14px] leading-relaxed text-tm-dim">
+          Saved, but this copy of the app has no email key yet, so mail will not go out.
+        </p>
+      ) : null}
+    </Card>
+  );
+}
 
 function KindsCard({ data, onChange }: { data: RemindData; onChange: (p: PrefsChange) => void }) {
   return (
@@ -571,7 +633,7 @@ function QuietCard({ data, onChange }: { data: RemindData; onChange: (p: PrefsCh
             type="time"
             value={data.prefs.quietFrom}
             onChange={(e) => onChange({ quietFrom: e.target.value })}
-            className="min-h-11 rounded-lg border border-tm-rule-strong bg-tm-panel px-3 text-[15px]"
+            className="min-h-11 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-[15px]"
           />
         </label>
         <label className="flex min-w-32 flex-1 flex-col gap-1 text-[14px] font-medium">
@@ -580,7 +642,7 @@ function QuietCard({ data, onChange }: { data: RemindData; onChange: (p: PrefsCh
             type="time"
             value={data.prefs.quietTo}
             onChange={(e) => onChange({ quietTo: e.target.value })}
-            className="min-h-11 rounded-lg border border-tm-rule-strong bg-tm-panel px-3 text-[15px]"
+            className="min-h-11 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-[15px]"
           />
         </label>
       </div>
@@ -599,7 +661,7 @@ function DevicesCard({ data, subscribedHere }: { data: RemindData; subscribedHer
       ) : (
         <ul className="flex flex-col gap-2">
           {data.subscriptions.map((s) => (
-            <li key={s.id} className="rounded-lg border border-tm-rule bg-tm-panel px-3 py-2.5">
+            <li key={s.id} className="rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2.5">
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-[14px] font-medium">{s.label}</span>
                 <span className="font-tm-mono text-[11.5px] tracking-[0.14em] text-tm-dim uppercase">

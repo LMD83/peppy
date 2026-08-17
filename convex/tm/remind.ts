@@ -23,6 +23,7 @@ import {
 } from "./logicCapture";
 import { foodByKey } from "./data/foods";
 import { dosesForDate, type DoseLog, type StackItem } from "./logicStack";
+import { emailConfigured } from "./logicEmail";
 import {
   APP_TIMEZONE,
   MAX_CONSECUTIVE_FAILURES,
@@ -77,9 +78,20 @@ function vapidPublicKey(): string {
   return typeof key === "string" ? key.trim() : "";
 }
 
-function serverReady(): boolean {
+function pushReady(): boolean {
   const priv = process.env.VAPID_PRIVATE_KEY;
-  return vapidPublicKey() !== "" && typeof priv === "string" && priv.trim() !== "";
+  const subject = process.env.VAPID_SUBJECT;
+  return (
+    vapidPublicKey() !== "" &&
+    typeof priv === "string" &&
+    priv.trim() !== "" &&
+    typeof subject === "string" &&
+    subject.trim() !== ""
+  );
+}
+
+function emailSupported(): boolean {
+  return emailConfigured(process.env.RESEND_API_KEY);
 }
 
 /* ===== gathering ===== */
@@ -102,6 +114,7 @@ async function prefsFor(ctx: QueryCtx, userId: Id<"tm_users">): Promise<Reminder
     supply: row.supply,
     checkins: row.checkins,
     maxPerDay: row.maxPerDay,
+    email: row.email,
   });
 }
 
@@ -281,7 +294,8 @@ export const get = query({
       doses,
       supply,
       checkins,
-      serverReady: serverReady(),
+      pushReady: pushReady(),
+      emailSupported: emailSupported(),
       vapidPublicKey: vapidPublicKey(),
       demo: false,
     });
@@ -377,6 +391,7 @@ export const setPrefs = mutation({
     supply: v.optional(v.boolean()),
     checkins: v.optional(v.boolean()),
     maxPerDay: v.optional(v.number()),
+    email: v.optional(v.string()),
   },
   handler: async (ctx, { token, ...patch }) => {
     const user = await requireUser(ctx, token);
@@ -473,6 +488,7 @@ export type SweepBatch = {
   userId: Id<"tm_users">;
   notifications: SweepNotification[];
   targets: SweepTarget[];
+  email: string;
 };
 
 /**
@@ -501,9 +517,8 @@ export const sweepPlan = internalQuery({
       const targets: SweepTarget[] = subs
         .filter((s) => s.failures < MAX_CONSECUTIVE_FAILURES)
         .map((s) => ({ subscriptionId: s._id, endpoint: s.endpoint, p256dh: s.p256dh, auth: s.auth }));
-      if (targets.length === 0) continue;
-
       const prefs = await prefsFor(ctx, user._id);
+      if (targets.length === 0 && prefs.email === "") continue;
       const { doses, supply, checkins } = await gather(ctx, user, date);
 
       // Anything that was already due earlier today counts against the day's
@@ -540,6 +555,7 @@ export const sweepPlan = internalQuery({
           tag: `${r.kind}:${r.tab}`,
         })),
         targets,
+        email: prefs.email,
       });
     }
 
