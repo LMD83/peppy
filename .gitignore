@@ -58,3 +58,7 @@ temp/
 # Local/CI e2e screenshot output
 e2e-shots/
 a11y-shots/
+critique-shots/
+
+# Design-hook scan cache — machine-local, rebuilt on demand
+.impeccable/hook.cache.json
