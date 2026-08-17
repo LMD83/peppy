@@ -199,7 +199,16 @@ export type NextAction = {
   kind: "check" | "weigh" | "rest";
   /** The check this points at, when it points at one. */
   key: string | null;
-  /** One plain sentence. Never a demand, never a diagnosis. */
+  /**
+   * The thing itself — plain, never a demand, never a diagnosis, and **never
+   * prefixed**. "Next" is a word each render site owns and says exactly once.
+   * Baking it in here meant the scoreboard's eyebrow said it too, and Chrome
+   * computed the header's accessible name as "Next: Next: 8k+ steps."
+   *
+   * Work that remains is a bare phrase ("8k+ steps"). Rest is a whole
+   * sentence, because a finished day is a state and nothing puts "Next" in
+   * front of it.
+   */
   label: string;
 };
 
@@ -213,10 +222,10 @@ export function nextAction(input: {
   mode: TmMode;
 }): NextAction {
   const due = input.checks.find((c) => !c.done);
-  if (due) return { kind: "check", key: due.key, label: `Next: ${due.label}.` };
+  if (due) return { kind: "check", key: due.key, label: due.label };
   // Survival never asks for the scales. The floor adds no obligation.
   if (input.mode !== "survival" && !input.weightLogged)
-    return { kind: "weigh", key: null, label: "Next: weigh yourself and type the number in." };
+    return { kind: "weigh", key: null, label: "Weigh yourself and type the number in" };
   return { kind: "rest", key: null, label: "You are done for today. Nothing else is needed." };
 }
 
@@ -329,33 +338,39 @@ export function projectToday(payload: TodayPayload, profile: A11yProfile): Today
 /* ===== next action, with a destination ==================================== */
 
 /**
- * Where tapping the file's to-do line should land. A deliberately small
- * subset of the shell's nav surface — only the places a next action can
- * plausibly point at — kept local so this backend module never has to import
- * from the client's nav types.
+ * Where tapping the file's to-do line should land.
+ *
+ * The tab is always Today, and that is a finding rather than a shortcut:
+ * `checksForDate` reads `tm_checks`, and the only surface in the app that
+ * writes it is the Today screen's checks card. An earlier version sent
+ * "session done" to Train and "ate on plan" to Fuel — screens that display
+ * the work but cannot tick the box the header had just promised. Sending
+ * someone where the work cannot be done is worse than not moving them.
+ *
+ * So what varies is not the tab but the control: `focusId` is the id of the
+ * exact element the header hands the keyboard to. Null means there is
+ * genuinely nothing to do, and a null destination must not render as a
+ * control at all — see scoreboard.tsx.
  */
 export type NextActionDestination = {
-  tab: "today" | "fuel" | "train" | "body" | "mind";
-  sub?: "stack";
+  tab: "today";
+  focusId: string | null;
 };
 
 export type NextActionWithDestination = NextAction & NextActionDestination;
 
 /**
- * Check key → the tab that shows the work behind it. Every one of these
- * checks is still ticked on Today (that control is not moving), but "next:
- * session done" reads as a dead end if tapping it doesn't at least land you
- * where the session lives. Keys with no screen of their own — steps,
- * weigh-in — are answered right on Today, so they default there.
+ * The id Today puts on a check's button. Derived rather than written twice:
+ * the header targets what today-tab renders, so both ends call this and the
+ * two cannot drift apart. It lives beside the destination it serves, the same
+ * way `tab` above names a client route without importing the client's types.
  */
-const CHECK_DESTINATIONS: Partial<Record<string, NextActionDestination>> = {
-  session: { tab: "train" },
-  plan: { tab: "fuel" },
-  salt: { tab: "fuel" },
-  kitchen: { tab: "fuel" },
-  protein: { tab: "fuel" },
-  supps: { tab: "body", sub: "stack" },
-};
+export function checkAnchorId(key: string): string {
+  return `tm-check-${key}`;
+}
+
+/** Today's weight field. One control, so a constant rather than a function. */
+export const WEIGH_ANCHOR_ID = "tm-weigh-in";
 
 /**
  * `nextAction`'s output, plus where tapping it should go. This never
@@ -365,9 +380,11 @@ const CHECK_DESTINATIONS: Partial<Record<string, NextActionDestination>> = {
  * next.
  */
 export function withDestination(action: NextAction): NextActionWithDestination {
-  const destination: NextActionDestination =
+  const focusId =
     action.kind === "check" && action.key
-      ? (CHECK_DESTINATIONS[action.key] ?? { tab: "today" })
-      : { tab: "today" };
-  return { ...action, ...destination };
+      ? checkAnchorId(action.key)
+      : action.kind === "weigh"
+        ? WEIGH_ANCHOR_ID
+        : null;
+  return { ...action, tab: "today", focusId };
 }

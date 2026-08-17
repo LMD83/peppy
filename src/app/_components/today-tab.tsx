@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { plain, todayCardOrder } from "@convex/tm/logicEasy";
+import { WEIGH_ANCHOR_ID, checkAnchorId, plain, todayCardOrder } from "@convex/tm/logicEasy";
 import { cn } from "@/lib/utils";
 import { useTimento } from "../_lib/backend";
 import { BigChoice, Card, Eyebrow } from "./ui";
@@ -106,9 +106,17 @@ export function TodayTab() {
         </Eyebrow>
         {easy ? (
           <>
-            {/* The one next action, as a sentence. Not a control — the controls
-                are the answers below, and saying it twice is two decisions. */}
-            <p className="mb-3 text-[15px]">{today.nextAction.label}</p>
+            {/* The one next action, as a sentence, and the only place easy mode
+                says it: the scoreboard's NEXT stamp is standard-only, because
+                this copy sits directly above the controls that answer it and
+                saying it twice is two decisions. "Next" is added here, once —
+                the label itself carries no prefix. A finished day is already a
+                whole sentence, so it takes no prefix at all. */}
+            <p className="mb-3 text-[15px]">
+              {today.nextAction.kind === "rest"
+                ? today.nextAction.label
+                : `Next: ${today.nextAction.label}.`}
+            </p>
             <BigChoice
               question={
                 allChecksDone ? "All done. Tap one to undo it." : "Which one have you done?"
@@ -127,6 +135,9 @@ export function TodayTab() {
             {today.checks.map((c) => (
               <button
                 key={c.key}
+                /* The header's NEXT stamp focuses this exact row. Id from the
+                   same helper the stamp targets, so the two cannot drift. */
+                id={checkAnchorId(c.key)}
                 onClick={() => tickCheck(c)}
                 aria-pressed={c.done}
                 className={cn(
@@ -447,6 +458,9 @@ function WeighIn() {
         >
           <div className="flex gap-2">
             <input
+              /* Where "next: weigh yourself" lands — the field itself, not the
+                 card, so the keyboard is already in the right place. */
+              id={WEIGH_ANCHOR_ID}
               value={value}
               onChange={(e) => {
                 setValue(e.target.value);

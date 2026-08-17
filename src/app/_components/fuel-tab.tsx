@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import {
   ALLERGEN_LABELS,
   EQUIPMENT_LABELS,
@@ -318,9 +318,26 @@ function ShoppingCard({ items }: { items: FuelData["shoppingList"] }) {
 
 /* ===== the compact card for Today ===== */
 
+/**
+ * Same grammar as the Stack card, control for control: plain stats, one named
+ * tick, a confirmed state with an undo, and the doorway as its own row. Wrapping
+ * the stats in the navigate button had renamed the card "Open Fuel" and taken
+ * "kcal left" and "protein left" out of the accessibility tree entirely.
+ */
 export function FuelTodayCard() {
   const { fuel, today, actions } = useTimento();
   const go = useFileNav();
+  // The row the last tick wrote, held until it is undone or handed on.
+  const [logged, setLogged] = useState<{ entry: PlannedEntry; eatenCount: number } | null>(null);
+  const [status, setStatus] = useState("");
+  const [focusWanted, setFocusWanted] = useState<{ to: "log" | "undo" } | null>(null);
+  const logRef = useRef<HTMLButtonElement>(null);
+  const undoRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!focusWanted) return;
+    (focusWanted.to === "log" ? logRef : undoRef).current?.focus();
+  }, [focusWanted]);
+
   if (!fuel || !today) {
     return <div className="h-24 rounded-[10px] border border-tm-rule bg-tm-panel" aria-busy="true" />;
   }
@@ -341,32 +358,82 @@ export function FuelTodayCard() {
   }
 
   const next = nextPlannedEntry(fuel.slots);
+  const rows = fuel.slots.flatMap((s) => s.entries);
+  const rowCount = rows.length;
+  // Read once, so a handler announces the count as it stood before its write.
+  const eatenCount = rows.filter((e) => e.eaten).length;
+
+  function logIt(entry: PlannedEntry) {
+    actions.setFoodEaten(entry.entryId, true);
+    const count = eatenCount + 1;
+    setStatus(`${entry.name} logged — ${count} of ${rowCount} planned rows today.`);
+    setLogged({ entry, eatenCount: count });
+    setFocusWanted({ to: "undo" });
+  }
+
+  function undoIt(held: { entry: PlannedEntry; eatenCount: number }) {
+    actions.setFoodEaten(held.entry.entryId, false);
+    setStatus(`${held.entry.name} cleared — ${held.eatenCount - 1} of ${rowCount} planned rows today.`);
+    setLogged(null);
+    setFocusWanted({ to: "log" });
+  }
+
+  function moveOn(entry: PlannedEntry) {
+    setStatus(`Next up — ${entry.name}, ${entry.label.toLowerCase()}.`);
+    setLogged(null);
+    setFocusWanted({ to: "log" });
+  }
+
   return (
     <Card>
-      {/* Same grammar as the Stack card: the body navigates, the tick names
-          one row and logs it — a button cannot nest a button, so the two
-          sit side by side rather than one wrapping the other. */}
-      <button
-        type="button"
-        onClick={() => go("fuel")}
-        aria-label="Open Fuel"
-        className="block w-full cursor-pointer text-left"
-      >
-        <Eyebrow color="bg-tm-green">Fuel</Eyebrow>
-        <div className="flex items-end justify-between gap-2">
-          <Stat value={`${fmt(Math.max(0, fuel.remaining.kcal))}`} label="kcal left" />
-          <Stat value={`${fmt(Math.max(0, fuel.remaining.proteinG))} g`} label="protein left" />
-          <Stat value={`${fuel.sodiumUsedMg}`} label={`of ${fuel.targets.sodiumMgMax} mg salt`} />
-        </div>
-      </button>
-      {next ? (
+      <Eyebrow color="bg-tm-green">Fuel</Eyebrow>
+      <div className="flex items-end justify-between gap-2">
+        <Stat value={`${fmt(Math.max(0, fuel.remaining.kcal))}`} label="kcal left" />
+        <Stat value={`${fmt(Math.max(0, fuel.remaining.proteinG))} g`} label="protein left" />
+        <Stat value={`${fuel.sodiumUsedMg}`} label={`of ${fuel.targets.sodiumMgMax} mg salt`} />
+      </div>
+      <p role="status" className="sr-only">
+        {status}
+      </p>
+      {logged ? (
         <div className="mt-2 flex items-stretch gap-2">
-          <p className="flex flex-1 items-center font-tm-mono text-[11.5px] text-tm-dim">
+          <p className="flex min-w-0 flex-1 items-center font-tm-mono text-[11.5px] text-tm-ink">
+            {/* One flex item, so the tick flows with the first line rather than
+                centring itself against three wrapped ones at 320px. */}
+            <span>
+              <span aria-hidden>✓ </span>
+              {logged.entry.name.toLowerCase()} logged · {logged.eatenCount}/{rowCount}
+            </span>
+          </p>
+          <button
+            ref={undoRef}
+            type="button"
+            onClick={() => undoIt(logged)}
+            aria-label={`Undo — put ${logged.entry.name} back as not eaten`}
+            className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-ink uppercase transition-transform duration-150 active:scale-[0.98]"
+          >
+            Undo
+          </button>
+          {next && (
+            <button
+              type="button"
+              onClick={() => moveOn(next)}
+              aria-label={`Next meal — ${next.name}`}
+              className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[10px] bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+            >
+              Next
+            </button>
+          )}
+        </div>
+      ) : next ? (
+        <div className="mt-2 flex items-stretch gap-2">
+          <p className="flex min-w-0 flex-1 items-center font-tm-mono text-[11.5px] text-tm-dim">
             next up — {next.label.toLowerCase()} · {next.name.toLowerCase()}
           </p>
           <button
+            ref={logRef}
             type="button"
-            onClick={() => actions.setFoodEaten(next.entryId, true)}
+            onClick={() => logIt(next)}
             aria-label={`Log ${next.name} as eaten`}
             className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[10px] bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
           >
@@ -376,9 +443,19 @@ export function FuelTodayCard() {
       ) : (
         <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">every slot logged</p>
       )}
+      <button
+        type="button"
+        onClick={() => go("fuel")}
+        className="mt-2 flex min-h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-[10px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-ink uppercase transition-transform duration-150 active:scale-[0.98]"
+      >
+        Open Fuel
+        <span aria-hidden>→</span>
+      </button>
     </Card>
   );
 }
+
+type PlannedEntry = { entryId: string; slot: MealSlot; label: string; name: string };
 
 /**
  * The exact next planned-uneaten row, slot-ordered — what the Today card's
@@ -386,9 +463,7 @@ export function FuelTodayCard() {
  * FuelEntryView in convex/tm/logicFuel.ts), so no view-model change is
  * needed to find it.
  */
-function nextPlannedEntry(
-  slots: SlotView[],
-): { entryId: string; slot: MealSlot; label: string; name: string } | null {
+function nextPlannedEntry(slots: SlotView[]): PlannedEntry | null {
   const ordered = SLOT_ORDER.map((s) => slots.find((x) => x.slot === s)).filter(
     (s): s is SlotView => s !== undefined,
   );

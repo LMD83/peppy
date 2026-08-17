@@ -22,6 +22,7 @@ import {
   counterpartsFor,
   daysCover,
   grantScopes,
+  grantSentence,
   isScope,
   linkStateFor,
   orderScopes,
@@ -33,6 +34,7 @@ import {
   refusedScopes,
   relationshipOf,
   sharedLine,
+  sharedScopes,
   supersededGrantIds,
   supplyState,
   type ConsentLink,
@@ -215,6 +217,27 @@ describe("copy", () => {
     );
     expect(sharedLine("Artur", [])).toBe("Artur can see nothing of yours.");
     expect(NEVER_SHARED).toMatch(/not your medicines/i);
+  });
+
+  /**
+   * The floor is a promise, and a promise printed on every card is read on
+   * none of them — it belongs once per screen, where someone is deciding to
+   * grant something. So the grant and the floor are two calls, and the caller
+   * says which it needs; `sharedLine` remains both together.
+   */
+  it("separates the grant from the floor, so a screen can state the floor once", () => {
+    expect(sharedScopes("Artur", ["adherence"])).toBe(
+      "Artur can see: how often you hit your checks.",
+    );
+    expect(sharedScopes("Artur", ["adherence"])).not.toContain(NEVER_SHARED);
+    expect(sharedScopes("Artur", [])).toBe("Artur can see nothing of yours.");
+    expect(grantSentence("Artur", ["adherence"], "crew")).toBe(sharedLine("Artur", ["adherence"]));
+    expect(grantSentence("Artur", ["adherence"], "crew", false)).toBe(
+      sharedScopes("Artur", ["adherence"]),
+    );
+    // A carer's second sentence names what that carer will not see. It is
+    // disclosure about a person, not the standing floor, so it never drops.
+    expect(grantSentence("Mary", ["adherence"], "carer", false)).toContain(CARER_NEVER);
   });
 });
 

@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import {
+  CARER_NEVER,
+  NEVER_SHARED,
   SCOPE_DESCRIPTIONS,
   SCOPE_LABELS,
   allowedScopesFor,
   carerSeatSentence,
   carerSentence,
   grantSentence,
-  sharedLine,
   type CarerView,
   type Relationship,
   type Scope,
@@ -88,6 +89,14 @@ export function CrewTab() {
   const partner = shared[0] ?? others[0];
   const presets = NUDGES[partner?.mode ?? today.user.mode];
 
+  // The floor — "Not your weight, not your medicines, nothing you write down."
+  // — is a promise, and a promise repeated on every card is read on none of
+  // them. It is said once, where someone is actually deciding to grant
+  // something: the composer. When the composer is not on this screen (survival,
+  // easy mode, nobody left to invite) the first card naming a grant carries it
+  // instead, so the promise is stated once and never zero times.
+  const composerShown = !survival && !easy && !!you && you.link.candidates.length > 0;
+
   const stop = (m: Member) => {
     if (!m.link.yourGrantId) return;
     setUndo({
@@ -105,6 +114,12 @@ export function CrewTab() {
   const crewShown = easy ? crewRows.slice(0, helpingShown.length > 0 ? 0 : 1) : crewRows;
   const carersShown = easy ? yourCarers.slice(0, 1) : yourCarers;
 
+  // Which card carries the floor when the composer is not on screen. It has to
+  // be the first card that actually names a grant: "can see nothing of yours"
+  // has no floor to append, so pinning this to index 0 loses the promise
+  // entirely whenever the first person on the board shares nothing.
+  const floorCarrier = crewShown.findIndex((m) => m.link.theySee.length > 0);
+
   return (
     <div
       className={cn(
@@ -119,7 +134,7 @@ export function CrewTab() {
         ) : null,
       )}
 
-      {crewShown.map((m) => (
+      {crewShown.map((m, i) => (
         <Card key={m.slug}>
           <div className="flex items-start justify-between gap-3">
             <h2 className="font-tm-disp text-2xl leading-[1.1] tracking-tight uppercase">{m.name}</h2>
@@ -172,7 +187,12 @@ export function CrewTab() {
             </p>
           )}
 
-          <Disclosure member={m} onStop={() => stop(m)} onStopSeeing={actions.revokeCrewLink} />
+          <Disclosure
+            member={m}
+            floor={!composerShown && i === floorCarrier}
+            onStop={() => stop(m)}
+            onStopSeeing={actions.revokeCrewLink}
+          />
           {undo?.slug === m.slug && <Undo undo={undo} onDone={() => setUndo(null)} />}
         </Card>
       ))}
@@ -207,10 +227,11 @@ export function CrewTab() {
             </p>
           </Card>
         ) : (
-          incoming.map((m) => {
+          incoming.map((m, i) => {
             const invite = m.link.incoming;
             if (!invite) return null;
             const carer = invite.relationship === "carer";
+            const floor = !composerShown && crewShown.length === 0 && i === 0;
             return (
               <Card key={`in-${m.slug}`}>
                 <Eyebrow color="bg-tm-blue">
@@ -230,7 +251,10 @@ export function CrewTab() {
                 <p className="mt-1 text-[13px] leading-snug text-tm-ink">
                   {carer
                     ? carerSeatSentence(m.name, invite.scopes)
-                    : sharedLine(m.name, invite.scopes).replace(`${m.name} can see`, "You would see")}
+                    : grantSentence(m.name, invite.scopes, "crew", floor).replace(
+                        `${m.name} can see`,
+                        "You would see",
+                      )}
                 </p>
                 <p className="mt-1 text-[13px] text-tm-dim">
                   Sent {invite.invitedDate}. Nothing is shared until you accept. Right now you can
@@ -285,7 +309,7 @@ export function CrewTab() {
         </Card>
       )}
 
-      {!survival && !easy && you && you.link.candidates.length > 0 && (
+      {composerShown && you && (
         <InviteForm
           candidates={you.link.candidates}
           onInvite={(slug, scopes, relationship) => actions.inviteCrew(slug, scopes, relationship)}
@@ -430,11 +454,14 @@ function CarerSeat({ member, view }: { member: Member; view: CarerView }) {
 function Disclosure({
   member,
   hideSentence,
+  floor,
   onStop,
   onStopSeeing,
 }: {
   member: Member;
   hideSentence?: boolean;
+  /** Whether this card is the one carrying the standing promise (see CrewTab). */
+  floor?: boolean;
   onStop: () => void;
   onStopSeeing: (linkId: string) => void;
 }) {
@@ -443,7 +470,7 @@ function Disclosure({
     <div className="mt-3 border-t border-tm-grid pt-3">
       {!hideSentence && (
         <p className="text-[13px] leading-snug text-tm-ink">
-          {grantSentence(member.name, link.theySee, link.theyAre ?? "crew")}
+          {grantSentence(member.name, link.theySee, link.theyAre ?? "crew", floor ?? false)}
         </p>
       )}
       {link.youSee.length > 0 && (
@@ -611,9 +638,20 @@ function InviteForm({
         ))}
       </ul>
 
+      {/*
+        The floor is stated whatever is ticked, including nothing. Gating it on
+        a scope being chosen meant unticking the last one took the promise off
+        the screen entirely — and the moment someone is deciding how much to
+        share is the moment it has to be readable. A carer grant states the
+        carer floor, which is the promise that actually applies to it.
+      */}
       <p className="mt-2 text-[13px] leading-snug text-tm-ink">
         {chosen.length === 0
-          ? `${name} would see nothing yet. Tick at least one.`
+          ? `${name} would see nothing yet. Tick at least one. ${
+              relationship === "carer"
+                ? `Whatever you tick, ${name} will not see ${CARER_NEVER}.`
+                : NEVER_SHARED
+            }`
           : grantSentence(name, chosen, relationship)}
       </p>
 

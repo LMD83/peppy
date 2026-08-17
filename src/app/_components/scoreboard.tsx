@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useState } from "react";
 import Link from "next/link";
-import { withDestination } from "@convex/tm/logicEasy";
+import { withDestination, type NextActionWithDestination } from "@convex/tm/logicEasy";
 import { cn } from "@/lib/utils";
 import { useTimento } from "../_lib/backend";
 import { useFileNav } from "./file-nav";
@@ -20,9 +20,25 @@ export function Scoreboard() {
   const survival = user.mode === "survival";
   const title = survival ? `Floor protocol — hold < ${user.ceilingKg}` : user.protocolTitle;
   // The file's own to-do line, reused rather than reforecast — nextAction is
-  // computed once, in logicEasy.ts, for both profiles; this only adds where
-  // tapping it should go.
+  // computed once, in logicEasy.ts; this only adds which control answers it.
   const next = withDestination(today.nextAction);
+  const easy = today.a11y.profile === "easy";
+
+  function goNext(focusId: string) {
+    goFileNav(next.tab);
+    // The tab switch commits before the next frame, so the control exists by
+    // the time this runs. Focus, not merely scroll: the header hands the
+    // keyboard over rather than naming a row and leaving someone to find it.
+    requestAnimationFrame(() => {
+      const el = document.getElementById(focusId);
+      if (!el) return;
+      el.focus({ preventScroll: true });
+      el.scrollIntoView({
+        block: "center",
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      });
+    });
+  }
 
   // Swatches are aria-hidden decoration, but they still have to be visible:
   // tm-onink replaces tm-dim2 here because dim2 is now a dark-on-light grey.
@@ -80,33 +96,7 @@ export function Scoreboard() {
             </div>
           ))}
         </dl>
-        {/*
-          The file's own to-do line as a fourth, tappable header element —
-          never an empty hole: when nothing is left, it still names the day
-          in the app's voice instead of going quiet.
-        */}
-        <button
-          type="button"
-          onClick={() => goFileNav(next.tab, next.sub)}
-          /*
-            Named "Next: …", not just the action. The same words appear on the
-            control that performs the work — a bare label here would put two
-            identically-named buttons on one screen, which reads to a screen
-            reader as the same control twice.
-          */
-          aria-label={next.kind === "rest" ? "The day is executed as designed" : `Next: ${next.label}`}
-          className="mt-2 flex min-h-11 w-full cursor-pointer items-center justify-between gap-3 rounded-[10px] border border-tm-inkrule bg-tm-ink2 px-3.5 py-2.5 text-left transition-transform duration-150 active:scale-[0.98]"
-        >
-          <span className="min-w-0">
-            <span className="block font-tm-mono text-[11.5px] tracking-[0.15em] text-tm-onink uppercase">Next</span>
-            <span className="mt-0.5 block truncate text-[15px] font-medium text-white">
-              {next.kind === "rest" ? "EXECUTED AS DESIGNED" : next.label}
-            </span>
-          </span>
-          <span aria-hidden className="shrink-0 font-tm-mono text-[15px] text-tm-onink">
-            →
-          </span>
-        </button>
+        {!easy && <NextStamp next={next} onGo={goNext} />}
         {confirmMode && (
           <ModeSwitcher
             id={modePanelId}
@@ -145,6 +135,67 @@ export function Scoreboard() {
         </TmSheet>
       </div>
     </header>
+  );
+}
+
+/** The dark chip both stamp states wear, so the day's end is not a downgrade. */
+const stampShell =
+  "mt-2 flex min-h-11 w-full items-center justify-between gap-3 rounded-[10px] border border-tm-inkrule bg-tm-ink2 px-3.5 py-2.5 text-left";
+
+/**
+ * The file's own to-do line, as a fourth header element.
+ *
+ * Standard profile only. Easy mode says the same sentence directly above the
+ * controls that answer it (today-tab.tsx) and one screen may say it once — a
+ * second copy up here would be a second decision, which is the one thing easy
+ * mode exists to prevent. It could not be an honest control there either:
+ * easy mode's next action names the real day, so it can point at a check
+ * outside the three on screen, and nothing can focus what is not rendered.
+ */
+function NextStamp({
+  next,
+  onGo,
+}: {
+  next: NextActionWithDestination;
+  onGo: (focusId: string) => void;
+}) {
+  // Nowhere to go is a state, not an errand. It keeps the chip — the header
+  // never goes quiet — but drops the button role, the arrow and the press
+  // animation, because a control that promises a task and then does nothing
+  // is worse than dead text.
+  if (next.focusId === null)
+    return (
+      <p className={stampShell}>
+        <span className="min-w-0">
+          <span className="block font-tm-mono text-[11.5px] tracking-[0.15em] text-tm-onink uppercase">Done</span>
+          <span className="mt-0.5 block truncate text-[15px] font-medium text-white uppercase">
+            Executed as designed
+          </span>
+        </span>
+      </p>
+    );
+
+  const focusId = next.focusId;
+  return (
+    <button
+      type="button"
+      onClick={() => onGo(focusId)}
+      /*
+        No aria-label. The eyebrow is part of the accessible name, so the
+        computed name is "Next 8k+ steps" — the word appears once, in the DOM,
+        and cannot drift from the visible text (2.5.3). Spelling it out here as
+        well is what made Chrome read "Next: Next: 8k+ steps."
+      */
+      className={cn(stampShell, "cursor-pointer transition-transform duration-150 active:scale-[0.98]")}
+    >
+      <span className="min-w-0">
+        <span className="block font-tm-mono text-[11.5px] tracking-[0.15em] text-tm-onink uppercase">Next</span>
+        <span className="mt-0.5 block truncate text-[15px] font-medium text-white">{next.label}</span>
+      </span>
+      <span aria-hidden className="shrink-0 font-tm-mono text-[15px] text-tm-onink">
+        →
+      </span>
+    </button>
   );
 }
 

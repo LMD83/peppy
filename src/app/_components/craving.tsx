@@ -28,7 +28,11 @@ const ACTIONS: { key: NonNullable<CravingEntry["action"]>; label: string }[] = [
   { key: "ate", label: "Ate it" },
 ];
 
-type Step = "idle" | "after" | "action" | "breathe" | "logged";
+type Step = "idle" | "correct" | "after" | "action" | "breathe" | "logged";
+
+function labelFor(key: CravingEntry["signal"]): string {
+  return SIGNALS.find((s) => s.key === key)?.label ?? key;
+}
 
 /** 44×44 minimum (2.5.8), on every control in this card — including the three
  *  that used to be bare underlined words a few pixels tall. */
@@ -42,6 +46,8 @@ export function CravingLogger() {
   const [emotionWord, setEmotionWord] = useState("");
   const [entryId, setEntryId] = useState<string | null>(null);
   const [loggedAt, setLoggedAt] = useState("");
+  const [corrected, setCorrected] = useState(false);
+  const [writing, setWriting] = useState(false);
   if (!today) return null;
 
   const logs = today.cravingsToday;
@@ -57,6 +63,7 @@ export function CravingLogger() {
     setSignal(null);
     setEmotionWord("");
     setEntryId(null);
+    setCorrected(false);
   };
 
   /**
@@ -66,15 +73,47 @@ export function CravingLogger() {
    * the map.
    */
   const commitSignal = async (key: CravingEntry["signal"]) => {
+    if (writing) return;
+    setWriting(true);
     setSignal(key);
     const time = localTime();
     const id = await actions.logCraving({ time, signal: key });
+    setWriting(false);
     if (!id) {
       setSignal(null);
       return;
     }
     setLoggedAt(time);
     setEntryId(id);
+    setCorrected(false);
+    setStep("after");
+  };
+
+  /**
+   * The other half of committing on the first tap: a thumb that hit Tired when
+   * it meant Bored has to be able to say so without losing the entry.
+   *
+   * enrichCraving patches after-state and action only — a signal cannot be
+   * moved — so a correction is written as a replacement: the new row lands
+   * first, the mis-tapped one goes only once it has. Fail in between and the
+   * original still stands; at no point is the craving missing from the map.
+   * The time carried over is when the craving hit, not when the thumb slipped.
+   */
+  const correctSignal = async (key: CravingEntry["signal"]) => {
+    if (writing || !entryId) return;
+    if (key === signal) {
+      setStep("after");
+      return;
+    }
+    setWriting(true);
+    const replacement = await actions.logCraving({ time: loggedAt, signal: key });
+    setWriting(false);
+    if (!replacement) return;
+    actions.undoCraving(entryId);
+    setEntryId(replacement);
+    setSignal(key);
+    if (key !== "emotion") setEmotionWord("");
+    setCorrected(true);
     setStep("after");
   };
 
@@ -155,13 +194,49 @@ export function CravingLogger() {
         </>
       )}
 
+      {step === "correct" && signal && (
+        <div>
+          <p className="mb-2 text-[14px]">Which one was it?</p>
+          <div className="flex flex-wrap gap-2">
+            {SIGNALS.map((s) => (
+              <button
+                key={s.key}
+                aria-pressed={s.key === signal}
+                onClick={() => void correctSignal(s.key)}
+                className={cn(
+                  CHIP,
+                  s.key === signal
+                    ? "border-tm-ink bg-tm-ink text-white"
+                    : "border-tm-rule-strong bg-tm-soft",
+                )}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1 font-tm-mono text-[11.5px] leading-relaxed text-tm-dim">
+            The {loggedAt} entry stays either way — this only changes what it says.
+          </p>
+          <button type="button" onClick={() => setStep("after")} className={cn(QUIET, "-ml-3 mt-1")}>
+            keep {labelFor(signal)}
+          </button>
+        </div>
+      )}
+
       {step === "after" && signal && (
         <div>
-          <p role="status" className="mb-2 font-tm-mono text-[11.5px] text-tm-green">
-            Logged {loggedAt} — the map has it.
-          </p>
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-x-2">
+            <p role="status" className="font-tm-mono text-[11.5px] text-tm-green">
+              {corrected
+                ? `Changed to ${labelFor(signal)} — still logged ${loggedAt}.`
+                : `Logged ${loggedAt} — the map has it.`}
+            </p>
+            <button type="button" onClick={() => setStep("correct")} className={cn(QUIET, "-mr-3")}>
+              not that one — change
+            </button>
+          </div>
           <p className="mb-2 text-[14px]">
-            <b>{SIGNALS.find((s) => s.key === signal)?.label}.</b> And after — what would eating it get you?
+            <b>{labelFor(signal)}.</b> And after — what would eating it get you?
           </p>
           {signal === "emotion" && (
             <input
@@ -209,6 +284,9 @@ export function CravingLogger() {
               just log it
             </button>
           </div>
+          <button type="button" onClick={() => setStep("after")} className={cn(QUIET, "-ml-3 mt-1")}>
+            back
+          </button>
           <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">Riding it out opens the 2-minute breathing timer.</p>
         </div>
       )}
