@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   EVIDENCE_NOTES,
@@ -10,6 +10,7 @@ import {
 import { ReconstitutionError, reconstitution } from "@convex/tm/logicStack";
 import { useTimento } from "../_lib/backend";
 import type { StackData } from "../_lib/types";
+import { useFileNav } from "./file-nav";
 import { Card, Eyebrow, Stat } from "./ui";
 
 type ItemView = StackData["items"][number];
@@ -112,14 +113,65 @@ export function StackTab() {
 
 /* ===== the compact card for Today ===== */
 
+/**
+ * A tick on Today writes a medication record, so it owes three things a plain
+ * button does not: it says what it wrote, it shows what it wrote, and it can
+ * take it back in one tap.
+ *
+ * The stat block is deliberately not inside the navigate button. Wrapping it
+ * renamed the whole card "Open Stack" to assistive tech and marked the day's
+ * numbers ignored — the doses and the adherence simply stopped existing for a
+ * screen reader. The doorway is its own row at the foot instead, the way the
+ * Train card has always read.
+ */
 export function StackTodayCard() {
-  const { stack } = useTimento();
+  const { stack, actions } = useTimento();
+  const go = useFileNav();
+  // The dose the last tick wrote, held until it is undone or handed on. No
+  // timer: an undo that expires is an undo you have to race.
+  const [logged, setLogged] = useState<{ dose: DoseView; takenCount: number } | null>(null);
+  const [status, setStatus] = useState("");
+  // A control that vanishes under a finger has to say where focus went, and
+  // the replacement names its own target — which is how the second tap stops
+  // silently landing on a different medicine.
+  const [focusWanted, setFocusWanted] = useState<{ to: "log" | "undo" } | null>(null);
+  const logRef = useRef<HTMLButtonElement>(null);
+  const undoRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!focusWanted) return;
+    (focusWanted.to === "log" ? logRef : undoRef).current?.focus();
+  }, [focusWanted]);
+
   if (!stack) {
     return <div className="h-24 rounded-[10px] border border-tm-rule bg-tm-panel" aria-busy="true" />;
   }
 
   const floor = stack.dueToday.filter((d) => !d.deferred);
   const next = floor.find((d) => !d.taken) ?? null;
+  // Read once, so the handlers announce the count as it was before the write —
+  // the same rule today-tab's check ticks follow.
+  const { dueCount, takenCount } = stack;
+
+  function logIt(dose: DoseView) {
+    actions.logDose(dose.itemId, dose.timing, true, dose.site ?? undefined);
+    const count = takenCount + 1;
+    setStatus(`${dose.name} logged — ${count} of ${dueCount} doses today.`);
+    setLogged({ dose, takenCount: count });
+    setFocusWanted({ to: "undo" });
+  }
+
+  function undoIt(entry: { dose: DoseView; takenCount: number }) {
+    actions.logDose(entry.dose.itemId, entry.dose.timing, false, entry.dose.site ?? undefined);
+    setStatus(`${entry.dose.name} cleared — ${entry.takenCount - 1} of ${dueCount} doses today.`);
+    setLogged(null);
+    setFocusWanted({ to: "log" });
+  }
+
+  function moveOn(dose: DoseView) {
+    setStatus(`Next up — ${dose.name}, ${dose.timingLabel.toLowerCase()}.`);
+    setLogged(null);
+    setFocusWanted({ to: "log" });
+  }
 
   return (
     <Card tone={stack.survival ? "amber" : "default"}>
@@ -127,17 +179,72 @@ export function StackTodayCard() {
         {stack.survival ? "Stack — floor" : "Stack"}
       </Eyebrow>
       <dl className="flex items-end justify-between gap-2">
-        <Stat value={`${stack.takenCount}/${stack.dueCount}`} label="doses today" />
+        <Stat value={`${takenCount}/${dueCount}`} label="doses today" />
         <Stat value={`${stack.adherence7.pct}%`} label="7-day adherence" />
         <Stat value={`${stack.cycles.length}`} label="cycles running" />
       </dl>
-      <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
-        {next
-          ? `next up — ${next.timingLabel.toLowerCase()} · ${next.name.toLowerCase()}`
-          : stack.dueCount === 0
-            ? "nothing scheduled today"
-            : "every scheduled dose logged"}
+      {/* The write says itself — the tick below is silent otherwise. */}
+      <p role="status" className="sr-only">
+        {status}
       </p>
+      {logged ? (
+        <div className="mt-2 flex items-stretch gap-2">
+          <p className="flex min-w-0 flex-1 items-center font-tm-mono text-[11.5px] text-tm-ink">
+            {/* One flex item, so the tick flows with the first line rather than
+                centring itself against three wrapped ones at 320px. */}
+            <span>
+              <span aria-hidden>✓ </span>
+              {logged.dose.name.toLowerCase()} logged · {logged.takenCount}/{dueCount}
+            </span>
+          </p>
+          <button
+            ref={undoRef}
+            type="button"
+            onClick={() => undoIt(logged)}
+            aria-label={`Undo — put ${logged.dose.name} back as not taken`}
+            className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-ink uppercase transition-transform duration-150 active:scale-[0.98]"
+          >
+            Undo
+          </button>
+          {next && (
+            <button
+              type="button"
+              onClick={() => moveOn(next)}
+              aria-label={`Next dose — ${next.name}`}
+              className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[10px] bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+            >
+              Next
+            </button>
+          )}
+        </div>
+      ) : next ? (
+        <div className="mt-2 flex items-stretch gap-2">
+          <p className="flex min-w-0 flex-1 items-center font-tm-mono text-[11.5px] text-tm-dim">
+            next up — {next.timingLabel.toLowerCase()} · {next.name.toLowerCase()}
+          </p>
+          <button
+            ref={logRef}
+            type="button"
+            onClick={() => logIt(next)}
+            aria-label={`Log ${next.name} as taken`}
+            className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[10px] bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+          >
+            Log it
+          </button>
+        </div>
+      ) : (
+        <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
+          {dueCount === 0 ? "nothing scheduled today" : "every scheduled dose logged"}
+        </p>
+      )}
+      <button
+        type="button"
+        onClick={() => go("body", "stack")}
+        className="mt-2 flex min-h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-[10px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-ink uppercase transition-transform duration-150 active:scale-[0.98]"
+      >
+        Open Stack
+        <span aria-hidden>→</span>
+      </button>
     </Card>
   );
 }

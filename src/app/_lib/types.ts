@@ -37,7 +37,13 @@ export type TimentoActions = {
   logWeight: (weightKg: number) => void;
   logState: (patch: { stress?: number; energy?: number }) => void;
   markRitual: () => void;
-  logCraving: (entry: CravingEntry) => void;
+  /** Commits on the signal tap alone; resolves the new entry's id (or null if not signed in). */
+  logCraving: (entry: CravingEntry) => Promise<string | null>;
+  /** Patches an already-committed entry — never the write that decides whether it was logged. */
+  enrichCraving: (
+    id: string,
+    patch: { emotionWord?: string; afterState?: CravingEntry["afterState"]; action?: CravingEntry["action"] },
+  ) => void;
   undoCraving: (id: string) => void;
   markSessionDone: () => void;
   setMode: (mode: "cut" | "maintain" | "survival", reason?: string, reviewDate?: string) => void;

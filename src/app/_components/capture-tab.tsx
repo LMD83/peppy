@@ -437,7 +437,6 @@ function TodayStrip({ view, onDelete }: { view: CaptureView; onDelete: (id: stri
           </li>
         ))}
       </ul>
-      <p className="mt-2 text-[14px] text-tm-dim">{view.neverShared}</p>
     </Card>
   );
 }

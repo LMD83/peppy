@@ -18,8 +18,13 @@ export function Login() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const needsPasscode = passcode.length === 0;
+  const blocked = busy || needsPasscode;
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Guarded here rather than with the disabled attribute — see the button.
+    if (blocked) return;
     setBusy(true);
     setError(null);
     const res = await actions.login(slug, passcode);
@@ -107,13 +112,32 @@ export function Login() {
               {error}
             </p>
           )}
+          {/* aria-disabled, never the native attribute: a disabled button leaves
+              the tab order, so a keyboard user arrives at the end of the form
+              with no way to reach the control and nothing telling them why it
+              will not go. The handler refuses instead, and the reason is a
+              sentence the button points at. (today-tab.tsx:226) */}
           <button
             type="submit"
-            disabled={busy || passcode.length === 0}
-            className="mt-5 min-h-12 w-full cursor-pointer rounded-[10px] bg-tm-ink py-3.5 font-tm-mono text-[13px] tracking-[0.15em] text-white uppercase transition-transform duration-150 active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100"
+            aria-disabled={blocked}
+            aria-describedby={needsPasscode ? "passcode-hint" : undefined}
+            className={cn(
+              "mt-5 min-h-12 w-full rounded-[10px] py-3.5 font-tm-mono text-[13px] tracking-[0.15em] uppercase transition-transform duration-150",
+              // Dimmed by swapping the token pair, not by opacity: opacity
+              // multiplies the contrast of the label inside it, and a button
+              // that stays focusable has to stay readable.
+              blocked
+                ? "cursor-not-allowed border border-tm-rule-strong bg-tm-soft text-tm-dim"
+                : "cursor-pointer border border-tm-ink bg-tm-ink text-white active:scale-[0.98]",
+            )}
           >
             {busy ? "Checking…" : "Open the file"}
           </button>
+          {needsPasscode && (
+            <p id="passcode-hint" className="mt-2 font-tm-mono text-[11.5px] leading-relaxed text-tm-dim">
+              Enter your passcode to open the file.
+            </p>
+          )}
           {demo && (
             <p className="mt-4 rounded-[10px] bg-tm-soft px-3 py-2.5 font-tm-mono text-[11.5px] leading-relaxed text-tm-dim">
               Demo mode. No deployment configured. Passcodes: Liam 2580 · Artur 1379.

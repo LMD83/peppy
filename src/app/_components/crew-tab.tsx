@@ -11,7 +11,6 @@ import {
   carerSeatSentence,
   carerSentence,
   grantSentence,
-  sharedLine,
   type CarerView,
   type Relationship,
   type Scope,
@@ -90,6 +89,14 @@ export function CrewTab() {
   const partner = shared[0] ?? others[0];
   const presets = NUDGES[partner?.mode ?? today.user.mode];
 
+  // The floor — "Not your weight, not your medicines, nothing you write down."
+  // — is a promise, and a promise repeated on every card is read on none of
+  // them. It is said once, where someone is actually deciding to grant
+  // something: the composer. When the composer is not on this screen (survival,
+  // easy mode, nobody left to invite) the first card naming a grant carries it
+  // instead, so the promise is stated once and never zero times.
+  const composerShown = !survival && !easy && !!you && you.link.candidates.length > 0;
+
   const stop = (m: Member) => {
     if (!m.link.yourGrantId) return;
     setUndo({
@@ -107,6 +114,12 @@ export function CrewTab() {
   const crewShown = easy ? crewRows.slice(0, helpingShown.length > 0 ? 0 : 1) : crewRows;
   const carersShown = easy ? yourCarers.slice(0, 1) : yourCarers;
 
+  // Which card carries the floor when the composer is not on screen. It has to
+  // be the first card that actually names a grant: "can see nothing of yours"
+  // has no floor to append, so pinning this to index 0 loses the promise
+  // entirely whenever the first person on the board shares nothing.
+  const floorCarrier = crewShown.findIndex((m) => m.link.theySee.length > 0);
+
   return (
     <div
       className={cn(
@@ -121,7 +134,7 @@ export function CrewTab() {
         ) : null,
       )}
 
-      {crewShown.map((m) => (
+      {crewShown.map((m, i) => (
         <Card key={m.slug}>
           <div className="flex items-start justify-between gap-3">
             <h2 className="font-tm-disp text-2xl leading-[1.1] tracking-tight uppercase">{m.name}</h2>
@@ -129,21 +142,44 @@ export function CrewTab() {
           </div>
 
           {m.link.youSee.length > 0 ? (
-            <dl className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule sm:grid-cols-3">
+            /*
+              A description list, because that is what a label/value pair is —
+              Stat renders its own dt/dd inside a div, so the semantics survive
+              the axe rule about what a dl may directly contain.
+
+              flex-wrap rather than a fixed grid: grid-cols reserves a track per
+              cell whether or not an item fills it, and an empty track paints
+              the container's own bg-tm-rule — a dead grey cell whenever the
+              count does not divide evenly. Flex items grow to close the gap, so
+              there is never a cell with nothing in it.
+            */
+            <dl className="mt-4 flex flex-wrap gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
               {m.streak !== undefined && (
-                <Stat className="bg-tm-panel px-3 py-3" value={`${m.streak}`} label="Streak"/>
+                <Stat className="min-w-[104px] flex-1 bg-tm-panel px-3 py-3" value={`${m.streak}`} label="Streak" />
               )}
               {m.adherence7 !== undefined && (
-                <Stat className="bg-tm-panel px-3 py-3" value={`${m.adherence7}%`} label="7-day"/>
+                <Stat className="min-w-[104px] flex-1 bg-tm-panel px-3 py-3" value={`${m.adherence7}%`} label="7-day" />
               )}
               {m.todayDone !== undefined && (
-                <Stat className="bg-tm-panel px-3 py-3" value={`${m.todayDone}/${m.todayTotal}`} label="Today"/>
+                <Stat
+                  className="min-w-[104px] flex-1 bg-tm-panel px-3 py-3"
+                  value={`${m.todayDone}/${m.todayTotal}`}
+                  label="Today"
+                />
               )}
               {m.mode === "survival" && m.daysInMode !== undefined && (
-                <Stat className="bg-tm-panel px-3 py-3" value={`${m.daysInMode}`} label="Days on floor"/>
+                <Stat
+                  className="min-w-[104px] flex-1 bg-tm-panel px-3 py-3"
+                  value={`${m.daysInMode}`}
+                  label="Days on floor"
+                />
               )}
               {m.supplyState && m.supplyState !== "none" && (
-                <Stat className="bg-tm-panel px-3 py-3" value={SUPPLY_COPY[m.supplyState]} label="Supply"/>
+                <Stat
+                  className="min-w-[104px] flex-1 bg-tm-panel px-3 py-3"
+                  value={SUPPLY_COPY[m.supplyState]}
+                  label="Supply"
+                />
               )}
             </dl>
           ) : (
@@ -159,7 +195,12 @@ export function CrewTab() {
             </p>
           )}
 
-          <Disclosure member={m} onStop={() => stop(m)} onStopSeeing={actions.revokeCrewLink} />
+          <Disclosure
+            member={m}
+            floor={!composerShown && i === floorCarrier}
+            onStop={() => stop(m)}
+            onStopSeeing={actions.revokeCrewLink}
+          />
           {undo?.slug === m.slug && <Undo undo={undo} onDone={() => setUndo(null)} />}
         </Card>
       ))}
@@ -194,10 +235,11 @@ export function CrewTab() {
             </p>
           </Card>
         ) : (
-          incoming.map((m) => {
+          incoming.map((m, i) => {
             const invite = m.link.incoming;
             if (!invite) return null;
             const carer = invite.relationship === "carer";
+            const floor = !composerShown && crewShown.length === 0 && i === 0;
             return (
               <Card key={`in-${m.slug}`}>
                 <Eyebrow color="bg-tm-blue">
@@ -217,7 +259,10 @@ export function CrewTab() {
                 <p className="mt-1 text-[13px] leading-snug text-tm-ink">
                   {carer
                     ? carerSeatSentence(m.name, invite.scopes)
-                    : sharedLine(m.name, invite.scopes).replace(`${m.name} can see`, "You would see")}
+                    : grantSentence(m.name, invite.scopes, "crew", floor).replace(
+                        `${m.name} can see`,
+                        "You would see",
+                      )}
                 </p>
                 <p className="mt-1 text-[13px] text-tm-dim">
                   Sent {invite.invitedDate}. Nothing is shared until you accept. Right now you can
@@ -272,7 +317,7 @@ export function CrewTab() {
         </Card>
       )}
 
-      {!survival && !easy && you && you.link.candidates.length > 0 && (
+      {composerShown && you && (
         <InviteForm
           candidates={you.link.candidates}
           onInvite={(slug, scopes, relationship) => actions.inviteCrew(slug, scopes, relationship)}
@@ -417,11 +462,14 @@ function CarerSeat({ member, view }: { member: Member; view: CarerView }) {
 function Disclosure({
   member,
   hideSentence,
+  floor,
   onStop,
   onStopSeeing,
 }: {
   member: Member;
   hideSentence?: boolean;
+  /** Whether this card is the one carrying the standing promise (see CrewTab). */
+  floor?: boolean;
   onStop: () => void;
   onStopSeeing: (linkId: string) => void;
 }) {
@@ -430,7 +478,7 @@ function Disclosure({
     <div className="mt-3 border-t border-tm-grid pt-3">
       {!hideSentence && (
         <p className="text-[13px] leading-snug text-tm-ink">
-          {grantSentence(member.name, link.theySee, link.theyAre ?? "crew")}
+          {grantSentence(member.name, link.theySee, link.theyAre ?? "crew", floor ?? false)}
         </p>
       )}
       {link.youSee.length > 0 && (
@@ -598,13 +646,21 @@ function InviteForm({
         ))}
       </ul>
 
+      {/*
+        The floor is stated whatever is ticked, including nothing. Gating it on
+        a scope being chosen meant unticking the last one took the promise off
+        the screen entirely — and the moment someone is deciding how much to
+        share is the moment it has to be readable. A carer grant states the
+        carer floor, which is the promise that actually applies to it.
+      */}
       <p className="mt-2 text-[13px] leading-snug text-tm-ink">
         {chosen.length === 0
-          ? `${name} would see nothing yet. Tick at least one.`
+          ? `${name} would see nothing yet. Tick at least one. ${
+              relationship === "carer"
+                ? `Whatever you tick, ${name} will not see ${CARER_NEVER}.`
+                : NEVER_SHARED
+            }`
           : grantSentence(name, chosen, relationship)}
-      </p>
-      <p className="mt-1 text-[13px] text-tm-dim">
-        {relationship === "carer" ? `Never ${CARER_NEVER}.` : NEVER_SHARED}
       </p>
 
       <button

@@ -2,8 +2,10 @@
 
 import { useEffect, useId, useState } from "react";
 import Link from "next/link";
+import { withDestination, type NextActionWithDestination } from "@convex/tm/logicEasy";
 import { cn } from "@/lib/utils";
 import { useTimento } from "../_lib/backend";
+import { useFileNav } from "./file-nav";
 import { fileWidth, TmButton, TmSheet } from "./ui";
 
 export function Scoreboard() {
@@ -11,11 +13,32 @@ export function Scoreboard() {
   const [confirmMode, setConfirmMode] = useState(false);
   const [fileOpen, setFileOpen] = useState(false);
   const modePanelId = useId();
+  const goFileNav = useFileNav();
   if (!today) return null;
 
   const { user, stats, latestKg, deltaKg, dayNumber } = today;
   const survival = user.mode === "survival";
   const title = survival ? `Floor protocol — hold < ${user.ceilingKg}` : user.protocolTitle;
+  // The file's own to-do line, reused rather than reforecast — nextAction is
+  // computed once, in logicEasy.ts; this only adds which control answers it.
+  const next = withDestination(today.nextAction);
+  const easy = today.a11y.profile === "easy";
+
+  function goNext(focusId: string) {
+    goFileNav(next.tab);
+    // The tab switch commits before the next frame, so the control exists by
+    // the time this runs. Focus, not merely scroll: the header hands the
+    // keyboard over rather than naming a row and leaving someone to find it.
+    requestAnimationFrame(() => {
+      const el = document.getElementById(focusId);
+      if (!el) return;
+      el.focus({ preventScroll: true });
+      el.scrollIntoView({
+        block: "center",
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      });
+    });
+  }
 
   // Swatches are aria-hidden decoration, but they still have to be visible:
   // tm-onink replaces tm-dim2 here because dim2 is now a dark-on-light grey.
@@ -59,7 +82,7 @@ export function Scoreboard() {
             survival ? "border-tm-amber-lift bg-tm-amber-lift text-tm-ink" : "border-tm-inkrule bg-tm-ink3 text-tm-onink",
           )}
         >
-          {user.mode} mode ⇄
+          {user.mode} mode ⇄ · change
         </button>
         <dl className="mt-3 flex overflow-hidden rounded-[10px] border border-tm-inkrule bg-tm-ink2">
           {cells.map(([label, value, sub, color], i) => (
@@ -73,6 +96,7 @@ export function Scoreboard() {
             </div>
           ))}
         </dl>
+        {!easy && <NextStamp next={next} onGo={goNext} />}
         {confirmMode && (
           <ModeSwitcher
             id={modePanelId}
@@ -111,6 +135,67 @@ export function Scoreboard() {
         </TmSheet>
       </div>
     </header>
+  );
+}
+
+/** The dark chip both stamp states wear, so the day's end is not a downgrade. */
+const stampShell =
+  "mt-2 flex min-h-11 w-full items-center justify-between gap-3 rounded-[10px] border border-tm-inkrule bg-tm-ink2 px-3.5 py-2.5 text-left";
+
+/**
+ * The file's own to-do line, as a fourth header element.
+ *
+ * Standard profile only. Easy mode says the same sentence directly above the
+ * controls that answer it (today-tab.tsx) and one screen may say it once — a
+ * second copy up here would be a second decision, which is the one thing easy
+ * mode exists to prevent. It could not be an honest control there either:
+ * easy mode's next action names the real day, so it can point at a check
+ * outside the three on screen, and nothing can focus what is not rendered.
+ */
+function NextStamp({
+  next,
+  onGo,
+}: {
+  next: NextActionWithDestination;
+  onGo: (focusId: string) => void;
+}) {
+  // Nowhere to go is a state, not an errand. It keeps the chip — the header
+  // never goes quiet — but drops the button role, the arrow and the press
+  // animation, because a control that promises a task and then does nothing
+  // is worse than dead text.
+  if (next.focusId === null)
+    return (
+      <p className={stampShell}>
+        <span className="min-w-0">
+          <span className="block font-tm-mono text-[11.5px] tracking-[0.15em] text-tm-onink uppercase">Done</span>
+          <span className="mt-0.5 block truncate text-[15px] font-medium text-white uppercase">
+            Executed as designed
+          </span>
+        </span>
+      </p>
+    );
+
+  const focusId = next.focusId;
+  return (
+    <button
+      type="button"
+      onClick={() => onGo(focusId)}
+      /*
+        No aria-label. The eyebrow is part of the accessible name, so the
+        computed name is "Next 8k+ steps" — the word appears once, in the DOM,
+        and cannot drift from the visible text (2.5.3). Spelling it out here as
+        well is what made Chrome read "Next: Next: 8k+ steps."
+      */
+      className={cn(stampShell, "cursor-pointer transition-transform duration-150 active:scale-[0.98]")}
+    >
+      <span className="min-w-0">
+        <span className="block font-tm-mono text-[11.5px] tracking-[0.15em] text-tm-onink uppercase">Next</span>
+        <span className="mt-0.5 block truncate text-[15px] font-medium text-white">{next.label}</span>
+      </span>
+      <span aria-hidden className="shrink-0 font-tm-mono text-[15px] text-tm-onink">
+        →
+      </span>
+    </button>
   );
 }
 

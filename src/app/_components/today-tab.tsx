@@ -1,9 +1,9 @@
 "use client";
 
-import { Fragment, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { plain } from "@convex/tm/logicEasy";
+import { WEIGH_ANCHOR_ID, checkAnchorId, plain, todayCardOrder } from "@convex/tm/logicEasy";
 import { cn } from "@/lib/utils";
 import { useTimento } from "../_lib/backend";
 import { BigChoice, Card, Eyebrow } from "./ui";
@@ -16,11 +16,27 @@ import { LabsTodayCard } from "./labs-tab";
 import { MindTodayCard } from "./mind-tab";
 import { CaptureTodayCard } from "./capture-tab";
 
+function subscribeHourTick(cb: () => void) {
+  const t = setInterval(cb, 30_000);
+  return () => clearInterval(t);
+}
+
+/**
+ * The client's own hour, 0–23 — used only to reorder cards, never sent to a
+ * query. Server snapshot is -1, outside todayCardOrder's valid range, so the
+ * first paint matches file order on both sides and hydration cannot mismatch;
+ * the real hour lands once the client mounts.
+ */
+function useCurrentHour(): number {
+  return useSyncExternalStore(subscribeHourTick, () => new Date().getHours(), () => -1);
+}
+
 export function TodayTab() {
   const { today, actions, research } = useTimento();
   // Toggling a check is optimistic: the tick flips instantly and nothing is
   // spoken. One polite region carries the result to a screen reader.
   const [checkStatus, setCheckStatus] = useState("");
+  const hourOfDay = useCurrentHour();
   if (!today) return null;
   const survival = today.user.mode === "survival";
   const easy = today.a11y.profile === "easy";
@@ -90,9 +106,17 @@ export function TodayTab() {
         </Eyebrow>
         {easy ? (
           <>
-            {/* The one next action, as a sentence. Not a control — the controls
-                are the answers below, and saying it twice is two decisions. */}
-            <p className="mb-3 text-[15px]">{today.nextAction.label}</p>
+            {/* The one next action, as a sentence, and the only place easy mode
+                says it: the scoreboard's NEXT stamp is standard-only, because
+                this copy sits directly above the controls that answer it and
+                saying it twice is two decisions. "Next" is added here, once —
+                the label itself carries no prefix. A finished day is already a
+                whole sentence, so it takes no prefix at all. */}
+            <p className="mb-3 text-[15px]">
+              {today.nextAction.kind === "rest"
+                ? today.nextAction.label
+                : `Next: ${today.nextAction.label}.`}
+            </p>
             <BigChoice
               question={
                 allChecksDone ? "All done. Tap one to undo it." : "Which one have you done?"
@@ -111,6 +135,9 @@ export function TodayTab() {
             {today.checks.map((c) => (
               <button
                 key={c.key}
+                /* The header's NEXT stamp focuses this exact row. Id from the
+                   same helper the stamp targets, so the two cannot drift. */
+                id={checkAnchorId(c.key)}
                 onClick={() => tickCheck(c)}
                 aria-pressed={c.done}
                 className={cn(
@@ -142,7 +169,7 @@ export function TodayTab() {
       </Card>
 
       <div className={cn(easy ? "flex flex-col gap-3" : "flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4")}>
-        {today.a11y.cards.map((id) => (
+        {todayCardOrder(today.a11y.cards, hourOfDay).map((id) => (
           <Fragment key={id}>{cards[id] ?? null}</Fragment>
         ))}
       </div>
@@ -205,11 +232,18 @@ function KitchenCard() {
         {countdown && <span className="font-tm-mono text-[11.5px] text-tm-dim">{countdown}</span>}
       </div>
       <button
-        onClick={() => actions.markRitual()}
-        disabled={today.day.ritualDone}
+        type="button"
+        onClick={() => {
+          // aria-disabled, not the disabled attribute — a disabled element
+          // drops out of the tab order, which is how the done state used to
+          // vanish from keyboard and screen-reader users the moment it was
+          // reached. Guard the handler instead so a stray click stays inert.
+          if (!today.day.ritualDone) actions.markRitual();
+        }}
+        aria-disabled={today.day.ritualDone}
         className={cn(
-          "mt-2.5 min-h-11 w-full cursor-pointer rounded-[10px] px-3 py-2.5 text-left text-[14px]",
-          today.day.ritualDone ? "bg-tm-green-faint text-tm-green" : "bg-tm-soft text-tm-ink",
+          "mt-2.5 min-h-11 w-full rounded-[10px] px-3 py-2.5 text-left text-[14px]",
+          today.day.ritualDone ? "cursor-default bg-tm-green-faint text-tm-green" : "cursor-pointer bg-tm-soft text-tm-ink",
         )}
       >
         <b>20:15 close-out ritual:</b> skyr · 2 squares dark · decaf. Same cue, same reward, swapped routine.
@@ -245,7 +279,36 @@ function StateCheck() {
   );
 }
 
+const SCALE_OPTIONS = [1, 2, 3, 4, 5] as const;
+
 function ScaleRow({ label, value, onPick }: { label: string; value: number | null; onPick: (v: number) => void }) {
+  // Roving tabindex: the checked option is the one Tab stops at, or the
+  // first when nothing is picked yet — five buttons were all landing in the
+  // tab order before this, which is not what a radio group sounds like to a
+  // screen reader and is five stops for one decision on a keyboard.
+  const activeIndex = value !== null && SCALE_OPTIONS.includes(value as (typeof SCALE_OPTIONS)[number])
+    ? SCALE_OPTIONS.indexOf(value as (typeof SCALE_OPTIONS)[number])
+    : 0;
+  const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  function move(from: number, delta: number) {
+    const next = (from + delta + SCALE_OPTIONS.length) % SCALE_OPTIONS.length;
+    onPick(SCALE_OPTIONS[next]);
+    buttonRefs.current[next]?.focus();
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLButtonElement>, index: number) {
+    // Space/Enter need nothing extra — a native <button> already fires
+    // click on both, which is exactly "selects" for this row.
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      e.preventDefault();
+      move(index, 1);
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault();
+      move(index, -1);
+    }
+  }
+
   return (
     /* flex-wrap, because five 44px targets plus a label do not fit across a
        320px viewport (1.4.10 Reflow). The label drops to its own line rather
@@ -255,12 +318,17 @@ function ScaleRow({ label, value, onPick }: { label: string; value: number | nul
       <span className="text-[14px] font-medium">{label}</span>
       {/* size-11 = 44×44 (2.5.8). Was size-8. */}
       <div className="flex gap-1" role="radiogroup" aria-label={label}>
-        {[1, 2, 3, 4, 5].map((v) => (
+        {SCALE_OPTIONS.map((v, i) => (
           <button
             key={v}
+            ref={(el) => {
+              buttonRefs.current[i] = el;
+            }}
             role="radio"
             aria-checked={value === v}
+            tabIndex={i === activeIndex ? 0 : -1}
             onClick={() => onPick(v)}
+            onKeyDown={(e) => handleKeyDown(e, i)}
             className={cn(
               "size-11 cursor-pointer rounded-md border font-tm-mono text-[13px]",
               value === v ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule-strong bg-tm-panel text-tm-dim",
@@ -329,10 +397,20 @@ export function BreathingTimerInline({ onDone }: { onDone: () => void }) {
   );
 }
 
+/** 30–250 kg, exclusive — the same bound the submit handler enforces. */
+const MIN_WEIGHT_KG = 30;
+const MAX_WEIGHT_KG = 250;
+
 function WeighIn() {
   const { today, actions } = useTimento();
-  const [value, setValue] = useState("");
+  // Prefilled with the latest known weight, not blank — the app already
+  // knows roughly what to expect, so logging an unchanged-ish number is
+  // select-and-adjust rather than recall-and-type from scratch every night.
+  // Lazy initializer: by the time this renders, TodayTab has already gated
+  // on `today` being present, so `today.latestKg` is available at mount.
+  const [value, setValue] = useState(() => (today ? today.latestKg.toFixed(1) : ""));
   const [editing, setEditing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   if (!today) return null;
   const logged = today.day.weightKg;
   const showForm = logged === null || editing;
@@ -351,6 +429,7 @@ function WeighIn() {
             onClick={() => {
               setValue(logged.toFixed(1));
               setEditing(true);
+              setError(null);
             }}
             className="inline-flex min-h-11 shrink-0 cursor-pointer items-center px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim underline uppercase"
           >
@@ -359,39 +438,61 @@ function WeighIn() {
         </div>
       ) : (
         <form
-          className="flex gap-2"
+          className="flex flex-col gap-2"
           onSubmit={(e) => {
             e.preventDefault();
             const kg = Number(value);
-            if (Number.isFinite(kg) && kg > 30 && kg < 250) {
-              actions.logWeight(Math.round(kg * 10) / 10);
-              setEditing(false);
-              setValue("");
+            if (!Number.isFinite(kg)) {
+              setError(`"${value}" isn't a number. Enter your weight in kg.`);
+              return;
             }
+            if (kg <= MIN_WEIGHT_KG || kg >= MAX_WEIGHT_KG) {
+              setError(`That reads ${value} kg — outside ${MIN_WEIGHT_KG}–${MAX_WEIGHT_KG}. Check the scale.`);
+              return;
+            }
+            actions.logWeight(Math.round(kg * 10) / 10);
+            setEditing(false);
+            setError(null);
+            setValue("");
           }}
         >
-          <input
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            inputMode="decimal"
-            placeholder="kg"
-            aria-label="Weight in kilograms"
-            className="min-h-11 w-24 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 py-2 font-tm-mono text-base outline-none focus:border-tm-ink"
-          />
-          <button type="submit" className="min-h-11 cursor-pointer rounded-[10px] bg-tm-ink px-5 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase">
-            Log
-          </button>
-          {editing && (
-            <button
-              type="button"
-              onClick={() => {
-                setEditing(false);
-                setValue("");
+          <div className="flex gap-2">
+            <input
+              /* Where "next: weigh yourself" lands — the field itself, not the
+                 card, so the keyboard is already in the right place. */
+              id={WEIGH_ANCHOR_ID}
+              value={value}
+              onChange={(e) => {
+                setValue(e.target.value);
+                setError(null);
               }}
-              className="inline-flex min-h-11 cursor-pointer items-center px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim underline uppercase"
-            >
-              Cancel
+              inputMode="decimal"
+              placeholder="kg"
+              aria-label="Weight in kilograms"
+              aria-invalid={error !== null}
+              className="min-h-11 w-24 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 py-2 font-tm-mono text-base outline-none focus:border-tm-ink"
+            />
+            <button type="submit" className="min-h-11 cursor-pointer rounded-[10px] bg-tm-ink px-5 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase">
+              Log
             </button>
+            {editing && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditing(false);
+                  setError(null);
+                  setValue("");
+                }}
+                className="inline-flex min-h-11 cursor-pointer items-center px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim underline uppercase"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+          {error && (
+            <p role="alert" className="rounded-[10px] border border-tm-red bg-tm-red-bg px-3 py-2.5 text-[14px] text-tm-red">
+              {error}
+            </p>
           )}
         </form>
       )}

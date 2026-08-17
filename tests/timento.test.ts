@@ -289,6 +289,65 @@ describe("research engine", () => {
     expect(after.cravingsToday.find((c) => c.id === last.id)).toBeUndefined();
   });
 
+  it("logCraving commits on the signal alone, and enrichCraving patches it afterward — owner only", async () => {
+    const { t, liam, artur } = await seeded();
+    const cravingId = await t.mutation(api.tm.today.logCraving, {
+      token: liam,
+      date: TODAY,
+      time: "22:04",
+      signal: "tired",
+    });
+    // The commit is the whole write: no afterState/action yet, but it's already saved.
+    const committed = await t.query(api.tm.today.get, { token: liam, date: TODAY });
+    expect(committed.cravingsToday.find((c) => c.id === cravingId)?.action).toBeNull();
+    const rowAfterCommit = await t.run(async (ctx) => await ctx.db.get(cravingId));
+    expect(rowAfterCommit?.afterState).toBeUndefined();
+
+    // Enrichment is owner-checked exactly like every sibling mutation.
+    await expect(
+      t.mutation(api.tm.today.enrichCraving, { token: artur, id: cravingId, afterState: "relief" }),
+    ).rejects.toThrow(/Not found/);
+
+    // A person can walk away after just the after-state — the action patch is separate.
+    await t.mutation(api.tm.today.enrichCraving, { token: liam, id: cravingId, afterState: "relief" });
+    const afterFirstPatch = await t.run(async (ctx) => await ctx.db.get(cravingId));
+    expect(afterFirstPatch?.afterState).toBe("relief");
+    expect(afterFirstPatch?.action).toBeUndefined();
+
+    await t.mutation(api.tm.today.enrichCraving, { token: liam, id: cravingId, action: "rode" });
+    const enriched = await t.query(api.tm.today.get, { token: liam, date: TODAY });
+    expect(enriched.cravingsToday.find((c) => c.id === cravingId)?.action).toBe("rode");
+  });
+
+  it("undoCraving removes an entry whether or not it was ever enriched", async () => {
+    const { t, liam } = await seeded();
+    const unenrichedId = await t.mutation(api.tm.today.logCraving, {
+      token: liam,
+      date: TODAY,
+      time: "22:10",
+      signal: "bored",
+    });
+    await t.mutation(api.tm.today.undoCraving, { token: liam, id: unenrichedId });
+    const afterUnenriched = await t.query(api.tm.today.get, { token: liam, date: TODAY });
+    expect(afterUnenriched.cravingsToday.find((c) => c.id === unenrichedId)).toBeUndefined();
+
+    const enrichedId = await t.mutation(api.tm.today.logCraving, {
+      token: liam,
+      date: TODAY,
+      time: "22:12",
+      signal: "hungry",
+    });
+    await t.mutation(api.tm.today.enrichCraving, {
+      token: liam,
+      id: enrichedId,
+      afterState: "guilt",
+      action: "ate",
+    });
+    await t.mutation(api.tm.today.undoCraving, { token: liam, id: enrichedId });
+    const afterEnriched = await t.query(api.tm.today.get, { token: liam, date: TODAY });
+    expect(afterEnriched.cravingsToday.find((c) => c.id === enrichedId)).toBeUndefined();
+  });
+
   it("markSessionDone is owner-only and never appears on the crew board", async () => {
     const { t, liam, artur } = await seeded();
     await t.mutation(api.tm.today.markSessionDone, { token: liam, date: TODAY });

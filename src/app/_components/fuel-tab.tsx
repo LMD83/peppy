@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import {
   ALLERGEN_LABELS,
   EQUIPMENT_LABELS,
@@ -9,9 +9,10 @@ import {
 import { cn } from "@/lib/utils";
 import { useTimento } from "../_lib/backend";
 import type { FuelData, MealSlot } from "../_lib/types";
-import { FuelBank } from "./fuel-bank";
+import { Disclosure, FuelBank } from "./fuel-bank";
 import { Card, Eyebrow, Stat } from "./ui";
 import { axisFontSize } from "./charts";
+import { useFileNav } from "./file-nav";
 
 type SlotView = FuelData["slots"][number];
 
@@ -234,6 +235,14 @@ function FuelTabBody({
 
       <FloorCard floor={fuel.floor} tone="default" />
 
+      {/*
+        Everything below is a weekly or one-time job, not today's: folded
+        behind Bloods-style disclosures, same affordance as labs-tab's
+        GroupCard (a real button, aria-expanded, a count in the header).
+        Default collapsed, nothing remembered between visits — the daily
+        job above (targets, plan, the floor) is the only thing that stays
+        open on arrival.
+      */}
       <FuelBank
         foods={fuel.foods}
         recentFoods={fuel.recentFoods}
@@ -245,41 +254,92 @@ function FuelTabBody({
       </div>
 
       <div className="flex flex-col gap-3 lg:col-span-5">
-      <TdeeCard tdee={fuel.tdee} />
-      <KitchenCard kitchen={fuel.kitchen} />
-      <WeekStrip week={fuel.week} targetKcal={fuel.targets.kcal} />
+      <Disclosure
+        label="Energy out"
+        color={fuel.tdee.basis === "adaptive" ? "bg-tm-blue" : "bg-tm-dim2"}
+        count={`${fuel.tdee.tdeeKcal} kcal · ${fuel.tdee.basis === "adaptive" ? "adaptive" : "estimated"}`}
+      >
+        <TdeeCard tdee={fuel.tdee} />
+      </Disclosure>
 
-      <Card>
-        <Eyebrow color="bg-tm-purple">Shopping</Eyebrow>
-        {fuel.shoppingList.length === 0 ? (
-          <p className="text-sm text-tm-dim">
-            Nothing queued. Generate a day, or keep logging as you go.
-          </p>
-        ) : (
-          <ul>
-            {fuel.shoppingList.map((item) => (
-              <li
-                key={item.foodKey}
-                className="flex items-center justify-between border-b border-tm-grid py-2 last:border-0"
-              >
-                <span className="text-sm font-medium">{item.name}</span>
-                <span className="font-tm-mono text-[11.5px] text-tm-dim">
-                  {item.grams} g · {item.portionLabel}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
+      <Disclosure label="Kitchen" color="bg-tm-blue" count={`${fuel.kitchen.reachableFoods}/${fuel.kitchen.catalogueSize}`}>
+        <KitchenCard kitchen={fuel.kitchen} />
+      </Disclosure>
+
+      <Disclosure label="Week" color="bg-tm-dim2" count={`${fuel.week.daysLogged}/7`}>
+        <WeekStrip week={fuel.week} targetKcal={fuel.targets.kcal} />
+      </Disclosure>
+
+      <ShoppingCard items={fuel.shoppingList} />
       </div>
     </div>
   );
 }
 
+/**
+ * The shopping-list preview at the tab's foot, made live: tapping it opens
+ * the Shop tab. This is the fuel→shop pipeline the preview never had a link
+ * for — the list itself is built and owned by convex/tm/logicShop, this is
+ * only a doorway to it.
+ */
+function ShoppingCard({ items }: { items: FuelData["shoppingList"] }) {
+  const go = useFileNav();
+  return (
+    <button
+      type="button"
+      onClick={() => go("shop")}
+      className="block w-full cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel p-4 text-left shadow-[0_1px_2px_rgba(21,23,28,0.04)] transition-transform duration-150 active:scale-[0.98]"
+    >
+      <Eyebrow color="bg-tm-purple">Shopping</Eyebrow>
+      {items.length === 0 ? (
+        <p className="text-sm text-tm-dim">
+          Nothing queued. Generate a day, or keep logging as you go.
+        </p>
+      ) : (
+        <ul>
+          {items.map((item) => (
+            <li
+              key={item.foodKey}
+              className="flex items-center justify-between border-b border-tm-grid py-2 last:border-0"
+            >
+              <span className="text-sm font-medium">{item.name}</span>
+              <span className="font-tm-mono text-[11.5px] text-tm-dim">
+                {item.grams} g · {item.portionLabel}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <span className="mt-2 flex items-center justify-between gap-2 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-ink uppercase">
+        Open the list
+        <span aria-hidden>→</span>
+      </span>
+    </button>
+  );
+}
+
 /* ===== the compact card for Today ===== */
 
+/**
+ * Same grammar as the Stack card, control for control: plain stats, one named
+ * tick, a confirmed state with an undo, and the doorway as its own row. Wrapping
+ * the stats in the navigate button had renamed the card "Open Fuel" and taken
+ * "kcal left" and "protein left" out of the accessibility tree entirely.
+ */
 export function FuelTodayCard() {
-  const { fuel, today } = useTimento();
+  const { fuel, today, actions } = useTimento();
+  const go = useFileNav();
+  // The row the last tick wrote, held until it is undone or handed on.
+  const [logged, setLogged] = useState<{ entry: PlannedEntry; eatenCount: number } | null>(null);
+  const [status, setStatus] = useState("");
+  const [focusWanted, setFocusWanted] = useState<{ to: "log" | "undo" } | null>(null);
+  const logRef = useRef<HTMLButtonElement>(null);
+  const undoRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!focusWanted) return;
+    (focusWanted.to === "log" ? logRef : undoRef).current?.focus();
+  }, [focusWanted]);
+
   if (!fuel || !today) {
     return <div className="h-24 rounded-[10px] border border-tm-rule bg-tm-panel" aria-busy="true" />;
   }
@@ -299,7 +359,33 @@ export function FuelTodayCard() {
     );
   }
 
-  const next = nextSlot(fuel.slots);
+  const next = nextPlannedEntry(fuel.slots);
+  const rows = fuel.slots.flatMap((s) => s.entries);
+  const rowCount = rows.length;
+  // Read once, so a handler announces the count as it stood before its write.
+  const eatenCount = rows.filter((e) => e.eaten).length;
+
+  function logIt(entry: PlannedEntry) {
+    actions.setFoodEaten(entry.entryId, true);
+    const count = eatenCount + 1;
+    setStatus(`${entry.name} logged — ${count} of ${rowCount} planned rows today.`);
+    setLogged({ entry, eatenCount: count });
+    setFocusWanted({ to: "undo" });
+  }
+
+  function undoIt(held: { entry: PlannedEntry; eatenCount: number }) {
+    actions.setFoodEaten(held.entry.entryId, false);
+    setStatus(`${held.entry.name} cleared — ${held.eatenCount - 1} of ${rowCount} planned rows today.`);
+    setLogged(null);
+    setFocusWanted({ to: "log" });
+  }
+
+  function moveOn(entry: PlannedEntry) {
+    setStatus(`Next up — ${entry.name}, ${entry.label.toLowerCase()}.`);
+    setLogged(null);
+    setFocusWanted({ to: "log" });
+  }
+
   return (
     <Card>
       <Eyebrow color="bg-tm-green">Fuel</Eyebrow>
@@ -308,18 +394,87 @@ export function FuelTodayCard() {
         <Stat value={`${fmt(Math.max(0, fuel.remaining.proteinG))} g`} label="protein left" />
         <Stat value={`${fuel.sodiumUsedMg}`} label={`of ${fuel.targets.sodiumMgMax} mg salt`} />
       </dl>
-      <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
-        {next ? `next up — ${next.label.toLowerCase()}` : "every slot logged"}
+      {/* The write says itself — the tick below is silent otherwise. */}
+      <p role="status" className="sr-only">
+        {status}
       </p>
+      {logged ? (
+        <div className="mt-2 flex items-stretch gap-2">
+          <p className="flex min-w-0 flex-1 items-center font-tm-mono text-[11.5px] text-tm-ink">
+            {/* One flex item, so the tick flows with the first line rather than
+                centring itself against three wrapped ones at 320px. */}
+            <span>
+              <span aria-hidden>✓ </span>
+              {logged.entry.name.toLowerCase()} logged · {logged.eatenCount}/{rowCount}
+            </span>
+          </p>
+          <button
+            ref={undoRef}
+            type="button"
+            onClick={() => undoIt(logged)}
+            aria-label={`Undo — put ${logged.entry.name} back as not eaten`}
+            className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-ink uppercase transition-transform duration-150 active:scale-[0.98]"
+          >
+            Undo
+          </button>
+          {next && (
+            <button
+              type="button"
+              onClick={() => moveOn(next)}
+              aria-label={`Next meal — ${next.name}`}
+              className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[10px] bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+            >
+              Next
+            </button>
+          )}
+        </div>
+      ) : next ? (
+        <div className="mt-2 flex items-stretch gap-2">
+          <p className="flex min-w-0 flex-1 items-center font-tm-mono text-[11.5px] text-tm-dim">
+            next up — {next.label.toLowerCase()} · {next.name.toLowerCase()}
+          </p>
+          <button
+            ref={logRef}
+            type="button"
+            onClick={() => logIt(next)}
+            aria-label={`Log ${next.name} as eaten`}
+            className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[10px] bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+          >
+            Ate it
+          </button>
+        </div>
+      ) : (
+        <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">every slot logged</p>
+      )}
+      <button
+        type="button"
+        onClick={() => go("fuel")}
+        className="mt-2 flex min-h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-[10px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-ink uppercase transition-transform duration-150 active:scale-[0.98]"
+      >
+        Open Fuel
+        <span aria-hidden>→</span>
+      </button>
     </Card>
   );
 }
 
-function nextSlot(slots: SlotView[]): SlotView | null {
+type PlannedEntry = { entryId: string; slot: MealSlot; label: string; name: string };
+
+/**
+ * The exact next planned-uneaten row, slot-ordered — what the Today card's
+ * tick logs and what it names. Entries already carry their own id (see
+ * FuelEntryView in convex/tm/logicFuel.ts), so no view-model change is
+ * needed to find it.
+ */
+function nextPlannedEntry(slots: SlotView[]): PlannedEntry | null {
   const ordered = SLOT_ORDER.map((s) => slots.find((x) => x.slot === s)).filter(
     (s): s is SlotView => s !== undefined,
   );
-  return ordered.find((s) => s.eatenCount < s.total) ?? ordered.find((s) => s.total === 0) ?? null;
+  for (const slot of ordered) {
+    const entry = slot.entries.find((e) => !e.eaten);
+    if (entry) return { entryId: entry.id, slot: slot.slot, label: slot.label, name: entry.name };
+  }
+  return null;
 }
 
 /* ===== pieces ===== */
@@ -391,6 +546,10 @@ function Bar({
   );
 }
 
+/**
+ * Bare content — the disclosure wrapping it (fuel-tab's "Energy out" section)
+ * already supplies the Card and the header. Nested here, not standalone.
+ */
 function TdeeCard({ tdee }: { tdee: FuelData["tdee"] }) {
   const adaptive = tdee.basis === "adaptive";
   const line = adaptive
@@ -398,11 +557,14 @@ function TdeeCard({ tdee }: { tdee: FuelData["tdee"] }) {
     : `Estimated. Mifflin-St Jeor × activity. ${tdee.intakeDays}/10 intake days and ${tdee.weighInCount}/4 weigh-ins in the last 14. Log both and this switches to your own numbers.`;
 
   return (
-    <Card>
-      <div className="flex items-center justify-between">
-        <Eyebrow color={adaptive ? "bg-tm-blue" : "bg-tm-dim2"} className="mb-0">
-          Energy out, {adaptive ? "adaptive" : "estimated"}
-        </Eyebrow>
+    <>
+      {/* justify-between with no gap let "adaptive" run into "confidence
+          high" at 390px — flex-wrap + an explicit gap keeps them apart even
+          when both strings are at their longest. */}
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+        <span className="font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase">
+          {adaptive ? "Adaptive" : "Estimated"} basis
+        </span>
         <span className="font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase">
           confidence {tdee.confidence}
         </span>
@@ -420,7 +582,7 @@ function TdeeCard({ tdee }: { tdee: FuelData["tdee"] }) {
         Population equation while estimated (moderate evidence); your own intake-vs-mass fit once
         adaptive. Correlated, never diagnostic.
       </p>
-    </Card>
+    </>
   );
 }
 
@@ -479,7 +641,10 @@ function FloorCard({ floor, tone }: { floor: FuelData["floor"]; tone: "default" 
   );
 }
 
-/** The kitchen the plan was built for — stated, so it can be argued with. */
+/**
+ * The kitchen the plan was built for — stated, so it can be argued with.
+ * Bare content, nested inside the "Kitchen" disclosure in fuel-tab.
+ */
 function KitchenCard({ kitchen }: { kitchen: FuelData["kitchen"] }) {
   const { actions } = useTimento();
   const [minutes, setMinutes] = useState(String(kitchen.minutes));
@@ -532,8 +697,7 @@ function KitchenCard({ kitchen }: { kitchen: FuelData["kitchen"] }) {
   ];
 
   return (
-    <Card>
-      <Eyebrow color="bg-tm-blue">Kitchen</Eyebrow>
+    <>
       <p className="font-tm-disp text-base">{kitchen.summary}</p>
       <dl className="mt-2">
         {rows.map((row) => (
@@ -621,7 +785,7 @@ function KitchenCard({ kitchen }: { kitchen: FuelData["kitchen"] }) {
           </button>
         </div>
       </div>
-    </Card>
+    </>
   );
 }
 
@@ -732,6 +896,7 @@ function SlotBlock({ slot }: { slot: SlotView }) {
   );
 }
 
+/** Bare content, nested inside the "Week" disclosure in fuel-tab — a reference strip, not a daily job. */
 function WeekStrip({ week, targetKcal }: { week: FuelData["week"]; targetKcal: number }) {
   const max = Math.max(targetKcal, ...week.days.map((d) => d.kcal), 1);
   const W = 7 * 20;
@@ -739,8 +904,7 @@ function WeekStrip({ week, targetKcal }: { week: FuelData["week"]; targetKcal: n
   const targetY = 40 - (targetKcal / max) * 36;
 
   return (
-    <Card>
-      <Eyebrow color="bg-tm-dim2">Week</Eyebrow>
+    <>
       <svg
         viewBox={`0 0 ${W} ${H}`}
         className="w-full"
@@ -774,11 +938,11 @@ function WeekStrip({ week, targetKcal }: { week: FuelData["week"]; targetKcal: n
           </text>
         ))}
       </svg>
-      <div className="mt-1 flex justify-between font-tm-mono text-[11.5px] text-tm-dim">
+      <div className="mt-1 flex flex-wrap justify-between gap-x-3 gap-y-1 font-tm-mono text-[11.5px] text-tm-dim">
         <span>avg {week.avgKcal} kcal</span>
         <span>avg {fmt(week.avgProteinG)} g protein</span>
         <span>{week.daysLogged}/7 logged</span>
       </div>
-    </Card>
+    </>
   );
 }

@@ -49,7 +49,7 @@ const TONE_MARK: Record<BandTone, string> = {
 };
 
 function dueLabel(d: DueItem): string {
-  if (d.daysSince === null) return "never taken";
+  if (d.daysSince === null) return "not yet on file";
   return `${d.daysSince} days since · every ${d.cadenceDays}`;
 }
 
@@ -314,15 +314,15 @@ function DueCard({
             <button
               key={d.key}
               onClick={() => setOpen(d.key)}
-              className="flex min-h-11 cursor-pointer items-center justify-between rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3.5 py-2.5 text-left transition-transform duration-150 active:scale-[0.98]"
+              className="flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3.5 py-2.5 text-left transition-transform duration-150 active:scale-[0.98]"
             >
-              <span>
+              <span className="min-w-0 flex-1">
                 <span className="block text-[13px] font-medium">{d.name}</span>
                 <span className="block font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-dim uppercase">
                   {dueLabel(d)}
                 </span>
               </span>
-              <span className="font-tm-mono text-[11.5px] text-tm-dim">open</span>
+              <span className="shrink-0 font-tm-mono text-[11.5px] text-tm-dim">open</span>
             </button>
           ))}
         </div>

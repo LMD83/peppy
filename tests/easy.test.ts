@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   EASY_MAX_CHECKS,
+  EVENING_FROM_HOUR,
+  MORNING_UNTIL_HOUR,
   TODAY_CARDS,
+  WEIGH_ANCHOR_ID,
+  checkAnchorId,
   easyCardOrder,
   easyChecks,
   isEasy,
@@ -10,6 +14,8 @@ import {
   plainLanguage,
   profileOf,
   projectToday,
+  todayCardOrder,
+  withDestination,
   type CheckRow,
   type TodayPayload,
 } from "../convex/tm/logicEasy";
@@ -167,6 +173,62 @@ describe("easyCardOrder", () => {
   });
 });
 
+/* ===== stakes by clock ==================================================== */
+
+describe("todayCardOrder", () => {
+  it("puts craving directly after checks in the evening", () => {
+    // The checks card renders outside this list — "directly under checks"
+    // means craving leads the card list itself.
+    const order = todayCardOrder(TODAY_CARDS, EVENING_FROM_HOUR);
+    expect(order[0]).toBe("craving");
+    // One hour before the cutoff, nothing moves.
+    expect(todayCardOrder(TODAY_CARDS, EVENING_FROM_HOUR - 1)[0]).not.toBe("craving");
+  });
+
+  it("ranks weigh-in high in the morning", () => {
+    const order = todayCardOrder(TODAY_CARDS, 0);
+    expect(order[0]).toBe("weigh");
+    expect(todayCardOrder(TODAY_CARDS, MORNING_UNTIL_HOUR - 1)[0]).toBe("weigh");
+    // At the cutoff hour, weigh no longer jumps the queue.
+    expect(todayCardOrder(TODAY_CARDS, MORNING_UNTIL_HOUR)[0]).not.toBe("weigh");
+  });
+
+  it("leaves survival's short list unaffected in content — reorder only, never resurfaces", () => {
+    const survivalCards = easyCardOrder("easy", "survival");
+    for (const hour of [0, 9, 12, 20, 23]) {
+      const ordered = todayCardOrder(survivalCards, hour);
+      expect([...ordered].sort()).toEqual([...survivalCards].sort());
+      expect(ordered).toHaveLength(survivalCards.length);
+    }
+  });
+
+  it("is stable for equal ranks — everything unranked keeps file order", () => {
+    // Midday: neither rule fires, so the list is untouched.
+    expect(todayCardOrder(TODAY_CARDS, 14)).toEqual([...TODAY_CARDS]);
+  });
+
+  it("only reorders — never adds, drops or duplicates a card", () => {
+    for (const hour of [0, 6, 9, 10, 14, 19, 20, 23]) {
+      const ordered = todayCardOrder(TODAY_CARDS, hour);
+      expect(ordered).toHaveLength(TODAY_CARDS.length);
+      expect([...ordered].sort()).toEqual([...TODAY_CARDS].sort());
+    }
+  });
+
+  it("treats an out-of-range hour as a no-op — the server render has no clock", () => {
+    expect(todayCardOrder(TODAY_CARDS, -1)).toEqual([...TODAY_CARDS]);
+    expect(todayCardOrder(TODAY_CARDS, 24)).toEqual([...TODAY_CARDS]);
+    expect(todayCardOrder(TODAY_CARDS, 1.5)).toEqual([...TODAY_CARDS]);
+  });
+
+  it("never mutates its input", () => {
+    const input = [...TODAY_CARDS];
+    const snapshot = [...input];
+    todayCardOrder(input, EVENING_FROM_HOUR);
+    expect(input).toEqual(snapshot);
+  });
+});
+
 /* ===== plain language ===================================================== */
 
 describe("plainLanguage", () => {
@@ -232,6 +294,106 @@ describe("nextAction", () => {
           const a = nextAction({ checks: checks(mode, done), weightLogged, mode });
           expect(a.label.length).toBeGreaterThan(0);
           expect(a.label.split(/\s+/).length).toBeLessThanOrEqual(15);
+        }
+      }
+    }
+  });
+
+  it("hands back the check's own words, with no prefix of its own", () => {
+    // The prefix belongs to the render site, which says it once. When the data
+    // carried "Next:" too, the header's eyebrow made the accessible name read
+    // "Next: Next: 8k+ steps."
+    for (const mode of ["cut", "maintain", "survival"] as TmMode[]) {
+      for (const row of MODE_CHECKS[mode]) {
+        const done = MODE_CHECKS[mode].map((c) => c.key).filter((k) => k !== row.key);
+        // Only `row` is outstanding, so it is what comes next whatever else ran.
+        const a = nextAction({ checks: checks(mode, done), weightLogged: false, mode });
+        expect(a.key).toBe(row.key);
+        expect(a.label).toBe(row.label);
+      }
+    }
+  });
+
+  it("never prefixes any label, in any state", () => {
+    for (const mode of ["cut", "maintain", "survival"] as TmMode[]) {
+      for (const done of [[], ["steps"], MODE_CHECKS[mode].map((c) => c.key)]) {
+        for (const weightLogged of [true, false]) {
+          const a = nextAction({ checks: checks(mode, done), weightLogged, mode });
+          expect(a.label, `${mode}/${a.kind}`).not.toMatch(/^next\b/i);
+        }
+      }
+    }
+  });
+
+  it("names the weigh-in as a bare instruction, not as a heading", () => {
+    const all = MODE_CHECKS.cut.map((c) => c.key);
+    const a = nextAction({ checks: checks("cut", all), weightLogged: false, mode: "cut" });
+    expect(a.label).toBe("Weigh yourself and type the number in");
+  });
+});
+
+/* ===== where tapping it goes ============================================== */
+
+describe("withDestination", () => {
+  it("adds a destination and changes nothing else", () => {
+    const action = nextAction({ checks: checks("cut"), weightLogged: false, mode: "cut" });
+    const { tab, focusId, ...rest } = withDestination(action);
+    expect(rest).toEqual(action);
+    expect(tab).toBe("today");
+    expect(focusId).not.toBeNull();
+  });
+
+  it("points every check at its own control on Today", () => {
+    // Only Today writes tm_checks. A destination of Fuel or Train showed the
+    // work and could not tick the box the stamp had just promised.
+    const keys = new Set<string>();
+    const ids = new Set<string>();
+    for (const mode of ["cut", "maintain", "survival"] as TmMode[]) {
+      for (const row of MODE_CHECKS[mode]) {
+        const done = MODE_CHECKS[mode].map((c) => c.key).filter((k) => k !== row.key);
+        const d = withDestination(nextAction({ checks: checks(mode, done), weightLogged: false, mode }));
+        expect(d.kind).toBe("check");
+        expect(d.tab).toBe("today");
+        expect(d.focusId).toBe(checkAnchorId(row.key));
+        keys.add(row.key);
+        if (d.focusId !== null) ids.add(d.focusId);
+      }
+    }
+    // One id per key, so two checks can never fight over the same element.
+    expect(ids.size).toBe(keys.size);
+  });
+
+  it("points the weigh-in at the weight field", () => {
+    const all = MODE_CHECKS.cut.map((c) => c.key);
+    const d = withDestination(nextAction({ checks: checks("cut", all), weightLogged: false, mode: "cut" }));
+    expect(d.kind).toBe("weigh");
+    expect(d.focusId).toBe(WEIGH_ANCHOR_ID);
+  });
+
+  it("gives a finished day no destination at all", () => {
+    // Null is the render site's instruction to drop the button role — a
+    // control that goes nowhere is worse than dead text.
+    const all = MODE_CHECKS.survival.map((c) => c.key);
+    const d = withDestination(nextAction({ checks: checks("survival", all), weightLogged: false, mode: "survival" }));
+    expect(d.kind).toBe("rest");
+    expect(d.focusId).toBeNull();
+    const cut = withDestination(
+      nextAction({ checks: checks("cut", MODE_CHECKS.cut.map((c) => c.key)), weightLogged: true, mode: "cut" }),
+    );
+    expect(cut.kind).toBe("rest");
+    expect(cut.focusId).toBeNull();
+  });
+
+  it("has exactly one interactive state, and it always names a control", () => {
+    // The rule the stamp has to keep: tappable implies observable. Anything
+    // with a focus id must have somewhere real to send the keyboard.
+    for (const mode of ["cut", "maintain", "survival"] as TmMode[]) {
+      for (const done of [[], ["steps"], MODE_CHECKS[mode].map((c) => c.key)]) {
+        for (const weightLogged of [true, false]) {
+          const d = withDestination(nextAction({ checks: checks(mode, done), weightLogged, mode }));
+          expect(d.tab).toBe("today");
+          if (d.kind === "rest") expect(d.focusId).toBeNull();
+          else expect(d.focusId).toMatch(/^tm-/);
         }
       }
     }

@@ -224,7 +224,40 @@ export const logCraving = mutation({
   },
   handler: async (ctx, { token, ...entry }) => {
     const user = await requireUser(ctx, token);
-    await ctx.db.insert("tm_cravings", { userId: user._id, ...entry });
+    // Committed on the signal tap alone — the map has it before any of the
+    // slower questions are answered. Everything else is a patch onto this row.
+    const id = await ctx.db.insert("tm_cravings", { userId: user._id, ...entry });
+    return id;
+  },
+});
+
+/**
+ * Adds after-state/action (and, when relevant, the one-word emotion label) to
+ * an already-committed craving entry. Never the write that decides whether a
+ * craving got logged — logCraving already guaranteed that — so a person can
+ * walk away after any question here and the entry still stands.
+ */
+export const enrichCraving = mutation({
+  args: {
+    token: v.string(),
+    id: v.id("tm_cravings"),
+    emotionWord: v.optional(v.string()),
+    afterState: v.optional(
+      v.union(v.literal("relief"), v.literal("guilt"), v.literal("numb"), v.literal("satisfied")),
+    ),
+    action: v.optional(v.union(v.literal("rode"), v.literal("substitute"), v.literal("ate"))),
+  },
+  handler: async (ctx, { token, id, emotionWord, afterState, action }) => {
+    const user = await requireUser(ctx, token);
+    const row = await ctx.db.get(id);
+    if (!row || row.userId !== user._id) throw new Error("Not found");
+    // Only patch the fields actually supplied — never fabricate the others.
+    const patch: { emotionWord?: string; afterState?: typeof afterState; action?: typeof action } = {};
+    if (emotionWord !== undefined) patch.emotionWord = emotionWord;
+    if (afterState !== undefined) patch.afterState = afterState;
+    if (action !== undefined) patch.action = action;
+    if (Object.keys(patch).length === 0) return null;
+    await ctx.db.patch("tm_cravings", id, patch);
     return null;
   },
 });

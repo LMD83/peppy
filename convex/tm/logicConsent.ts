@@ -154,24 +154,42 @@ export function carerSeatSentence(name: string, scopes: readonly Scope[]): strin
   return `You can see ${seen.replace("you're in", `${name} is in`)}. You cannot see which medicines, ${name}'s weight, or anything ${name} writes down.`;
 }
 
-/** One line per relationship, so a card never has to guess which to print. */
+/**
+ * One line per relationship, so a card never has to guess which to print.
+ *
+ * `floor` decides whether the standing promise rides along. A promise printed
+ * on every card is read on none of them, so the caller says once, at the point
+ * someone is actually granting something, and reports state elsewhere. A carer
+ * sentence ignores the flag: its second half is not the standing floor but a
+ * disclosure about that named carer, and it is never separable from the first.
+ */
 export function grantSentence(
   name: string,
   scopes: readonly Scope[],
   relationship: Relationship,
+  floor = true,
 ): string {
-  return relationship === "carer" ? carerSentence(name, scopes) : sharedLine(name, scopes);
+  if (relationship === "carer") return carerSentence(name, scopes);
+  return floor ? sharedLine(name, scopes) : sharedScopes(name, scopes);
 }
 
-/** "Artur can see: how often you hit your checks. Not your weight, not your medicines." */
-export function sharedLine(name: string, scopes: readonly Scope[]): string {
+/** "Artur can see: how often you hit your checks." — the grant, and only it. */
+export function sharedScopes(name: string, scopes: readonly Scope[]): string {
   if (scopes.length === 0) return `${name} can see nothing of yours.`;
   const parts = orderScopes(scopes).map((s) => SCOPE_DESCRIPTIONS[s]);
   const list =
     parts.length === 1
       ? parts[0]
       : `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
-  return `${name} can see: ${list}. ${NEVER_SHARED}`;
+  return `${name} can see: ${list}.`;
+}
+
+/** "Artur can see: how often you hit your checks. Not your weight, not your medicines." */
+export function sharedLine(name: string, scopes: readonly Scope[]): string {
+  const line = sharedScopes(name, scopes);
+  // Nothing shared has no floor to state: "can see nothing of yours" already is
+  // the floor, and appending the promise to it only says it twice.
+  return scopes.length === 0 ? line : `${line} ${NEVER_SHARED}`;
 }
 
 /* ===== links ===== */

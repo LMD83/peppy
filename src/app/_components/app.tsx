@@ -143,6 +143,17 @@ function ProtocolShelf({
   );
 }
 
+/**
+ * More used to be seven ungrouped rows — a junk drawer next to Protocol's
+ * grouped shelf. Same eyebrow treatment here: which appendix rows land under
+ * which group, keyed against APPENDIX so the row order and labels those rows
+ * already own (and the e2e/a11y scripts already select on) stay untouched.
+ */
+const MORE_GROUPS: { id: string; eyebrow: string; color: string; keys: string[] }[] = [
+  { id: "week", eyebrow: "The week", color: "bg-tm-blue", keys: ["shop", "capture"] },
+  { id: "ways-in", eyebrow: "Ways in", color: "bg-tm-green", keys: ["handsfree", "remind"] },
+];
+
 function MoreShelf({
   easy,
   onGo,
@@ -159,12 +170,24 @@ function MoreShelf({
   return (
     <div className="flex flex-col gap-2 pt-5">
       <h2 className="font-tm-disp text-2xl leading-[1.1] tracking-tight uppercase">More</h2>
-      {APPENDIX.map((d) => (
-        <NavRow key={d.key} label={easy ? plain(d.label) : d.label} onClick={() => onGo(d)} />
+      {MORE_GROUPS.map((g) => (
+        <div key={g.id} className="flex flex-col gap-2">
+          <Eyebrow color={g.color} className="mt-2 mb-0">
+            {g.eyebrow}
+          </Eyebrow>
+          {APPENDIX.filter((d) => g.keys.includes(d.key)).map((d) => (
+            <NavRow key={d.key} label={easy ? plain(d.label) : d.label} onClick={() => onGo(d)} />
+          ))}
+        </div>
       ))}
-      <NavRow label="Set up my file" onClick={onSetup} />
-      <NavRow label="Walkthrough" onClick={onTour} />
-      <NavRow label="Settings" onClick={onSettings} />
+      <div className="flex flex-col gap-2">
+        <Eyebrow color="bg-tm-dim2" className="mt-2 mb-0">
+          The app
+        </Eyebrow>
+        <NavRow label="Set up my file" onClick={onSetup} />
+        <NavRow label="Walkthrough" onClick={onTour} />
+        <NavRow label="Settings" onClick={onSettings} />
+      </div>
       <p className="pt-1 pb-2 text-center">
         <Link
           href="/why"
@@ -251,7 +274,14 @@ function Shell() {
   }
 
   return (
-    <FileNavProvider value={(t) => setTab(t)}>
+    <FileNavProvider
+      value={(t, sub) => {
+        // Same shape as goDestination: a sub always names which slice of body
+        // or mind it opens, then the tab switch itself.
+        if (sub) (t === "body" ? setBodyView : setMindView)(sub);
+        setTab(t);
+      }}
+    >
     <div className={cn("min-h-screen", tour ? "pb-[300px]" : "pb-[84px]")}>
       <a
         href="#tm-main"

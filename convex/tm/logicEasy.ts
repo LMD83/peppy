@@ -109,6 +109,39 @@ export function easyCardOrder(profile: A11yProfile, mode: TmMode): TodayCardId[]
   return [...(mode === "survival" ? EASY_SURVIVAL_CARDS : EASY_CARDS)];
 }
 
+/* ===== stakes by clock ==================================================== */
+
+/** The craving hour starts when the kitchen fight does. */
+export const EVENING_FROM_HOUR = 20;
+/** Scales mean nothing after breakfast. */
+export const MORNING_UNTIL_HOUR = 10;
+
+/**
+ * Reorder a card list for the hour on the person's own clock.
+ *
+ * Reorder only: the result holds exactly the cards it was given, so every
+ * removal upstream (easy, survival) survives untouched — this function cannot
+ * add, drop or duplicate a card. The hour is an argument because queries stay
+ *_deterministic; the client reads its own clock and passes it in. An hour
+ * outside 0–23 (the server render, which has no clock) means the file order
+ * stands.
+ *
+ * Two rules, nothing else:
+ *  - evening (20:00 on): the craving card rises to sit directly under the
+ *    checks card, because that is the hour it exists for.
+ *  - morning (before 10:00): the weigh-in rises the same way.
+ * Everything unranked keeps its file order — the sort is stable.
+ */
+export function todayCardOrder(cards: readonly TodayCardId[], hourOfDay: number): TodayCardId[] {
+  if (!Number.isInteger(hourOfDay) || hourOfDay < 0 || hourOfDay > 23) return [...cards];
+  const rank = (id: TodayCardId): number => {
+    if (hourOfDay >= EVENING_FROM_HOUR && id === "craving") return -1;
+    if (hourOfDay < MORNING_UNTIL_HOUR && id === "weigh") return -1;
+    return 0;
+  };
+  return [...cards].sort((a, b) => rank(a) - rank(b));
+}
+
 /* ===== plain language ===================================================== */
 
 /**
@@ -166,7 +199,16 @@ export type NextAction = {
   kind: "check" | "weigh" | "rest";
   /** The check this points at, when it points at one. */
   key: string | null;
-  /** One plain sentence. Never a demand, never a diagnosis. */
+  /**
+   * The thing itself — plain, never a demand, never a diagnosis, and **never
+   * prefixed**. "Next" is a word each render site owns and says exactly once.
+   * Baking it in here meant the scoreboard's eyebrow said it too, and Chrome
+   * computed the header's accessible name as "Next: Next: 8k+ steps."
+   *
+   * Work that remains is a bare phrase ("8k+ steps"). Rest is a whole
+   * sentence, because a finished day is a state and nothing puts "Next" in
+   * front of it.
+   */
   label: string;
 };
 
@@ -180,10 +222,10 @@ export function nextAction(input: {
   mode: TmMode;
 }): NextAction {
   const due = input.checks.find((c) => !c.done);
-  if (due) return { kind: "check", key: due.key, label: `Next: ${due.label}.` };
+  if (due) return { kind: "check", key: due.key, label: due.label };
   // Survival never asks for the scales. The floor adds no obligation.
   if (input.mode !== "survival" && !input.weightLogged)
-    return { kind: "weigh", key: null, label: "Next: weigh yourself and type the number in." };
+    return { kind: "weigh", key: null, label: "Weigh yourself and type the number in" };
   return { kind: "rest", key: null, label: "You are done for today. Nothing else is needed." };
 }
 
@@ -291,4 +333,58 @@ export function projectToday(payload: TodayPayload, profile: A11yProfile): Today
       mode: payload.user.mode,
     }),
   };
+}
+
+/* ===== next action, with a destination ==================================== */
+
+/**
+ * Where tapping the file's to-do line should land.
+ *
+ * The tab is always Today, and that is a finding rather than a shortcut:
+ * `checksForDate` reads `tm_checks`, and the only surface in the app that
+ * writes it is the Today screen's checks card. An earlier version sent
+ * "session done" to Train and "ate on plan" to Fuel — screens that display
+ * the work but cannot tick the box the header had just promised. Sending
+ * someone where the work cannot be done is worse than not moving them.
+ *
+ * So what varies is not the tab but the control: `focusId` is the id of the
+ * exact element the header hands the keyboard to. Null means there is
+ * genuinely nothing to do, and a null destination must not render as a
+ * control at all — see scoreboard.tsx.
+ */
+export type NextActionDestination = {
+  tab: "today";
+  focusId: string | null;
+};
+
+export type NextActionWithDestination = NextAction & NextActionDestination;
+
+/**
+ * The id Today puts on a check's button. Derived rather than written twice:
+ * the header targets what today-tab renders, so both ends call this and the
+ * two cannot drift apart. It lives beside the destination it serves, the same
+ * way `tab` above names a client route without importing the client's types.
+ */
+export function checkAnchorId(key: string): string {
+  return `tm-check-${key}`;
+}
+
+/** Today's weight field. One control, so a constant rather than a function. */
+export const WEIGH_ANCHOR_ID = "tm-weigh-in";
+
+/**
+ * `nextAction`'s output, plus where tapping it should go. This never
+ * recomputes what's next — it takes the same `NextAction` both profiles
+ * already produce and only adds a destination on top, so the scoreboard's
+ * NEXT stamp can navigate without forking the arithmetic that decided what's
+ * next.
+ */
+export function withDestination(action: NextAction): NextActionWithDestination {
+  const focusId =
+    action.kind === "check" && action.key
+      ? checkAnchorId(action.key)
+      : action.kind === "weigh"
+        ? WEIGH_ANCHOR_ID
+        : null;
+  return { ...action, tab: "today", focusId };
 }
