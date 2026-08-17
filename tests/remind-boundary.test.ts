@@ -467,6 +467,27 @@ describe("the Taken button logs the exact dose it names, and nothing else", () =
     const junk = await post({ token: ingestToken, date: TODAY, doses: [] });
     expect(junk.status).toBe(400);
 
+    // Every malformed shape is a 400 before a database is touched — a body
+    // that is not an object, a missing token, a date that is not a date, and
+    // a dose list past the cap all die at the door, not in the mutation.
+    const notObject = await post("just a string");
+    expect(notObject.status).toBe(400);
+    const noToken = await post({ date: TODAY, doses: [{ itemId, timing: "pm" }] });
+    expect(noToken.status).toBe(400);
+    const badDate = await post({ token: ingestToken, date: "16/08/2026", doses: [{ itemId, timing: "pm" }] });
+    expect(badDate.status).toBe(400);
+    const flood = await post({
+      token: ingestToken,
+      date: TODAY,
+      doses: Array.from({ length: 21 }, () => ({ itemId, timing: "pm" })),
+    });
+    expect(flood.status).toBe(400);
+
+    // The browser's preflight gets its 204 and the CORS grant, nothing more.
+    const preflight = await t.fetch("/ingest/dose-taken", { method: "OPTIONS" });
+    expect(preflight.status).toBe(204);
+    expect(preflight.headers.get("Access-Control-Allow-Origin")).toBe("*");
+
     const dead = await post({ token: "tmk_forged", date: TODAY, doses: [{ itemId, timing: "pm" }] });
     expect(dead.status).toBe(401);
 
