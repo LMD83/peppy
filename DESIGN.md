@@ -71,6 +71,16 @@ typography:
     fontSize: "18px"
     fontWeight: 400
     lineHeight: 1.6
+  printBody:
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
+    fontSize: "16px"
+    fontWeight: 400
+    lineHeight: 1.4
+  printAisle:
+    fontFamily: "IBM Plex Mono, ui-monospace, monospace"
+    fontSize: "20px"
+    fontWeight: 400
+    lineHeight: 1.3
   label:
     fontFamily: "IBM Plex Mono, ui-monospace, monospace"
     fontSize: "11.5px"

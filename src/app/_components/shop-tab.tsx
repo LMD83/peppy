@@ -611,10 +611,12 @@ function ShareButtons({ shop, className }: { shop: ShopData; className?: string 
 
 /**
  * The paper version. Hidden on screen (`display: none`, so not a second live
- * heading), and on paper it is the only thing left: 18px type, one line per
- * item, aisle headings, no colour to survive a mono printer. Two of the five
- * shops here have no online ordering at all, so this is not a fallback — for
- * some people it is the product. The h1 is this print document's title.
+ * heading), and on paper it is the only thing left: 16–24px type (the
+ * printBody/printAisle steps in DESIGN.md — paper is its own surface), one
+ * line per item, aisle headings, no colour to survive a mono printer. Two of
+ * the five shops here have no online ordering at all, so this is not a
+ * fallback — for some people it is the product. The h1 is this print
+ * document's title.
  */
 function PrintList({ shop }: { shop: ShopData }) {
   return (
