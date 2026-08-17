@@ -28,8 +28,13 @@ import {
 import { foodByKey } from "./data/foods";
 import { dosesForDate, type DoseLog, type StackItem } from "./logicStack";
 import { emailConfigured } from "./logicEmail";
+// The token *shape* is the ingest slice's; the grant minted here shares it so
+// one CSPRNG recipe exists in the app, under one prefix rule.
+import { TOKEN_BYTES } from "./logicIngest";
 import {
   APP_TIMEZONE,
+  GRANT_TOKEN_PREFIX,
+  GRANT_TTL_MS,
   MAX_CONSECUTIVE_FAILURES,
   buildRemindView,
   checkinsFor,
@@ -72,9 +77,11 @@ const MAX_LABEL = 60;
 /** Same bounds the Bloods tab reads under. A person has no more history than this. */
 const MAX_LAB_PANELS = 60;
 const MAX_LAB_RESULTS = 1200;
-const MAX_INGEST_TOKENS = 50;
-/** Ceiling on doses one "Taken" tap may log. A notification never names more. */
+/** Ceiling on doses one "Taken" grant may carry. A notification naming more
+    gets no grant and no button at all — never a button that logs a subset. */
 const MAX_TAKEN_DOSES = 20;
+/** Per-mint ceiling on spent/expired grants cleaned up. A bound, not a policy. */
+const MAX_GRANT_SWEEP = 50;
 /** Per-sweep ceiling on files examined. A bound, not a business rule. */
 const MAX_SWEEP_USERS = 400;
 
@@ -532,6 +539,18 @@ export const generateUploadUrl = mutation({
    Internal only. The cron in convex/crons.ts asks what should go out in the
    slice of the day that has just elapsed, sends it, and reports back. */
 
+/**
+ * The hand-off sweepPlan asks for: where the button posts, the date, and the
+ * exact doses. Server-side only — push.sweep turns it into a minted grant, and
+ * only `{ url, token }` ever reaches a payload. A query cannot write, so the
+ * mint itself cannot happen in sweepPlan.
+ */
+export type TakenGrantRequest = {
+  url: string;
+  date: string;
+  doses: { itemId: Id<"tm_protocolItems">; timing: string }[];
+};
+
 export type SweepNotification = {
   key: string;
   kind: ReminderKind;
@@ -539,8 +558,10 @@ export type SweepNotification = {
   body: string;
   tab: string;
   tag: string;
-  /** How the "Taken" button logs this exact dose. Only ever on a dose. */
+  /** Filled by push.sweep after minting. sweepPlan never emits a credential. */
   taken?: TakenPost;
+  /** Present only on a dose whose exact pairs fit under the cap. */
+  grant?: TakenGrantRequest;
 };
 
 export type SweepTarget = {
@@ -613,18 +634,12 @@ export const sweepPlan = internalQuery({
       });
       if (plan.send.length === 0) continue;
 
-      // The "Taken" button posts with the same revocable credential the phone
-      // Shortcut holds. No token on the file, or no site URL configured, means
-      // no hand-off — the button then simply opens the app, which is honest.
-      let ingestToken = "";
+      // The "Taken" button no longer rides the Shortcut's long-lived ingest
+      // token: this query only *asks* for a hand-off, naming the exact doses,
+      // and push.sweep mints a single-use grant for each before sending. No
+      // site URL configured means no hand-off — the button then simply opens
+      // the app, which is honest.
       const site = siteUrl();
-      if (site !== "" && plan.send.some((r) => r.kind === "dose")) {
-        const tokenRows = await ctx.db
-          .query("tm_ingestTokens")
-          .withIndex("by_userId", (q) => q.eq("userId", user._id))
-          .take(MAX_INGEST_TOKENS);
-        ingestToken = tokenRows.find((t) => !t.revoked)?.token ?? "";
-      }
 
       batches.push({
         userId: user._id,
@@ -639,15 +654,22 @@ export const sweepPlan = internalQuery({
             tab: r.tab,
             tag: `${r.kind}:${r.tab}`,
           };
-          if (r.kind !== "dose" || ingestToken === "") return note;
+          if (r.kind !== "dose" || site === "") return note;
           // Exactly the doses this notification names — its own sourceKeys,
-          // parsed back — never "whatever is due".
-          const pairs = doseSourcePairs(r.sourceKeys).slice(0, MAX_TAKEN_DOSES);
-          if (pairs.length === 0) return note;
-          return {
-            ...note,
-            taken: { url: `${site}/ingest/dose-taken`, token: ingestToken, date, doses: pairs },
-          };
+          // parsed back — never "whatever is due". Past the cap the button is
+          // dropped entirely: a Taken that silently logs a subset is worse
+          // than no button at all.
+          const pairs = doseSourcePairs(r.sourceKeys);
+          if (pairs.length === 0 || pairs.length > MAX_TAKEN_DOSES) return note;
+          const doses: TakenGrantRequest["doses"] = [];
+          for (const pair of pairs) {
+            const itemId = ctx.db.normalizeId("tm_protocolItems", pair.itemId);
+            // A pair that does not name a real item drops the whole hand-off,
+            // atomically — the same no-partial rule the worker keeps.
+            if (itemId === null) return note;
+            doses.push({ itemId, timing: pair.timing });
+          }
+          return { ...note, grant: { url: `${site}/ingest/dose-taken`, date, doses } };
         }),
         targets,
         email: prefs.email,
@@ -697,61 +719,117 @@ export const recordDelivery = internalMutation({
   },
 });
 
-/* ===== the "Taken" button's write path =====
-   Called by /ingest/dose-taken in convex/http.ts and nothing else. */
+/* ===== the "Taken" button's credential and write path =====
+   The mint is called by push.sweep; the spend by /ingest/dose-taken in
+   convex/http.ts. Nothing else touches tm_takenGrants. */
+
+/**
+ * Same CSPRNG recipe as the ingest mint, distinct prefix — a grant found in a
+ * notification store must never be mistakable for, or usable as, the phone
+ * Shortcut's long-lived credential.
+ */
+function mintGrantToken(): string {
+  const bytes = new Uint8Array(TOKEN_BYTES);
+  crypto.getRandomValues(bytes);
+  let raw = "";
+  for (const b of bytes) raw += String.fromCharCode(b);
+  const b64 = btoa(raw).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return `${GRANT_TOKEN_PREFIX}${b64}`;
+}
+
+/**
+ * One single-use grant per notification, in order, tokens returned in the same
+ * order so push.sweep can splice them into the payloads it is about to send.
+ * Minting lives here because sweepPlan is a query and a query cannot write.
+ *
+ * Spent and expired grants are cleaned up first, bounded: a user accrues at
+ * most a handful of grants a day, so fifty per mint keeps the table flat
+ * without ever handing the sweep an unbounded cleanup bill.
+ */
+export const mintTakenGrants = internalMutation({
+  args: {
+    userId: v.id("tm_users"),
+    nowMs: v.number(),
+    grants: v.array(
+      v.object({
+        date: v.string(),
+        doses: v.array(v.object({ itemId: v.id("tm_protocolItems"), timing: v.string() })),
+      }),
+    ),
+  },
+  handler: async (ctx, { userId, nowMs, grants }): Promise<string[]> => {
+    const stale = await ctx.db
+      .query("tm_takenGrants")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .take(MAX_GRANT_SWEEP);
+    for (const row of stale) {
+      if (row.usedAt !== undefined || row.expiresAt <= nowMs) {
+        await ctx.db.delete("tm_takenGrants", row._id);
+      }
+    }
+
+    const tokens: string[] = [];
+    for (const grant of grants) {
+      const token = mintGrantToken();
+      await ctx.db.insert("tm_takenGrants", {
+        userId,
+        token,
+        date: grant.date,
+        doses: grant.doses,
+        expiresAt: nowMs + GRANT_TTL_MS,
+      });
+      tokens.push(token);
+    }
+    return tokens;
+  },
+});
 
 export type DoseTakenResult = { ok: boolean; wrote: number };
 
 /**
- * Log exactly the doses a notification named — never a guess, never a fuzzy
- * match. The credential is the same revocable ingest token the phone Shortcut
- * carries: a revoked token is no token, and each dose must be the caller's own
- * item, active, carrying the named timing. Anything else is skipped, so a stale
- * notification can never write a dose the file no longer holds.
+ * Spend a grant: log exactly the doses its notification named — never a guess,
+ * never a fuzzy match. The grant is single-use and short-lived; it is marked
+ * spent before anything is written, so a replayed tap gets a 401 and the
+ * worker opens the app instead, which is the intended second-tap experience.
+ * Each dose must still be the grant-holder's own item, active, carrying the
+ * named timing — a stale notification can never write a dose the file no
+ * longer holds; it comes back `wrote: 0` and the worker falls back too.
  */
 export const doseTaken = internalMutation({
-  args: {
-    ingestToken: v.string(),
-    date: v.string(),
-    doses: v.array(v.object({ itemId: v.string(), timing: v.string() })),
-  },
-  handler: async (ctx, { ingestToken, date, doses }): Promise<DoseTakenResult> => {
-    if (ingestToken === "" || doses.length === 0 || doses.length > MAX_TAKEN_DOSES) {
+  args: { grantToken: v.string() },
+  handler: async (ctx, { grantToken }): Promise<DoseTakenResult> => {
+    if (grantToken === "") return { ok: false, wrote: 0 };
+    const grant = await ctx.db
+      .query("tm_takenGrants")
+      .withIndex("by_token", (q) => q.eq("token", grantToken))
+      .unique();
+    if (grant === null || grant.usedAt !== undefined || grant.expiresAt <= Date.now()) {
       return { ok: false, wrote: 0 };
     }
-    const tokenRow = await ctx.db
-      .query("tm_ingestTokens")
-      .withIndex("by_token", (q) => q.eq("token", ingestToken))
-      .unique();
-    if (tokenRow === null || tokenRow.revoked) return { ok: false, wrote: 0 };
-    const user = await ctx.db.get("tm_users", tokenRow.userId);
+    const user = await ctx.db.get("tm_users", grant.userId);
     if (user === null) return { ok: false, wrote: 0 };
-    // Stamped on every accepted call, exactly as the ingest slice does — "when
-    // did this key last speak" is what a revocation decision needs answered.
-    await ctx.db.patch("tm_ingestTokens", tokenRow._id, { lastUsedAt: Date.now() });
+    await ctx.db.patch("tm_takenGrants", grant._id, { usedAt: Date.now() });
 
     const sameDay = await ctx.db
       .query("tm_doseLogs")
-      .withIndex("by_userId_and_date", (q) => q.eq("userId", user._id).eq("date", date))
+      .withIndex("by_userId_and_date", (q) => q.eq("userId", user._id).eq("date", grant.date))
       .take(MAX_DOSE_LOGS);
 
     let wrote = 0;
-    for (const dose of doses) {
-      const itemId = ctx.db.normalizeId("tm_protocolItems", dose.itemId);
-      if (itemId === null) continue;
-      const item = await ctx.db.get("tm_protocolItems", itemId);
-      // An id is not authority — the item must be the token-holder's own.
+    for (const dose of grant.doses) {
+      const item = await ctx.db.get("tm_protocolItems", dose.itemId);
+      // An id is not authority — the item must be the grant-holder's own.
       if (item === null || item.userId !== user._id) continue;
       if (!item.active || !item.timings.includes(dose.timing)) continue;
-      const existing = sameDay.find((r) => r.itemId === itemId && r.timing === dose.timing);
+      const existing = sameDay.find((r) => r.itemId === dose.itemId && r.timing === dose.timing);
       if (existing !== undefined) {
-        // Already logged is already done — tapping twice must not un-log it.
+        // Already logged is already done — a tap must not un-log it.
         if (!existing.taken) await ctx.db.patch("tm_doseLogs", existing._id, { taken: true });
       } else {
         await ctx.db.insert("tm_doseLogs", {
           userId: user._id,
-          date,
-          itemId,
+          date: grant.date,
+          itemId: dose.itemId,
           timing: dose.timing,
           taken: true,
         });

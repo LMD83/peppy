@@ -525,9 +525,11 @@ function PreviewCard({ data, easy }: { data: RemindData; easy: boolean }) {
                 <p className="mt-1 text-[15px] font-medium">{r.title}</p>
                 <p className="mt-0.5 text-[14px] leading-relaxed text-tm-dim">{r.body}</p>
                 {/* The buttons this one would carry, where the platform draws
-                    buttons at all. Chips, not controls — this is a preview. */}
+                    buttons at all: a dose gets Taken when its single-use grant
+                    rides along at send time, which is the usual case. Chips,
+                    not controls — this is a preview. */}
                 <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                  {actionsFor(r.kind).map((a) => (
+                  {actionsFor(r.kind === "dose").map((a) => (
                     <span
                       key={a.action}
                       className="rounded-full border border-tm-rule-strong bg-tm-soft px-2.5 py-0.5 font-tm-mono text-[11.5px] tracking-[0.14em] text-tm-dim uppercase"

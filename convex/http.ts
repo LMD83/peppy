@@ -18,8 +18,10 @@ import type { DoseTakenResult } from "./tm/remind";
  *    session, so it carries an opaque ingest token from `tm_ingestTokens` —
  *    a separate credential that can log doses and food and nothing else, and
  *    that the Hands-free tab can revoke on its own. The service worker's
- *    "Taken" button rides the same credential through `/ingest/dose-taken`,
- *    so one revocation kills the Shortcut and the button together.
+ *    "Taken" button carries an even narrower credential through
+ *    `/ingest/dose-taken`: a single-use grant from `tm_takenGrants`, minted
+ *    per notification and dead within a day, because a push payload sits in
+ *    the OS notification store where a long-lived token has no business.
  *  - **The body is `unknown`.** Every field is narrowed before it is used, and
  *    anything malformed is a 400 before a database is touched.
  *  - **No database access here.** `httpAction` has no `ctx.db` by design; the
@@ -199,51 +201,45 @@ http.route({
   }),
 });
 
-/** Ceiling on doses one "Taken" tap may log — mirrors MAX_TAKEN_DOSES in remind.ts. */
-const MAX_TAKEN = 20;
+/** Raw-size ceiling on the Taken endpoint's body. The worker posts one small
+    token; anything bigger is not the worker, and dies before JSON.parse. */
+const MAX_TAKEN_BODY_BYTES = 2048;
 
-/** Exact itemId+timing pairs, all of them well-formed, or nothing at all. */
-function asDoses(value: unknown): { itemId: string; timing: string }[] | null {
-  if (!Array.isArray(value) || value.length === 0 || value.length > MAX_TAKEN) return null;
-  const out: { itemId: string; timing: string }[] = [];
-  for (const raw of value) {
-    const o = asRecord(raw);
-    if (o === null) return null;
-    const itemId = asString(o.itemId, 64);
-    const timing = asString(o.timing, 40);
-    if (itemId === null || timing === null) return null;
-    out.push({ itemId, timing });
-  }
-  return out;
-}
+const bodyBytes = new TextEncoder();
 
 /**
- * The notification's "Taken" button. It logs ONLY the exact doses the
- * notification named — an itemId and a timing each, matched precisely in the
- * mutation — never a sentence to parse and never a guess. Anything less than a
- * valid, live token is a 401, which tells the worker to open the app instead.
+ * The notification's "Taken" button. The body is `{ token }` and nothing else:
+ * a single-use grant minted per notification, whose exact doses live
+ * server-side on the grant row — the client names nothing, so a stolen payload
+ * cannot redirect the write. Anything short of a live, unspent, unexpired
+ * grant is a 401, which tells the worker to open the app instead.
  */
 http.route({
   path: "/ingest/dose-taken",
   method: "POST",
   handler: httpAction(async (ctx, req) => {
-    const body = await readBody(req);
+    let raw = "";
+    try {
+      raw = await req.text();
+    } catch {
+      return json({ ok: false, error: "body must be a JSON object" }, 400);
+    }
+    if (bodyBytes.encode(raw).length > MAX_TAKEN_BODY_BYTES) {
+      return json({ ok: false, error: "body too large" }, 400);
+    }
+    let parsed: unknown = null;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return json({ ok: false, error: "body must be a JSON object" }, 400);
+    }
+    const body = asRecord(parsed);
     if (body === null) return json({ ok: false, error: "body must be a JSON object" }, 400);
     const token = asString(body.token, 200);
     if (token === null) return json({ ok: false, error: "token must be a non-empty string" }, 400);
-    const date = asDate(body.date);
-    if (date === null || date === undefined) {
-      return json({ ok: false, error: "date must be YYYY-MM-DD" }, 400);
-    }
-    const doses = asDoses(body.doses);
-    if (doses === null) {
-      return json({ ok: false, error: `doses must be 1–${MAX_TAKEN} exact itemId+timing pairs` }, 400);
-    }
 
     const result: DoseTakenResult = await ctx.runMutation(internal.tm.remind.doseTaken, {
-      ingestToken: token,
-      date,
-      doses,
+      grantToken: token,
     });
     if (!result.ok) return json({ ok: false, status: "unauthorized" }, 401);
     return json({ ok: true, wrote: result.wrote }, 200);
