@@ -37,13 +37,25 @@ export type TimentoActions = {
   logWeight: (weightKg: number) => void;
   logState: (patch: { stress?: number; energy?: number }) => void;
   markRitual: () => void;
-  /** Commits on the signal tap alone; resolves the new entry's id (or null if not signed in). */
+  /** Commits on the signal tap alone; resolves the new entry's id, or null if it did not land. */
   logCraving: (entry: CravingEntry) => Promise<string | null>;
-  /** Patches an already-committed entry — never the write that decides whether it was logged. */
+  /**
+   * Patches an already-committed entry — never the write that decides whether it
+   * was logged. A corrected signal comes through here too, so a mis-tap is one
+   * patch on one row rather than an insert racing a delete.
+   *
+   * Resolves false when the patch did not land, so the card can say so instead
+   * of showing a change that never reached the file.
+   */
   enrichCraving: (
     id: string,
-    patch: { emotionWord?: string; afterState?: CravingEntry["afterState"]; action?: CravingEntry["action"] },
-  ) => void;
+    patch: {
+      signal?: CravingEntry["signal"];
+      emotionWord?: string;
+      afterState?: CravingEntry["afterState"];
+      action?: CravingEntry["action"];
+    },
+  ) => Promise<boolean>;
   undoCraving: (id: string) => void;
   markSessionDone: () => void;
   setMode: (mode: "cut" | "maintain" | "survival", reason?: string, reviewDate?: string) => void;

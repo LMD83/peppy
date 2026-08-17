@@ -319,6 +319,57 @@ describe("research engine", () => {
     expect(enriched.cravingsToday.find((c) => c.id === cravingId)?.action).toBe("rode");
   });
 
+  it("correcting a mis-tapped signal patches the row in place — one entry, never two", async () => {
+    const { t, liam, artur } = await seeded();
+    const before = await t.query(api.tm.today.get, { token: liam, date: TODAY });
+    const cravingId = await t.mutation(api.tm.today.logCraving, {
+      token: liam,
+      date: TODAY,
+      time: "22:41",
+      signal: "tired",
+    });
+    const committed = await t.query(api.tm.today.get, { token: liam, date: TODAY });
+    expect(committed.cravingsToday.length).toBe(before.cravingsToday.length + 1);
+
+    // A correction is a write like any other: only the owner may make it.
+    await expect(
+      t.mutation(api.tm.today.enrichCraving, { token: artur, id: cravingId, signal: "bored" }),
+    ).rejects.toThrow(/Not found/);
+
+    await t.mutation(api.tm.today.enrichCraving, { token: liam, id: cravingId, signal: "bored" });
+    const corrected = await t.query(api.tm.today.get, { token: liam, date: TODAY });
+    // The row count is the assertion that matters: an insert-then-delete pair
+    // that half-ran would leave two rows here, and the trigger map would count
+    // one craving twice.
+    expect(corrected.cravingsToday.length).toBe(committed.cravingsToday.length);
+    expect(corrected.cravingsToday.find((c) => c.id === cravingId)?.signal).toBe("bored");
+    // The entry keeps when the craving hit, not when the thumb slipped.
+    const row = await t.run(async (ctx) => await ctx.db.get(cravingId));
+    expect(row?.time).toBe("22:41");
+  });
+
+  it("a corrected signal survives the enrichment that follows it", async () => {
+    const { t, liam } = await seeded();
+    const cravingId = await t.mutation(api.tm.today.logCraving, {
+      token: liam,
+      date: TODAY,
+      time: "22:47",
+      signal: "emotion",
+    });
+    await t.mutation(api.tm.today.enrichCraving, { token: liam, id: cravingId, emotionWord: "flat" });
+    await t.mutation(api.tm.today.enrichCraving, { token: liam, id: cravingId, signal: "bored" });
+    await t.mutation(api.tm.today.enrichCraving, { token: liam, id: cravingId, afterState: "relief" });
+    await t.mutation(api.tm.today.enrichCraving, { token: liam, id: cravingId, action: "rode" });
+    const row = await t.run(async (ctx) => await ctx.db.get(cravingId));
+    expect(row?.signal).toBe("bored");
+    expect(row?.afterState).toBe("relief");
+    expect(row?.action).toBe("rode");
+    // Corrected away from Emotion, the word describing the emotion goes with it.
+    expect(row?.emotionWord).toBeUndefined();
+    const today = await t.query(api.tm.today.get, { token: liam, date: TODAY });
+    expect(today.cravingsToday.filter((c) => c.time === "22:47")).toHaveLength(1);
+  });
+
   it("undoCraving removes an entry whether or not it was ever enriched", async () => {
     const { t, liam } = await seeded();
     const unenrichedId = await t.mutation(api.tm.today.logCraving, {

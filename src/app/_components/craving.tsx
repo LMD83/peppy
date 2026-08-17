@@ -30,6 +30,9 @@ const ACTIONS: { key: NonNullable<CravingEntry["action"]>; label: string }[] = [
 
 type Step = "idle" | "correct" | "after" | "action" | "breathe" | "logged";
 
+/** Which write failed — each one gets told plainly, next to the taps that retry it. */
+type Failure = "signal" | "correction" | "detail";
+
 function labelFor(key: CravingEntry["signal"]): string {
   return SIGNALS.find((s) => s.key === key)?.label ?? key;
 }
@@ -38,6 +41,7 @@ function labelFor(key: CravingEntry["signal"]): string {
  *  that used to be bare underlined words a few pixels tall. */
 const CHIP = "inline-flex min-h-11 cursor-pointer items-center rounded-[22px] border px-4 font-tm-mono text-[13px]";
 const QUIET = "inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center px-3 font-tm-mono text-[13px] text-tm-dim underline";
+const FAILED = "mt-2 font-tm-mono text-[11.5px] leading-relaxed text-tm-red";
 
 export function CravingLogger() {
   const { today, actions } = useTimento();
@@ -48,6 +52,7 @@ export function CravingLogger() {
   const [loggedAt, setLoggedAt] = useState("");
   const [corrected, setCorrected] = useState(false);
   const [writing, setWriting] = useState(false);
+  const [failure, setFailure] = useState<Failure | null>(null);
   if (!today) return null;
 
   const logs = today.cravingsToday;
@@ -64,6 +69,7 @@ export function CravingLogger() {
     setEmotionWord("");
     setEntryId(null);
     setCorrected(false);
+    setFailure(null);
   };
 
   /**
@@ -71,18 +77,27 @@ export function CravingLogger() {
    * signal, guaranteed saved. Everything past this point only enriches a row
    * that already exists; walking away mid-flow leaves nothing missing from
    * the map.
+   *
+   * Every write below clears `writing` in a finally. A busy flag that only
+   * clears on success turns one dropped packet into a card that ignores every
+   * tap for the rest of the night, and says nothing about why.
    */
   const commitSignal = async (key: CravingEntry["signal"]) => {
     if (writing) return;
     setWriting(true);
-    setSignal(key);
     const time = localTime();
-    const id = await actions.logCraving({ time, signal: key });
-    setWriting(false);
+    let id: string | null = null;
+    try {
+      id = await actions.logCraving({ time, signal: key });
+    } finally {
+      setWriting(false);
+    }
     if (!id) {
-      setSignal(null);
+      setFailure("signal");
       return;
     }
+    setFailure(null);
+    setSignal(key);
     setLoggedAt(time);
     setEntryId(id);
     setCorrected(false);
@@ -93,11 +108,10 @@ export function CravingLogger() {
    * The other half of committing on the first tap: a thumb that hit Tired when
    * it meant Bored has to be able to say so without losing the entry.
    *
-   * enrichCraving patches after-state and action only — a signal cannot be
-   * moved — so a correction is written as a replacement: the new row lands
-   * first, the mis-tapped one goes only once it has. Fail in between and the
-   * original still stands; at no point is the craving missing from the map.
-   * The time carried over is when the craving hit, not when the thumb slipped.
+   * One patch on the row that already exists — never a new row plus a delete of
+   * the old one. Two writes with a gap in the middle can leave both behind, and
+   * then the map counts one craving twice. The entry keeps its own time: when
+   * the craving hit, not when the thumb slipped.
    */
   const correctSignal = async (key: CravingEntry["signal"]) => {
     if (writing || !entryId) return;
@@ -106,27 +120,63 @@ export function CravingLogger() {
       return;
     }
     setWriting(true);
-    const replacement = await actions.logCraving({ time: loggedAt, signal: key });
-    setWriting(false);
-    if (!replacement) return;
-    actions.undoCraving(entryId);
-    setEntryId(replacement);
+    let ok = false;
+    try {
+      ok = await actions.enrichCraving(entryId, { signal: key });
+    } finally {
+      setWriting(false);
+    }
+    if (!ok) {
+      setFailure("correction");
+      return;
+    }
+    setFailure(null);
     setSignal(key);
     if (key !== "emotion") setEmotionWord("");
     setCorrected(true);
     setStep("after");
   };
 
-  const commitAfter = (after?: CravingEntry["afterState"]) => {
-    if (entryId) {
-      const trimmed = signal === "emotion" && emotionWord.trim() ? emotionWord.trim() : undefined;
-      actions.enrichCraving(entryId, { afterState: after, emotionWord: trimmed });
+  const commitAfter = async (after?: CravingEntry["afterState"]) => {
+    if (writing) return;
+    const trimmed = signal === "emotion" && emotionWord.trim() ? emotionWord.trim() : undefined;
+    // Skipping with nothing typed writes nothing — there is no failure to report.
+    if (!entryId || (after === undefined && trimmed === undefined)) {
+      setFailure(null);
+      setStep("action");
+      return;
     }
+    setWriting(true);
+    let ok = false;
+    try {
+      ok = await actions.enrichCraving(entryId, { afterState: after, emotionWord: trimmed });
+    } finally {
+      setWriting(false);
+    }
+    if (!ok) {
+      setFailure("detail");
+      return;
+    }
+    setFailure(null);
     setStep("action");
   };
 
-  const commitAction = (action?: CravingEntry["action"]) => {
-    if (entryId && action !== undefined) actions.enrichCraving(entryId, { action });
+  const commitAction = async (action?: CravingEntry["action"]) => {
+    if (writing) return;
+    if (entryId && action !== undefined) {
+      setWriting(true);
+      let ok = false;
+      try {
+        ok = await actions.enrichCraving(entryId, { action });
+      } finally {
+        setWriting(false);
+      }
+      if (!ok) {
+        setFailure("detail");
+        return;
+      }
+    }
+    setFailure(null);
     const goBreathe = action === "rode";
     setSignal(null);
     setEmotionWord("");
@@ -155,6 +205,11 @@ export function CravingLogger() {
               </button>
             ))}
           </div>
+          {failure === "signal" && (
+            <p role="alert" className={FAILED}>
+              Not logged — that didn&apos;t reach your file. Tap the signal again.
+            </p>
+          )}
           <button type="button" onClick={() => setStep("breathe")} className={cn(QUIET, "-ml-3 mt-1")}>
             Breathe 2 min
           </button>
@@ -214,9 +269,15 @@ export function CravingLogger() {
               </button>
             ))}
           </div>
-          <p className="mt-1 font-tm-mono text-[11.5px] leading-relaxed text-tm-dim">
-            The {loggedAt} entry stays either way — this only changes what it says.
-          </p>
+          {failure === "correction" ? (
+            <p role="alert" className={FAILED}>
+              Not changed — the {loggedAt} entry still says {labelFor(signal)}. Tap again.
+            </p>
+          ) : (
+            <p className="mt-1 font-tm-mono text-[11.5px] leading-relaxed text-tm-dim">
+              The {loggedAt} entry stays either way — this only changes what it says.
+            </p>
+          )}
           <button type="button" onClick={() => setStep("after")} className={cn(QUIET, "-ml-3 mt-1")}>
             keep {labelFor(signal)}
           </button>
@@ -251,14 +312,19 @@ export function CravingLogger() {
             {AFTER.map((a) => (
               <button
                 key={a.key}
-                onClick={() => commitAfter(a.key)}
+                onClick={() => void commitAfter(a.key)}
                 className={cn(CHIP, "border-tm-rule-strong bg-tm-soft")}
               >
                 {a.label}
               </button>
             ))}
           </div>
-          <button onClick={() => commitAfter(undefined)} className={cn(QUIET, "-ml-3 mt-1")}>
+          {failure === "detail" && (
+            <p role="alert" className={FAILED}>
+              That detail didn&apos;t save — the {loggedAt} entry itself stands. Tap again.
+            </p>
+          )}
+          <button onClick={() => void commitAfter(undefined)} className={cn(QUIET, "-ml-3 mt-1")}>
             skip
           </button>
         </div>
@@ -271,7 +337,7 @@ export function CravingLogger() {
             {ACTIONS.map((a) => (
               <button
                 key={a.key}
-                onClick={() => commitAction(a.key)}
+                onClick={() => void commitAction(a.key)}
                 className={cn(
                   CHIP,
                   a.key === "rode" ? "border-tm-green text-tm-green" : "border-tm-rule-strong bg-tm-soft",
@@ -280,10 +346,15 @@ export function CravingLogger() {
                 {a.label}
               </button>
             ))}
-            <button onClick={() => commitAction(undefined)} className={QUIET}>
+            <button onClick={() => void commitAction(undefined)} className={QUIET}>
               just log it
             </button>
           </div>
+          {failure === "detail" && (
+            <p role="alert" className={FAILED}>
+              That didn&apos;t save — the {loggedAt} entry itself stands. Tap again, or just log it.
+            </p>
+          )}
           <button type="button" onClick={() => setStep("after")} className={cn(QUIET, "-ml-3 mt-1")}>
             back
           </button>

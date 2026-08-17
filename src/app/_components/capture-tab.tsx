@@ -166,6 +166,15 @@ function CaptureBody({ upload }: { upload: Uploader }) {
           never reads the picture.
         </p>
 
+        {/*
+          Unconditional, and on this card rather than in the storage note at the
+          bottom of the tab: the person who most needs to know a photo has no
+          sharing scope is the one who has not taken one yet and is deciding
+          whether to. Not reading the picture and not sharing it are two
+          different promises — the paragraph above is only the first.
+        */}
+        <p className="mt-2 text-[14px]">{view.neverShared}</p>
+
         {view.survival && (
           <p className="mt-2 text-[14px] text-tm-dim">
             The floor does not ask for photos. This is here if you want it.
@@ -251,8 +260,14 @@ function CaptureBody({ upload }: { upload: Uploader }) {
 
       <Card>
         <Eyebrow color="bg-tm-dim2">Where these photos live</Eyebrow>
+        {/*
+          Not `retention.lines`: its sharing line is the same sentence the
+          capture card above now carries, and a promise said in two places is
+          read in neither. The other three are about storage, which is what this
+          card is for.
+        */}
         <ul className="flex flex-col gap-2">
-          {view.retention.lines.map((line) => (
+          {[view.retention.where, view.retention.deleting, view.retention.care].map((line) => (
             <li key={line} className="text-[14px]">
               {line}
             </li>
