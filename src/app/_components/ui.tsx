@@ -50,11 +50,38 @@ export function Eyebrow({
   );
 }
 
-export function Stat({ value, label }: { value: string; label: string }) {
+/**
+ * One name/value pair. **Must be a direct child of a `<dl>`.**
+ *
+ * Real `<dt>`/`<dd>`, not styled divs. A `<dl>` whose children are all divs is
+ * the worst of both worlds: it announces a description list to a screen reader
+ * and then holds no terms or descriptions to read, which is what axe's
+ * definition-list rule fires on. Scoreboard, crew and fuel had already been
+ * written with real `<dt>`/`<dd>` inline — this finishes that migration instead
+ * of leaving the codebase half-converted.
+ *
+ * `className` exists so this can *be* the grid cell rather than sit inside one.
+ * HTML allows a single `<div>` between `<dl>` and its `<dt>`/`<dd>`; a cell div
+ * wrapping this component's own div is two, which is invalid and was the actual
+ * failure.
+ *
+ * DOM order is term-then-description, as the spec requires. `flex-col-reverse`
+ * puts the big number back on top visually without lying about the order in the
+ * accessibility tree.
+ */
+export function Stat({
+  value,
+  label,
+  className,
+}: {
+  value: string;
+  label: string;
+  className?: string;
+}) {
   return (
-    <div>
-      <div className="font-tm-disp text-2xl leading-tight">{value}</div>
-      <div className="font-tm-mono text-[11.5px] tracking-[0.14em] text-tm-dim uppercase">{label}</div>
+    <div className={cn("flex flex-col-reverse", className)}>
+      <dt className="font-tm-mono text-[11.5px] tracking-[0.14em] text-tm-dim uppercase">{label}</dt>
+      <dd className="font-tm-disp text-2xl leading-tight">{value}</dd>
     </div>
   );
 }

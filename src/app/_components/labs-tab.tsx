@@ -64,14 +64,10 @@ export function LabsTab() {
       <div className="flex flex-col gap-4 pt-5">
         <Card tone="amber">
           <Eyebrow color="bg-tm-amber">Bloods, floor</Eyebrow>
-          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-amber bg-tm-amber">
-            <div className="bg-tm-amber-bg px-3 py-3">
-              <Stat value={String(labs.outOfRange.length)} label="outside range" />
-            </div>
-            <div className="bg-tm-amber-bg px-3 py-3">
-              <Stat value={String(labs.dueRechecks.length)} label="rechecks overdue" />
-            </div>
-          </div>
+          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-amber bg-tm-amber">
+            <Stat className="bg-tm-amber-bg px-3 py-3" value={String(labs.outOfRange.length)} label="outside range"/>
+            <Stat className="bg-tm-amber-bg px-3 py-3" value={String(labs.dueRechecks.length)} label="rechecks overdue"/>
+          </dl>
           <p className="mt-3 text-[14px] text-tm-amber-ink">
             Only what is already outside range and already owed. No panel history, no browsing, no
             new draw to book. The floor holds the line, it does not add work.
@@ -151,13 +147,13 @@ export function LabsTodayCard() {
   return (
     <Card tone={amber ? "amber" : "default"}>
       <Eyebrow color={amber ? "bg-tm-amber" : "bg-tm-purple"}>Bloods</Eyebrow>
-      <div className="flex items-end justify-between gap-2">
+      <dl className="flex items-end justify-between gap-2">
         <Stat value={String(labs.outOfRange.length)} label="outside range" />
         <Stat
           value={nearest ? `${nearest.overdueDays} d` : "—"}
           label={nearest ? "recheck overdue" : "no recheck due"}
         />
-      </div>
+      </dl>
       <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
         {nearest
           ? `${nearest.name.toLowerCase()} last drawn ${nearest.lastDate}`
@@ -219,20 +215,12 @@ function LatestPanelCard({ panel, results }: { panel: LabPanel | null; results: 
         </span>
       </div>
       <h2 className="mt-2 font-tm-disp text-2xl leading-[1.1] tracking-tight uppercase">{panel.name}</h2>
-      <div className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule sm:grid-cols-4">
-        <div className="bg-tm-panel px-3 py-3">
-          <Stat value={String(counts.out)} label="outside range" />
-        </div>
-        <div className="bg-tm-panel px-3 py-3">
-          <Stat value={String(counts.borderline)} label="near a bound" />
-        </div>
-        <div className="bg-tm-panel px-3 py-3">
-          <Stat value={String(counts.optimal)} label="optimal band" />
-        </div>
-        <div className="bg-tm-panel px-3 py-3">
-          <Stat value={String(results.length)} label="markers on file" />
-        </div>
-      </div>
+      <dl className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule sm:grid-cols-4">
+        <Stat className="bg-tm-panel px-3 py-3" value={String(counts.out)} label="outside range"/>
+        <Stat className="bg-tm-panel px-3 py-3" value={String(counts.borderline)} label="near a bound"/>
+        <Stat className="bg-tm-panel px-3 py-3" value={String(counts.optimal)} label="optimal band"/>
+        <Stat className="bg-tm-panel px-3 py-3" value={String(results.length)} label="markers on file"/>
+      </dl>
       <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
         drawn {panel.date}
         {panel.lab ? ` · ${panel.lab}` : ""} · {panel.results.length} results this panel

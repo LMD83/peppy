@@ -209,7 +209,7 @@ export function TrainTodayCard() {
       </div>
       <p className="mt-1 font-tm-disp text-lg leading-tight">{train.today.dayName}</p>
       {planned > 0 ? (
-        <div className="mt-2 flex items-end gap-6">
+        <dl className="mt-2 flex items-end gap-6">
           <Stat value={`${logged}/${planned}`} label="sets logged" />
           {focus && (
             <Stat
@@ -217,7 +217,7 @@ export function TrainTodayCard() {
               label={exerciseName(focus.exercise)}
             />
           )}
-        </div>
+        </dl>
       ) : (
         <p className="mt-1 text-[13px] text-tm-dim">Nothing programmed. Recovery counts.</p>
       )}
