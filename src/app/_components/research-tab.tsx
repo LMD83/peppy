@@ -73,7 +73,7 @@ export function ResearchTab() {
                  uncertainty is carried in words rather than in legibility. */
               <li key={m.gene} className="border-b border-tm-grid py-2 last:border-0">
                 <div className="flex justify-between gap-2">
-                  <span className="font-tm-mono text-[12px] font-medium">{m.gene}</span>
+                  <span className="font-tm-mono text-[13px] font-medium">{m.gene}</span>
                   {/* Yellow is a surface colour in this palette, never a text
                       colour — it cannot clear 4.5:1 on panel at any size. */}
                   <span className="shrink-0 font-tm-mono text-[11.5px] text-tm-dim">resolves: {m.resolvesVia}</span>
@@ -117,13 +117,13 @@ export function ResearchTab() {
       <Card className="lg:col-span-5">
         <Eyebrow color="bg-tm-yellow">Labs, owner-only</Eyebrow>
         {research.labs.length === 0 ? (
-          <p className="text-[12.5px] text-tm-dim">No labs on file. Only you can ever see this panel. The crew board never carries it.</p>
+          <p className="text-[13px] text-tm-dim">No labs on file. Only you can ever see this panel. The crew board never carries it.</p>
         ) : (
           <ul>
             {research.labs.map((l) => (
               <li key={`${l.marker}-${l.date}`} className="flex items-baseline justify-between border-b border-tm-grid py-2 last:border-0">
                 <span className="text-[13px] font-medium">{l.marker}</span>
-                <span className="font-tm-mono text-[11px]">
+                <span className="font-tm-mono text-[11.5px]">
                   {l.value} <span className="text-tm-dim">{l.unit} · {l.date}</span>
                 </span>
               </li>

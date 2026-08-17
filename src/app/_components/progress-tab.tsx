@@ -59,7 +59,7 @@ export function ProgressTab() {
       <Card className="lg:col-span-5">
         <Eyebrow color="bg-tm-green">Consistency, 14 days</Eyebrow>
         <ConsistencyWall wall={progress.wall} />
-        <dl className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
+        <div className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
           <div className="bg-tm-panel px-3 py-3">
             <Stat value={`${progress.adherence7}%`} label="7-day" />
           </div>
@@ -72,7 +72,7 @@ export function ProgressTab() {
               label={progress.deltaKg <= 0 ? "kg down" : "kg up"}
             />
           </div>
-        </dl>
+        </div>
       </Card>
     </div>
   );

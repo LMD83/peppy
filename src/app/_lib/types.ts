@@ -113,6 +113,8 @@ export type TimentoActions = {
     doses?: boolean;
     supply?: boolean;
     checkins?: boolean;
+    rechecks?: boolean;
+    scripts?: boolean;
     email?: string;
   }) => void;
 

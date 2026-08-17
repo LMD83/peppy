@@ -73,7 +73,7 @@ export function SupplyPanel() {
                   <AttentionRow key={row.itemId} row={row} />
                 ))}
               </div>
-              <p className="mt-2.5 text-[12.5px] text-tm-amber-ink">
+              <p className="mt-2.5 text-[13px] text-tm-amber-ink">
                 The floor shows what runs out and nothing else. The rest of the shelf can wait.
               </p>
             </Card>
@@ -106,14 +106,14 @@ export function SupplyPanel() {
       ) : (
         <Card>
           <Eyebrow color="bg-tm-green">Supply</Eyebrow>
-          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
             <div className="bg-tm-panel px-3 py-3">
               <Stat value={String(supply.okCount)} label="items covered" />
             </div>
             <div className="bg-tm-panel px-3 py-3">
               <Stat value="0" label="need ordering" />
             </div>
-          </dl>
+          </div>
           <p className="mt-3 text-[14px]">Nothing runs out soon. Recount when you open a box.</p>
         </Card>
       )}
@@ -155,7 +155,7 @@ export function SupplyTodayCard() {
           : ", order today"}
         .
       </p>
-      <p className="mt-1 font-tm-mono text-[10px] text-tm-dim">
+      <p className="mt-1 font-tm-mono text-[11.5px] text-tm-dim">
         {first.routeNote.toLowerCase()}
         {rest > 0 ? ` · ${rest} more to order` : ""}
       </p>
@@ -171,7 +171,7 @@ function SupplySkeleton() {
       {[0, 1, 2].map((i) => (
         <div key={i} className="h-28 rounded-[10px] border border-tm-rule bg-tm-panel" />
       ))}
-      <p className="text-center font-tm-mono text-[10px] tracking-[0.12em] text-tm-dim uppercase">
+      <p className="text-center font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase">
         Loading supply…
       </p>
     </div>
@@ -184,13 +184,13 @@ function AttentionRow({ row }: { row: Row }) {
       <div className="flex items-start justify-between gap-2">
         <span className="min-w-0">
           <span className="block truncate font-tm-disp text-lg leading-[1.1] tracking-tight uppercase">{row.name}</span>
-          <span className="block font-tm-mono text-[10px] text-tm-dim">
+          <span className="block font-tm-mono text-[11.5px] text-tm-dim">
             {fmt(row.dose)} {row.unit} · {row.scheduleLabel} · {fmt(row.unitsPerDay)}/day
           </span>
         </span>
         <span
           className={cn(
-            "shrink-0 rounded-xl border px-2 py-[3px] font-tm-mono text-[9px] tracking-[0.1em] uppercase",
+            "shrink-0 rounded-[14px] border px-2 py-[3px] font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
             STATUS_TONE[row.status],
           )}
         >
@@ -207,17 +207,17 @@ function AttentionRow({ row }: { row: Row }) {
       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
         <span
           className={cn(
-            "rounded-xl border bg-tm-panel px-2 py-[3px] font-tm-mono text-[9px] tracking-[0.1em] uppercase",
+            "rounded-[14px] border bg-tm-panel px-2 py-[3px] font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
             ROUTE_TONE[row.route],
           )}
         >
           {row.route === "gp" ? "doctor" : row.route === "pharmacy" ? "pharmacy" : "no script"}
         </span>
-        <span className="text-[12.5px]">{row.routeNote}</span>
+        <span className="text-[13px]">{row.routeNote}</span>
       </div>
 
       {(row.gpReason !== null || row.expiringSoon) && (
-        <p className="mt-1 font-tm-mono text-[10px] text-tm-dim">
+        <p className="mt-1 font-tm-mono text-[11.5px] text-tm-dim">
           {row.gpReason ??
             `script expires ${row.scriptExpiryDate}. ${row.daysToExpiry} days`}
           {row.repeatsRemaining !== null && row.repeatsRemaining > 0
@@ -295,11 +295,18 @@ function CountControl({ row }: { row: Row }) {
           {saved ? "counted" : "count"}
         </button>
       </div>
-      <p className="mt-1 font-tm-mono text-[10px] text-tm-dim">
+      <p className="mt-1 font-tm-mono text-[11.5px] text-tm-dim">
         {row.countAgeDays === 0
           ? `counted today · ${fmt(row.countedOnHand)} in the box`
           : `counted ${row.countAgeDays} day${row.countAgeDays === 1 ? "" : "s"} ago. ${fmt(row.countedOnHand)} then, about ${fmt(row.onHand)} now`}
       </p>
+      {/* Only when the logbook outran the schedule — that is the one case where
+          the logged doses, not the schedule, set the number above. */}
+      {row.logsLead && (
+        <p className="mt-0.5 font-tm-mono text-[11.5px] text-tm-dim">
+          {row.loggedSinceCount} logged since your count.
+        </p>
+      )}
     </div>
   );
 }
@@ -360,7 +367,7 @@ function RefillCard({ supply }: { supply: SupplyData }) {
           />
         )}
       </div>
-      <p className="mt-2 font-tm-mono text-[10px] text-tm-dim">
+      <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
         The message names only what is already on your file: the item, its dose and how long is
         left. It asks for nothing else.
       </p>
@@ -389,11 +396,11 @@ function CallButton({
     >
       <span className="min-w-0">
         <span className="block truncate text-[13px] font-medium">{label}</span>
-        <span className="block truncate font-tm-mono text-[10px] text-tm-dim">
+        <span className="block truncate font-tm-mono text-[11.5px] text-tm-dim">
           {contact.name} · {hint}
         </span>
       </span>
-      <span className="shrink-0 font-tm-mono text-[11px]">{contact.phone}</span>
+      <span className="shrink-0 font-tm-mono text-[11.5px]">{contact.phone}</span>
     </a>
   );
 }
@@ -414,12 +421,12 @@ function StockedCard({ supply }: { supply: SupplyData }) {
           >
             <span className="min-w-0">
               <span className="block truncate text-[13px]">{row.name}</span>
-              <span className="block font-tm-mono text-[10px] text-tm-dim">
+              <span className="block font-tm-mono text-[11.5px] text-tm-dim">
                 {fmt(row.onHand)} left · {fmt(row.unitsPerDay)}/day
                 {row.runOutDate === null ? "" : ` · runs out ${row.runOutDate}`}
               </span>
             </span>
-            <span className="shrink-0 font-tm-mono text-[11px] text-tm-dim">
+            <span className="shrink-0 font-tm-mono text-[11.5px] text-tm-dim">
               {row.daysRemaining}d
             </span>
           </li>
@@ -444,7 +451,7 @@ function ContactsCard({ contacts }: { contacts: SupplyData["contacts"] }) {
           <CallButton contact={contacts.gp} label="GP practice" hint="new scripts and reviews" />
         )}
         {!contacts.pharmacy && !contacts.gp && (
-          <p className="text-[12.5px] text-tm-dim">
+          <p className="text-[13px] text-tm-dim">
             No numbers saved yet. Add them once and a refill is a tap.
           </p>
         )}

@@ -39,6 +39,10 @@ const modules = {
   // Read alongside remind.get to prove the confirm list is drawn from the
   // owner's own stack and nothing else.
   "./tm/stack.ts": () => import("../convex/tm/stack"),
+  // The "Taken" button rides the ingest credential, so the token mint and the
+  // HTTP surface are both under test here.
+  "./tm/ingest.ts": () => import("../convex/tm/ingest"),
+  "./http.ts": () => import("../convex/http"),
 };
 
 const TODAY = "2026-08-13";
@@ -296,6 +300,37 @@ describe("what the deployment can honestly promise", () => {
     expect(theirs.prefs.enabled).toBe(false);
   });
 
+  it("previews the fixture file's script and recheck reminders once switched on", async () => {
+    const { t, liam } = await seeded();
+    // A high cap so nothing under test hides in overCap by accident.
+    await t.mutation(api.tm.remind.setPrefs, { token: liam, enabled: true, maxPerDay: 8 });
+    const view = await t.query(api.tm.remind.get, { token: liam, date: TODAY });
+    const cards = [...view.preview, ...view.overCap];
+    // The statin on Liam's file has no repeats left — only the practice can move it.
+    const scriptCard = cards.find((r) => r.kind === "script");
+    expect(scriptCard?.title).toContain("needs the GP");
+    expect(scriptCard?.title).toContain("Atorvastatin");
+    // Homocysteine was drawn once, high, 180 days ago — long past its interval.
+    const recheckCard = cards.find((r) => r.kind === "recheck");
+    expect(recheckCard?.title).toContain("recheck");
+  });
+
+  it("stores the newer kind switches per user and honours them in the preview", async () => {
+    const { t, liam } = await seeded();
+    await t.mutation(api.tm.remind.setPrefs, {
+      token: liam,
+      enabled: true,
+      maxPerDay: 8,
+      rechecks: false,
+      scripts: false,
+    });
+    const view = await t.query(api.tm.remind.get, { token: liam, date: TODAY });
+    expect(view.prefs.rechecks).toBe(false);
+    expect(view.prefs.scripts).toBe(false);
+    const cards = [...view.preview, ...view.overCap, ...view.quietHeld, ...view.survivalHeld];
+    expect(cards.some((r) => r.kind === "script" || r.kind === "recheck")).toBe(false);
+  });
+
   it("stores an email on the file and never puts it on the crew board", async () => {
     const { t, liam, artur } = await seeded();
     await t.mutation(api.tm.remind.setPrefs, {
@@ -309,5 +344,206 @@ describe("what the deployment can honestly promise", () => {
     const board = await t.query(api.tm.crew.board, { token: artur, date: TODAY });
     expect(JSON.stringify(board)).not.toContain("liam@example.com");
     expect(JSON.stringify(board)).not.toContain("Liam@Example.COM");
+  });
+});
+
+describe("the Taken button logs the exact dose it names, and nothing else", () => {
+  /** Mint an ingest token for a user and hand back its opaque value. */
+  async function mintToken(t: Harness, session: string, slug: string) {
+    await t.mutation(api.tm.ingest.createToken, { token: session, date: TODAY, label: "Phone" });
+    return await t.run(async (ctx) => {
+      const users = await ctx.db.query("tm_users").take(10);
+      const owner = users.find((u) => u.slug === slug)!;
+      const rows = await ctx.db
+        .query("tm_ingestTokens")
+        .withIndex("by_userId", (q) => q.eq("userId", owner._id))
+        .take(10);
+      return rows[0]!.token;
+    });
+  }
+
+  /** An item of the named user carrying the given timing, straight off the file. */
+  async function itemWithTiming(t: Harness, slug: string, timing: string) {
+    return await t.run(async (ctx) => {
+      const users = await ctx.db.query("tm_users").take(10);
+      const owner = users.find((u) => u.slug === slug)!;
+      const items = await ctx.db
+        .query("tm_protocolItems")
+        .withIndex("by_userId", (q) => q.eq("userId", owner._id))
+        .take(50);
+      const item = items.find((i) => i.active && i.timings.includes(timing))!;
+      return { itemId: item._id as string, ownerId: owner._id };
+    });
+  }
+
+  async function doseLogsFor(t: Harness, itemId: string, timing: string) {
+    return await t.run(async (ctx) => {
+      const rows = await ctx.db.query("tm_doseLogs").take(500);
+      return rows.filter((r) => (r.itemId as string) === itemId && r.date === TODAY && r.timing === timing);
+    });
+  }
+
+  it("writes the named dose once, and a second tap changes nothing", async () => {
+    const { t, liam } = await seeded();
+    const ingestToken = await mintToken(t, liam, "liam");
+    // Today's evening doses are unlogged in the fixtures — exactly the case a
+    // lock-screen answer exists for.
+    const { itemId } = await itemWithTiming(t, "liam", "pm");
+    const args = { ingestToken, date: TODAY, doses: [{ itemId, timing: "pm" }] };
+
+    const first = await t.mutation(internal.tm.remind.doseTaken, args);
+    expect(first).toEqual({ ok: true, wrote: 1 });
+    const logs = await doseLogsFor(t, itemId, "pm");
+    expect(logs).toHaveLength(1);
+    expect(logs[0]?.taken).toBe(true);
+
+    const second = await t.mutation(internal.tm.remind.doseTaken, args);
+    expect(second.ok).toBe(true);
+    expect(await doseLogsFor(t, itemId, "pm")).toHaveLength(1);
+  });
+
+  it("refuses a timing the item does not carry — never a guess", async () => {
+    const { t, liam } = await seeded();
+    const ingestToken = await mintToken(t, liam, "liam");
+    const { itemId } = await itemWithTiming(t, "liam", "pm");
+    const res = await t.mutation(internal.tm.remind.doseTaken, {
+      ingestToken,
+      date: TODAY,
+      doses: [{ itemId, timing: "am" }],
+    });
+    expect(res).toEqual({ ok: true, wrote: 0 });
+    expect(await doseLogsFor(t, itemId, "am")).toHaveLength(0);
+  });
+
+  it("gives a forged or revoked token nothing", async () => {
+    const { t, liam } = await seeded();
+    const { itemId } = await itemWithTiming(t, "liam", "pm");
+    const forged = await t.mutation(internal.tm.remind.doseTaken, {
+      ingestToken: "tmk_forged",
+      date: TODAY,
+      doses: [{ itemId, timing: "pm" }],
+    });
+    expect(forged).toEqual({ ok: false, wrote: 0 });
+
+    const ingestToken = await mintToken(t, liam, "liam");
+    await t.run(async (ctx) => {
+      const rows = await ctx.db.query("tm_ingestTokens").take(10);
+      await ctx.db.patch("tm_ingestTokens", rows[0]!._id, { revoked: true });
+    });
+    const revoked = await t.mutation(internal.tm.remind.doseTaken, {
+      ingestToken,
+      date: TODAY,
+      doses: [{ itemId, timing: "pm" }],
+    });
+    expect(revoked).toEqual({ ok: false, wrote: 0 });
+    expect(await doseLogsFor(t, itemId, "pm")).toHaveLength(0);
+  });
+
+  it("cannot touch another user's file, whatever ids it is handed", async () => {
+    const { t, liam } = await seeded();
+    const ingestToken = await mintToken(t, liam, "liam");
+    // Artur's levothyroxine is a morning med. Liam's token must not reach it.
+    const { itemId } = await itemWithTiming(t, "artur", "am");
+    const res = await t.mutation(internal.tm.remind.doseTaken, {
+      ingestToken,
+      date: TODAY,
+      doses: [{ itemId, timing: "am" }],
+    });
+    expect(res).toEqual({ ok: true, wrote: 0 });
+    expect(await doseLogsFor(t, itemId, "am")).toHaveLength(0);
+  });
+
+  it("answers the worker over HTTP: 400 for junk, 401 for a dead token, 200 for a live one", async () => {
+    const { t, liam } = await seeded();
+    const ingestToken = await mintToken(t, liam, "liam");
+    const { itemId } = await itemWithTiming(t, "liam", "pm");
+    const post = (body: unknown) =>
+      t.fetch("/ingest/dose-taken", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+    const junk = await post({ token: ingestToken, date: TODAY, doses: [] });
+    expect(junk.status).toBe(400);
+
+    const dead = await post({ token: "tmk_forged", date: TODAY, doses: [{ itemId, timing: "pm" }] });
+    expect(dead.status).toBe(401);
+
+    const live = await post({ token: ingestToken, date: TODAY, doses: [{ itemId, timing: "pm" }] });
+    expect(live.status).toBe(200);
+    const parsed = (await live.json()) as { ok: boolean; wrote: number };
+    expect(parsed).toEqual({ ok: true, wrote: 1 });
+    expect(await doseLogsFor(t, itemId, "pm")).toHaveLength(1);
+  });
+
+  it("hands the sweep a Taken hand-off only for doses, and only with a live token", async () => {
+    const { t, liam } = await seeded();
+    await t.mutation(api.tm.remind.setPrefs, { token: liam, enabled: true, maxPerDay: 8 });
+    await t.mutation(api.tm.remind.saveSubscription, {
+      token: liam,
+      date: TODAY,
+      endpoint: "https://push.example/ep",
+      p256dh: "a",
+      auth: "b",
+      label: "Phone",
+    });
+    const ingestToken = await mintToken(t, liam, "liam");
+
+    const previous = process.env.CONVEX_SITE_URL;
+    process.env.CONVEX_SITE_URL = "https://x.convex.site";
+    try {
+      // 17:30 UTC is 18:30 in Dublin — the pm slot exactly, and the fixtures
+      // leave today's evening doses unlogged.
+      const batches = await t.query(internal.tm.remind.sweepPlan, {
+        nowMs: Date.parse("2026-08-13T17:30:00Z"),
+        windowMinutes: 30,
+      });
+      expect(batches).toHaveLength(1);
+      const doseNotes = batches[0]!.notifications.filter((n) => n.kind === "dose");
+      expect(doseNotes.length).toBeGreaterThan(0);
+      for (const note of doseNotes) {
+        expect(note.taken?.url).toBe("https://x.convex.site/ingest/dose-taken");
+        expect(note.taken?.token).toBe(ingestToken);
+        expect(note.taken?.doses.length).toBeGreaterThan(0);
+        for (const d of note.taken?.doses ?? []) expect(d.timing).toBe("pm");
+      }
+      // Nothing that is not a dose ever carries the hand-off.
+      for (const note of batches[0]!.notifications.filter((n) => n.kind !== "dose")) {
+        expect(note.taken).toBeUndefined();
+      }
+    } finally {
+      if (previous === undefined) delete process.env.CONVEX_SITE_URL;
+      else process.env.CONVEX_SITE_URL = previous;
+    }
+  });
+
+  it("sends no hand-off at all when the file holds no ingest token", async () => {
+    const { t, liam } = await seeded();
+    await t.mutation(api.tm.remind.setPrefs, { token: liam, enabled: true, maxPerDay: 8 });
+    await t.mutation(api.tm.remind.saveSubscription, {
+      token: liam,
+      date: TODAY,
+      endpoint: "https://push.example/ep",
+      p256dh: "a",
+      auth: "b",
+      label: "Phone",
+    });
+    const previous = process.env.CONVEX_SITE_URL;
+    process.env.CONVEX_SITE_URL = "https://x.convex.site";
+    try {
+      const batches = await t.query(internal.tm.remind.sweepPlan, {
+        nowMs: Date.parse("2026-08-13T17:30:00Z"),
+        windowMinutes: 30,
+      });
+      for (const note of batches[0]?.notifications ?? []) {
+        // No credential on the file means no hand-off — the button then simply
+        // opens the app, which is the honest degradation.
+        expect(note.taken).toBeUndefined();
+      }
+    } finally {
+      if (previous === undefined) delete process.env.CONVEX_SITE_URL;
+      else process.env.CONVEX_SITE_URL = previous;
+    }
   });
 });

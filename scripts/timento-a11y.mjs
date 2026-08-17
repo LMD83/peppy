@@ -278,7 +278,9 @@ for (const [label, viewport, reflow] of [
   ["390", { width: 390, height: 844 }, false],
   ["1280", { width: 1280, height: 800 }, false],
 ]) {
-  const context = await browser.newContext({ viewport });
+  // reducedMotion keeps the sweep deterministic: axe must never grade text
+  // mid-fade, where a transient opacity fails contrast the settled page passes.
+  const context = await browser.newContext({ viewport, reducedMotion: "reduce" });
   const page = await context.newPage();
   console.log(`\n=== ${label}px ===`);
 
@@ -317,6 +319,14 @@ for (const [label, viewport, reflow] of [
     await page.waitForTimeout(200);
     await sweep(page, `${label}-${String(shelf).replace(/\W+/g, "")}`.toLowerCase(), { reflow });
   }
+
+  // The setup wizard's welcome screen — a full-screen takeover with no nav,
+  // so it is its own surface. "Not now" leaves the file untouched.
+  await goShelf(page, /^Set up my file/);
+  await page.waitForTimeout(200);
+  await sweep(page, `${label}-setup`, { reflow });
+  await page.getByRole("button", { name: "Not now", exact: true }).click();
+  await page.waitForTimeout(200);
 
   // The floor. The plan's sharpest finding was that the least legible screen we
   // shipped was the one for someone at their worst, so it is scanned explicitly.

@@ -1,13 +1,14 @@
 import { addDays, daysBetween, type TmMode } from "./lib";
 import type { CompoundKind } from "./data/compounds";
-import { dueOn, scheduleLabel, type StackItem } from "./logicStack";
+import { dueOn, scheduleLabel, type DoseLog, type StackItem } from "./logicStack";
 
 /**
  * Pure supply logic — "never run out".
  *
  * Timento already knows the schedule; it has never known how many tablets are in
  * the house. This module joins the two: a physical count, the schedule that eats
- * it, and the date by which someone has to pick up a phone.
+ * it, the doses actually logged against it, and the date by which someone has to
+ * pick up a phone.
  *
  * Deterministic by construction: no Date.now(), no Math.random(). Every date is
  * an argument. The schedule is never re-derived here — `dueOn` from
@@ -33,6 +34,12 @@ export type SupplyRow = {
   reorderLeadDays: number;
   scriptExpiryDate?: string;
   repeatsRemaining?: number;
+  /**
+   * Doses actually logged as taken strictly after `lastCountedDate`, through
+   * today. Filled at gather time by `withLoggedDoses`, never stored. Optional:
+   * a caller without a logbook projects from the schedule alone.
+   */
+  dosesLoggedSinceCount?: number;
 };
 
 export type ContactKind = "gp" | "pharmacy";
@@ -63,7 +70,7 @@ export const DEFAULT_PACK_SIZE = 28;
 export const EXPIRY_WARN_DAYS = 30;
 
 export const SUPPLY_NOTE =
-  "Arithmetic on the number you last counted and the schedule you configured. Counts drift — recount when you next open the box. Nothing here changes a prescription, and nothing here decides what you should be taking.";
+  "Arithmetic on the number you last counted, the schedule you configured, and the doses you logged since. Logged doses can only bring a run-out date forward, never push it back — an unlogged dose is still a dose. Counts drift — recount when you next open the box. Nothing here changes a prescription, and nothing here decides what you should be taking.";
 
 /* ===== guards ===== */
 
@@ -152,25 +159,102 @@ export function unitsOn(item: StackItem, supply: SupplyRow, date: string): numbe
 }
 
 /**
+ * Units the schedule says the box lost since the count: every scheduled day
+ * strictly after the count date through `today` inclusive, capped like every
+ * other walk in this file.
+ */
+export function scheduledUnitsSinceCount(
+  item: StackItem,
+  supply: SupplyRow,
+  today: string,
+): number {
+  const elapsed = daysBetween(supply.lastCountedDate, today);
+  if (!Number.isFinite(elapsed) || elapsed <= 0) return 0;
+  const span = Math.min(elapsed, MAX_PROJECTION_DAYS);
+  let units = 0;
+  for (let i = 1; i <= span; i++) units += unitsOn(item, supply, addDays(supply.lastCountedDate, i));
+  return units;
+}
+
+/* ===== the logbook ===== */
+
+/** The slice of a dose log the supply projection needs. */
+export type SupplyDoseLog = Pick<DoseLog, "itemId" | "date" | "taken">;
+
+/**
+ * Where a bounded read of the dose logs must start to cover every row's count
+ * window: the oldest count on file, floored at the projection ceiling so the
+ * read can never grow without bound. ISO dates compare correctly as strings.
+ */
+export function logWindowStart(rows: readonly SupplyRow[], today: string): string {
+  const floor = addDays(today, -MAX_PROJECTION_DAYS);
+  let oldest = today;
+  for (const row of rows) {
+    if (row.lastCountedDate < oldest) oldest = row.lastCountedDate;
+  }
+  return oldest < floor ? floor : oldest;
+}
+
+/**
+ * Attach to each row the number of doses actually logged as taken since its
+ * count. The window is exactly the one the schedule consumes: strictly after
+ * the count date, through `today` inclusive — a log on the count date itself is
+ * assumed already inside the count, the same assumption `countAfterDays` makes
+ * about scheduled doses. A not-taken log records restraint, not consumption.
+ */
+export function withLoggedDoses(
+  rows: readonly SupplyRow[],
+  logs: readonly SupplyDoseLog[],
+  today: string,
+): SupplyRow[] {
+  const taken = logs.filter((l) => l.taken);
+  return rows.map((row) => ({
+    ...row,
+    dosesLoggedSinceCount: taken.filter(
+      (l) => l.itemId === row.itemId && l.date > row.lastCountedDate && l.date <= today,
+    ).length,
+  }));
+}
+
+/** A logged-dose count that cannot be a count is treated as no logs at all. */
+function safeLoggedDoses(supply: SupplyRow): number {
+  const n = supply.dosesLoggedSinceCount;
+  if (n === undefined || !Number.isFinite(n) || n <= 0) return 0;
+  return Math.floor(n);
+}
+
+/** Units the logbook says left the box since the count. */
+export function loggedUnitsSinceCount(supply: SupplyRow): number {
+  return safeLoggedDoses(supply) * perDoseUnits(supply);
+}
+
+/**
  * "You counted 24 on Monday, so you have about 19 today."
  *
  * Consumes every scheduled day strictly after the count date through `today`
  * inclusive, so the number returned is the stock at the end of today with
  * today's doses taken. A count stamped today (or in the future) is returned
  * untouched — a fresh count is the truth, not something to project.
+ *
+ * When doses have been logged since the count, the logbook is read too — but
+ * only in one direction. THE RULE: consumed-since-count is
+ * max(schedule-projected units, actually-logged units). Logging more than the
+ * schedule moves the run-out earlier; logging less never moves it later,
+ * because someone who takes doses and forgets to log them must not be told
+ * they have more stock than the schedule says.
  */
 export function countAfterDays(item: StackItem, supply: SupplyRow, today: string): number {
-  let stock = safeOnHand(supply);
+  const stock = safeOnHand(supply);
   if (stock === 0) return 0;
   const elapsed = daysBetween(supply.lastCountedDate, today);
   if (!Number.isFinite(elapsed) || elapsed <= 0) return stock;
 
-  const span = Math.min(elapsed, MAX_PROJECTION_DAYS);
-  for (let i = 1; i <= span; i++) {
-    stock -= unitsOn(item, supply, addDays(supply.lastCountedDate, i));
-    if (stock <= 0) return 0;
-  }
-  return round2(stock);
+  const consumed = Math.max(
+    scheduledUnitsSinceCount(item, supply, today),
+    loggedUnitsSinceCount(supply),
+  );
+  const left = stock - consumed;
+  return left <= 0 ? 0 : round2(left);
 }
 
 /* ===== the projection ===== */
@@ -362,6 +446,10 @@ export type SupplyItemView = {
   lastCountedDate: string;
   /** Days since the count — the honest measure of how much this is a guess. */
   countAgeDays: number;
+  /** Doses actually logged as taken since the count. */
+  loggedSinceCount: number;
+  /** True when the logbook, not the schedule, is setting today's number. */
+  logsLead: boolean;
   /** One line a tired person can act on. */
   line: string;
 };
@@ -451,6 +539,9 @@ export function buildSupplyView(input: SupplyViewInput): SupplyView {
     const script = scriptStatus(row, date);
     const route = refillRoute(item.kind, script);
     const countAge = daysBetween(row.lastCountedDate, date);
+    // The logbook leads only when it outran the schedule — the max() rule in
+    // countAfterDays means that is the one case where the logs set the number.
+    const logsLead = loggedUnitsSinceCount(row) > scheduledUnitsSinceCount(item, row, date);
 
     const base: Omit<SupplyItemView, "line"> = {
       itemId: item.id,
@@ -479,6 +570,8 @@ export function buildSupplyView(input: SupplyViewInput): SupplyView {
       routeNote: ROUTE_NOTE[route],
       lastCountedDate: row.lastCountedDate,
       countAgeDays: Number.isFinite(countAge) ? Math.max(0, countAge) : 0,
+      loggedSinceCount: safeLoggedDoses(row),
+      logsLead,
     };
     rows.push({ ...base, line: actionLine(base) });
   }

@@ -182,6 +182,9 @@ export default defineSchema({
     doses: v.boolean(),
     supply: v.boolean(),
     checkins: v.boolean(),
+    /** Newer kind switches. Missing means on, like the booleans above default. */
+    rechecks: v.optional(v.boolean()),
+    scripts: v.optional(v.boolean()),
     /** A missed reminder is never repeated more than this in a day. */
     maxPerDay: v.number(),
     /** Optional delivery address. Empty or missing means push only. */

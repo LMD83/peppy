@@ -6,23 +6,29 @@ import {
   DEFAULT_PREFS,
   MAX_CONSECUTIVE_FAILURES,
   MAX_PER_DAY,
+  RECHECK_AT,
+  SCRIPT_AT,
   SUPPLY_AT,
   TIMING_AT,
   buildRemindView,
   checkinsFor,
   coalesce,
   copyFor,
+  doseSourcePairs,
   dueReminders,
   inQuietHours,
   localNow,
   minutesOf,
   normalisePrefs,
   planReminders,
+  scriptsFor,
   subscriptionView,
   survivalFilter,
   throttle,
   type DueCheckin,
   type DueDose,
+  type DueRecheck,
+  type DueScript,
   type DueSupply,
   type Now,
   type Reminder,
@@ -30,6 +36,7 @@ import {
 } from "../convex/tm/logicRemind";
 import { MODE_CHECKS, daysBetween } from "../convex/tm/lib";
 import { buildCaptureView } from "../convex/tm/logicCapture";
+import type { SupplyRow as RawSupplyRow } from "../convex/tm/logicSupply";
 
 const DATE = "2026-08-13";
 
@@ -47,6 +54,30 @@ function supplyRow(over: Partial<DueSupply> = {}): DueSupply {
 
 function checkin(over: Partial<DueCheckin> = {}): DueCheckin {
   return { key: "protein", label: "Protein hit", done: false, at: CHECKIN_AT, ...over };
+}
+
+function recheck(over: Partial<DueRecheck> = {}): DueRecheck {
+  return {
+    marker: "ferritin",
+    name: "Ferritin",
+    lastDate: "2026-02-13",
+    dueDate: "2026-05-14",
+    overdueDays: 91,
+    ...over,
+  };
+}
+
+function script(over: Partial<DueScript> = {}): DueScript {
+  return {
+    itemId: "i1",
+    name: "Atorvastatin",
+    repeatsRemaining: 0,
+    scriptExpiryDate: "2026-09-25",
+    daysToExpiry: 43,
+    expired: false,
+    expiringSoon: false,
+    ...over,
+  };
 }
 
 /** The whole day, which is what the tab previews. */
@@ -295,6 +326,157 @@ describe("coalescing", () => {
   });
 });
 
+/* ===== the newer kinds: rechecks and scripts ===== */
+
+describe("blood rechecks", () => {
+  it("fires a due recheck in its own morning slot", () => {
+    const now: Now = { date: DATE, time: "10:15", windowMinutes: 30 };
+    const out = dueReminders(prefs(), [], [], [], now, [recheck()]);
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ kind: "recheck", at: RECHECK_AT, tab: "labs", severity: "normal" });
+  });
+
+  it("stays silent about a row that is not actually due", () => {
+    const out = dueReminders(prefs(), [], [], [], wholeDay(), [recheck({ overdueDays: 0 })]);
+    expect(out).toEqual([]);
+  });
+
+  it("respects its own switch", () => {
+    const out = dueReminders(prefs({ rechecks: false }), [], [], [], wholeDay(), [recheck()]);
+    expect(out).toEqual([]);
+  });
+
+  it("coalesces several due markers into one notification naming them", () => {
+    const rows = dueReminders(prefs(), [], [], [], wholeDay(), [
+      recheck(),
+      recheck({ marker: "homocysteine", name: "Homocysteine" }),
+      recheck({ marker: "vitamin_d", name: "Vitamin D" }),
+    ]);
+    expect(rows).toHaveLength(3);
+    const merged = coalesce(rows);
+    expect(merged).toHaveLength(1);
+    expect(copyFor(merged[0]!).title).toBe("Blood rechecks due: Ferritin, Homocysteine and 1 more");
+  });
+
+  it("names the marker and the last draw, and orders nothing", () => {
+    const rows = dueReminders(prefs(), [], [], [], wholeDay(), [recheck()]);
+    const words = copyFor(rows[0]!);
+    expect(words.title).toBe("Blood recheck due: Ferritin");
+    expect(words.body).toContain("last drawn 2026-02-13");
+    expect(words.body).toContain("Whenever suits");
+  });
+});
+
+describe("prescription scripts", () => {
+  it("fires when no repeats remain, in the same slot as the supply errand", () => {
+    const now: Now = { date: DATE, time: "09:45", windowMinutes: 30 };
+    const out = dueReminders(prefs(), [], [], [], now, [], [script()]);
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ kind: "script", at: SCRIPT_AT, tab: "supply", severity: "low" });
+    const words = copyFor(out[0]!);
+    expect(words.title).toBe("Prescription for Atorvastatin needs the GP");
+    expect(words.body).toContain("no repeats left");
+  });
+
+  it("fires as routine when the script merely runs out soon", () => {
+    const soon = script({
+      repeatsRemaining: 2,
+      expiringSoon: true,
+      daysToExpiry: 12,
+      scriptExpiryDate: "2026-08-25",
+    });
+    const out = dueReminders(prefs(), [], [], [], wholeDay(), [], [soon]);
+    expect(out).toHaveLength(1);
+    expect(out[0]?.severity).toBe("normal");
+    expect(copyFor(out[0]!).title).toBe("The script for Atorvastatin runs out soon");
+  });
+
+  it("fires when the script has expired, with the date it died", () => {
+    const dead = script({
+      repeatsRemaining: 2,
+      expired: true,
+      daysToExpiry: -3,
+      scriptExpiryDate: "2026-08-10",
+    });
+    const out = dueReminders(prefs(), [], [], [], wholeDay(), [], [dead]);
+    expect(out[0]?.severity).toBe("low");
+    expect(out[0]?.detail.join(" ")).toContain("ran out 2026-08-10");
+  });
+
+  it("says nothing about a script with repeats and time on it", () => {
+    const fine = script({ repeatsRemaining: 3 });
+    expect(dueReminders(prefs(), [], [], [], wholeDay(), [], [fine])).toEqual([]);
+  });
+
+  it("respects its own switch", () => {
+    const out = dueReminders(prefs({ scripts: false }), [], [], [], wholeDay(), [], [script()]);
+    expect(out).toEqual([]);
+  });
+});
+
+describe("script standings from the raw rows", () => {
+  function rawSupply(over: Partial<RawSupplyRow> = {}): RawSupplyRow {
+    return {
+      itemId: "a",
+      onHand: 20,
+      unitsPerDose: 1,
+      packSize: 28,
+      lastCountedDate: DATE,
+      reorderLeadDays: 5,
+      ...over,
+    };
+  }
+  const items = [{ id: "a", name: "Atorvastatin", active: true }];
+
+  it("keeps only rows that actually carry a script", () => {
+    expect(scriptsFor(items, [rawSupply()], DATE)).toEqual([]);
+    const withScript = scriptsFor(items, [rawSupply({ repeatsRemaining: 0 })], DATE);
+    expect(withScript).toHaveLength(1);
+    expect(withScript[0]?.repeatsRemaining).toBe(0);
+    expect(withScript[0]?.name).toBe("Atorvastatin");
+  });
+
+  it("ignores a paused item and a row pointing nowhere", () => {
+    const paused = scriptsFor(
+      [{ id: "a", name: "Atorvastatin", active: false }],
+      [rawSupply({ repeatsRemaining: 0 })],
+      DATE,
+    );
+    expect(paused).toEqual([]);
+    const orphan = scriptsFor(items, [rawSupply({ itemId: "zzz", repeatsRemaining: 0 })], DATE);
+    expect(orphan).toEqual([]);
+  });
+});
+
+/* ===== the exact doses a notification names ===== */
+
+describe("doseSourcePairs", () => {
+  it("parses sourceKeys back into itemId and timing", () => {
+    expect(doseSourcePairs(["item1:am", "item2:pre-bed"])).toEqual([
+      { itemId: "item1", timing: "am" },
+      { itemId: "item2", timing: "pre-bed" },
+    ]);
+  });
+
+  it("keeps a timing that itself contains a colon whole", () => {
+    expect(doseSourcePairs(["item1:odd:timing"])).toEqual([{ itemId: "item1", timing: "odd:timing" }]);
+  });
+
+  it("drops anything that is not an exact pair rather than guessing", () => {
+    expect(doseSourcePairs([":am", "item1:", "plain"])).toEqual([]);
+  });
+
+  it("round-trips what a coalesced dose reminder actually carries", () => {
+    const rows = coalesce(
+      dueReminders(prefs(), [dose(), dose({ itemId: "i2", name: "Vitamin D" })], [], [], wholeDay()),
+    );
+    expect(doseSourcePairs(rows[0]!.sourceKeys)).toEqual([
+      { itemId: "i1", timing: "am" },
+      { itemId: "i2", timing: "am" },
+    ]);
+  });
+});
+
 /* ===== rule 4: survival is a floor ===== */
 
 describe("survival mode", () => {
@@ -323,6 +505,22 @@ describe("survival mode", () => {
 
   it("silences a routine reorder that is not yet a run-out", () => {
     const rows = dueReminders(prefs(), [], [supplyRow({ status: "order-now", daysRemaining: 6 })], [], wholeDay());
+    expect(survivalFilter(rows, "survival")).toEqual([]);
+  });
+
+  it("lets a script only the practice can move speak — waiting makes it a run-out", () => {
+    const rows = dueReminders(prefs(), [], [], [], wholeDay(), [], [script()]);
+    expect(survivalFilter(rows, "survival")).toHaveLength(1);
+  });
+
+  it("holds a script that is merely nearing its date", () => {
+    const soon = script({ repeatsRemaining: 2, expiringSoon: true });
+    const rows = dueReminders(prefs(), [], [], [], wholeDay(), [], [soon]);
+    expect(survivalFilter(rows, "survival")).toEqual([]);
+  });
+
+  it("holds a recheck — the Bloods screen keeps showing it, and a draw can wait", () => {
+    const rows = dueReminders(prefs(), [], [], [], wholeDay(), [recheck()]);
     expect(survivalFilter(rows, "survival")).toEqual([]);
   });
 
@@ -379,9 +577,15 @@ describe("copy", () => {
         ],
         [checkin()],
         wholeDay(),
+        [recheck(), recheck({ marker: "homocysteine", name: "Homocysteine" })],
+        [
+          script(),
+          script({ itemId: "b", name: "Levothyroxine", repeatsRemaining: 2, expiringSoon: true }),
+          script({ itemId: "c", name: "Metformin", repeatsRemaining: 1, expired: true, scriptExpiryDate: "2026-08-01" }),
+        ],
       ),
     );
-    expect(rows.length).toBeGreaterThan(3);
+    expect(rows.length).toBeGreaterThan(5);
     for (const row of rows) {
       const { title, body } = copyFor(row);
       const text = `${title} ${body}`;
@@ -453,6 +657,18 @@ describe("preferences", () => {
   it("stores a valid email and drops an unusable one", () => {
     expect(normalisePrefs({ email: " Liam@Example.COM " }).email).toBe("liam@example.com");
     expect(normalisePrefs({ email: "not-an-email" }).email).toBe("");
+  });
+
+  it("defaults the newer kinds on, including for a stored row that predates them", () => {
+    expect(DEFAULT_PREFS.rechecks).toBe(true);
+    expect(DEFAULT_PREFS.scripts).toBe(true);
+    // A row written before the fields existed carries neither; missing means on,
+    // exactly how the older kind switches behave for an absent row.
+    const stored = normalisePrefs({ enabled: true, doses: false });
+    expect(stored.rechecks).toBe(true);
+    expect(stored.scripts).toBe(true);
+    expect(normalisePrefs({ rechecks: false }).rechecks).toBe(false);
+    expect(normalisePrefs({ scripts: false }).scripts).toBe(false);
   });
 
   it("pads a sloppy but legal time", () => {
@@ -558,6 +774,8 @@ describe("the view", () => {
       doses: [dose()],
       supply: [],
       checkins: [],
+      rechecks: [],
+      scripts: [],
       pushReady: true,
       emailSupported: false,
       vapidPublicKey: "BPk",
@@ -636,6 +854,15 @@ describe("the view", () => {
     expect(view.survival).toBe(true);
     expect(view.preview.map((r) => r.kind)).toEqual(["checkin"]);
     expect(view.survivalHeld.map((r) => r.kind)).toEqual(["dose"]);
+  });
+
+  it("previews the newer kinds with the words that would be sent", () => {
+    const view = build({ doses: [], rechecks: [recheck()], scripts: [script()] });
+    expect(view.preview.map((r) => r.kind).sort()).toEqual(["recheck", "script"]);
+    const scriptCard = view.preview.find((r) => r.kind === "script");
+    expect(scriptCard?.title).toBe("Prescription for Atorvastatin needs the GP");
+    const recheckCard = view.preview.find((r) => r.kind === "recheck");
+    expect(recheckCard?.title).toBe("Blood recheck due: Ferritin");
   });
 
   it("gives every previewed card the words that would actually be shown", () => {

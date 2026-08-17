@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
 import { cleanEmail } from "@convex/tm/logicEmail";
+import { actionsFor } from "@convex/tm/logicPush";
 import { useTimento } from "../_lib/backend";
 import { postDeliver } from "../_lib/deliver-client";
 import type { RemindData } from "../_lib/types";
@@ -509,26 +510,45 @@ function PreviewCard({ data, easy }: { data: RemindData; easy: boolean }) {
           and neither is a problem to fix.
         </p>
       ) : (
-        <ul className="flex flex-col gap-2">
-          {data.preview.map((r) => (
-            <li key={r.key} className="rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2.5">
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="font-tm-mono text-[11.5px] tracking-[0.14em] text-tm-dim uppercase">
-                  {r.at}
-                </span>
-                <span className="font-tm-mono text-[11.5px] tracking-[0.14em] text-tm-dim uppercase">
-                  {r.kind}
-                </span>
-              </div>
-              <p className="mt-1 text-[15px] font-medium">{r.title}</p>
-              <p className="mt-0.5 text-[14px] leading-relaxed text-tm-dim">{r.body}</p>
-            </li>
-          ))}
-        </ul>
+        <>
+          <ul className="flex flex-col gap-2">
+            {data.preview.map((r) => (
+              <li key={r.key} className="rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2.5">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="font-tm-mono text-[11.5px] tracking-[0.14em] text-tm-dim uppercase">
+                    {r.at}
+                  </span>
+                  <span className="font-tm-mono text-[11.5px] tracking-[0.14em] text-tm-dim uppercase">
+                    {r.kind}
+                  </span>
+                </div>
+                <p className="mt-1 text-[15px] font-medium">{r.title}</p>
+                <p className="mt-0.5 text-[14px] leading-relaxed text-tm-dim">{r.body}</p>
+                {/* The buttons this one would carry, where the platform draws
+                    buttons at all. Chips, not controls — this is a preview. */}
+                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                  {actionsFor(r.kind).map((a) => (
+                    <span
+                      key={a.action}
+                      className="rounded-full border border-tm-rule-strong bg-tm-soft px-2.5 py-0.5 font-tm-mono text-[11.5px] tracking-[0.14em] text-tm-dim uppercase"
+                    >
+                      {a.title}
+                    </span>
+                  ))}
+                </div>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-[14px] leading-relaxed text-tm-dim">
+            On Android and on a desktop those arrive as buttons on the notification itself — Taken
+            logs the dose without opening the app. An iPhone shows no buttons; there, tapping the
+            notification opens the right screen instead.
+          </p>
+        </>
       )}
 
       {data.survival && (
-        <p className="mt-3 rounded-lg border border-tm-amber bg-tm-amber-bg px-3 py-2 text-[14px] leading-relaxed text-tm-amber-ink">
+        <p className="mt-3 rounded-[10px] border border-tm-amber bg-tm-amber-bg px-3 py-2 text-[14px] leading-relaxed text-tm-amber-ink">
           {data.survivalNote}
         </p>
       )}
@@ -540,7 +560,7 @@ function PreviewCard({ data, easy }: { data: RemindData; easy: boolean }) {
           </summary>
           <ul className="mt-1 flex flex-col gap-2">
             {held.map(({ card, why }) => (
-              <li key={`${card.key}-${why}`} className="rounded-lg border border-tm-rule bg-tm-soft px-3 py-2">
+              <li key={`${card.key}-${why}`} className="rounded-[10px] border border-tm-rule bg-tm-soft px-3 py-2">
                 <p className="text-[14px] font-medium">{card.title}</p>
                 <p className="mt-0.5 text-[14px] text-tm-dim">
                   {card.at} · {why}
@@ -574,7 +594,7 @@ function EmailCard({ data, onChange }: { data: RemindData; onChange: (p: PrefsCh
             const email = cleanEmail(e.target.value);
             onChange({ email, ...(email !== "" ? { enabled: true } : {}) });
           }}
-          className="min-h-11 rounded-lg border border-tm-rule-strong bg-tm-panel px-3 text-[15px]"
+          className="min-h-11 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-[15px]"
         />
       </label>
       {!data.emailSupported && data.prefs.email !== "" ? (
@@ -608,6 +628,18 @@ function KindsCard({ data, onChange }: { data: RemindData; onChange: (p: PrefsCh
           detail="One evening nudge, never one per check."
           on={data.prefs.checkins}
           onChange={(checkins) => onChange({ checkins })}
+        />
+        <Toggle
+          label="Blood rechecks"
+          detail="When your own results say a marker is due another draw."
+          on={data.prefs.rechecks}
+          onChange={(rechecks) => onChange({ rechecks })}
+        />
+        <Toggle
+          label="Prescriptions"
+          detail="A script running out, or one with no repeats left."
+          on={data.prefs.scripts}
+          onChange={(scripts) => onChange({ scripts })}
         />
       </div>
       <p className="mt-3 text-[14px] leading-relaxed text-tm-dim">

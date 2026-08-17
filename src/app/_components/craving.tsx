@@ -32,8 +32,8 @@ type Step = "idle" | "after" | "action" | "breathe" | "logged";
 
 /** 44×44 minimum (2.5.8), on every control in this card — including the three
  *  that used to be bare underlined words a few pixels tall. */
-const CHIP = "inline-flex min-h-11 cursor-pointer items-center rounded-[22px] border px-4 font-tm-mono text-[12.5px]";
-const QUIET = "inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center px-3 font-tm-mono text-[12.5px] text-tm-dim underline";
+const CHIP = "inline-flex min-h-11 cursor-pointer items-center rounded-[22px] border px-4 font-tm-mono text-[13px]";
+const QUIET = "inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center px-3 font-tm-mono text-[13px] text-tm-dim underline";
 
 export function CravingLogger() {
   const { today, actions } = useTimento();
@@ -144,7 +144,7 @@ export function CravingLogger() {
               onChange={(e) => setEmotionWord(e.target.value)}
               placeholder="one word for it"
               aria-label="One word for the emotion"
-              className="mb-2 min-h-11 w-full rounded-lg border border-tm-rule-strong px-3 py-2 text-base outline-none focus:border-tm-ink"
+              className="mb-2 min-h-11 w-full rounded-[10px] border border-tm-rule-strong px-3 py-2 text-base outline-none focus:border-tm-ink"
             />
           )}
           <div className="flex flex-wrap gap-2">

@@ -206,6 +206,16 @@ for (const [label, viewport] of [
     if (after > before) throw new Error("logging a set did not advance the session count");
   });
 
+  await check("train: next exercise is one tap and sends the block to the back", async () => {
+    const nextBtn = page.getByRole("button", { name: /next exercise/i }).first();
+    if (!(await nextBtn.count())) return; // rest day, one block left, or session done
+    const focused = await page.locator("main").getByText(/\d+ of \d+ · /).first().textContent();
+    await nextBtn.click();
+    await page.waitForTimeout(250);
+    const after = await page.locator("main").getByText(/\d+ of \d+ · /).first().textContent();
+    if (focused === after) throw new Error("next exercise did not switch the focused block");
+  });
+
   await check("stack: due doses, cycle phase, evidence tiers, reconstitution maths", async () => {
     await goTab(page, "Body", "Stack");
     await page.getByText(/due today/i).first().waitFor();
@@ -277,6 +287,24 @@ for (const [label, viewport] of [
     await page.screenshot({ path: `${SHOTS}/${label}-14-shop.png`, fullPage: true });
   });
 
+  await check("shopping: the chosen retailer survives a reload", async () => {
+    const tesco = page.getByRole("button", { name: /Tesco/ }).first();
+    if (!(await tesco.count())) return; // survival floor strips the chooser
+    await tesco.click({ timeout: NAV_TIMEOUT });
+    if ((await tesco.getAttribute("aria-pressed")) !== "true") throw new Error("retailer did not select");
+    await page.reload();
+    await page.getByRole("heading", { level: 1 }).waitFor();
+    await page.evaluate(() => document.querySelector("nextjs-portal")?.remove());
+    await goTab(page, "More");
+    await page.getByRole("button", { name: /^Shopping/ }).first().click({ timeout: NAV_TIMEOUT });
+    const again = page.getByRole("button", { name: /Tesco/ }).first();
+    await again.waitFor({ timeout: NAV_TIMEOUT });
+    if ((await again.getAttribute("aria-pressed")) !== "true") {
+      throw new Error("retailer choice was forgotten on reload");
+    }
+    await again.click(); // leave the chooser as the run found it
+  });
+
   await check("reminders: previews honestly when it cannot send", async () => {
     await goTab(page, "More");
     await page.getByRole("button", { name: /^Reminders/ }).first().click({ timeout: NAV_TIMEOUT });
@@ -292,6 +320,56 @@ for (const [label, viewport] of [
       throw new Error("reminders screen does not admit it cannot deliver");
     }
     await page.screenshot({ path: `${SHOTS}/${label}-16-remind.png`, fullPage: true });
+  });
+
+  await check("walkthrough: nine stops narrate the day on real screens", async () => {
+    await goTab(page, "More");
+    await page.locator("main").getByRole("button", { name: "Walkthrough", exact: true }).click({ timeout: NAV_TIMEOUT });
+    const tour = page.getByRole("region", { name: "Guided walkthrough" });
+    await tour.waitFor({ timeout: NAV_TIMEOUT });
+    let text = await tour.innerText();
+    if (!/stop 1 of 9/i.test(text)) throw new Error("tour does not open on stop 1");
+    if (!/already decided/i.test(text)) throw new Error("tour stop 1 copy missing");
+    for (let i = 0; i < 8; i++) {
+      await tour.getByRole("button", { name: "Next", exact: true }).click();
+      await page.waitForTimeout(120);
+    }
+    text = await tour.innerText();
+    if (!/stop 9 of 9/i.test(text)) throw new Error("tour did not reach stop 9");
+    // The final stop must be standing on the real Reminders screen, not a mockup.
+    const body = await page.locator("main").innerText();
+    if (!/reminder/i.test(body)) throw new Error("tour stop 9 is not on the reminders screen");
+    await page.screenshot({ path: `${SHOTS}/${label}-17-walkthrough.png`, fullPage: true });
+    await tour.getByRole("button", { name: "Done", exact: true }).click();
+    if (await tour.isVisible().catch(() => false)) throw new Error("Done did not end the tour");
+  });
+
+  await check("setup wizard: answers commit, skips keep what's there", async () => {
+    await goTab(page, "More");
+    await page.locator("main").getByRole("button", { name: "Set up my file", exact: true }).click({ timeout: NAV_TIMEOUT });
+    await page.getByText(/Two minutes, once/).waitFor({ timeout: NAV_TIMEOUT });
+    await page.getByRole("button", { name: "Start", exact: true }).click();
+    // Liam's fixture has a mesocycle, so the goal step is absent: nine steps.
+    await page.getByText(/step 1 of 9/i).waitFor({ timeout: NAV_TIMEOUT });
+    await page.getByRole("button", { name: /^Skip/ }).click(); // size
+    await page.getByRole("button", { name: /^Skip/ }).click(); // mode
+    await page.getByRole("button", { name: /Proper cook/ }).click(); // minutes — a real answer
+    for (const stepName of ["equipment", "place", "age", "shop", "quiet", "contacts"]) {
+      await page.getByRole("button", { name: /^Skip/ }).click({ timeout: NAV_TIMEOUT }).catch(() => {
+        throw new Error(`no skip on the ${stepName} step`);
+      });
+    }
+    await page.getByText("The file is set").waitFor({ timeout: NAV_TIMEOUT });
+    // The answered step is on the receipt; the skipped ones are not.
+    const receipt = await page.locator("main, body").last().innerText();
+    if (!/Kitchen: 40 minutes/.test(receipt)) throw new Error("the answered step is missing from the receipt");
+    if (/Protocol:/.test(receipt)) throw new Error("a skipped step claims to have saved something");
+    await page.screenshot({ path: `${SHOTS}/${label}-18-setup.png`, fullPage: true });
+    await page.getByRole("button", { name: "Show me Today", exact: true }).click();
+    await page.getByRole("navigation", { name: "Sections" }).waitFor({ timeout: NAV_TIMEOUT });
+    if (await page.getByText("The file is set").isVisible().catch(() => false)) {
+      throw new Error("the wizard did not close");
+    }
   });
 
   await check("photos: offers a capture and states it never reads the picture", async () => {

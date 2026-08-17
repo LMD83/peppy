@@ -3,6 +3,8 @@ import {
   DEFAULT_PACK_SIZE,
   DEFAULT_UNITS_PER_DOSE,
   buildSupplyView,
+  logWindowStart,
+  withLoggedDoses,
   type SupplyContact,
   type SupplyRow,
   type SupplyViewInput,
@@ -25,9 +27,23 @@ function gather(db: DemoDb, slug: string, date: string): SupplyViewInput {
     .filter((r) => r.userSlug === slug)
     .map(({ userSlug: _slug, ...row }) => row);
 
-  const supply: SupplyRow[] = db.supplyRows
+  const supplyBase: SupplyRow[] = db.supplyRows
     .filter((r) => r.userSlug === slug)
     .map(({ id: _id, userSlug: _slug, ...row }) => row);
+
+  // Doses logged since each count, read over the same bounded window the
+  // Convex gather scans: oldest count on file, floored by the projection
+  // ceiling. The max() rule in logicSupply means a missing log can only let
+  // the schedule win — the safe direction.
+  const from = logWindowStart(supplyBase, date);
+  const logs =
+    supplyBase.length === 0
+      ? []
+      : db.doseLogs
+          .filter((r) => r.userSlug === slug && r.date >= from && r.date <= date)
+          .map((r) => ({ itemId: r.itemId, date: r.date, taken: r.taken }));
+
+  const supply = withLoggedDoses(supplyBase, logs, date);
 
   const contacts: SupplyContact[] = db.contacts
     .filter((r) => r.userSlug === slug)

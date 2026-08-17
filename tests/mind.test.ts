@@ -15,7 +15,9 @@ import {
   IDENTITY_HEADLINES,
   InstrumentInputError,
   MAX_SUGGESTIONS,
+  QUIET_THRESHOLD_DAYS,
   SAFETY_TEXT,
+  SUPPORT_LINES,
   TREND_FRAMING,
   bandFor,
   buildMindView,
@@ -25,6 +27,8 @@ import {
   intentionSuggestions,
   mindsetPromptForDate,
   promptForDate,
+  quietCheckFor,
+  quietStreak,
   safetyFlagged,
   scoreInstrument,
   topSignals,
@@ -35,6 +39,7 @@ import {
 } from "../convex/tm/logicMind";
 import { buildMindFixtures } from "../convex/tm/fixtures/mind";
 import { addDays, daysBetween } from "../convex/tm/lib";
+import type { WallDay } from "../convex/tm/logic";
 
 const TODAY = "2026-08-13";
 const FX = buildMindFixtures(TODAY);
@@ -491,12 +496,102 @@ describe("intentionSuggestions", () => {
   });
 });
 
+/* ===== the quiet check ===== */
+
+/** A 14-day wall where `doneFor` maps days-ago to checks done that day. */
+function wallOf(today: string, doneFor: (daysAgo: number) => number, total = 5): WallDay[] {
+  const wall: WallDay[] = [];
+  for (let i = 13; i >= 0; i--) wall.push({ date: addDays(today, -i), done: doneFor(i), total });
+  return wall;
+}
+
+const activeWall = wallOf(TODAY, () => 5);
+const silentWall = wallOf(TODAY, () => 0);
+
+describe("quietStreak", () => {
+  it("is zero on a wall with something logged yesterday", () => {
+    expect(quietStreak(activeWall, TODAY)).toBe(0);
+    expect(quietStreak(wallOf(TODAY, (ago) => (ago === 1 ? 1 : 0)), TODAY)).toBe(0);
+  });
+
+  it("counts consecutive quiet days ending yesterday", () => {
+    expect(quietStreak(wallOf(TODAY, (ago) => (ago >= 3 ? 5 : 0)), TODAY)).toBe(2);
+    expect(quietStreak(wallOf(TODAY, (ago) => (ago >= 5 ? 5 : 0)), TODAY)).toBe(4);
+  });
+
+  it("excludes today — a day still in play cannot be quiet yet", () => {
+    // Everything logged except today: no quiet run has started.
+    expect(quietStreak(wallOf(TODAY, (ago) => (ago === 0 ? 0 : 5)), TODAY)).toBe(0);
+    // Today's zero adds nothing to the run behind it.
+    expect(quietStreak(wallOf(TODAY, (ago) => (ago >= 4 ? 5 : 0)), TODAY)).toBe(3);
+  });
+
+  it("resets on a gap — one logged check ends the run", () => {
+    // Quiet, then one active day two days ago, then quiet yesterday.
+    const gapped = wallOf(TODAY, (ago) => (ago === 2 ? 1 : ago >= 6 ? 5 : 0));
+    expect(quietStreak(gapped, TODAY)).toBe(1);
+  });
+
+  it("spans the whole window when nothing was ever logged", () => {
+    expect(quietStreak(silentWall, TODAY)).toBe(13);
+  });
+});
+
+describe("quietCheckFor", () => {
+  const started = addDays(TODAY, -60);
+
+  it("stays silent below the threshold", () => {
+    for (let quiet = 0; quiet < QUIET_THRESHOLD_DAYS; quiet++) {
+      const wall = wallOf(TODAY, (ago) => (ago > quiet ? 5 : 0));
+      expect(quietCheckFor({ wall, startDate: started, date: TODAY })).toBeNull();
+    }
+  });
+
+  it("asks the question at three quiet days, with the real number", () => {
+    const wall = wallOf(TODAY, (ago) => (ago > 3 ? 5 : 0));
+    const check = quietCheckFor({ wall, startDate: started, date: TODAY });
+    expect(check).not.toBeNull();
+    expect(check?.days).toBe(3);
+    expect(check?.heading).toBe("You've gone quiet.");
+    expect(check?.body).toContain("Nothing logged in 3 days");
+    expect(check?.body).toMatch(/Are you ok\?$/);
+    expect(check?.support).toBe(SUPPORT_LINES);
+  });
+
+  it("never triggers for a brand-new file — it has not gone quiet, it has just started", () => {
+    expect(quietCheckFor({ wall: silentWall, startDate: TODAY, date: TODAY })).toBeNull();
+    expect(
+      quietCheckFor({ wall: silentWall, startDate: addDays(TODAY, -2), date: TODAY }),
+    ).toBeNull();
+  });
+
+  it("caps the quiet count at the file's age", () => {
+    const check = quietCheckFor({ wall: silentWall, startDate: addDays(TODAY, -5), date: TODAY });
+    expect(check?.days).toBe(5);
+  });
+
+  it("carries the same support lines the safety card ends with", () => {
+    expect(SAFETY_TEXT.endsWith(SUPPORT_LINES)).toBe(true);
+    expect(SUPPORT_LINES).toContain("999 or 112");
+    expect(SUPPORT_LINES).toContain("116 123");
+  });
+
+  it("asks, and never shames — no streak arithmetic, no penance", () => {
+    const check = quietCheckFor({ wall: silentWall, startDate: started, date: TODAY });
+    const words = `${check?.heading} ${check?.body}`;
+    expect(words).not.toMatch(/lazy|failed|failure|make up|catch up|broke your streak/i);
+    expect(check?.body).toMatch(/tool, not a judge/);
+  });
+});
+
 /* ===== the view ===== */
 
 function inputFor(slug: string, mode: MindViewInput["mode"], over: Partial<MindViewInput> = {}): MindViewInput {
   return {
     mode,
     date: TODAY,
+    startDate: addDays(TODAY, -60),
+    wall: activeWall,
     assessments: FX.assessments
       .filter((a) => a.userSlug === slug)
       .map((a) => ({ date: a.date, instrument: a.instrument, answers: a.answers, score: a.score, band: a.band })),
@@ -600,6 +695,18 @@ describe("buildMindView", () => {
     ];
     expect(safetyFlagged(rows)).toBe(false);
     expect(safetyFlagged([rows[0]])).toBe(true);
+  });
+
+  it("carries no quiet check while the person is logging", () => {
+    expect(buildMindView(inputFor("liam", "cut")).quietCheck).toBeNull();
+  });
+
+  it("raises the quiet check after silent days — in survival too, because support is not an obligation the floor removes", () => {
+    const quiet = buildMindView(inputFor("liam", "cut", { wall: silentWall }));
+    expect(quiet.quietCheck?.days).toBe(13);
+    expect(quiet.quietCheck?.support).toBe(SUPPORT_LINES);
+    const floor = buildMindView(inputFor("artur", "survival", { wall: silentWall }));
+    expect(floor.quietCheck?.days).toBe(13);
   });
 
   it("sorts intentions by wins and never suggests a plan already on the list", () => {

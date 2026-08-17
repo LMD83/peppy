@@ -43,9 +43,44 @@ typography:
     lineHeight: 1.35
   body:
     fontFamily: "IBM Plex Sans, system-ui, sans-serif"
-    fontSize: "0.8125rem"
+    fontSize: "0.875rem"
     fontWeight: 400
     lineHeight: 1.45
+  caption:
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
+    fontSize: "13px"
+    fontWeight: 400
+    lineHeight: 1.45
+  rowTitle:
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
+    fontSize: "15px"
+    fontWeight: 500
+    lineHeight: 1.35
+  shelfRow:
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
+    fontSize: "17px"
+    fontWeight: 500
+    lineHeight: 1.3
+  statNumeral:
+    fontFamily: "Archivo Black, sans-serif"
+    fontSize: "22px"
+    fontWeight: 400
+    lineHeight: 1.1
+  easyBody:
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
+    fontSize: "18px"
+    fontWeight: 400
+    lineHeight: 1.6
+  printBody:
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
+    fontSize: "16px"
+    fontWeight: 400
+    lineHeight: 1.4
+  printAisle:
+    fontFamily: "IBM Plex Mono, ui-monospace, monospace"
+    fontSize: "20px"
+    fontWeight: 400
+    lineHeight: 1.3
   label:
     fontFamily: "IBM Plex Mono, ui-monospace, monospace"
     fontSize: "11.5px"
@@ -160,6 +195,7 @@ A cool paper stack with ink text, semantic greens/ambers for protocol state, and
 - **On Ink** (#a2a7af): Muted text on the dark scoreboard and login header.
 - **Rule / Rule Strong / Grid / Soft** (#e4e5e1 / #888b85 / #eeefeb / #f3f3f0): Decorative card edges vs 3:1 control boundaries, list dividers, quiet fills.
 - **Focus** (#3b82f6): 3:1 ring on paper and on ink.
+- **Contrast-more overrides** (#3a3d43 / #d9dde3): Under `prefers-contrast: more`, muted text collapses toward ink on paper (10.42:1) and on-ink muted text lifts (13.15:1). These exist only inside that media query.
 
 ### Named Rules
 **The One Stamp Rule.** Saturated accents (green, amber, red, blue) mark state — never decorate empty chrome. Prefer ink + paper first.
@@ -172,13 +208,19 @@ A cool paper stack with ink text, semantic greens/ambers for protocol state, and
 **Body Font:** IBM Plex Sans (system-ui fallback)
 **Label/Mono Font:** IBM Plex Mono
 
-**Character:** Display is compressed and uppercase-friendly for protocol titles; mono carries the file’s bureaucratic voice (eyebrows, buttons, stats labels); sans carries readable body at 12.5–14px.
+**Character:** Display is compressed and uppercase-friendly for protocol titles; mono carries the file’s bureaucratic voice (eyebrows, buttons, stats labels); sans carries readable body at 13–15px.
 
-### Hierarchy
-- **Display** (400, ~24–34px, tight): Scoreboard titles, large numbers (kitchen close, breathe timer, stats).
-- **Title** (600, ~14px): Card section titles inside content.
-- **Body** (400/500, ~12.5–15px): Explanatory copy, list rows.
-- **Label** (400/500, **11.5px floor**, tracking 0.1–0.15em, uppercase): Eyebrows, buttons, nav, chips, status badges. A CSS net in `globals.css` lifts any `text-[Npx]` below 11.5px. SVG text must use `axisFontSize()`.
+### Hierarchy — the whole ramp, no other sizes
+The app uses exactly six pinned steps plus the display scale. Anything off this list is drift (the sizes below 11.5px that once shipped were raised at the source on 2026-08-17; `tests/a11y-floor-guard.test.ts` fails the build if one returns).
+
+- **Label — 11.5px** (mono, 400/500, tracking 0.1–0.15em, uppercase): Eyebrows, buttons, nav, chips, status badges, footnotes. This is the floor for everyone; easy mode lifts it to 16px.
+- **Caption — 13px** (sans 400): Secondary copy, list-row detail lines. Easy mode lifts to 16px.
+- **Body — 14px** (sans 400; 600 for card titles): Explanatory copy, answers, notes. Easy mode lifts to 18px.
+- **Row title — 15px** (sans 500): The primary line of a tappable list row (retailers, doses, choices). Easy mode lifts to 18px.
+- **Shelf row — 17px** (sans 500): Story-shelf navigation rows and the largest tap-row text. Easy mode lifts to 18px.
+- **Display** (Archivo Black 400, tight): Tailwind named steps (`text-lg`–`text-2xl` and up) for headings; pinned numerals at **22px** (scoreboard stats), **32/34/40px** (rest timer, energy figures, weigh-in). Numerals are data, not labels — they scale per surface.
+- **Print exception:** the print-only shopping list runs 16–24px on paper and is unaffected by easy mode.
+- **SVG:** chart text must come from `axisFontSize(viewBoxWidth)` — the viewBox transform means a pinned class lies about its rendered size.
 
 ### Named Rules
 **The Mono Stamp Rule.** Interactive chrome and section labels speak in mono uppercase. Do not title-case primary buttons in sans.
@@ -201,7 +243,7 @@ Flat-by-default file surfaces. Depth comes from paper vs panel contrast and hair
 
 ## Shapes
 
-Gently squared file corners: cards and primary buttons at **10px**; sheets at **14px**; chips/mode pills at **20px**; check rows and small controls at **8px** (`rounded-lg`). Eyebrow hash marks are nearly square (`1px` radius). Borders are 1px `rule` or semantic color — no thick outlines.
+Gently squared file corners on a four-step ramp — **6 / 10 / 14 / 20px**: small controls at 6px (`rounded-md`), cards, buttons and check rows at **10px**, sheets and status pills at **14px**, chips/mode pills at **20px**, with `rounded-full` reserved for dots and true pills. The Tailwind names `rounded-lg` (8px) and `rounded-xl` (12px) are off-ramp and were normalised away on 2026-08-17 — use the pinned values. Eyebrow hash marks are nearly square (`1px` radius). Borders are 1px `rule` or semantic color — no thick outlines.
 
 ## Components
 

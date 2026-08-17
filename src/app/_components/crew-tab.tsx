@@ -129,7 +129,7 @@ export function CrewTab() {
           </div>
 
           {m.link.youSee.length > 0 ? (
-            <dl className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule sm:grid-cols-3">
+            <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule sm:grid-cols-3">
               {m.streak !== undefined && (
                 <div className="bg-tm-panel px-3 py-3">
                   <Stat value={`${m.streak}`} label="Streak" />
@@ -155,7 +155,7 @@ export function CrewTab() {
                   <Stat value={SUPPLY_COPY[m.supplyState]} label="Supply" />
                 </div>
               )}
-            </dl>
+            </div>
           ) : (
             <p className="mt-3 text-[14px] text-tm-dim">
               {m.name} shares nothing with you. That is their call, and it stays theirs.
@@ -198,7 +198,7 @@ export function CrewTab() {
         (survival ? (
           <Card tone="amber">
             <Eyebrow color="bg-tm-amber">Waiting</Eyebrow>
-            <p className="text-[12.5px] text-tm-amber-ink">
+            <p className="text-[13px] text-tm-amber-ink">
               {incoming.length === 1 ? "One sharing request is" : `${incoming.length} requests are`}{" "}
               waiting. They keep. The floor asks nothing new of you.
             </p>
@@ -224,12 +224,12 @@ export function CrewTab() {
                     </>
                   )}
                 </p>
-                <p className="mt-1 text-[12.5px] leading-snug text-tm-ink">
+                <p className="mt-1 text-[13px] leading-snug text-tm-ink">
                   {carer
                     ? carerSeatSentence(m.name, invite.scopes)
                     : sharedLine(m.name, invite.scopes).replace(`${m.name} can see`, "You would see")}
                 </p>
-                <p className="mt-1 text-[12px] text-tm-dim">
+                <p className="mt-1 text-[13px] text-tm-dim">
                   Sent {invite.invitedDate}. Nothing is shared until you accept. Right now you can
                   see their name and this sentence, and nothing else. Either of you can stop it at
                   any time.
@@ -237,13 +237,13 @@ export function CrewTab() {
                 <div className="mt-3 flex gap-2">
                   <button
                     onClick={() => actions.respondToCrewInvite(invite.linkId, true)}
-                    className="min-h-11 flex-1 cursor-pointer rounded-[10px] border border-tm-green bg-tm-green px-3 font-tm-mono text-[12px] text-white transition-transform duration-150 active:scale-[0.98]"
+                    className="min-h-11 flex-1 cursor-pointer rounded-[10px] border border-tm-green bg-tm-green px-3 font-tm-mono text-[13px] text-white transition-transform duration-150 active:scale-[0.98]"
                   >
                     Accept
                   </button>
                   <button
                     onClick={() => actions.respondToCrewInvite(invite.linkId, false)}
-                    className="min-h-11 flex-1 cursor-pointer rounded-[10px] border border-tm-rule px-3 font-tm-mono text-[12px] text-tm-dim transition-transform duration-150 active:scale-[0.98]"
+                    className="min-h-11 flex-1 cursor-pointer rounded-[10px] border border-tm-rule px-3 font-tm-mono text-[13px] text-tm-dim transition-transform duration-150 active:scale-[0.98]"
                   >
                     Decline
                   </button>
@@ -265,13 +265,13 @@ export function CrewTab() {
                   key={`out-${m.slug}`}
                   className="flex items-center justify-between gap-3 border-b border-tm-grid py-2 last:border-0"
                 >
-                  <span className="text-[12.5px]">
+                  <span className="text-[13px]">
                     <b>{m.name}</b> · {invite.relationship === "carer" ? "carer seat" : "crew"} ·{" "}
                     {scopeList(invite.scopes)} · sent {invite.invitedDate}
                   </span>
                   <button
                     onClick={() => actions.revokeCrewLink(invite.linkId)}
-                    className="min-h-11 shrink-0 cursor-pointer rounded-[10px] border border-tm-rule px-3 font-tm-mono text-[11px] text-tm-dim transition-transform duration-150 active:scale-[0.98]"
+                    className="min-h-11 shrink-0 cursor-pointer rounded-[10px] border border-tm-rule px-3 font-tm-mono text-[11.5px] text-tm-dim transition-transform duration-150 active:scale-[0.98]"
                   >
                     Withdraw
                   </button>
@@ -328,7 +328,7 @@ export function CrewTab() {
             placeholder="Custom message"
             aria-label="Custom crew message"
             maxLength={200}
-            className="min-h-11 flex-1 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 py-2 text-[15px] text-tm-ink focus:border-tm-ink"
+            className="min-h-11 min-w-0 flex-1 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 py-2 text-[15px] text-tm-ink focus:border-tm-ink"
           />
           <button
             type="submit"
@@ -404,14 +404,14 @@ function CarerSeat({ member, view }: { member: Member; view: CarerView }) {
       </dl>
 
       {view.mode === "survival" && view.daysInMode !== null && (
-        <p className="mt-2 text-[12.5px] text-tm-dim">
+        <p className="mt-2 text-[13px] text-tm-dim">
           {member.name} has been on the floor {view.daysInMode} days. The floor is three checks and
           nothing else. It is working as designed.
         </p>
       )}
 
       <div className="mt-3 border-t border-tm-grid pt-3">
-        <p className="text-[12.5px] leading-snug text-tm-ink">
+        <p className="text-[13px] leading-snug text-tm-ink">
           {carerSeatSentence(member.name, member.link.youSee)}
         </p>
         {member.link.theirGrantId && (
@@ -439,12 +439,12 @@ function Disclosure({
   return (
     <div className="mt-3 border-t border-tm-grid pt-3">
       {!hideSentence && (
-        <p className="text-[12.5px] leading-snug text-tm-ink">
+        <p className="text-[13px] leading-snug text-tm-ink">
           {grantSentence(member.name, link.theySee, link.theyAre ?? "crew")}
         </p>
       )}
       {link.youSee.length > 0 && (
-        <p className="mt-1 text-[12.5px] leading-snug text-tm-dim">
+        <p className="mt-1 text-[13px] leading-snug text-tm-dim">
           You can see: {scopeList(link.youSee)}.
         </p>
       )}
@@ -452,7 +452,7 @@ function Disclosure({
         {link.yourGrantId && (
           <button
             onClick={onStop}
-            className="min-h-11 cursor-pointer rounded-[10px] border border-tm-red px-3 font-tm-mono text-[11px] text-tm-red transition-transform duration-150 active:scale-[0.98]"
+            className="min-h-11 cursor-pointer rounded-[10px] border border-tm-red px-3 font-tm-mono text-[11.5px] text-tm-red transition-transform duration-150 active:scale-[0.98]"
           >
             Stop sharing with {member.name}
           </button>
@@ -460,7 +460,7 @@ function Disclosure({
         {link.theirGrantId && (
           <button
             onClick={() => link.theirGrantId && onStopSeeing(link.theirGrantId)}
-            className="min-h-11 cursor-pointer rounded-[10px] border border-tm-rule px-3 font-tm-mono text-[11px] text-tm-dim transition-transform duration-150 active:scale-[0.98]"
+            className="min-h-11 cursor-pointer rounded-[10px] border border-tm-rule px-3 font-tm-mono text-[11.5px] text-tm-dim transition-transform duration-150 active:scale-[0.98]"
           >
             Stop seeing {member.name}
           </button>
@@ -476,7 +476,7 @@ function HandBack({ linkId, name }: { linkId: string; name: string }) {
   return (
     <button
       onClick={() => actions.revokeCrewLink(linkId)}
-      className="mt-2 min-h-11 cursor-pointer rounded-[10px] border border-tm-rule px-3 font-tm-mono text-[11px] text-tm-dim transition-transform duration-150 active:scale-[0.98]"
+      className="mt-2 min-h-11 cursor-pointer rounded-[10px] border border-tm-rule px-3 font-tm-mono text-[11.5px] text-tm-dim transition-transform duration-150 active:scale-[0.98]"
     >
       Hand back {name}&rsquo;s seat
     </button>
@@ -493,7 +493,7 @@ function Undo({
   const { actions } = useTimento();
   return (
     <div className="mt-2 rounded-[10px] border border-tm-rule bg-tm-soft p-2.5">
-      <p className="text-[12px] text-tm-dim">
+      <p className="text-[13px] text-tm-dim">
         Stopped sharing with {undo.name}. It stopped the moment you tapped. Undo sends a fresh
         invite. {undo.name} has to accept it again.
       </p>
@@ -502,7 +502,7 @@ function Undo({
           actions.inviteCrew(undo.slug, undo.scopes, undo.relationship);
           onDone();
         }}
-        className="mt-2 min-h-11 cursor-pointer rounded-[10px] border border-tm-green px-3 font-tm-mono text-[11px] text-tm-green transition-transform duration-150 active:scale-[0.98]"
+        className="mt-2 min-h-11 cursor-pointer rounded-[10px] border border-tm-green px-3 font-tm-mono text-[11.5px] text-tm-green transition-transform duration-150 active:scale-[0.98]"
       >
         Undo
       </button>
@@ -553,7 +553,7 @@ function InviteForm({
             aria-pressed={target === c.slug}
             onClick={() => setTarget(c.slug)}
             className={cn(
-              "min-h-11 cursor-pointer rounded-[10px] border px-3 font-tm-mono text-[11px] transition-transform duration-150 active:scale-[0.98]",
+              "min-h-11 cursor-pointer rounded-[10px] border px-3 font-tm-mono text-[11.5px] transition-transform duration-150 active:scale-[0.98]",
               target === c.slug ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule text-tm-dim",
             )}
           >
@@ -562,7 +562,7 @@ function InviteForm({
         ))}
       </div>
 
-      <p className="mt-3 font-tm-mono text-[11px] tracking-[0.1em] text-tm-dim uppercase">
+      <p className="mt-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-dim uppercase">
         What are they to you?
       </p>
       <div className="mt-2 flex flex-wrap gap-2">
@@ -583,7 +583,7 @@ function InviteForm({
           </button>
         ))}
       </div>
-      <p className="mt-2 text-[12.5px] leading-snug text-tm-dim">
+      <p className="mt-2 text-[13px] leading-snug text-tm-dim">
         {RELATIONSHIP_COPY[relationship].blurb}
       </p>
 
@@ -598,22 +598,22 @@ function InviteForm({
                 className="mt-1 size-4 accent-tm-green"
               />
               <span>
-                <span className="font-tm-mono text-[11px] tracking-[0.1em] uppercase">
+                <span className="font-tm-mono text-[11.5px] tracking-[0.1em] uppercase">
                   {SCOPE_LABELS[s]}
                 </span>
-                <span className="block text-[12.5px] text-tm-dim">{SCOPE_DESCRIPTIONS[s]}</span>
+                <span className="block text-[13px] text-tm-dim">{SCOPE_DESCRIPTIONS[s]}</span>
               </span>
             </label>
           </li>
         ))}
       </ul>
 
-      <p className="mt-2 text-[12.5px] leading-snug text-tm-ink">
+      <p className="mt-2 text-[13px] leading-snug text-tm-ink">
         {chosen.length === 0
           ? `${name} would see nothing yet. Tick at least one.`
           : grantSentence(name, chosen, relationship)}
       </p>
-      <p className="mt-1 text-[12px] text-tm-dim">
+      <p className="mt-1 text-[13px] text-tm-dim">
         {relationship === "carer" ? `Never ${CARER_NEVER}.` : NEVER_SHARED}
       </p>
 
@@ -625,7 +625,7 @@ function InviteForm({
           setTimeout(() => setDone(false), 2000);
         }}
         className={cn(
-          "mt-3 min-h-11 w-full cursor-pointer rounded-[10px] border px-3 font-tm-mono text-[12px] transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
+          "mt-3 min-h-11 w-full cursor-pointer rounded-[10px] border px-3 font-tm-mono text-[13px] transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
           chosen.length === 0
             ? "border-tm-rule text-tm-dim2"
             : "border-tm-green bg-tm-green text-white",
@@ -635,7 +635,7 @@ function InviteForm({
           ? "Invite sent"
           : `Invite ${name}${relationship === "carer" ? " as a carer" : ""}`}
       </button>
-      <p className="mt-2 text-[12px] text-tm-dim">
+      <p className="mt-2 text-[13px] text-tm-dim">
         {name} sees nothing until they accept. You can withdraw it, or stop sharing later, in one
         tap.
       </p>

@@ -6,20 +6,17 @@ import { axisFontSize, NARROWEST_COLUMN_PX, TYPE_FLOOR_PX } from "../src/app/_co
 /**
  * The type floor, enforced at the source rather than hoped for.
  *
- * The floor itself is a net in globals.css: an unlayered rule that lifts every
- * `text-[Npx]` class below 11.5px back up to the token. That net works, and it
- * has one failure mode — it only covers the class names somebody remembered to
- * list. Add `text-[7px]` to a component and nothing anywhere complains; the
- * class is not in the net, so the text simply renders at 7px.
+ * There used to be a net here: an unlayered rule in globals.css lifting every
+ * sub-floor `text-[Npx]` class up to the token, plus a test proving the net's
+ * coverage list was complete. On 2026-08-17 the source classes were raised —
+ * the day the net's own comment promised — so the net is gone and the guard
+ * got simpler and stronger. It asserts two things:
  *
- * This is the guard the Phase 2 plan asked for ("enforced by lint so it cannot
- * regress") and never got, which is how 152 sub-floor classes and a 6px chart
- * axis shipped. It asserts two things a stylesheet cannot assert about itself:
- *
- *  1. every sub-floor utility class actually used in src/ is covered by the net
+ *  1. no `text-[Npx]` class below the floor exists anywhere in src/ — the
+ *     floor is now a fact about the code, not a patch over it
  *  2. no SVG carries a raw fontSize below the floor — SVG text is painted
- *     through the viewBox transform, so it is invisible to the CSS net *and*
- *     renders smallest on the smallest screen. It must come from axisFontSize.
+ *     through the viewBox transform, so it renders smallest on the smallest
+ *     screen. It must come from axisFontSize.
  */
 
 const SRC = join(process.cwd(), "src");
@@ -46,37 +43,27 @@ function usedTextClasses(): { file: string; px: number; raw: string }[] {
   return out;
 }
 
-describe("the type floor cannot be escaped by a class the net does not know", () => {
+describe("no type below the floor exists at the source", () => {
   const css = readFileSync(GLOBALS, "utf8");
 
   it("declares the floor token at the documented value", () => {
+    // Easy mode still reads the token to lift 11.5px/13px type to 16px.
     expect(css).toContain(`--tm-type-floor: ${TYPE_FLOOR_PX}px`);
   });
 
-  it("covers every sub-floor class the app actually uses", () => {
-    const used = usedTextClasses().filter((u) => u.px < TYPE_FLOOR_PX);
-    // The escaped-bracket form Tailwind emits and the stylesheet must match.
-    const uncovered = [
+  it("finds no sub-floor text class anywhere in src/", () => {
+    const offenders = [
       ...new Set(
-        used
-          .filter((u) => {
-            const selector = `.text-\\[${String(u.px).replace(".", "\\.")}px\\]`;
-            return !css.includes(selector);
-          })
-          .map((u) => u.raw),
+        usedTextClasses()
+          .filter((u) => u.px < TYPE_FLOOR_PX)
+          .map((u) => `${u.file.replace(process.cwd(), "")}: ${u.raw}`),
       ),
     ];
     expect(
-      uncovered,
-      `these classes render below ${TYPE_FLOOR_PX}px because the floor net in globals.css does not list them — ` +
-        "either add them to the net or raise the class",
+      offenders,
+      `type below ${TYPE_FLOOR_PX}px shipped once and was raised at the source on 2026-08-17 — ` +
+        "there is no net to catch this any more, so raise the class, not the exception list",
     ).toEqual([]);
-  });
-
-  it("still has sub-floor classes to cover, so the check is not vacuous", () => {
-    // If this ever hits zero the net is dead code and the test above proves
-    // nothing. That is a good day — delete both, and the net with them.
-    expect(usedTextClasses().filter((u) => u.px < TYPE_FLOOR_PX).length).toBeGreaterThan(0);
   });
 });
 
