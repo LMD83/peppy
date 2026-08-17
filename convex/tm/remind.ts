@@ -10,6 +10,10 @@ import {
 import { checksForDate, requireUser } from "./db";
 import { daysBetween } from "./lib";
 import { buildSupplyView, type SupplyRow } from "./logicSupply";
+// Rechecks come from the same view the Bloods screen renders, so a reminder can
+// never claim a draw is due that the screen does not.
+import { buildLabsView, type RawLabPanel, type RawLabResult } from "./logicLabs";
+import type { TakenPost } from "./logicPush";
 // The capture rules live in the captures slice; this module owns the mutations
 // only because backend.tsx already wires them here. One set of rules, one place.
 import {
@@ -29,11 +33,14 @@ import {
   MAX_CONSECUTIVE_FAILURES,
   buildRemindView,
   checkinsFor,
+  doseSourcePairs,
   localNow,
   normalisePrefs,
   planReminders,
+  scriptsFor,
   type AssessmentHistory,
   type RemindView,
+  type ReminderKind,
   type ReminderPrefs,
   type SubscriptionRow,
 } from "./logicRemind";
@@ -62,6 +69,12 @@ const MAX_DOSE_LOGS = 200;
 const MAX_CAPTURES = 60;
 const MAX_ASSESSMENTS = 200;
 const MAX_LABEL = 60;
+/** Same bounds the Bloods tab reads under. A person has no more history than this. */
+const MAX_LAB_PANELS = 60;
+const MAX_LAB_RESULTS = 1200;
+const MAX_INGEST_TOKENS = 50;
+/** Ceiling on doses one "Taken" tap may log. A notification never names more. */
+const MAX_TAKEN_DOSES = 20;
 /** Per-sweep ceiling on files examined. A bound, not a business rule. */
 const MAX_SWEEP_USERS = 400;
 
@@ -94,6 +107,13 @@ function emailSupported(): boolean {
   return emailConfigured(process.env.RESEND_API_KEY);
 }
 
+/** Where the HTTP actions are served from — the "Taken" button's POST target.
+    Empty when unconfigured, and then no notification carries a hand-off. */
+function siteUrl(): string {
+  const url = process.env.CONVEX_SITE_URL;
+  return typeof url === "string" && url !== "" ? url.replace(/\/+$/, "") : "";
+}
+
 /* ===== gathering ===== */
 
 async function prefsRow(ctx: QueryCtx, userId: Id<"tm_users">) {
@@ -113,6 +133,8 @@ async function prefsFor(ctx: QueryCtx, userId: Id<"tm_users">): Promise<Reminder
     doses: row.doses,
     supply: row.supply,
     checkins: row.checkins,
+    rechecks: row.rechecks,
+    scripts: row.scripts,
     maxPerDay: row.maxPerDay,
     email: row.email,
   });
@@ -200,11 +222,48 @@ async function gather(ctx: QueryCtx, user: Doc<"tm_users">, date: string) {
 
   const checks = await checksForDate(ctx, user._id, user.mode, date);
 
+  // The same rows the Bloods tab reads, through the same view, so a recheck
+  // reminder and the screen can never disagree about what is due.
+  const panelRows = await ctx.db
+    .query("tm_labPanels")
+    .withIndex("by_userId", (q) => q.eq("userId", user._id))
+    .take(MAX_LAB_PANELS);
+  const resultRows = await ctx.db
+    .query("tm_labResults")
+    .withIndex("by_userId_and_marker", (q) => q.eq("userId", user._id))
+    .take(MAX_LAB_RESULTS);
+  const panels: RawLabPanel[] = panelRows.map((p) => ({
+    id: p._id,
+    date: p.date,
+    name: p.name,
+    lab: p.lab ?? null,
+    fasted: p.fasted ?? null,
+  }));
+  const results: RawLabResult[] = resultRows.map((r) => ({
+    panelId: r.panelId,
+    date: r.date,
+    marker: r.marker,
+    value: r.value,
+    unit: r.unit,
+    refLow: r.refLow ?? null,
+    refHigh: r.refHigh ?? null,
+  }));
+
+  const supplyView = buildSupplyView({ mode: user.mode, date, userName: user.name, items, supply, contacts: [] });
+
   return {
     items,
     doses: dosesForDate(items, logs, date),
-    supply: buildSupplyView({ mode: user.mode, date, userName: user.name, items, supply, contacts: [] }).items,
+    // The survival floor for *reminders* is survivalFilter's decision, so the
+    // rows go in unfloored: the floor empties the supply view's inventory, but
+    // a genuine run-out must still be allowed to speak. `attention` carries
+    // exactly the non-ok rows the floor keeps showing.
+    supply: supplyView.survival ? supplyView.attention : supplyView.items,
     checkins: checkinsFor(checks, assessments, date, daysBetween),
+    rechecks: buildLabsView({ mode: user.mode, date, panels, results }).dueRechecks,
+    // Script standings from the raw rows, not the floored view — a script only
+    // the practice can move is due a word whatever the inventory shows.
+    scripts: scriptsFor(items, supply, date),
   };
 }
 
@@ -276,7 +335,7 @@ export const get = query({
   args: { token: v.string(), date: v.string() },
   handler: async (ctx, { token, date }): Promise<RemindView> => {
     const user = await requireUser(ctx, token);
-    const { items, doses, supply, checkins } = await gather(ctx, user, date);
+    const { items, doses, supply, checkins, rechecks, scripts } = await gather(ctx, user, date);
     const { items: choiceItems, foods } = await captureChoices(ctx, user._id, date, items);
     return buildRemindView({
       mode: user.mode,
@@ -294,6 +353,8 @@ export const get = query({
       doses,
       supply,
       checkins,
+      rechecks,
+      scripts,
       pushReady: pushReady(),
       emailSupported: emailSupported(),
       vapidPublicKey: vapidPublicKey(),
@@ -390,6 +451,8 @@ export const setPrefs = mutation({
     doses: v.optional(v.boolean()),
     supply: v.optional(v.boolean()),
     checkins: v.optional(v.boolean()),
+    rechecks: v.optional(v.boolean()),
+    scripts: v.optional(v.boolean()),
     maxPerDay: v.optional(v.number()),
     email: v.optional(v.string()),
   },
@@ -471,10 +534,13 @@ export const generateUploadUrl = mutation({
 
 export type SweepNotification = {
   key: string;
+  kind: ReminderKind;
   title: string;
   body: string;
   tab: string;
   tag: string;
+  /** How the "Taken" button logs this exact dose. Only ever on a dose. */
+  taken?: TakenPost;
 };
 
 export type SweepTarget = {
@@ -519,7 +585,7 @@ export const sweepPlan = internalQuery({
         .map((s) => ({ subscriptionId: s._id, endpoint: s.endpoint, p256dh: s.p256dh, auth: s.auth }));
       const prefs = await prefsFor(ctx, user._id);
       if (targets.length === 0 && prefs.email === "") continue;
-      const { doses, supply, checkins } = await gather(ctx, user, date);
+      const { doses, supply, checkins, rechecks, scripts } = await gather(ctx, user, date);
 
       // Anything that was already due earlier today counts against the day's
       // budget, so a sweep late in the evening cannot spend it all over again.
@@ -529,6 +595,8 @@ export const sweepPlan = internalQuery({
         doses,
         supply,
         checkins,
+        rechecks,
+        scripts,
         now: { date, time, windowMinutes: 24 * 60 },
       }).send.filter((r) => r.at < time);
 
@@ -538,22 +606,49 @@ export const sweepPlan = internalQuery({
         doses,
         supply,
         checkins,
+        rechecks,
+        scripts,
         now: { date, time, windowMinutes },
         sent: earlier.map((r) => ({ key: r.key, at: nowMs })),
       });
       if (plan.send.length === 0) continue;
 
+      // The "Taken" button posts with the same revocable credential the phone
+      // Shortcut holds. No token on the file, or no site URL configured, means
+      // no hand-off — the button then simply opens the app, which is honest.
+      let ingestToken = "";
+      const site = siteUrl();
+      if (site !== "" && plan.send.some((r) => r.kind === "dose")) {
+        const tokenRows = await ctx.db
+          .query("tm_ingestTokens")
+          .withIndex("by_userId", (q) => q.eq("userId", user._id))
+          .take(MAX_INGEST_TOKENS);
+        ingestToken = tokenRows.find((t) => !t.revoked)?.token ?? "";
+      }
+
       batches.push({
         userId: user._id,
         // The words came from the same `copyFor` the tab previews, so what
         // lands on the lock screen is exactly what the preview promised.
-        notifications: plan.send.map((r) => ({
-          key: r.key,
-          title: r.title,
-          body: r.body,
-          tab: r.tab,
-          tag: `${r.kind}:${r.tab}`,
-        })),
+        notifications: plan.send.map((r): SweepNotification => {
+          const note: SweepNotification = {
+            key: r.key,
+            kind: r.kind,
+            title: r.title,
+            body: r.body,
+            tab: r.tab,
+            tag: `${r.kind}:${r.tab}`,
+          };
+          if (r.kind !== "dose" || ingestToken === "") return note;
+          // Exactly the doses this notification names — its own sourceKeys,
+          // parsed back — never "whatever is due".
+          const pairs = doseSourcePairs(r.sourceKeys).slice(0, MAX_TAKEN_DOSES);
+          if (pairs.length === 0) return note;
+          return {
+            ...note,
+            taken: { url: `${site}/ingest/dose-taken`, token: ingestToken, date, doses: pairs },
+          };
+        }),
         targets,
         email: prefs.email,
       });
@@ -599,5 +694,70 @@ export const recordDelivery = internalMutation({
       }
     }
     return null;
+  },
+});
+
+/* ===== the "Taken" button's write path =====
+   Called by /ingest/dose-taken in convex/http.ts and nothing else. */
+
+export type DoseTakenResult = { ok: boolean; wrote: number };
+
+/**
+ * Log exactly the doses a notification named — never a guess, never a fuzzy
+ * match. The credential is the same revocable ingest token the phone Shortcut
+ * carries: a revoked token is no token, and each dose must be the caller's own
+ * item, active, carrying the named timing. Anything else is skipped, so a stale
+ * notification can never write a dose the file no longer holds.
+ */
+export const doseTaken = internalMutation({
+  args: {
+    ingestToken: v.string(),
+    date: v.string(),
+    doses: v.array(v.object({ itemId: v.string(), timing: v.string() })),
+  },
+  handler: async (ctx, { ingestToken, date, doses }): Promise<DoseTakenResult> => {
+    if (ingestToken === "" || doses.length === 0 || doses.length > MAX_TAKEN_DOSES) {
+      return { ok: false, wrote: 0 };
+    }
+    const tokenRow = await ctx.db
+      .query("tm_ingestTokens")
+      .withIndex("by_token", (q) => q.eq("token", ingestToken))
+      .unique();
+    if (tokenRow === null || tokenRow.revoked) return { ok: false, wrote: 0 };
+    const user = await ctx.db.get("tm_users", tokenRow.userId);
+    if (user === null) return { ok: false, wrote: 0 };
+    // Stamped on every accepted call, exactly as the ingest slice does — "when
+    // did this key last speak" is what a revocation decision needs answered.
+    await ctx.db.patch("tm_ingestTokens", tokenRow._id, { lastUsedAt: Date.now() });
+
+    const sameDay = await ctx.db
+      .query("tm_doseLogs")
+      .withIndex("by_userId_and_date", (q) => q.eq("userId", user._id).eq("date", date))
+      .take(MAX_DOSE_LOGS);
+
+    let wrote = 0;
+    for (const dose of doses) {
+      const itemId = ctx.db.normalizeId("tm_protocolItems", dose.itemId);
+      if (itemId === null) continue;
+      const item = await ctx.db.get("tm_protocolItems", itemId);
+      // An id is not authority — the item must be the token-holder's own.
+      if (item === null || item.userId !== user._id) continue;
+      if (!item.active || !item.timings.includes(dose.timing)) continue;
+      const existing = sameDay.find((r) => r.itemId === itemId && r.timing === dose.timing);
+      if (existing !== undefined) {
+        // Already logged is already done — tapping twice must not un-log it.
+        if (!existing.taken) await ctx.db.patch("tm_doseLogs", existing._id, { taken: true });
+      } else {
+        await ctx.db.insert("tm_doseLogs", {
+          userId: user._id,
+          date,
+          itemId,
+          timing: dose.timing,
+          taken: true,
+        });
+      }
+      wrote += 1;
+    }
+    return { ok: true, wrote };
   },
 });

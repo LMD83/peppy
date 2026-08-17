@@ -8,6 +8,8 @@ import {
   DEFAULT_PACK_SIZE,
   DEFAULT_UNITS_PER_DOSE,
   buildSupplyView,
+  logWindowStart,
+  withLoggedDoses,
   type SupplyContact,
   type SupplyRow,
   type SupplyView,
@@ -29,6 +31,7 @@ import {
 const MAX_ITEMS = 200;
 const MAX_SUPPLY = 200;
 const MAX_CONTACTS = 16;
+const MAX_LOGS = 2000;
 
 const contactKind = v.union(v.literal("gp"), v.literal("pharmacy"));
 
@@ -75,7 +78,7 @@ async function gather(
     active: r.active,
   }));
 
-  const supply: SupplyRow[] = supplyRows.map((r) => ({
+  const supplyBase: SupplyRow[] = supplyRows.map((r) => ({
     itemId: r.itemId,
     onHand: r.onHand,
     unitsPerDose: r.unitsPerDose,
@@ -85,6 +88,26 @@ async function gather(
     scriptExpiryDate: r.scriptExpiryDate,
     repeatsRemaining: r.repeatsRemaining,
   }));
+
+  // Doses logged since each count, read as one bounded index scan: it starts at
+  // the oldest count on file (floored by the projection ceiling) and is capped
+  // at MAX_LOGS. A truncated read undercounts logs, which only lets the
+  // schedule win — the safe direction.
+  const logRows =
+    supplyBase.length === 0
+      ? []
+      : await ctx.db
+          .query("tm_doseLogs")
+          .withIndex("by_userId_and_date", (q) =>
+            q.eq("userId", user._id).gte("date", logWindowStart(supplyBase, date)).lte("date", date),
+          )
+          .take(MAX_LOGS);
+
+  const supply = withLoggedDoses(
+    supplyBase,
+    logRows.map((r) => ({ itemId: r.itemId, date: r.date, taken: r.taken })),
+    date,
+  );
 
   const contacts: SupplyContact[] = contactRows.map((r) => ({
     id: r._id,

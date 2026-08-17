@@ -10,6 +10,8 @@ import { Login } from "./login";
 import { Scoreboard } from "./scoreboard";
 import { TodayTab } from "./today-tab";
 import { FileNavProvider } from "./file-nav";
+import { Onboarding } from "./onboarding";
+import { Walkthrough, type TourDestination } from "./walkthrough";
 import { Eyebrow, fileWidth } from "./ui";
 
 function TabBusy() {
@@ -145,10 +147,14 @@ function MoreShelf({
   easy,
   onGo,
   onSettings,
+  onTour,
+  onSetup,
 }: {
   easy: boolean;
   onGo: (d: Destination) => void;
   onSettings: () => void;
+  onTour: () => void;
+  onSetup: () => void;
 }) {
   return (
     <div className="flex flex-col gap-2 pt-5">
@@ -156,6 +162,8 @@ function MoreShelf({
       {APPENDIX.map((d) => (
         <NavRow key={d.key} label={easy ? plain(d.label) : d.label} onClick={() => onGo(d)} />
       ))}
+      <NavRow label="Set up my file" onClick={onSetup} />
+      <NavRow label="Walkthrough" onClick={onTour} />
       <NavRow label="Settings" onClick={onSettings} />
       <p className="pt-1 pb-2 text-center">
         <Link
@@ -174,6 +182,8 @@ function Shell() {
   const [tab, setTab] = useState<TabId>("today");
   const [bodyView, setBodyView] = useState("stack");
   const [mindView, setMindView] = useState("checkin");
+  const [tour, setTour] = useState(false);
+  const [setup, setSetup] = useState(false);
 
   /*
     The stylesheet's half of easy mode ([data-easy="1"] in globals.css) — type
@@ -209,6 +219,19 @@ function Shell() {
       </div>
     );
 
+  // The wizard is a full-screen takeover: one question, no chrome competing
+  // with it. Everything it saves is already on the file when it closes.
+  if (setup) {
+    return (
+      <Onboarding
+        onClose={(dest) => {
+          setSetup(false);
+          if (dest) setTab(dest);
+        }}
+      />
+    );
+  }
+
   const survival = today.user.mode === "survival";
   // The nav indicator is a 3px bar — a non-text UI element, so 3:1 is the bar.
   // amber-lift sits on the white nav at 1.9:1, so the light-surface amber is
@@ -221,12 +244,18 @@ function Shell() {
     setTab(d.tab);
   }
 
+  // The walkthrough's stops reuse the same navigation the shelves use.
+  function goTourStop(d: TourDestination) {
+    if (d.sub) (d.tab === "body" ? setBodyView : setMindView)(d.sub);
+    setTab(d.tab);
+  }
+
   return (
     <FileNavProvider value={(t) => setTab(t)}>
-    <div className="min-h-screen pb-[84px]">
+    <div className={cn("min-h-screen", tour ? "pb-[300px]" : "pb-[84px]")}>
       <a
         href="#tm-main"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:inline-flex focus:min-h-11 focus:items-center focus:rounded-[10px] focus:bg-tm-ink focus:px-4 focus:font-tm-mono focus:text-[11.5px] focus:tracking-[0.15em] focus:text-white focus:uppercase"
+        className="fixed -top-24 left-3 z-[60] inline-flex min-h-11 items-center rounded-[10px] bg-tm-ink px-4 font-tm-mono text-[11.5px] tracking-[0.15em] text-white uppercase focus:top-3"
       >
         Skip to content
       </a>
@@ -234,7 +263,13 @@ function Shell() {
       <main id="tm-main" className={cn(fileWidth, "px-4")}>
         {tab === "protocol" && <ProtocolShelf easy={easy} onGo={goDestination} />}
         {tab === "more" && (
-          <MoreShelf easy={easy} onGo={goDestination} onSettings={() => setTab("settings")} />
+          <MoreShelf
+            easy={easy}
+            onGo={goDestination}
+            onSettings={() => setTab("settings")}
+            onTour={() => setTour(true)}
+            onSetup={() => setSetup(true)}
+          />
         )}
         {tab === "settings" && <SettingsTab />}
         {tab === "handsfree" && <HandsFreePanel />}
@@ -258,6 +293,7 @@ function Shell() {
         lives in the header (scoreboard.tsx), away from the navigation thumb
         zone, still named "Sign out".
       */}
+      {tour && <Walkthrough onClose={() => setTour(false)} onNavigate={goTourStop} />}
       <nav className="fixed inset-x-0 bottom-0 border-t border-tm-rule bg-tm-panel" aria-label="Sections">
         <div className={cn(fileWidth, "flex")}>
           {NAV.map((t) => (

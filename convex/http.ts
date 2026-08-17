@@ -2,6 +2,7 @@ import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { IngestResult } from "./tm/ingest";
+import type { DoseTakenResult } from "./tm/remind";
 
 /**
  * Hands-free ingest over plain HTTPS.
@@ -15,8 +16,10 @@ import type { IngestResult } from "./tm/ingest";
  *
  *  - **Never a session token.** A Shortcut lives on a phone and cannot hold a
  *    session, so it carries an opaque ingest token from `tm_ingestTokens` —
- *    a separate credential that can log two kinds of thing and nothing else,
- *    and that the Hands-free tab can revoke on its own.
+ *    a separate credential that can log doses and food and nothing else, and
+ *    that the Hands-free tab can revoke on its own. The service worker's
+ *    "Taken" button rides the same credential through `/ingest/dose-taken`,
+ *    so one revocation kills the Shortcut and the button together.
  *  - **The body is `unknown`.** Every field is narrowed before it is used, and
  *    anything malformed is a 400 before a database is touched.
  *  - **No database access here.** `httpAction` has no `ctx.db` by design; the
@@ -196,7 +199,59 @@ http.route({
   }),
 });
 
+/** Ceiling on doses one "Taken" tap may log — mirrors MAX_TAKEN_DOSES in remind.ts. */
+const MAX_TAKEN = 20;
+
+/** Exact itemId+timing pairs, all of them well-formed, or nothing at all. */
+function asDoses(value: unknown): { itemId: string; timing: string }[] | null {
+  if (!Array.isArray(value) || value.length === 0 || value.length > MAX_TAKEN) return null;
+  const out: { itemId: string; timing: string }[] = [];
+  for (const raw of value) {
+    const o = asRecord(raw);
+    if (o === null) return null;
+    const itemId = asString(o.itemId, 64);
+    const timing = asString(o.timing, 40);
+    if (itemId === null || timing === null) return null;
+    out.push({ itemId, timing });
+  }
+  return out;
+}
+
+/**
+ * The notification's "Taken" button. It logs ONLY the exact doses the
+ * notification named — an itemId and a timing each, matched precisely in the
+ * mutation — never a sentence to parse and never a guess. Anything less than a
+ * valid, live token is a 401, which tells the worker to open the app instead.
+ */
+http.route({
+  path: "/ingest/dose-taken",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    const body = await readBody(req);
+    if (body === null) return json({ ok: false, error: "body must be a JSON object" }, 400);
+    const token = asString(body.token, 200);
+    if (token === null) return json({ ok: false, error: "token must be a non-empty string" }, 400);
+    const date = asDate(body.date);
+    if (date === null || date === undefined) {
+      return json({ ok: false, error: "date must be YYYY-MM-DD" }, 400);
+    }
+    const doses = asDoses(body.doses);
+    if (doses === null) {
+      return json({ ok: false, error: `doses must be 1–${MAX_TAKEN} exact itemId+timing pairs` }, 400);
+    }
+
+    const result: DoseTakenResult = await ctx.runMutation(internal.tm.remind.doseTaken, {
+      ingestToken: token,
+      date,
+      doses,
+    });
+    if (!result.ok) return json({ ok: false, status: "unauthorized" }, 401);
+    return json({ ok: true, wrote: result.wrote }, 200);
+  }),
+});
+
 http.route({ path: "/ingest/dose", method: "OPTIONS", handler: preflight });
 http.route({ path: "/ingest/food", method: "OPTIONS", handler: preflight });
+http.route({ path: "/ingest/dose-taken", method: "OPTIONS", handler: preflight });
 
 export default http;

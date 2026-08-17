@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
 import { handoffLabel, retailerDriver } from "@convex/tm/data/retailers";
+import { readRetailer, subscribeRetailer, writeRetailer } from "../_lib/retailer-store";
 import { useTimento } from "../_lib/backend";
 import type { ShopData } from "../_lib/types";
 import { Card, Eyebrow, Stat } from "./ui";
@@ -98,6 +99,9 @@ function subscribeTicks(onChange: () => void): () => void {
   };
 }
 
+/* The chosen supermarket lives in ../_lib/retailer-store — answered once,
+ * kept for good, and shared with the setup wizard. */
+
 function useTicks(date: string) {
   const keys = useSyncExternalStore(
     subscribeTicks,
@@ -127,7 +131,7 @@ export function ShopPanel() {
 function ShopBody({ shop, date, easy }: { shop: ShopData; date: string; easy: boolean }) {
   const { actions } = useTimento();
   const ticks = useTicks(date);
-  const [retailerKey, setRetailerKey] = useState<string | null>(null);
+  const retailerKey = useSyncExternalStore(subscribeRetailer, readRetailer, () => null);
   const [step, setStep] = useState(0);
 
   const retailer = useMemo(
@@ -250,7 +254,7 @@ function ShopBody({ shop, date, easy }: { shop: ShopData; date: string; easy: bo
                 {shop.days === 1 ? "today" : `${shop.days} days`}
               </span>
             </div>
-            <dl className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
+            <div className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
               <div className="bg-tm-panel px-3 py-3">
                 <Stat value={String(shop.totals.toBuy)} label="to buy" />
               </div>
@@ -260,7 +264,7 @@ function ShopBody({ shop, date, easy }: { shop: ShopData; date: string; easy: bo
               <div className="bg-tm-panel px-3 py-3">
                 <Stat value={`${shop.totals.weightKg.toFixed(1)} kg`} label="to carry" />
               </div>
-            </dl>
+            </div>
             <p className="mt-2 text-[14px] text-tm-dim">
               Walk it in this order and it is one lap. {shop.totals.packs} pack
               {shop.totals.packs === 1 ? "" : "s"} into the trolley.
@@ -299,7 +303,7 @@ function ShopBody({ shop, date, easy }: { shop: ShopData; date: string; easy: bo
             <RetailerCard
               retailers={shop.retailers}
               selected={retailerKey}
-              onSelect={(key) => setRetailerKey(key === retailerKey ? null : key)}
+              onSelect={(key) => writeRetailer(key === retailerKey ? null : key)}
               handoff={shop.handoffNote}
             />
           )}
@@ -607,10 +611,12 @@ function ShareButtons({ shop, className }: { shop: ShopData; className?: string 
 
 /**
  * The paper version. Hidden on screen (`display: none`, so not a second live
- * heading), and on paper it is the only thing left: 18px type, one line per
- * item, aisle headings, no colour to survive a mono printer. Two of the five
- * shops here have no online ordering at all, so this is not a fallback — for
- * some people it is the product. The h1 is this print document's title.
+ * heading), and on paper it is the only thing left: 16–24px type (the
+ * printBody/printAisle steps in DESIGN.md — paper is its own surface), one
+ * line per item, aisle headings, no colour to survive a mono printer. Two of
+ * the five shops here have no online ordering at all, so this is not a
+ * fallback — for some people it is the product. The h1 is this print
+ * document's title.
  */
 function PrintList({ shop }: { shop: ShopData }) {
   return (

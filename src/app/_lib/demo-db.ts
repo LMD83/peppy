@@ -105,7 +105,7 @@ export class DemoDb {
   supplyRows: SupplyRow[];
   contacts: ContactRow[];
   pushSubs: { id: string; userSlug: string; endpoint: string; p256dh: string; auth: string; label: string; createdDate: string; failures: number }[];
-  reminderPrefs: { userSlug: string; enabled: boolean; quietFrom: string; quietTo: string; doses: boolean; supply: boolean; checkins: boolean; maxPerDay: number; email: string }[];
+  reminderPrefs: { userSlug: string; enabled: boolean; quietFrom: string; quietTo: string; doses: boolean; supply: boolean; checkins: boolean; rechecks?: boolean; scripts?: boolean; maxPerDay: number; email: string }[];
   sentReminders: { userSlug: string; key: string; at: number }[];
   delivery: { push: boolean; email: boolean; vapidPublicKey: string };
   captures: { id: string; userSlug: string; date: string; kind: "dose" | "meal" | "organiser"; storageId: string; note?: string; at: number }[];

@@ -29,7 +29,7 @@ export function BreathingTimerInline({ onDone }: { onDone: () => void }) {
       <div className="font-tm-disp text-3xl">
         {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}
       </div>
-      <div className="mt-1 font-tm-mono text-[11px] tracking-[0.12em] text-tm-dim uppercase">{label}</div>
+      <div className="mt-1 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase">{label}</div>
       <div className="mx-auto mt-2 h-1.5 w-full max-w-[220px] overflow-hidden rounded-full bg-tm-grid">
         <div
           className="h-full bg-tm-blue transition-all duration-1000"

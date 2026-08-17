@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
 import { MINDSET_PROMPTS, type BandTone } from "@convex/tm/data/instruments";
 import { mindsetPromptForDate } from "@convex/tm/logicMind";
 import { useTimento } from "../_lib/backend";
 import type { MindData } from "../_lib/types";
-import { Card, Eyebrow, Stat } from "./ui";
+import { Card, Eyebrow, Stat, TmButton } from "./ui";
 
 /**
  * Mind — validated self-report instruments, implementation intentions and
@@ -53,6 +53,51 @@ function dueLabel(d: DueItem): string {
   return `${d.daysSince} days since · every ${d.cadenceDays}`;
 }
 
+/* ===== the quiet-check acknowledgement =====
+ *
+ * "I'm ok" is UI state, not health data — it lives in localStorage, never the
+ * backend (same store, same pattern as tm.shop.ticked). Keyed by date: an ok
+ * covers the day it was tapped, and a new quiet day asks the question fresh.
+ */
+
+const QUIET_ACK_KEY = "tm.mind.quietAck";
+
+const quietAckListeners = new Set<() => void>();
+
+function readQuietAck(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(QUIET_ACK_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeQuietAck(date: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(QUIET_ACK_KEY, date);
+  } catch {
+    // A blocked store forgets the answer; the card simply asks again.
+  }
+  for (const listener of quietAckListeners) listener();
+}
+
+function subscribeQuietAck(onChange: () => void): () => void {
+  quietAckListeners.add(onChange);
+  if (typeof window !== "undefined") window.addEventListener("storage", onChange);
+  return () => {
+    quietAckListeners.delete(onChange);
+    if (typeof window !== "undefined") window.removeEventListener("storage", onChange);
+  };
+}
+
+function useQuietAck(date: string) {
+  const stored = useSyncExternalStore(subscribeQuietAck, readQuietAck, () => null);
+  const ack = useCallback(() => writeQuietAck(date), [date]);
+  return { acked: stored === date, ack };
+}
+
 /* ===== the tab ===== */
 
 export function MindTab() {
@@ -64,6 +109,7 @@ export function MindTab() {
     return (
       <div className="flex flex-col gap-4 pt-5">
         {mind.safetyNotice.active && <SafetyCard text={mind.safetyNotice.text} />}
+        {mind.quietCheck && <QuietCard quiet={mind.quietCheck} />}
         <EncouragementCard encouragement={mind.encouragement} survival />
         <DueCard due={mind.due} instruments={mind.instruments} survival />
         {top && <IntentionCard intention={top} survival />}
@@ -81,6 +127,7 @@ export function MindTab() {
     <div className="flex flex-col gap-4 pt-5 lg:grid lg:grid-cols-12 lg:items-start lg:gap-6">
       <div className="flex flex-col gap-3 lg:col-span-7">
       {mind.safetyNotice.active && <SafetyCard text={mind.safetyNotice.text} />}
+      {mind.quietCheck && <QuietCard quiet={mind.quietCheck} />}
       <EncouragementCard encouragement={mind.encouragement} survival={false} />
       <DueCard due={mind.due} instruments={mind.instruments} survival={false} />
       <HistoryCard history={mind.history} />
@@ -104,22 +151,27 @@ export function MindTodayCard() {
   const wins = mind.intentions.reduce((s, i) => s + i.wins, 0);
 
   return (
-    <Card tone={mind.survival ? "amber" : "default"}>
-      <Eyebrow color={mind.survival ? "bg-tm-amber" : "bg-tm-purple"}>
-        {mind.survival ? "Mind — floor" : "Mind"}
-      </Eyebrow>
-      <p className="text-[13px] font-semibold">{mind.encouragement.headline}</p>
-      <div className="mt-2 flex items-end justify-between gap-2">
-        <Stat value={`${mind.due.length}`} label="check-ins due" />
-        <Stat value={`${mind.intentions.length}`} label="plans active" />
-        <Stat value={`${wins}`} label="plan wins" />
-      </div>
-      {top && (
-        <p className="mt-2 font-tm-mono text-[10px] text-tm-dim">
-          if {top.trigger.toLowerCase()} → {top.action.toLowerCase()}
-        </p>
-      )}
-    </Card>
+    <>
+      {/* The quiet check rides with the compact card so it is seen on the
+          screen a returning person actually lands on, not only in this tab. */}
+      {mind.quietCheck && <QuietCard quiet={mind.quietCheck} />}
+      <Card tone={mind.survival ? "amber" : "default"}>
+        <Eyebrow color={mind.survival ? "bg-tm-amber" : "bg-tm-purple"}>
+          {mind.survival ? "Mind — floor" : "Mind"}
+        </Eyebrow>
+        <p className="text-[13px] font-semibold">{mind.encouragement.headline}</p>
+        <div className="mt-2 flex items-end justify-between gap-2">
+          <Stat value={`${mind.due.length}`} label="check-ins due" />
+          <Stat value={`${mind.intentions.length}`} label="plans active" />
+          <Stat value={`${wins}`} label="plan wins" />
+        </div>
+        {top && (
+          <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
+            if {top.trigger.toLowerCase()} → {top.action.toLowerCase()}
+          </p>
+        )}
+      </Card>
+    </>
   );
 }
 
@@ -132,6 +184,57 @@ function MindSkeleton() {
         <div key={i} className="h-28 rounded-[10px] border border-tm-rule bg-tm-panel" />
       ))}
     </div>
+  );
+}
+
+/**
+ * Three-plus days of nothing logged surface one question, not a scoreboard.
+ * Same non-negotiable as the safety card: this is support, never an assessment
+ * — no streak arithmetic, no penance, and the support lines are the real ones.
+ */
+function QuietCard({ quiet }: { quiet: NonNullable<MindData["quietCheck"]> }) {
+  const { date } = useTimento();
+  const { acked, ack } = useQuietAck(date);
+  const [supportOpen, setSupportOpen] = useState(false);
+  if (acked) return null;
+
+  return (
+    <Card tone="amber">
+      <Eyebrow color="bg-tm-amber">Checking in</Eyebrow>
+      <p className="font-tm-disp text-2xl leading-[1.15] tracking-tight">{quiet.heading}</p>
+      <p className="mt-2 max-w-[65ch] text-[14px] leading-relaxed text-tm-amber-ink">{quiet.body}</p>
+      <div className="mt-2.5 flex gap-2">
+        <TmButton className="flex-1" onClick={ack}>
+          {"I'm ok"}
+        </TmButton>
+        <button
+          onClick={() => setSupportOpen((open) => !open)}
+          aria-expanded={supportOpen}
+          className="min-h-11 flex-1 cursor-pointer rounded-[10px] border border-tm-amber bg-tm-panel px-4 font-tm-mono text-[11.5px] tracking-[0.15em] text-tm-amber uppercase transition-transform duration-150 active:scale-[0.98]"
+        >
+          Support options
+        </button>
+      </div>
+      {supportOpen && (
+        <div className="mt-2.5 border-t border-tm-amber pt-2.5">
+          <p className="text-[14px] text-tm-amber-ink">{quiet.support}</p>
+          <div className="mt-2.5 flex gap-2">
+            <a
+              href="tel:116123"
+              className="flex min-h-11 flex-1 items-center justify-center rounded-[10px] border border-tm-amber bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-amber uppercase"
+            >
+              Samaritans 116 123
+            </a>
+            <a
+              href="tel:112"
+              className="flex min-h-11 flex-1 items-center justify-center rounded-[10px] border border-tm-amber bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-amber uppercase"
+            >
+              Emergency 112
+            </a>
+          </div>
+        </div>
+      )}
+    </Card>
   );
 }
 
@@ -194,7 +297,7 @@ function DueCard({
         <Eyebrow color={survival ? "bg-tm-amber" : "bg-tm-purple"} className="mb-0">
           {survival ? "Floor check-ins" : "Check-ins due"}
         </Eyebrow>
-        <span className="font-tm-mono text-[10px] text-tm-dim">{due.length} due</span>
+        <span className="font-tm-mono text-[11.5px] text-tm-dim">{due.length} due</span>
       </div>
 
       {active ? (
@@ -202,7 +305,7 @@ function DueCard({
           <Questionnaire instrument={active} onClose={() => setOpen(null)} />
         </div>
       ) : due.length === 0 ? (
-        <p className="mt-2 text-[12.5px] text-tm-dim">
+        <p className="mt-2 text-[13px] text-tm-dim">
           Nothing due. Re-taking inside the cadence measures noise, not change.
         </p>
       ) : (
@@ -215,11 +318,11 @@ function DueCard({
             >
               <span>
                 <span className="block text-[13px] font-medium">{d.name}</span>
-                <span className="block font-tm-mono text-[9.5px] tracking-[0.1em] text-tm-dim uppercase">
+                <span className="block font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-dim uppercase">
                   {dueLabel(d)}
                 </span>
               </span>
-              <span className="font-tm-mono text-[10px] text-tm-dim">open</span>
+              <span className="font-tm-mono text-[11.5px] text-tm-dim">open</span>
             </button>
           ))}
         </div>
@@ -249,7 +352,7 @@ function Questionnaire({ instrument, onClose }: { instrument: InstrumentView; on
     <div>
       <div className="flex items-baseline justify-between gap-2">
         <span className="font-tm-disp text-[17px]">{instrument.name}</span>
-        <span className="font-tm-mono text-[10px] text-tm-dim">
+        <span className="font-tm-mono text-[11.5px] text-tm-dim">
           {answered}/{instrument.items.length} answered
         </span>
       </div>
@@ -259,7 +362,7 @@ function Questionnaire({ instrument, onClose }: { instrument: InstrumentView; on
           style={{ width: `${(answered / instrument.items.length) * 100}%` }}
         />
       </div>
-      <p className="mt-2 font-tm-mono text-[9.5px] tracking-[0.08em] text-tm-dim uppercase">
+      <p className="mt-2 font-tm-mono text-[11.5px] tracking-[0.08em] text-tm-dim uppercase">
         {instrument.source}
       </p>
 
@@ -269,8 +372,8 @@ function Questionnaire({ instrument, onClose }: { instrument: InstrumentView; on
           const chosen = answers[i];
           return (
             <li key={item} className="border-t border-tm-rule pt-2.5">
-              <p className="text-[12.5px] leading-snug">
-                <span className="font-tm-mono text-[10px] text-tm-dim">{i + 1}. </span>
+              <p className="text-[13px] leading-snug">
+                <span className="font-tm-mono text-[11.5px] text-tm-dim">{i + 1}. </span>
                 {item}
               </p>
               <div className="mt-1.5 flex gap-1" role="radiogroup" aria-label={`Item ${i + 1}: ${item}`}>
@@ -294,7 +397,7 @@ function Questionnaire({ instrument, onClose }: { instrument: InstrumentView; on
                   </button>
                 ))}
               </div>
-              <p className="mt-1 font-tm-mono text-[9.5px] text-tm-dim">
+              <p className="mt-1 font-tm-mono text-[11.5px] text-tm-dim">
                 {chosen === null ? "not answered" : anchors[chosen].toLowerCase()}
               </p>
             </li>
@@ -331,7 +434,7 @@ function HistoryCard({ history }: { history: HistoryEntry[] }) {
     return (
       <Card>
         <Eyebrow color="bg-tm-blue">History</Eyebrow>
-        <p className="text-[12.5px] text-tm-dim">
+        <p className="text-[13px] text-tm-dim">
           No check-ins recorded yet. The first one is a reading; the second one is a line.
         </p>
       </Card>
@@ -348,7 +451,7 @@ function HistoryCard({ history }: { history: HistoryEntry[] }) {
               {h.latest && (
                 <span
                   className={cn(
-                    "rounded-xl border px-2.5 py-[3px] font-tm-mono text-[9px] tracking-[0.08em] uppercase",
+                    "rounded-[14px] border px-2.5 py-[3px] font-tm-mono text-[11.5px] tracking-[0.08em] uppercase",
                     TONE_BORDER[h.latest.tone],
                     TONE_TEXT[h.latest.tone],
                   )}
@@ -360,11 +463,11 @@ function HistoryCard({ history }: { history: HistoryEntry[] }) {
             <div className="mt-1 flex items-end justify-between gap-3">
               <div className="font-tm-disp text-2xl leading-none">
                 {h.latest ? h.latest.score : "—"}
-                <span className="ml-1 font-tm-mono text-[10px] text-tm-dim">/ {h.maxScore}</span>
+                <span className="ml-1 font-tm-mono text-[11.5px] text-tm-dim">/ {h.maxScore}</span>
               </div>
               <Sparkline points={h.points} maxScore={h.maxScore} tone={h.latest?.tone ?? "blue"} />
             </div>
-            <p className="mt-1 font-tm-mono text-[10px] text-tm-dim">{h.trend.framing}</p>
+            <p className="mt-1 font-tm-mono text-[11.5px] text-tm-dim">{h.trend.framing}</p>
           </div>
         ))}
       </div>
@@ -419,7 +522,7 @@ function IntentionsCard({
         <Eyebrow color="bg-tm-green" className="mb-0">
           If — then plans
         </Eyebrow>
-        <span className="font-tm-mono text-[10px] text-tm-dim">
+        <span className="font-tm-mono text-[11.5px] text-tm-dim">
           {intentions.reduce((s, i) => s + i.wins, 0)} wins
         </span>
       </div>
@@ -428,7 +531,7 @@ function IntentionsCard({
         moment is exactly when the deciding machinery is worst.
       </p>
       {intentions.length === 0 ? (
-        <p className="text-[12.5px] text-tm-dim">No plans yet. One is enough to start.</p>
+        <p className="text-[13px] text-tm-dim">No plans yet. One is enough to start.</p>
       ) : (
         <div className="flex flex-col gap-2">
           {intentions.map((i) => (
@@ -445,14 +548,14 @@ function IntentionRow({ intention }: { intention: IntentionView }) {
   const { actions } = useTimento();
   return (
     <div className="rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2.5">
-      <p className="text-[12.5px] leading-snug">
-        <span className="font-tm-mono text-[10px] text-tm-dim">IF </span>
+      <p className="text-[13px] leading-snug">
+        <span className="font-tm-mono text-[11.5px] text-tm-dim">IF </span>
         {intention.trigger}
-        <span className="font-tm-mono text-[10px] text-tm-dim"> THEN </span>
+        <span className="font-tm-mono text-[11.5px] text-tm-dim"> THEN </span>
         {intention.action}
       </p>
       <div className="mt-2 flex items-center justify-between gap-2">
-        <span className="font-tm-mono text-[10px] text-tm-dim">
+        <span className="font-tm-mono text-[11.5px] text-tm-dim">
           {intention.wins} win{intention.wins === 1 ? "" : "s"} logged
         </span>
         <button
@@ -494,10 +597,10 @@ function IntentionBuilder({ suggestions }: { suggestions: Suggestion[] }) {
         setAction("");
       }}
     >
-      <p className="font-tm-mono text-[9.5px] tracking-[0.12em] text-tm-dim uppercase">Write a plan</p>
+      <p className="font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase">Write a plan</p>
       <div className="mt-1.5 flex flex-col gap-1.5">
         <label className="flex items-center gap-2">
-          <span className="w-9 font-tm-mono text-[10px] text-tm-dim">IF</span>
+          <span className="w-9 font-tm-mono text-[11.5px] text-tm-dim">IF</span>
           <input
             value={trigger}
             onChange={(e) => setTrigger(e.target.value)}
@@ -507,7 +610,7 @@ function IntentionBuilder({ suggestions }: { suggestions: Suggestion[] }) {
           />
         </label>
         <label className="flex items-center gap-2">
-          <span className="w-9 font-tm-mono text-[10px] text-tm-dim">THEN</span>
+          <span className="w-9 font-tm-mono text-[11.5px] text-tm-dim">THEN</span>
           <input
             value={action}
             onChange={(e) => setAction(e.target.value)}
@@ -520,7 +623,7 @@ function IntentionBuilder({ suggestions }: { suggestions: Suggestion[] }) {
 
       {suggestions.length > 0 && (
         <div className="mt-2">
-          <p className="font-tm-mono text-[9.5px] tracking-[0.1em] text-tm-dim uppercase">
+          <p className="font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-dim uppercase">
             From your own trigger map
           </p>
           <div className="mt-1.5 flex flex-col gap-1.5">
@@ -533,9 +636,9 @@ function IntentionBuilder({ suggestions }: { suggestions: Suggestion[] }) {
                   setAction(s.action);
                 }}
                 aria-label={`Use suggestion: if ${s.trigger} then ${s.action}`}
-                className="min-h-11 cursor-pointer rounded-[10px] bg-tm-soft px-3 py-2 text-left text-[12px] leading-snug transition-transform duration-150 active:scale-[0.98]"
+                className="min-h-11 cursor-pointer rounded-[10px] bg-tm-soft px-3 py-2 text-left text-[13px] leading-snug transition-transform duration-150 active:scale-[0.98]"
               >
-                <span className="font-tm-mono text-[9.5px] tracking-[0.1em] text-tm-dim uppercase">
+                <span className="font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-dim uppercase">
                   {s.signal}{" "}
                 </span>
                 if {s.trigger} → {s.action}
@@ -590,7 +693,7 @@ function ReflectionCard({
       {!todays && (
         <button
           onClick={swap}
-          className="mt-1.5 min-h-11 cursor-pointer font-tm-mono text-[10px] tracking-[0.12em] text-tm-dim uppercase underline"
+          className="mt-1.5 min-h-11 cursor-pointer font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase underline"
         >
           Another angle
         </button>
@@ -602,7 +705,7 @@ function ReflectionCard({
           {todays.win && (
             <p className="mt-1 font-tm-mono text-[11.5px] text-tm-green">win · {todays.win}</p>
           )}
-          <p className="mt-1 font-tm-mono text-[9.5px] text-tm-dim">logged today</p>
+          <p className="mt-1 font-tm-mono text-[11.5px] text-tm-dim">logged today</p>
         </div>
       ) : (
         <form
@@ -645,12 +748,12 @@ function ReflectionCard({
 
       {reflections.length > 0 && (
         <div className="mt-3 border-t border-tm-rule pt-2.5">
-          <p className="font-tm-mono text-[9.5px] tracking-[0.12em] text-tm-dim uppercase">Recent</p>
+          <p className="font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase">Recent</p>
           <div className="mt-1.5 flex flex-col gap-2">
             {reflections.slice(0, 4).map((r) => (
               <div key={r.date}>
-                <p className="font-tm-mono text-[9.5px] text-tm-dim">{r.date}</p>
-                <p className="text-[12px] leading-snug">{r.response}</p>
+                <p className="font-tm-mono text-[11.5px] text-tm-dim">{r.date}</p>
+                <p className="text-[13px] leading-snug">{r.response}</p>
                 {r.win && <p className="font-tm-mono text-[11.5px] text-tm-green">win · {r.win}</p>}
               </div>
             ))}

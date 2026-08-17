@@ -1,6 +1,7 @@
 import { MODE_CHECKS, daysBetween } from "@convex/tm/lib";
 import { dosesForDate, type DoseLog, type StackItem } from "@convex/tm/logicStack";
 import { buildSupplyView, type SupplyRow as SupplyLogicRow } from "@convex/tm/logicSupply";
+import { buildLabsView, type RawLabPanel, type RawLabResult } from "@convex/tm/logicLabs";
 import type { CaptureKind } from "@convex/tm/logicCapture";
 import { SWEEP_MINUTES } from "@convex/tm/logicPush";
 import type { DeliverRequest } from "@convex/tm/logicEmail";
@@ -11,6 +12,7 @@ import {
   localNow,
   normalisePrefs,
   planReminders,
+  scriptsFor,
   type AssessmentHistory,
   type PrefsPatch,
   type SubscriptionRow,
@@ -68,18 +70,44 @@ function gather(db: DemoDb, slug: string, date: string) {
     lastDate,
   }));
 
+  // The same rows the Bloods tab reads, through the same view, so a recheck
+  // reminder and the screen can never disagree about what is due.
+  const panels: RawLabPanel[] = db.labPanels
+    .filter((p) => p.userSlug === slug)
+    .map((p) => ({ id: p.id, date: p.date, name: p.name, lab: p.lab ?? null, fasted: p.fasted ?? null }));
+  const results: RawLabResult[] = db.labResults
+    .filter((r) => r.userSlug === slug)
+    .map((r) => ({
+      panelId: r.panelId,
+      date: r.date,
+      marker: r.marker,
+      value: r.value,
+      unit: r.unit,
+      refLow: r.refLow ?? null,
+      refHigh: r.refHigh ?? null,
+    }));
+
+  const supplyView = buildSupplyView({
+    mode: user.modeMut,
+    date,
+    userName: user.name,
+    items,
+    supply,
+    contacts: [],
+  });
+
   return {
     mode: user.modeMut,
     doses: dosesForDate(items, logs, date),
-    supply: buildSupplyView({
-      mode: user.modeMut,
-      date,
-      userName: user.name,
-      items,
-      supply,
-      contacts: [],
-    }).items,
+    // The survival floor for *reminders* is survivalFilter's decision, so the
+    // rows go in unfloored — `attention` carries exactly the non-ok rows the
+    // floor keeps showing, and a genuine run-out must still be able to speak.
+    supply: supplyView.survival ? supplyView.attention : supplyView.items,
     checkins: checkinsFor(checksFor(db, slug, date), assessments, date, daysBetween),
+    rechecks: buildLabsView({ mode: user.modeMut, date, panels, results }).dueRechecks,
+    // Script standings from the raw rows, not the floored view — a script only
+    // the practice can move is due a word whatever the inventory shows.
+    scripts: scriptsFor(items, supply, date),
   };
 }
 
@@ -91,7 +119,7 @@ function prefsFor(db: DemoDb, slug: string) {
 }
 
 export function view(db: DemoDb, slug: string, date: string): RemindData {
-  const { mode, doses, supply, checkins } = gather(db, slug, date);
+  const { mode, doses, supply, checkins, rechecks, scripts } = gather(db, slug, date);
 
   const subscriptions: SubscriptionRow[] = db.pushSubs
     .filter((s) => s.userSlug === slug)
@@ -106,6 +134,8 @@ export function view(db: DemoDb, slug: string, date: string): RemindData {
     doses,
     supply,
     checkins,
+    rechecks,
+    scripts,
     pushReady: db.delivery.push,
     emailSupported: db.delivery.email,
     vapidPublicKey: db.delivery.vapidPublicKey,
@@ -116,7 +146,7 @@ export function view(db: DemoDb, slug: string, date: string): RemindData {
 export function buildDeliverPayload(db: DemoDb, slug: string, date: string): (DeliverRequest & { keys: string[] }) | null {
   const prefs = prefsFor(db, slug);
   if (!prefs.enabled) return null;
-  const { mode, doses, supply, checkins } = gather(db, slug, date);
+  const { mode, doses, supply, checkins, rechecks, scripts } = gather(db, slug, date);
   const { time } = localNow(Date.now(), APP_TIMEZONE);
   const sent = db.sentReminders.filter((s) => s.userSlug === slug).map((s) => ({ key: s.key, at: s.at }));
   const plan = planReminders({
@@ -125,6 +155,8 @@ export function buildDeliverPayload(db: DemoDb, slug: string, date: string): (De
     doses,
     supply,
     checkins,
+    rechecks,
+    scripts,
     now: { date, time, windowMinutes: SWEEP_MINUTES },
     sent,
   });

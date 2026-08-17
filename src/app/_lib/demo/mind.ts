@@ -75,10 +75,12 @@ function gather(db: DemoDb, slug: string, date: string): MindViewInput {
   return {
     mode: user.modeMut,
     date,
+    startDate: user.startDate,
     assessments,
     intentions,
     reflections,
     triggerMap: buildTriggerMap(cravings),
+    wall,
     streak: stats.streak,
     adherence7: stats.adherence7,
     missedYesterday: yesterday !== undefined && yesterday.done < yesterday.total,

@@ -27,6 +27,23 @@ export const SWEEP_MINUTES = 30;
 
 /* ===== what goes on the wire ===== */
 
+/** One exact dose the notification named. Never a guess, never a category. */
+export type TakenDose = { itemId: string; timing: string };
+
+/**
+ * Everything the worker needs to log a dose from the lock screen: where to
+ * POST, the revocable ingest token that authorises it, and the exact doses the
+ * notification spoke about. The token is the same credential the phone Shortcut
+ * carries — revoking it on the Hands-free tab kills this button too, which is
+ * the point of a separate credential.
+ */
+export type TakenPost = {
+  url: string;
+  token: string;
+  date: string;
+  doses: TakenDose[];
+};
+
 /** The shape convex/tm/remind.ts hands to the sweep for one notification. */
 export type Notification = {
   key: string;
@@ -34,26 +51,65 @@ export type Notification = {
   body: string;
   tab: string;
   tag: string;
+  /** Which rule produced it. Absent on the demo deliver path, which is fine. */
+  kind?: string;
+  /** Present only when a dose can actually be logged without opening the app. */
+  taken?: TakenPost;
 };
 
+export type PushAction = { action: "taken" | "open"; title: string };
+
 /**
- * Exactly the four keys public/sw.js reads, and no others.
+ * Chromium and Android draw at most two buttons on a notification, and iOS
+ * Safari web push draws none at all — there, the tap itself is the whole
+ * interface. So: never more than two actions, and the tap-through route stays
+ * first-class, because for every iPhone it is the only route.
+ */
+export const MAX_ACTIONS = 2;
+/** Lock-screen buttons truncate hard. One word each. */
+export const MAX_ACTION_TITLE = 12;
+
+/** What a lock screen may offer per kind. A dose can be answered; the rest opened. */
+export function actionsFor(kind: string | undefined): PushAction[] {
+  if (kind === "dose") {
+    return [
+      { action: "taken", title: "Taken" },
+      { action: "open", title: "Open" },
+    ];
+  }
+  return [{ action: "open", title: "Open" }];
+}
+
+/**
+ * Exactly the keys public/sw.js reads, and no others.
  *
  * Nothing clinical and nothing identifying travels in a push payload: the title
  * and body are already the person's own schedule in their own words, and `tab`
  * is a route. A push payload is encrypted in transit but it lands in an OS
- * notification store, so it carries what a lock screen may show and nothing a
- * lock screen may not.
+ * notification store, so it carries what a lock screen may show — plus, for a
+ * dose, the revocable token and exact subject the "Taken" button needs, which
+ * the store holds but never displays.
  */
 export type PushPayload = {
   title: string;
   body: string;
   tab: string;
   tag: string;
+  actions: PushAction[];
+  taken?: TakenPost;
 };
 
 export function notificationPayload(note: Notification): PushPayload {
-  return { title: note.title, body: note.body, tab: note.tab, tag: note.tag };
+  const base: PushPayload = {
+    title: note.title,
+    body: note.body,
+    tab: note.tab,
+    tag: note.tag,
+    actions: actionsFor(note.kind),
+  };
+  // The POST rides only on a dose — the one kind whose button writes anything.
+  if (note.kind === "dose" && note.taken !== undefined) return { ...base, taken: note.taken };
+  return base;
 }
 
 /** The bytes actually sent. Separate from the object so a test can read them. */

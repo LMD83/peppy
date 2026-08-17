@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_HORIZON_DAYS,
   EXPIRY_WARN_DAYS,
+  MAX_PROJECTION_DAYS,
   ROUTE_NOTE,
   buildRefillMessage,
   buildSupplyView,
   countAfterDays,
   dosesPerDay,
+  logWindowStart,
   projectRunOut,
   refillRoute,
   runOutStatus,
@@ -15,6 +17,7 @@ import {
   sortByUrgency,
   unitsOn,
   unitsPerDay,
+  withLoggedDoses,
   type SupplyItemView,
   type SupplyRow,
 } from "../convex/tm/logicSupply";
@@ -246,6 +249,159 @@ describe("projectRunOut", () => {
     expect(runOutStatus(3, TODAY, addDays(TODAY, -2), 8)).toBe("urgent");
     expect(runOutStatus(6, TODAY, addDays(TODAY, -2), 8)).toBe("order-now");
     expect(runOutStatus(0, TODAY, TODAY, 8)).toBe("out");
+  });
+});
+
+/* ===== learning from the logbook ===== */
+
+describe("withLoggedDoses", () => {
+  const counted = addDays(TODAY, -5);
+
+  it("counts only taken logs for the right item inside the count window", () => {
+    const rows = withLoggedDoses(
+      [supply({ lastCountedDate: counted })],
+      [
+        { itemId: "i1", date: addDays(counted, 1), taken: true },
+        { itemId: "i1", date: TODAY, taken: true },
+        // On the count date: assumed already inside the count.
+        { itemId: "i1", date: counted, taken: true },
+        // Before the count: history the count already absorbed.
+        { itemId: "i1", date: addDays(counted, -3), taken: true },
+        // Tomorrow: not a thing that has happened yet.
+        { itemId: "i1", date: addDays(TODAY, 1), taken: true },
+        // A tap marked not-taken records restraint, not consumption.
+        { itemId: "i1", date: addDays(counted, 2), taken: false },
+        // Someone else's box.
+        { itemId: "i2", date: addDays(counted, 2), taken: true },
+      ],
+      TODAY,
+    );
+    expect(rows[0].dosesLoggedSinceCount).toBe(2);
+  });
+
+  it("does not mutate the rows it was given", () => {
+    const row = supply({ lastCountedDate: counted });
+    withLoggedDoses([row], [{ itemId: "i1", date: TODAY, taken: true }], TODAY);
+    expect(row.dosesLoggedSinceCount).toBeUndefined();
+  });
+});
+
+describe("logWindowStart", () => {
+  it("starts at the oldest count on file", () => {
+    const rows = [
+      supply({ lastCountedDate: addDays(TODAY, -3) }),
+      supply({ itemId: "i2", lastCountedDate: addDays(TODAY, -30) }),
+    ];
+    expect(logWindowStart(rows, TODAY)).toBe(addDays(TODAY, -30));
+  });
+
+  it("floors an ancient count at the projection ceiling, and an empty file at today", () => {
+    expect(logWindowStart([supply({ lastCountedDate: addDays(TODAY, -900) })], TODAY)).toBe(
+      addDays(TODAY, -MAX_PROJECTION_DAYS),
+    );
+    expect(logWindowStart([], TODAY)).toBe(TODAY);
+  });
+});
+
+describe("the max() rule: logs only ever move the dates earlier", () => {
+  // Daily, one a day, counted ten days ago: the schedule alone ate 10 units.
+  const counted = addDays(TODAY, -10);
+
+  it("changes nothing when nothing was logged — the schedule alone projects", () => {
+    const bare = projectRunOut(item(), supply({ onHand: 20, lastCountedDate: counted }), TODAY);
+    const zero = projectRunOut(
+      item(),
+      supply({ onHand: 20, lastCountedDate: counted, dosesLoggedSinceCount: 0 }),
+      TODAY,
+    );
+    expect(zero).toEqual(bare);
+  });
+
+  it("runs out earlier when more was taken than the schedule assumed", () => {
+    const row = supply({ onHand: 20, lastCountedDate: counted, dosesLoggedSinceCount: 16 });
+    expect(countAfterDays(item(), row, TODAY)).toBe(4); // 20 − max(10, 16)
+    const run = projectRunOut(item(), row, TODAY);
+    expect(run.daysRemaining).toBe(5);
+    expect(run.runOutDate).toBe(addDays(TODAY, 5));
+    expect(run.orderByDate).toBe(TODAY);
+    expect(run.status).toBe("order-now");
+
+    // Six days sooner than the schedule alone would have admitted.
+    const bare = projectRunOut(item(), supply({ onHand: 20, lastCountedDate: counted }), TODAY);
+    expect(bare.runOutDate).toBe(addDays(TODAY, 11));
+    expect(bare.status).toBe("ok");
+  });
+
+  it("never hands stock back when fewer doses were logged than scheduled", () => {
+    const thin = supply({ onHand: 20, lastCountedDate: counted, dosesLoggedSinceCount: 3 });
+    const bare = supply({ onHand: 20, lastCountedDate: counted });
+    expect(countAfterDays(item(), thin, TODAY)).toBe(countAfterDays(item(), bare, TODAY));
+    expect(projectRunOut(item(), thin, TODAY)).toEqual(projectRunOut(item(), bare, TODAY));
+  });
+
+  it("weighs logs in units, so a two-capsule dose counts double", () => {
+    // Schedule: 10 days × 2 units = 20. Logged: 12 doses × 2 units = 24.
+    const row = supply({
+      onHand: 40,
+      unitsPerDose: 2,
+      lastCountedDate: counted,
+      dosesLoggedSinceCount: 12,
+    });
+    expect(countAfterDays(item(), row, TODAY)).toBe(16); // 40 − max(20, 24)
+  });
+
+  it("counts down to out on the day the last dose is logged", () => {
+    // The point of the whole thing: log a dose, watch the stock go, and the
+    // reorder surfaces on its own.
+    const row = supply({ onHand: 10, lastCountedDate: counted, dosesLoggedSinceCount: 10 });
+    const run = projectRunOut(item(), row, TODAY);
+    expect(run.onHand).toBe(0);
+    expect(run.daysRemaining).toBe(0);
+    expect(run.runOutDate).toBe(TODAY);
+    expect(run.status).toBe("out");
+  });
+
+  it("leaves a count taken today alone even when the logbook disagrees", () => {
+    // A fresh count is the truth; the gather never pairs same-day logs with it.
+    const row = supply({ onHand: 24, lastCountedDate: TODAY, dosesLoggedSinceCount: 5 });
+    expect(countAfterDays(item(), row, TODAY)).toBe(24);
+  });
+
+  it("treats a nonsense logged count as no logs at all", () => {
+    const bare = projectRunOut(item(), supply({ onHand: 20, lastCountedDate: counted }), TODAY);
+    for (const n of [Number.NaN, -3, Number.POSITIVE_INFINITY]) {
+      expect(
+        projectRunOut(
+          item(),
+          supply({ onHand: 20, lastCountedDate: counted, dosesLoggedSinceCount: n }),
+          TODAY,
+        ),
+      ).toEqual(bare);
+    }
+  });
+
+  it("says in the view when the logbook, not the schedule, set the number", () => {
+    const countedFive = addDays(TODAY, -5);
+    const view = buildSupplyView({
+      mode: "cut",
+      date: TODAY,
+      userName: "Liam",
+      contacts: [],
+      items: [item({ id: "a", name: "Atorvastatin" }), item({ id: "b", name: "Vitamin D3" })],
+      supply: [
+        supply({ itemId: "a", onHand: 20, lastCountedDate: countedFive, dosesLoggedSinceCount: 9 }),
+        supply({ itemId: "b", onHand: 20, lastCountedDate: countedFive, dosesLoggedSinceCount: 2 }),
+      ],
+    });
+    const led = view.items.find((r) => r.itemId === "a");
+    const thin = view.items.find((r) => r.itemId === "b");
+    if (!led || !thin) throw new Error("missing rows");
+    expect(led.logsLead).toBe(true);
+    expect(led.loggedSinceCount).toBe(9);
+    expect(led.onHand).toBe(11); // 20 − 9 logged
+    expect(thin.logsLead).toBe(false); // 2 logged < 5 scheduled: the schedule holds
+    expect(thin.loggedSinceCount).toBe(2);
+    expect(thin.onHand).toBe(15); // 20 − 5 scheduled
   });
 });
 
@@ -515,6 +671,30 @@ describe("fixtures", () => {
   it("gives Liam a GP and a pharmacy to ring", () => {
     expect(liam.contacts.gp?.phone).toMatch(/^01 /);
     expect(liam.contacts.pharmacy?.phone).toMatch(/^01 /);
+  });
+
+  it("keeps the story when the demo logbook is joined on, as both gathers do", () => {
+    const logs = stack.doseLogs
+      .filter((r) => r.userSlug === "liam")
+      .map((r) => ({ itemId: r.itemId, date: r.date, taken: r.taken }));
+    const view = buildSupplyView({
+      mode: "cut",
+      date: TODAY,
+      userName: "Liam",
+      items: itemsFor("liam"),
+      supply: withLoggedDoses(supplyFor("liam"), logs, TODAY),
+      contacts: contactsFor("liam"),
+    });
+    // The demo logbook is honest but thin — ~15% of doses go unlogged — so the
+    // schedule stays the binding figure and the story holds unchanged.
+    expect(view.items.every((r) => !r.logsLead)).toBe(true);
+    expect(view.attention.map((r) => r.name.toLowerCase().slice(0, 4))).toEqual(["ator", "magn"]);
+    const mag = view.items.find((r) => r.name.toLowerCase().startsWith("magnesium"));
+    if (!mag) throw new Error("No supply row for magnesium");
+    expect(mag.status).toBe("order-now");
+    expect(mag.orderByDate).toBe(TODAY);
+    // The join itself carried through: doses were counted, just not binding.
+    expect(mag.loggedSinceCount).toBeGreaterThan(0);
   });
 
   it("leaves Artur's floor silent — his med has plenty left", () => {

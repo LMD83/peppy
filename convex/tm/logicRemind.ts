@@ -4,6 +4,9 @@ import { cleanEmail } from "./logicEmail";
 // and what is never shared all live there. Reminders only carry the finished
 // view through, so there is exactly one set of rules about photos in the app.
 import type { CaptureView as CaptureScreenView } from "./logicCapture";
+// The script rules are the supply slice's. Reminders ask the same question the
+// refill sheet asks — who can move this prescription — and never re-derive it.
+import { scriptStatus, type SupplyRow as RawSupplyRow } from "./logicSupply";
 
 /**
  * Reminders — the product judgement, in one pure file.
@@ -34,12 +37,12 @@ import type { CaptureView as CaptureScreenView } from "./logicCapture";
 
 /* ===== kinds and shapes ===== */
 
-export type ReminderKind = "dose" | "supply" | "checkin";
+export type ReminderKind = "dose" | "supply" | "checkin" | "recheck" | "script";
 
 /** How much of a hurry this is. Never rendered as colour alone. */
 export type Severity = "normal" | "low" | "out";
 
-export type RemindTab = "today" | "stack" | "supply";
+export type RemindTab = "today" | "stack" | "supply" | "labs";
 
 export type Reminder = {
   /** Stable for the day: the same due thing produces the same key. */
@@ -71,6 +74,10 @@ export type ReminderPrefs = {
   doses: boolean;
   supply: boolean;
   checkins: boolean;
+  /** A blood recheck the person's own results say is due. */
+  rechecks: boolean;
+  /** A prescription that is running out of road — expiry, or no repeats. */
+  scripts: boolean;
   /** Ceiling on notifications in a day. A pile is not a reminder system. */
   maxPerDay: number;
   /** Delivery address. Empty means email is not a channel for this file. */
@@ -88,6 +95,8 @@ export const DEFAULT_PREFS: ReminderPrefs = {
   doses: true,
   supply: true,
   checkins: true,
+  rechecks: true,
+  scripts: true,
   maxPerDay: 4,
   email: "",
 };
@@ -102,6 +111,8 @@ export type PrefsPatch = {
   doses?: boolean;
   supply?: boolean;
   checkins?: boolean;
+  rechecks?: boolean;
+  scripts?: boolean;
   maxPerDay?: number;
   email?: string;
 };
@@ -116,6 +127,8 @@ export function normalisePrefs(patch: PrefsPatch | null | undefined, base = DEFA
     doses: p.doses ?? base.doses,
     supply: p.supply ?? base.supply,
     checkins: p.checkins ?? base.checkins,
+    rechecks: p.rechecks ?? base.rechecks,
+    scripts: p.scripts ?? base.scripts,
     maxPerDay: clampInt(p.maxPerDay ?? base.maxPerDay, MIN_PER_DAY, MAX_PER_DAY),
     email: cleanEmail(p.email ?? base.email),
   };
@@ -137,6 +150,58 @@ export type DueSupply = {
 
 /** A daily check or a periodic instrument already on the file — never a new one. */
 export type DueCheckin = { key: string; label: string; done: boolean; at: string };
+
+/** A `RecheckView` from logicLabs satisfies this without conversion. Already due. */
+export type DueRecheck = {
+  marker: string;
+  name: string;
+  lastDate: string;
+  dueDate: string;
+  overdueDays: number;
+};
+
+/** A prescription's standing, as `scriptStatus` from logicSupply reads it. */
+export type DueScript = {
+  itemId: string;
+  name: string;
+  repeatsRemaining: number | null;
+  scriptExpiryDate: string | null;
+  daysToExpiry: number | null;
+  expired: boolean;
+  expiringSoon: boolean;
+};
+
+/**
+ * The script standing of every item that actually has a script on the file.
+ * Built from the same raw rows and the same `scriptStatus` the refill sheet
+ * uses, so a reminder can never claim a repeat the sheet does not.
+ */
+export function scriptsFor(
+  items: { id: string; name: string; active: boolean }[],
+  supply: RawSupplyRow[],
+  date: string,
+): DueScript[] {
+  const byId = new Map(items.map((i) => [i.id, i]));
+  const out: DueScript[] = [];
+  for (const row of supply) {
+    const item = byId.get(row.itemId);
+    // A paused item is not an obligation; a row with no script fields has no
+    // script to speak about.
+    if (!item || !item.active) continue;
+    const s = scriptStatus(row, date);
+    if (!s.hasScript) continue;
+    out.push({
+      itemId: row.itemId,
+      name: item.name,
+      repeatsRemaining: s.repeatsRemaining,
+      scriptExpiryDate: s.scriptExpiryDate,
+      daysToExpiry: s.daysToExpiry,
+      expired: s.expired,
+      expiringSoon: s.expiringSoon,
+    });
+  }
+  return out;
+}
 
 export type Now = {
   date: string;
@@ -162,6 +227,10 @@ export const TIMING_AT: Record<string, string> = {
 };
 export const DEFAULT_DOSE_AT = "12:00";
 export const SUPPLY_AT = "09:30";
+/** Same errand as supply — a phone call in office hours — so the same slot. */
+export const SCRIPT_AT = "09:30";
+/** Half an hour after the supply slot, so two mornings' worth never lands as one buzz-pile. */
+export const RECHECK_AT = "10:00";
 export const CHECKIN_AT = "19:00";
 
 const TIMING_WORD: Record<string, string> = {
@@ -284,6 +353,8 @@ export function dueReminders(
   supply: DueSupply[],
   checkins: DueCheckin[],
   now: Now,
+  rechecks: DueRecheck[] = [],
+  scripts: DueScript[] = [],
 ): Reminder[] {
   if (!prefs.enabled) return [];
   const out: Reminder[] = [];
@@ -329,6 +400,55 @@ export function dueReminders(
     }
   }
 
+  if (prefs.scripts) {
+    for (const row of scripts) {
+      // Rule 1's shape here: a script with repeats left and time on it is fine,
+      // and fine is silent.
+      const blocked = row.expired || row.repeatsRemaining === 0;
+      if (!blocked && !row.expiringSoon) continue;
+      if (!inWindow(SCRIPT_AT, now)) continue;
+      const detail =
+        row.repeatsRemaining === 0 && row.expired
+          ? [`${row.name} — no repeats left and the script ran out ${row.scriptExpiryDate}`]
+          : row.repeatsRemaining === 0
+            ? [`${row.name} — no repeats left on the script`]
+            : row.expired
+              ? [`${row.name} — the script ran out ${row.scriptExpiryDate}`]
+              : [`${row.name} — the script runs out ${row.scriptExpiryDate}`];
+      out.push({
+        key: `script:${now.date}:${row.itemId}`,
+        kind: "script",
+        sourceKeys: [row.itemId],
+        at: SCRIPT_AT,
+        subject: row.name,
+        detail,
+        // Blocked means only the practice can move it — the pharmacy-sized
+        // problem is "low"; a script merely nearing its date is routine.
+        severity: blocked ? "low" : "normal",
+        tab: "supply",
+      });
+    }
+  }
+
+  if (prefs.rechecks) {
+    for (const row of rechecks) {
+      // The rows arrive already due — the labs view filtered them — but a
+      // not-yet-due row handed in by mistake must stay silent.
+      if (row.overdueDays <= 0) continue;
+      if (!inWindow(RECHECK_AT, now)) continue;
+      out.push({
+        key: `recheck:${now.date}:${row.marker}`,
+        kind: "recheck",
+        sourceKeys: [row.marker],
+        at: RECHECK_AT,
+        subject: row.name,
+        detail: [`${row.name} — last drawn ${row.lastDate}`],
+        severity: "normal",
+        tab: "labs",
+      });
+    }
+  }
+
   if (prefs.checkins) {
     for (const check of checkins) {
       if (check.done) continue;
@@ -348,6 +468,21 @@ export function dueReminders(
   }
 
   return sortReminders(out);
+}
+
+/**
+ * A dose reminder's sourceKeys are `<itemId>:<timing>` — the exact things it
+ * spoke about, kept through coalescing. Parsed back here, and only here, so
+ * "log the dose this notification named" can never drift into a guess.
+ */
+export function doseSourcePairs(sourceKeys: string[]): { itemId: string; timing: string }[] {
+  const out: { itemId: string; timing: string }[] = [];
+  for (const key of sourceKeys) {
+    const split = key.indexOf(":");
+    if (split <= 0 || split === key.length - 1) continue;
+    out.push({ itemId: key.slice(0, split), timing: key.slice(split + 1) });
+  }
+  return out;
 }
 
 export function sortReminders(rows: Reminder[]): Reminder[] {
@@ -387,9 +522,12 @@ export function coalesce(rows: Reminder[]): Reminder[] {
       kind: first.kind,
       sourceKeys: sources,
       at: first.at,
-      // Doses share a time-of-day subject; supply rows are named things, so the
-      // merged subject names them all rather than inventing a category word.
-      subject: first.kind === "supply" ? joinNames(list.map((r) => r.subject)) : first.subject,
+      // Doses share a time-of-day subject; supply rows, scripts and rechecks
+      // are named things, so the merged subject names them all rather than
+      // inventing a category word.
+      subject: NAMED_SUBJECT_KINDS.has(first.kind)
+        ? joinNames(list.map((r) => r.subject))
+        : first.subject,
       detail: list.flatMap((r) => r.detail),
       severity: first.severity,
       tab: first.tab,
@@ -397,6 +535,8 @@ export function coalesce(rows: Reminder[]): Reminder[] {
   }
   return sortReminders(merged);
 }
+
+const NAMED_SUBJECT_KINDS = new Set<ReminderKind>(["supply", "script", "recheck"]);
 
 function joinNames(names: string[]): string {
   if (names.length <= 2) return names.join(" and ");
@@ -428,18 +568,21 @@ export function throttle(reminders: Reminder[], sent: SentReminder[], maxPerDay:
 const SURVIVAL_FLOOR_KEYS = new Set(MODE_CHECKS.survival.map((c) => c.key));
 
 export const SURVIVAL_REMIND_NOTE =
-  "In survival mode the app only pages you about the three checks and about something genuinely running out. Everything else — your doses, your panels, your plan — is still on its own screen, unchanged. Fewer interruptions, not less care.";
+  "In survival mode the app only pages you about the three checks, about something genuinely running out, and about a prescription the pharmacy can no longer repeat. Everything else — your doses, your panels, your plan — is still on its own screen, unchanged. Fewer interruptions, not less care.";
 
 /**
  * Survival is a floor, not a lite mode. The floor's three checks may speak, and
  * so may a genuine run-out, because running out of a medicine is the one thing
- * a quiet week cannot fix on its own. Nothing else interrupts.
+ * a quiet week cannot fix on its own. A script only the practice can move is
+ * the same category — waiting makes it a run-out. A recheck is not: the Bloods
+ * screen keeps showing it, and a blood draw can wait for a better week.
  */
 export function survivalFilter(reminders: Reminder[], mode: TmMode): Reminder[] {
   if (mode !== "survival") return reminders;
   return reminders.filter((r) => {
     if (r.kind === "checkin") return r.sourceKeys.some((k) => SURVIVAL_FLOOR_KEYS.has(k));
     if (r.kind === "supply") return r.severity === "out" || r.severity === "low";
+    if (r.kind === "script") return r.severity === "low";
     return false;
   });
 }
@@ -484,6 +627,32 @@ export function copyFor(reminder: Reminder): ReminderCopy {
         body: `${reminder.detail.join(" · ")}. Ordering now keeps you ahead of it.`,
       };
     }
+    case "script": {
+      const many = reminder.sourceKeys.length > 1;
+      if (reminder.severity === "low") {
+        return {
+          title: many
+            ? `Prescriptions for ${reminder.subject} need the GP`
+            : `Prescription for ${reminder.subject} needs the GP`,
+          body: `${reminder.detail.join(" · ")}. The pharmacy cannot repeat ${many ? "these" : "this one"} — the refill sheet has the practice's number.`,
+        };
+      }
+      return {
+        title: many
+          ? `Scripts for ${reminder.subject} run out soon`
+          : `The script for ${reminder.subject} runs out soon`,
+        body: `${reminder.detail.join(" · ")}. Worth renewing before it bites.`,
+      };
+    }
+    case "recheck": {
+      const many = reminder.sourceKeys.length > 1;
+      return {
+        title: many
+          ? `Blood rechecks due: ${reminder.subject}`
+          : `Blood recheck due: ${reminder.subject}`,
+        body: `${reminder.detail.join(" · ")}. Whenever suits — the Bloods screen has the list.`,
+      };
+    }
     case "checkin":
     default:
       return {
@@ -505,6 +674,8 @@ export type PlanInput = {
   doses: DueDose[];
   supply: DueSupply[];
   checkins: DueCheckin[];
+  rechecks?: DueRecheck[];
+  scripts?: DueScript[];
   now: Now;
   sent?: SentReminder[];
 };
@@ -525,7 +696,17 @@ export type Plan = {
  * on the Reminders tab and "what fires" at 08:00 can never disagree.
  */
 export function planReminders(input: PlanInput): Plan {
-  const due = coalesce(dueReminders(input.prefs, input.doses, input.supply, input.checkins, input.now));
+  const due = coalesce(
+    dueReminders(
+      input.prefs,
+      input.doses,
+      input.supply,
+      input.checkins,
+      input.now,
+      input.rechecks ?? [],
+      input.scripts ?? [],
+    ),
+  );
 
   const awake = due.filter((r) => !inQuietHours(input.prefs, r.at));
   const quietHeld = due.filter((r) => inQuietHours(input.prefs, r.at));
@@ -604,6 +785,9 @@ export type RemindViewInput = {
   doses: DueDose[];
   supply: DueSupply[];
   checkins: DueCheckin[];
+  /** Required, not optional: both backends must say what they found, even "nothing". */
+  rechecks: DueRecheck[];
+  scripts: DueScript[];
   /** Web-push keys are present. */
   pushReady: boolean;
   /** Resend key is present. */
@@ -649,6 +833,8 @@ export function buildRemindView(input: RemindViewInput): RemindView {
     doses: input.doses,
     supply: input.supply,
     checkins: input.checkins,
+    rechecks: input.rechecks,
+    scripts: input.scripts,
     now,
   });
 

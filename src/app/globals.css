@@ -240,19 +240,11 @@
 }
 
 /* ---- Type floor (1.4.4 / readability) --------------------------------------
- * ~150 uses of type below 10px shipped (111 of them text-[10px] alone). These
- * rules are unlayered on purpose:
- * unlayered declarations beat everything Tailwind emits inside @layer utilities,
- * so the floor holds app-wide without touching 15 component files. Fix the
- * source classes when you touch a file; this is the net, not the plan. */
-.text-\[8\.5px\],
-.text-\[9px\],
-.text-\[9\.5px\],
-.text-\[10px\],
-.text-\[10\.5px\],
-.text-\[11px\] {
-  font-size: var(--tm-type-floor);
-}
+ * The net that used to live here is gone, and that was always the plan: every
+ * sub-floor class was raised at the source (2026-08-17), so no `text-[Npx]`
+ * below 11.5px exists to catch. tests/a11y-floor-guard.test.ts now fails the
+ * build if one ever comes back — the floor is enforced where the type is
+ * written, not patched after the fact. The token stays: easy mode reads it. */
 
 /* ---- Easy mode — [data-easy="1"] on <html> ---------------------------------
  * Set by src/app/_components/app.tsx from today.a11y.profile, which comes from
@@ -291,18 +283,7 @@
 /* px-pinned type does not scale with the root, so restate it. Labels to 16px,
    body copy to 18px — the 11.5px/14px floors are Wave 1's minimum for everyone,
    not a target to sit on when someone has asked for bigger. */
-[data-easy="1"] :is(
-    .text-\[8\.5px\],
-    .text-\[9px\],
-    .text-\[9\.5px\],
-    .text-\[10px\],
-    .text-\[10\.5px\],
-    .text-\[11px\],
-    .text-\[11\.5px\],
-    .text-\[12px\],
-    .text-\[12\.5px\],
-    .text-\[13px\]
-  ) {
+[data-easy="1"] :is(.text-\[11\.5px\], .text-\[13px\]) {
   font-size: var(--tm-type-floor);
 }
 

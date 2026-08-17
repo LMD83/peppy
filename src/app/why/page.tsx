@@ -86,7 +86,7 @@ export default function WhyPage() {
       <main>
         <section className="mx-auto grid min-h-[calc(100dvh-4rem)] max-w-[1400px] grid-cols-1 items-center gap-8 px-4 pt-10 pb-10 md:grid-cols-2 md:gap-16 md:px-8 md:pt-12 md:pb-16">
           <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-3 motion-safe:duration-700">
-            <p className="font-tm-mono text-[10px] tracking-[0.2em] text-tm-dim uppercase">
+            <p className="font-tm-mono text-[11.5px] tracking-[0.2em] text-tm-dim uppercase">
               Performance file
             </p>
             <h1 className="mt-3 font-tm-disp text-4xl leading-[1.05] tracking-tight uppercase md:text-5xl lg:text-6xl">
