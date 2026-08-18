@@ -9,6 +9,23 @@ const dateArg = v.string();
 
 const a11yProfileArg = v.union(v.literal("standard"), v.literal("easy"));
 
+const signalArg = v.union(
+  v.literal("tired"),
+  v.literal("emotion"),
+  v.literal("cue"),
+  v.literal("bored"),
+  v.literal("hungry"),
+);
+
+const afterStateArg = v.union(
+  v.literal("relief"),
+  v.literal("guilt"),
+  v.literal("numb"),
+  v.literal("satisfied"),
+);
+
+const actionArg = v.union(v.literal("rode"), v.literal("substitute"), v.literal("ate"));
+
 export const get = query({
   args: { token: v.string(), date: dateArg },
   handler: async (ctx, { token, date }) => {
@@ -209,18 +226,10 @@ export const logCraving = mutation({
     token: v.string(),
     date: dateArg,
     time: v.string(),
-    signal: v.union(
-      v.literal("tired"),
-      v.literal("emotion"),
-      v.literal("cue"),
-      v.literal("bored"),
-      v.literal("hungry"),
-    ),
+    signal: signalArg,
     emotionWord: v.optional(v.string()),
-    afterState: v.optional(
-      v.union(v.literal("relief"), v.literal("guilt"), v.literal("numb"), v.literal("satisfied")),
-    ),
-    action: v.optional(v.union(v.literal("rode"), v.literal("substitute"), v.literal("ate"))),
+    afterState: v.optional(afterStateArg),
+    action: v.optional(actionArg),
   },
   handler: async (ctx, { token, ...entry }) => {
     const user = await requireUser(ctx, token);
@@ -236,26 +245,41 @@ export const logCraving = mutation({
  * an already-committed craving entry. Never the write that decides whether a
  * craving got logged — logCraving already guaranteed that — so a person can
  * walk away after any question here and the entry still stands.
+ *
+ * A corrected signal is patched here too, on the row that already exists. The
+ * alternative — insert the replacement, then delete the mis-tap — is two
+ * writes with a gap in the middle: die in that gap and both rows survive, and
+ * the trigger map counts one craving twice. One patch cannot half-happen.
  */
 export const enrichCraving = mutation({
   args: {
     token: v.string(),
     id: v.id("tm_cravings"),
+    signal: v.optional(signalArg),
     emotionWord: v.optional(v.string()),
-    afterState: v.optional(
-      v.union(v.literal("relief"), v.literal("guilt"), v.literal("numb"), v.literal("satisfied")),
-    ),
-    action: v.optional(v.union(v.literal("rode"), v.literal("substitute"), v.literal("ate"))),
+    afterState: v.optional(afterStateArg),
+    action: v.optional(actionArg),
   },
-  handler: async (ctx, { token, id, emotionWord, afterState, action }) => {
+  handler: async (ctx, { token, id, signal, emotionWord, afterState, action }) => {
     const user = await requireUser(ctx, token);
     const row = await ctx.db.get(id);
     if (!row || row.userId !== user._id) throw new Error("Not found");
     // Only patch the fields actually supplied — never fabricate the others.
-    const patch: { emotionWord?: string; afterState?: typeof afterState; action?: typeof action } = {};
+    const patch: {
+      signal?: typeof signal;
+      emotionWord?: string | undefined;
+      afterState?: typeof afterState;
+      action?: typeof action;
+    } = {};
+    if (signal !== undefined) patch.signal = signal;
     if (emotionWord !== undefined) patch.emotionWord = emotionWord;
     if (afterState !== undefined) patch.afterState = afterState;
     if (action !== undefined) patch.action = action;
+    // Corrected away from Emotion, any word left behind describes a feeling that
+    // was never the signal. Drop it rather than keep a label nobody stands over.
+    if (signal !== undefined && signal !== "emotion" && row.emotionWord !== undefined) {
+      patch.emotionWord = undefined;
+    }
     if (Object.keys(patch).length === 0) return null;
     await ctx.db.patch("tm_cravings", id, patch);
     return null;

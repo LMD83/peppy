@@ -427,18 +427,32 @@ export class DemoDb {
     return id;
   }
 
-  /** Patches an already-committed entry — mirrors convex/tm/today.ts:enrichCraving. */
+  /**
+   * Patches an already-committed entry, signal included — mirrors
+   * convex/tm/today.ts:enrichCraving. Reports whether the patch landed, because
+   * the card has to be able to say a correction did not take.
+   */
   enrichCraving(
     slug: string,
     id: string,
-    patch: { emotionWord?: string; afterState?: CravingEntry["afterState"]; action?: CravingEntry["action"] },
-  ) {
+    patch: {
+      signal?: CravingEntry["signal"];
+      emotionWord?: string;
+      afterState?: CravingEntry["afterState"];
+      action?: CravingEntry["action"];
+    },
+  ): boolean {
     const row = this.cravings.find((c) => c.id === id && c.userSlug === slug);
-    if (!row) return;
+    if (!row) return false;
+    if (patch.signal !== undefined) row.signal = patch.signal;
     if (patch.emotionWord !== undefined) row.emotionWord = patch.emotionWord;
     if (patch.afterState !== undefined) row.afterState = patch.afterState;
     if (patch.action !== undefined) row.action = patch.action;
+    // Corrected away from Emotion, any word left behind describes a feeling that
+    // was never the signal (mirrors convex/tm/today.ts).
+    if (patch.signal !== undefined && patch.signal !== "emotion") delete row.emotionWord;
     this.bump();
+    return true;
   }
 
   undoCraving(slug: string, id: string) {

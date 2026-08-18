@@ -179,7 +179,7 @@ function DemoBackend({ children }: { children: React.ReactNode }) {
         if (!slug) return null;
         return db.logCraving(slug, date, entry);
       },
-      enrichCraving: (id, patch) => slug && db.enrichCraving(slug, id, patch),
+      enrichCraving: async (id, patch) => (slug ? db.enrichCraving(slug, id, patch) : false),
       undoCraving: (id: string) => slug && db.undoCraving(slug, id),
       markSessionDone: () => slug && db.markSessionDone(slug, date),
       setMode: (mode, reason, reviewDate) => slug && db.setMode(slug, date, mode, reason, reviewDate),
@@ -365,11 +365,26 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
       markRitual: () => token && void ritualMut({ token, date }),
       logCraving: async (entry: CravingEntry): Promise<string | null> => {
         if (!token) return null;
-        const id = await cravingMut({ token, date, ...entry });
-        return id;
+        // Null is the only failure this returns. A rejection here would land in
+        // the card mid-write, and a card that cannot finish its write is a card
+        // that stops accepting taps for the rest of the night.
+        try {
+          return await cravingMut({ token, date, ...entry });
+        } catch {
+          return null;
+        }
       },
-      enrichCraving: (id, patch) =>
-        token && void enrichCravingMut({ token, id: id as Id<"tm_cravings">, ...patch }),
+      // A rejected patch is answered here, not thrown at the card: the caller
+      // gets a plain false and decides what to tell the person.
+      enrichCraving: async (id, patch) => {
+        if (!token) return false;
+        try {
+          await enrichCravingMut({ token, id: id as Id<"tm_cravings">, ...patch });
+          return true;
+        } catch {
+          return false;
+        }
+      },
       undoCraving: (id: string) => token && void undoCravingMut({ token, id: id as Id<"tm_cravings"> }),
       markSessionDone: () => token && void sessionDoneMut({ token, date }),
       setMode: (mode, reason, reviewDate) => token && void modeMut({ token, date, mode, reason, reviewDate }),

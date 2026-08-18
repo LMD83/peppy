@@ -64,6 +64,10 @@ export function CrewTab() {
   const { crew, feed, actions, today } = useTimento();
   const [sent, setSent] = useState<string | null>(null);
   const [custom, setCustom] = useState("");
+  // Held here rather than inside the composer because the tab has to know it:
+  // a carer grant states the carer floor, which leaves the crew floor still
+  // needing somewhere to land.
+  const [inviteRelationship, setInviteRelationship] = useState<Relationship>("crew");
   const [undo, setUndo] = useState<{
     slug: string;
     name: string;
@@ -89,12 +93,6 @@ export function CrewTab() {
   const partner = shared[0] ?? others[0];
   const presets = NUDGES[partner?.mode ?? today.user.mode];
 
-  // The floor — "Not your weight, not your medicines, nothing you write down."
-  // — is a promise, and a promise repeated on every card is read on none of
-  // them. It is said once, where someone is actually deciding to grant
-  // something: the composer. When the composer is not on this screen (survival,
-  // easy mode, nobody left to invite) the first card naming a grant carries it
-  // instead, so the promise is stated once and never zero times.
   const composerShown = !survival && !easy && !!you && you.link.candidates.length > 0;
 
   const stop = (m: Member) => {
@@ -114,11 +112,31 @@ export function CrewTab() {
   const crewShown = easy ? crewRows.slice(0, helpingShown.length > 0 ? 0 : 1) : crewRows;
   const carersShown = easy ? yourCarers.slice(0, 1) : yourCarers;
 
-  // Which card carries the floor when the composer is not on screen. It has to
-  // be the first card that actually names a grant: "can see nothing of yours"
-  // has no floor to append, so pinning this to index 0 loses the promise
-  // entirely whenever the first person on the board shares nothing.
-  const floorCarrier = crewShown.findIndex((m) => m.link.theySee.length > 0);
+  /*
+    Where the floor — "Not your weight, not your medicines, nothing you write
+    down." — is said. A promise repeated on every card is read on none of them,
+    so it is said once, as close to the decision as the screen allows. Three
+    placements, in order of how load-bearing they are, and the last exists
+    because the first two can both be absent:
+
+    1. The composer, while a crew grant is being built — the moment someone is
+       actually deciding how much to hand over. A carer grant states the carer
+       floor instead, a different sentence about a narrower seat, so it does not
+       count as having said this one.
+    2. Failing that, the first card that names a grant. It has to be the first
+       *granting* card: "can see nothing of yours" has no floor to append, so
+       pinning this to index 0 loses the promise whenever the first person on
+       the board shares nothing.
+    3. Failing both, the tab says it plainly. A board where everyone listed
+       currently shares nothing, in the floor or in easy mode, has no composer
+       and no grant to ride along with — and a privacy promise displayed zero
+       times is worse than one displayed twice.
+  */
+  const composerCarriesFloor = composerShown && inviteRelationship === "crew";
+  const floorCarrier = composerCarriesFloor
+    ? -1
+    : crewShown.findIndex((m) => m.link.theySee.length > 0);
+  const floorStandalone = !composerCarriesFloor && floorCarrier === -1;
 
   return (
     <div
@@ -197,7 +215,7 @@ export function CrewTab() {
 
           <Disclosure
             member={m}
-            floor={!composerShown && i === floorCarrier}
+            floor={i === floorCarrier}
             onStop={() => stop(m)}
             onStopSeeing={actions.revokeCrewLink}
           />
@@ -235,11 +253,10 @@ export function CrewTab() {
             </p>
           </Card>
         ) : (
-          incoming.map((m, i) => {
+          incoming.map((m) => {
             const invite = m.link.incoming;
             if (!invite) return null;
             const carer = invite.relationship === "carer";
-            const floor = !composerShown && crewShown.length === 0 && i === 0;
             return (
               <Card key={`in-${m.slug}`}>
                 <Eyebrow color="bg-tm-blue">
@@ -256,10 +273,16 @@ export function CrewTab() {
                     </>
                   )}
                 </p>
+                {/*
+                  Never the floor here, whatever else is on screen. This
+                  sentence describes their file, not yours — appending "not your
+                  weight" to "You would see: how often they hit their checks"
+                  attaches your promise to their disclosure.
+                */}
                 <p className="mt-1 text-[13px] leading-snug text-tm-ink">
                   {carer
                     ? carerSeatSentence(m.name, invite.scopes)
-                    : grantSentence(m.name, invite.scopes, "crew", floor).replace(
+                    : grantSentence(m.name, invite.scopes, "crew", false).replace(
                         `${m.name} can see`,
                         "You would see",
                       )}
@@ -320,8 +343,19 @@ export function CrewTab() {
       {composerShown && you && (
         <InviteForm
           candidates={you.link.candidates}
+          relationship={inviteRelationship}
+          onRelationship={setInviteRelationship}
           onInvite={(slug, scopes, relationship) => actions.inviteCrew(slug, scopes, relationship)}
         />
+      )}
+
+      {/* Placement 3 — where the composer would have been, saying the one thing
+          it would have said. */}
+      {floorStandalone && (
+        <Card>
+          <Eyebrow color="bg-tm-dim2">What nobody ever sees</Eyebrow>
+          <p className="text-[13px] leading-snug text-tm-ink">{NEVER_SHARED}</p>
+        </Card>
       )}
       </div>
 
@@ -564,13 +598,17 @@ const RELATIONSHIP_COPY: Record<Relationship, { label: string; blurb: string }> 
 
 function InviteForm({
   candidates,
+  relationship,
+  onRelationship,
   onInvite,
 }: {
   candidates: { slug: string; name: string }[];
+  /** Owned by the tab: which floor this card states decides where the other goes. */
+  relationship: Relationship;
+  onRelationship: (relationship: Relationship) => void;
   onInvite: (slug: string, scopes: Scope[], relationship: Relationship) => void;
 }) {
   const [target, setTarget] = useState(candidates[0]?.slug ?? "");
-  const [relationship, setRelationship] = useState<Relationship>("crew");
   const [scopes, setScopes] = useState<Scope[]>(["adherence"]);
   const [done, setDone] = useState(false);
 
@@ -609,7 +647,7 @@ function InviteForm({
             key={r}
             aria-pressed={relationship === r}
             onClick={() => {
-              setRelationship(r);
+              onRelationship(r);
               setScopes((prev) => prev.filter((s) => allowedScopesFor(r).includes(s)));
             }}
             className={cn(

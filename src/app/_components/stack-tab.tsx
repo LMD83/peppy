@@ -38,6 +38,23 @@ function doseLine(d: { dose: number; unit: string; route: string; withFood: bool
   return `${fmt(d.dose)} ${d.unit} · ${d.route}${d.withFood ? " · with food" : ""}`;
 }
 
+/** One item can be due more than once a day, so a dose is item plus timing. */
+function doseKey(d: DoseView): string {
+  return `${d.itemId}-${d.timing}`;
+}
+
+/**
+ * A write is not in the view model until the query round-trips, so the render
+ * in between projects it locally. The projection expires the moment the row
+ * moves off the value it was written against: a guess must never outrank what
+ * the file actually says.
+ */
+type Pending = Record<string, { value: boolean; was: boolean }>;
+
+function settled(current: boolean, held: { value: boolean; was: boolean } | undefined): boolean {
+  return held !== undefined && current === held.was ? held.value : current;
+}
+
 /* ===== the tab ===== */
 
 export function StackTab() {
@@ -129,7 +146,9 @@ export function StackTodayCard() {
   const go = useFileNav();
   // The dose the last tick wrote, held until it is undone or handed on. No
   // timer: an undo that expires is an undo you have to race.
-  const [logged, setLogged] = useState<{ dose: DoseView; takenCount: number } | null>(null);
+  const [logged, setLogged] = useState<DoseView | null>(null);
+  // What this card has written and the view model has not caught up with yet.
+  const [pending, setPending] = useState<Pending>({});
   const [status, setStatus] = useState("");
   // A control that vanishes under a finger has to say where focus went, and
   // the replacement names its own target — which is how the second tap stops
@@ -147,22 +166,33 @@ export function StackTodayCard() {
   }
 
   const floor = stack.dueToday.filter((d) => !d.deferred);
-  const next = floor.find((d) => !d.taken) ?? null;
-  // Read once, so the handlers announce the count as it was before the write —
-  // the same rule today-tab's check ticks follow.
-  const { dueCount, takenCount } = stack;
+  const { dueCount } = stack;
+  const isTaken = (d: DoseView) => settled(d.taken, pending[doseKey(d)]);
+  const takenCount = floor.filter(isTaken).length;
+  // The tick's target comes off the projection, so the dose just written is
+  // already spent and the dose just undone is back in the queue. Reading it off
+  // the view model — which the un-awaited write has not reached — offered
+  // "Next" for the dose this very tap had logged, and pointed Undo's
+  // replacement at the wrong medicine.
+  const next = floor.find((d) => !isTaken(d)) ?? null;
+  // The held dose as the file reads it now — what an undo writes against.
+  const held = logged ? (floor.find((d) => doseKey(d) === doseKey(logged)) ?? logged) : null;
+
+  function write(dose: DoseView, taken: boolean) {
+    actions.logDose(dose.itemId, dose.timing, taken, dose.site ?? undefined);
+    setPending((p) => ({ ...p, [doseKey(dose)]: { value: taken, was: dose.taken } }));
+  }
 
   function logIt(dose: DoseView) {
-    actions.logDose(dose.itemId, dose.timing, true, dose.site ?? undefined);
-    const count = takenCount + 1;
-    setStatus(`${dose.name} logged — ${count} of ${dueCount} doses today.`);
-    setLogged({ dose, takenCount: count });
+    write(dose, true);
+    setStatus(`${dose.name} logged — ${takenCount + 1} of ${dueCount} doses today.`);
+    setLogged(dose);
     setFocusWanted({ to: "undo" });
   }
 
-  function undoIt(entry: { dose: DoseView; takenCount: number }) {
-    actions.logDose(entry.dose.itemId, entry.dose.timing, false, entry.dose.site ?? undefined);
-    setStatus(`${entry.dose.name} cleared — ${entry.takenCount - 1} of ${dueCount} doses today.`);
+  function undoIt(dose: DoseView) {
+    write(dose, false);
+    setStatus(`${dose.name} cleared — ${takenCount - 1} of ${dueCount} doses today.`);
     setLogged(null);
     setFocusWanted({ to: "log" });
   }
@@ -187,21 +217,21 @@ export function StackTodayCard() {
       <p role="status" className="sr-only">
         {status}
       </p>
-      {logged ? (
+      {held ? (
         <div className="mt-2 flex items-stretch gap-2">
           <p className="flex min-w-0 flex-1 items-center font-tm-mono text-[11.5px] text-tm-ink">
             {/* One flex item, so the tick flows with the first line rather than
                 centring itself against three wrapped ones at 320px. */}
             <span>
               <span aria-hidden>✓ </span>
-              {logged.dose.name.toLowerCase()} logged · {logged.takenCount}/{dueCount}
+              {held.name.toLowerCase()} logged · {takenCount}/{dueCount}
             </span>
           </p>
           <button
             ref={undoRef}
             type="button"
-            onClick={() => undoIt(logged)}
-            aria-label={`Undo — put ${logged.dose.name} back as not taken`}
+            onClick={() => undoIt(held)}
+            aria-label={`Undo — put ${held.name} back as not taken`}
             className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-ink uppercase transition-transform duration-150 active:scale-[0.98]"
           >
             Undo
@@ -294,7 +324,7 @@ function DoseList({ doses }: { doses: DoseView[] }) {
           </div>
           <div className="mt-1.5 flex flex-col gap-1.5">
             {block.doses.map((d) => (
-              <DoseRow key={`${d.itemId}-${d.timing}`} dose={d} />
+              <DoseRow key={doseKey(d)} dose={d} />
             ))}
           </div>
         </div>
@@ -336,7 +366,7 @@ function DeferredCard({ doses }: { doses: DoseView[] }) {
       <ul>
         {doses.map((d) => (
           <li
-            key={`${d.itemId}-${d.timing}`}
+            key={doseKey(d)}
             className="flex items-center justify-between gap-2 border-b border-tm-grid py-2 last:border-0"
           >
             <span className="min-w-0">

@@ -277,19 +277,20 @@ function FuelTabBody({
 }
 
 /**
- * The shopping-list preview at the tab's foot, made live: tapping it opens
- * the Shop tab. This is the fuel→shop pipeline the preview never had a link
- * for — the list itself is built and owned by convex/tm/logicShop, this is
- * only a doorway to it.
+ * The shopping-list preview at the tab's foot, with a doorway to the Shop tab.
+ * The list itself is built and owned by convex/tm/logicShop; this is only a
+ * way in.
+ *
+ * The preview is not inside the navigate button. Wrapping it named the control
+ * after every item on it — an aria-label on a wrapping button replaces its
+ * whole subtree, so the list stopped being a list and became one long button
+ * name. Same shape as the Today cards: the content is text, the doorway is its
+ * own row.
  */
 function ShoppingCard({ items }: { items: FuelData["shoppingList"] }) {
   const go = useFileNav();
   return (
-    <button
-      type="button"
-      onClick={() => go("shop")}
-      className="block w-full cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel p-4 text-left shadow-[0_1px_2px_rgba(21,23,28,0.04)] transition-transform duration-150 active:scale-[0.98]"
-    >
+    <Card>
       <Eyebrow color="bg-tm-purple">Shopping</Eyebrow>
       {items.length === 0 ? (
         <p className="text-sm text-tm-dim">
@@ -310,11 +311,15 @@ function ShoppingCard({ items }: { items: FuelData["shoppingList"] }) {
           ))}
         </ul>
       )}
-      <span className="mt-2 flex items-center justify-between gap-2 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-ink uppercase">
+      <button
+        type="button"
+        onClick={() => go("shop")}
+        className="mt-2 flex min-h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-[10px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-ink uppercase transition-transform duration-150 active:scale-[0.98]"
+      >
         Open the list
         <span aria-hidden>→</span>
-      </span>
-    </button>
+      </button>
+    </Card>
   );
 }
 
@@ -330,7 +335,9 @@ export function FuelTodayCard() {
   const { fuel, today, actions } = useTimento();
   const go = useFileNav();
   // The row the last tick wrote, held until it is undone or handed on.
-  const [logged, setLogged] = useState<{ entry: PlannedEntry; eatenCount: number } | null>(null);
+  const [logged, setLogged] = useState<PlannedEntry | null>(null);
+  // What this card has written and the view model has not caught up with yet.
+  const [pending, setPending] = useState<Pending>({});
   const [status, setStatus] = useState("");
   const [focusWanted, setFocusWanted] = useState<{ to: "log" | "undo" } | null>(null);
   const logRef = useRef<HTMLButtonElement>(null);
@@ -359,29 +366,38 @@ export function FuelTodayCard() {
     );
   }
 
-  const next = nextPlannedEntry(fuel.slots);
-  const rows = fuel.slots.flatMap((s) => s.entries);
+  const rows = plannedRows(fuel.slots);
   const rowCount = rows.length;
-  // Read once, so a handler announces the count as it stood before its write.
-  const eatenCount = rows.filter((e) => e.eaten).length;
+  const isEaten = (row: PlannedEntry) => settled(row.eaten, pending[row.entryId]);
+  const eatenCount = rows.filter(isEaten).length;
+  // The tick's target comes off the projection, so the row just written is
+  // already spent and the row just undone is back in the queue. Reading it off
+  // the view model offered "Next" for the row this very tap had logged.
+  const next = rows.find((row) => !isEaten(row)) ?? null;
+  // The held row as the file reads it now — what an undo writes against.
+  const held = logged ? (rows.find((r) => r.entryId === logged.entryId) ?? logged) : null;
 
-  function logIt(entry: PlannedEntry) {
-    actions.setFoodEaten(entry.entryId, true);
-    const count = eatenCount + 1;
-    setStatus(`${entry.name} logged — ${count} of ${rowCount} planned rows today.`);
-    setLogged({ entry, eatenCount: count });
+  function write(row: PlannedEntry, eaten: boolean) {
+    actions.setFoodEaten(row.entryId, eaten);
+    setPending((p) => ({ ...p, [row.entryId]: { value: eaten, was: row.eaten } }));
+  }
+
+  function logIt(row: PlannedEntry) {
+    write(row, true);
+    setStatus(`${row.name} logged — ${eatenCount + 1} of ${rowCount} planned rows today.`);
+    setLogged(row);
     setFocusWanted({ to: "undo" });
   }
 
-  function undoIt(held: { entry: PlannedEntry; eatenCount: number }) {
-    actions.setFoodEaten(held.entry.entryId, false);
-    setStatus(`${held.entry.name} cleared — ${held.eatenCount - 1} of ${rowCount} planned rows today.`);
+  function undoIt(row: PlannedEntry) {
+    write(row, false);
+    setStatus(`${row.name} cleared — ${eatenCount - 1} of ${rowCount} planned rows today.`);
     setLogged(null);
     setFocusWanted({ to: "log" });
   }
 
-  function moveOn(entry: PlannedEntry) {
-    setStatus(`Next up — ${entry.name}, ${entry.label.toLowerCase()}.`);
+  function moveOn(row: PlannedEntry) {
+    setStatus(`Next up — ${row.name}, ${row.label.toLowerCase()}.`);
     setLogged(null);
     setFocusWanted({ to: "log" });
   }
@@ -398,21 +414,21 @@ export function FuelTodayCard() {
       <p role="status" className="sr-only">
         {status}
       </p>
-      {logged ? (
+      {held ? (
         <div className="mt-2 flex items-stretch gap-2">
           <p className="flex min-w-0 flex-1 items-center font-tm-mono text-[11.5px] text-tm-ink">
             {/* One flex item, so the tick flows with the first line rather than
                 centring itself against three wrapped ones at 320px. */}
             <span>
               <span aria-hidden>✓ </span>
-              {logged.entry.name.toLowerCase()} logged · {logged.eatenCount}/{rowCount}
+              {held.name.toLowerCase()} logged · {eatenCount}/{rowCount}
             </span>
           </p>
           <button
             ref={undoRef}
             type="button"
-            onClick={() => undoIt(logged)}
-            aria-label={`Undo — put ${logged.entry.name} back as not eaten`}
+            onClick={() => undoIt(held)}
+            aria-label={`Undo — put ${held.name} back as not eaten`}
             className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-ink uppercase transition-transform duration-150 active:scale-[0.98]"
           >
             Undo
@@ -444,7 +460,12 @@ export function FuelTodayCard() {
           </button>
         </div>
       ) : (
-        <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">every slot logged</p>
+        // Three states, not two: a finished plan and no plan at all are
+        // different days, and congratulating somebody for eating rows they
+        // never planned is the card lying about its own contents.
+        <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
+          {rowCount === 0 ? "nothing planned yet · generate a day in Fuel" : "every planned row logged"}
+        </p>
       )}
       <button
         type="button"
@@ -458,23 +479,34 @@ export function FuelTodayCard() {
   );
 }
 
-type PlannedEntry = { entryId: string; slot: MealSlot; label: string; name: string };
+type PlannedEntry = { entryId: string; label: string; name: string; eaten: boolean };
 
 /**
- * The exact next planned-uneaten row, slot-ordered — what the Today card's
- * tick logs and what it names. Entries already carry their own id (see
- * FuelEntryView in convex/tm/logicFuel.ts), so no view-model change is
- * needed to find it.
+ * Today's planned rows, in the order the day runs — what the Today card ticks
+ * and what it counts. A hand-logged row is somebody's record of what they ate,
+ * not a slot waiting for them, so it belongs to neither: counting it made the
+ * first tick announce "2 of 3" while saying "planned rows".
  */
-function nextPlannedEntry(slots: SlotView[]): PlannedEntry | null {
-  const ordered = SLOT_ORDER.map((s) => slots.find((x) => x.slot === s)).filter(
-    (s): s is SlotView => s !== undefined,
-  );
-  for (const slot of ordered) {
-    const entry = slot.entries.find((e) => !e.eaten);
-    if (entry) return { entryId: entry.id, slot: slot.slot, label: slot.label, name: entry.name };
-  }
-  return null;
+function plannedRows(slots: SlotView[]): PlannedEntry[] {
+  return SLOT_ORDER.flatMap((s) => {
+    const slot = slots.find((x) => x.slot === s);
+    if (!slot) return [];
+    return slot.entries
+      .filter((e) => e.planned)
+      .map((e) => ({ entryId: e.id, label: slot.label, name: e.name, eaten: e.eaten }));
+  });
+}
+
+/**
+ * A write is not in the view model until the query round-trips, so the render
+ * in between projects it locally. The projection expires the moment the row
+ * moves off the value it was written against: a guess must never outrank what
+ * the file actually says.
+ */
+type Pending = Record<string, { value: boolean; was: boolean }>;
+
+function settled(current: boolean, held: { value: boolean; was: boolean } | undefined): boolean {
+  return held !== undefined && current === held.was ? held.value : current;
 }
 
 /* ===== pieces ===== */
