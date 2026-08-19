@@ -4,6 +4,7 @@ import { mutation, query, type QueryCtx } from "../_generated/server";
 import { requireUser } from "./db";
 import { markerByKey } from "./data/markers";
 import {
+  MAX_RESULTS_PER_PANEL,
   buildLabsView,
   type LabsView,
   type LabsViewInput,
@@ -18,6 +19,14 @@ import {
  * caller's own userId, and the panel a result attaches to is re-checked against
  * that userId before insertion. Nothing here reads another user's data, so
  * nothing here can reach the crew projection — bloods never leave your own file.
+ *
+ * A panel arrives one of three ways — typed by hand, parsed from a CSV export
+ * on the client (parseLabsCsv in logicLabs.ts; this file never parses a file,
+ * it only ever validates the structured rows a client already parsed), or
+ * typed by hand with a photo of the report attached as evidence. All three
+ * insert through the same addPanel mutation and the same catalogue check —
+ * the only difference is the `source` label the panel carries afterward, and
+ * whether a storage id comes with it.
  */
 
 const dateArg = v.string();
@@ -25,7 +34,8 @@ const dateArg = v.string();
 /** Bounds on a single request. A person does not have more history than this. */
 const MAX_PANELS = 60;
 const MAX_RESULTS = 1200;
-const MAX_RESULTS_PER_PANEL = 80;
+
+const panelSourceArg = v.union(v.literal("manual"), v.literal("csv"), v.literal("photo"));
 
 async function gather(ctx: QueryCtx, user: Doc<"tm_users">, date: string): Promise<LabsViewInput> {
   const panelRows = await ctx.db
@@ -38,13 +48,17 @@ async function gather(ctx: QueryCtx, user: Doc<"tm_users">, date: string): Promi
     .withIndex("by_userId_and_marker", (q) => q.eq("userId", user._id))
     .take(MAX_RESULTS);
 
-  const panels: RawLabPanel[] = panelRows.map((p) => ({
-    id: p._id,
-    date: p.date,
-    name: p.name,
-    lab: p.lab ?? null,
-    fasted: p.fasted ?? null,
-  }));
+  const panels: RawLabPanel[] = await Promise.all(
+    panelRows.map(async (p) => ({
+      id: p._id,
+      date: p.date,
+      name: p.name,
+      lab: p.lab ?? null,
+      fasted: p.fasted ?? null,
+      source: p.source ?? null,
+      photoUrl: p.photoStorageId ? await ctx.storage.getUrl(p.photoStorageId) : null,
+    })),
+  );
 
   const results: RawLabResult[] = resultRows.map((r) => ({
     panelId: r.panelId,
@@ -74,8 +88,13 @@ export const addPanel = mutation({
     name: v.string(),
     fasted: v.optional(v.boolean()),
     results: v.array(v.object({ marker: v.string(), value: v.number(), unit: v.string() })),
+    /** Omitted means "manual" — see logicLabs.ts's PanelSource docstring. */
+    source: v.optional(panelSourceArg),
+    /** From remind.generateUploadUrl, same as a capture. Optional either way:
+     * a photo is evidence for a panel, never a requirement to save one. */
+    photoStorageId: v.optional(v.id("_storage")),
   },
-  handler: async (ctx, { token, date, name, fasted, results }) => {
+  handler: async (ctx, { token, date, name, fasted, results, source, photoStorageId }) => {
     const user = await requireUser(ctx, token);
     // A panel with no results is not a panel — it would only pollute the trend.
     if (results.length === 0) throw new ConvexError("empty-panel");
@@ -91,6 +110,8 @@ export const addPanel = mutation({
       date,
       name: name.trim().slice(0, 80) || "Panel",
       fasted,
+      source,
+      photoStorageId,
     });
 
     for (const r of results) {

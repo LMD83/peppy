@@ -133,6 +133,11 @@ export type LabPanelRow = {
   name: string;
   lab?: string;
   fasted?: boolean;
+  /** Absent means "manual" — same as the real schema. */
+  source?: "manual" | "csv" | "photo";
+  /** A blob: URL in this tab's own memory. No file storage in demo mode, so
+   * the "storage id" the UI hands back is already the viewable url. */
+  photoStorageId?: string;
 };
 
 export type LabResultRow = {

@@ -1,9 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useMutation } from "convex/react";
+import { api } from "@convex/_generated/api";
+import { parseLabsCsv, type CsvImportResult } from "@convex/tm/logicLabs";
 import { cn } from "@/lib/utils";
 import { useTimento } from "../_lib/backend";
-import type { LabResultInput, LabsData } from "../_lib/types";
+import type { LabResultInput, LabsData, PanelSource } from "../_lib/types";
 import { Card, Eyebrow, Stat } from "./ui";
 
 type LabResult = LabsData["latestByMarker"][number];
@@ -224,7 +227,18 @@ function LatestPanelCard({ panel, results }: { panel: LabPanel | null; results: 
       <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
         drawn {panel.date}
         {panel.lab ? ` · ${panel.lab}` : ""} · {panel.results.length} results this panel
+        {panel.source === "csv" ? " · imported" : ""}
       </p>
+      {panel.photoUrl && (
+        <a
+          href={panel.photoUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-2 inline-flex min-h-11 items-center font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-blue underline uppercase"
+        >
+          View the report photo
+        </a>
+      )}
     </Card>
   );
 }
@@ -452,6 +466,8 @@ function PanelHistory({ panels }: { panels: LabPanel[] }) {
               </span>
               <span className="font-tm-mono text-[11.5px] text-tm-dim">
                 {p.date} · {p.results.length} markers · {out} out
+                {p.source === "csv" ? " · imported" : ""}
+                {p.photoUrl ? " · photo" : ""}
               </span>
             </li>
           );
@@ -461,11 +477,93 @@ function PanelHistory({ panels }: { panels: LabPanel[] }) {
   );
 }
 
+type Uploader = (file: File) => Promise<string>;
+
+/** A lab CSV is a handful of rows of text — generous headroom, not a document ceiling. */
+const CSV_MAX_FILE_BYTES = 2 * 1024 * 1024;
+/** Same ceiling capture-tab.tsx holds a report photo to. */
+const PHOTO_MAX_FILE_BYTES = 12 * 1024 * 1024;
+
+/**
+ * Three ways a panel's numbers get into the file, sharing one save step.
+ *
+ * "Type it in" is the original per-marker form, unchanged. "Import a CSV"
+ * parses a spreadsheet export client-side (parseLabsCsv in logicLabs.ts) —
+ * still nothing here reads a PDF or an image for values, it only accepts
+ * structured text a person already has. The photo attachment is available
+ * either way and is evidence only, same rule capture-tab.tsx holds to: it is
+ * never read, never OCR'd, and never the source of a number that ends up on
+ * the page — the numbers always come from what was typed, imported rows
+ * included.
+ */
 function AddPanel({ templates }: { templates: LabTemplate[] }) {
+  const { demo } = useTimento();
+  return demo ? <DemoAddPanel templates={templates} /> : <ConvexAddPanel templates={templates} />;
+}
+
+function DemoAddPanel({ templates }: { templates: LabTemplate[] }) {
+  // No file storage in demo mode — the "id" the rest of the app hands back is
+  // just the blob: url this tab already made. Same rule capture-tab.tsx uses.
+  const upload = useCallback(async (file: File) => URL.createObjectURL(file), []);
+  return <AddPanelBody templates={templates} upload={upload} />;
+}
+
+function ConvexAddPanel({ templates }: { templates: LabTemplate[] }) {
+  const { session } = useTimento();
+  const token = session?.token;
+  const generateUploadUrl = useMutation(api.tm.remind.generateUploadUrl);
+
+  const upload = useCallback(
+    async (file: File) => {
+      if (!token) throw new Error("not-signed-in");
+      const url = await generateUploadUrl({ token });
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      if (!res.ok) throw new Error("upload-failed");
+      const body: unknown = await res.json();
+      const storageId =
+        typeof body === "object" && body !== null && "storageId" in body
+          ? (body as { storageId: unknown }).storageId
+          : null;
+      if (typeof storageId !== "string") throw new Error("upload-failed");
+      return storageId;
+    },
+    [generateUploadUrl, token],
+  );
+
+  return <AddPanelBody templates={templates} upload={upload} />;
+}
+
+function AddPanelBody({ templates, upload }: { templates: LabTemplate[]; upload: Uploader }) {
   const { actions } = useTimento();
+  const [mode, setMode] = useState<"template" | "csv">("template");
+
+  // "Type it in" — unchanged from the original form.
   const [templateKey, setTemplateKey] = useState<string | null>(null);
-  const [fasted, setFasted] = useState(true);
   const [values, setValues] = useState<Record<string, string>>({});
+
+  // "Import a CSV".
+  const [csvFileName, setCsvFileName] = useState<string | null>(null);
+  const [csvResult, setCsvResult] = useState<CsvImportResult | null>(null);
+  const [csvName, setCsvName] = useState("");
+  const csvInputRef = useRef<HTMLInputElement>(null);
+
+  // Shared by both entry modes.
+  const [fasted, setFasted] = useState(true);
+  const [photo, setPhoto] = useState<{ file: File; preview: string } | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  // The preview is ours alone — the saved copy gets its own — so releasing it
+  // the moment it goes away is safe, same as capture-tab.tsx's own preview.
+  useEffect(() => {
+    if (!photo) return;
+    return () => URL.revokeObjectURL(photo.preview);
+  }, [photo]);
 
   const template = useMemo(
     () => templates.find((t) => t.key === templateKey) ?? null,
@@ -474,76 +572,228 @@ function AddPanel({ templates }: { templates: LabTemplate[] }) {
 
   if (templates.length === 0) return null;
 
-  const filled: LabResultInput[] = template
+  const templateFilled: LabResultInput[] = template
     ? template.markers
         .map((m) => ({ marker: m.key, value: Number(values[m.key]), unit: m.unit }))
         .filter((r) => values[r.marker] !== undefined && values[r.marker] !== "" && Number.isFinite(r.value))
     : [];
 
-  const save = () => {
-    if (!template || filled.length === 0) return;
-    actions.addLabPanel(template.name, filled, fasted);
-    setTemplateKey(null);
-    setValues({});
+  const csvFilled: LabResultInput[] = (csvResult?.rows ?? []).map((r) => ({
+    marker: r.marker,
+    value: r.value,
+    unit: r.unit,
+  }));
+
+  const pendingName = mode === "template" ? (template?.name ?? "") : csvName.trim();
+  const pendingResults = mode === "template" ? templateFilled : csvFilled;
+  const canSave = pendingName !== "" && pendingResults.length > 0 && !busy;
+
+  const onCsvFile = async (picked: File | null) => {
+    setCsvResult(null);
+    setCsvFileName(null);
+    if (!picked) return;
+    if (picked.size > CSV_MAX_FILE_BYTES) {
+      setCsvResult({
+        rows: [],
+        errors: ["That file is bigger than a bloods export should be — check it's the right one."],
+      });
+      return;
+    }
+    setCsvFileName(picked.name);
+    setCsvResult(parseLabsCsv(await picked.text()));
+    if (csvName.trim() === "") setCsvName(picked.name.replace(/\.csv$/i, ""));
+  };
+
+  const onPhotoFile = (picked: File | null) => {
+    setPhotoError(null);
+    if (photo) URL.revokeObjectURL(photo.preview);
+    setPhoto(null);
+    if (!picked) return;
+    if (!picked.type.startsWith("image/")) {
+      setPhotoError("That file is not a picture.");
+      return;
+    }
+    if (picked.size > PHOTO_MAX_FILE_BYTES) {
+      setPhotoError("That picture is too big to attach. Take it again at a smaller size.");
+      return;
+    }
+    setPhoto({ file: picked, preview: URL.createObjectURL(picked) });
+  };
+
+  const save = async () => {
+    if (!canSave) return;
+    setBusy(true);
+    setSaveError(null);
+    try {
+      const photoStorageId = photo ? await upload(photo.file) : undefined;
+      const source: PanelSource = mode === "csv" ? "csv" : photo ? "photo" : "manual";
+      actions.addLabPanel(pendingName, pendingResults, fasted, source, photoStorageId);
+      setTemplateKey(null);
+      setValues({});
+      setCsvName("");
+      setCsvResult(null);
+      setCsvFileName(null);
+      if (csvInputRef.current) csvInputRef.current.value = "";
+      if (photo) URL.revokeObjectURL(photo.preview);
+      setPhoto(null);
+    } catch {
+      setSaveError("The panel did not save. Nothing was kept — try again.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
     <Card>
       <Eyebrow color="bg-tm-blue">Add a panel</Eyebrow>
-      {template === null ? (
-        <>
-          <div className="flex flex-wrap gap-1.5">
-            {templates.map((t) => (
+
+      <div className="flex gap-1.5" role="radiogroup" aria-label="How to add this panel">
+        {(
+          [
+            { key: "template", label: "Type it in" },
+            { key: "csv", label: "Import a CSV" },
+          ] as const
+        ).map((opt) => (
+          <button
+            key={opt.key}
+            role="radio"
+            aria-checked={mode === opt.key}
+            onClick={() => setMode(opt.key)}
+            className={cn(
+              "min-h-11 flex-1 cursor-pointer rounded-[10px] border font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
+              mode === opt.key
+                ? "border-tm-ink bg-tm-ink text-white"
+                : "border-tm-rule bg-tm-panel text-tm-dim",
+            )}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
+      {mode === "template" ? (
+        template === null ? (
+          <>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {templates.map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => setTemplateKey(t.key)}
+                  className="min-h-11 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]"
+                >
+                  {t.name}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
+              Pick the panel your lab ran, type the numbers off the report. Units are fixed to the SI
+              values Irish labs print. No conversion guessing.
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="mt-2 flex items-baseline justify-between">
+              <span className="text-[13px] font-semibold">{template.name}</span>
               <button
-                key={t.key}
-                onClick={() => setTemplateKey(t.key)}
-                className="min-h-11 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]"
+                onClick={() => setTemplateKey(null)}
+                className="min-h-11 cursor-pointer font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase"
               >
-                {t.name}
+                Change
               </button>
-            ))}
-          </div>
-          <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
-            Pick the panel your lab ran, type the numbers off the report. Units are fixed to the SI
-            values Irish labs print. No conversion guessing.
-          </p>
-        </>
-      ) : (
-        <>
-          <div className="flex items-baseline justify-between">
-            <span className="text-[13px] font-semibold">{template.name}</span>
-            <button
-              onClick={() => setTemplateKey(null)}
-              className="min-h-11 cursor-pointer font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase"
-            >
-              Change
-            </button>
-          </div>
+            </div>
 
-          <div className="mt-2 flex flex-col gap-1.5">
-            {template.markers.map((m) => (
-              <div key={m.key} className="flex items-center justify-between gap-2">
-                <label htmlFor={`lab-${m.key}`} className="text-[13px]">
-                  {m.name}{" "}
-                  <span className="font-tm-mono text-[11.5px] text-tm-dim">
-                    {fmt(m.refLow)}–{fmt(m.refHigh)}
-                  </span>
-                </label>
-                <div className="flex shrink-0 items-center gap-1.5">
-                  <input
-                    id={`lab-${m.key}`}
-                    value={values[m.key] ?? ""}
-                    onChange={(e) => setValues((v) => ({ ...v, [m.key]: e.target.value }))}
-                    inputMode="decimal"
-                    placeholder="—"
-                    className="min-h-11 w-20 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-2 py-2 text-right font-tm-mono text-sm focus:border-tm-ink"
-                  />
-                  <span className="w-16 font-tm-mono text-[11.5px] text-tm-dim">{m.unit}</span>
+            <div className="mt-2 flex flex-col gap-1.5">
+              {template.markers.map((m) => (
+                <div key={m.key} className="flex items-center justify-between gap-2">
+                  <label htmlFor={`lab-${m.key}`} className="text-[13px]">
+                    {m.name}{" "}
+                    <span className="font-tm-mono text-[11.5px] text-tm-dim">
+                      {fmt(m.refLow)}–{fmt(m.refHigh)}
+                    </span>
+                  </label>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <input
+                      id={`lab-${m.key}`}
+                      value={values[m.key] ?? ""}
+                      onChange={(e) => setValues((v) => ({ ...v, [m.key]: e.target.value }))}
+                      inputMode="decimal"
+                      placeholder="—"
+                      className="min-h-11 w-20 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-2 py-2 text-right font-tm-mono text-sm focus:border-tm-ink"
+                    />
+                    <span className="w-16 font-tm-mono text-[11.5px] text-tm-dim">{m.unit}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </>
+        )
+      ) : (
+        <div className="mt-2 flex flex-col gap-2">
+          <label className="flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-center font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-ink uppercase">
+            {csvFileName ?? "Choose a .csv file"}
+            <input
+              ref={csvInputRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="sr-only"
+              onChange={(e) => void onCsvFile(e.target.files?.[0] ?? null)}
+            />
+          </label>
+          <p className="font-tm-mono text-[11.5px] text-tm-dim">
+            One header row naming the columns — &ldquo;marker,value,unit&rdquo; — then one result per line. The
+            marker can be a name straight off the report or one of ours; unit only matters when it
+            differs from what we track, and only glucose and cholesterol convert. Anything else that
+            does not match is skipped and listed, never guessed.
+          </p>
 
+          {csvResult && (
+            <>
+              <label htmlFor="csv-panel-name" className="text-[13px] font-medium">
+                Panel name
+              </label>
+              <input
+                id="csv-panel-name"
+                value={csvName}
+                onChange={(e) => setCsvName(e.target.value)}
+                placeholder="e.g. Randox full panel"
+                className="min-h-11 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 font-tm-mono text-sm focus:border-tm-ink"
+              />
+
+              <p className="font-tm-mono text-[11.5px] text-tm-dim">
+                {csvResult.rows.length} row{csvResult.rows.length === 1 ? "" : "s"} understood
+                {csvResult.errors.length > 0
+                  ? `, ${csvResult.errors.length} skipped`
+                  : ""}
+                .
+              </p>
+              {csvResult.errors.length > 0 && (
+                <ul className="flex flex-col gap-0.5">
+                  {csvResult.errors.map((e) => (
+                    <li key={e} className="font-tm-mono text-[11.5px] text-tm-amber">
+                      {e}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {csvResult.rows.length > 0 && (
+                <ul className="flex flex-col gap-0.5">
+                  {csvResult.rows.map((r) => (
+                    <li key={r.marker} className="flex items-center justify-between text-[13px]">
+                      <span>{r.name}</span>
+                      <span className="font-tm-mono text-[11.5px] text-tm-dim">
+                        {r.value} {r.unit}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {(mode === "csv" || template !== null) && (
+        <>
           <div className="mt-2 flex gap-1.5" role="radiogroup" aria-label="Fasted state">
             {[
               { key: "fasted", label: "Fasted", on: true },
@@ -566,16 +816,43 @@ function AddPanel({ templates }: { templates: LabTemplate[] }) {
             ))}
           </div>
 
+          <label className="mt-2 flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-center font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-ink uppercase">
+            {photo ? "Change the photo" : "Attach a photo of the report (optional)"}
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="sr-only"
+              onChange={(e) => onPhotoFile(e.target.files?.[0] ?? null)}
+            />
+          </label>
+          {photo && (
+            // eslint-disable-next-line @next/next/no-img-element -- a local blob:/data: preview, never a remote src
+            <img
+              src={photo.preview}
+              alt=""
+              className="mt-1.5 h-24 w-full rounded-[10px] object-cover"
+            />
+          )}
+          {photoError && <p className="mt-1 text-[13px] text-tm-red">{photoError}</p>}
+          <p className="mt-1.5 font-tm-mono text-[11.5px] text-tm-dim">
+            The photo is never read. It sits beside the numbers you typed, as evidence they came from
+            somewhere real — it is never where a value comes from.
+          </p>
+
           <button
-            onClick={save}
-            disabled={filled.length === 0}
+            onClick={() => void save()}
+            disabled={!canSave}
             className={cn(
               "mt-2 min-h-11 w-full cursor-pointer rounded-[10px] px-4 font-tm-mono text-[11.5px] tracking-[0.12em] uppercase transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
-              filled.length === 0 ? "bg-tm-soft text-tm-dim" : "bg-tm-ink text-white",
+              canSave ? "bg-tm-ink text-white" : "bg-tm-soft text-tm-dim",
             )}
           >
-            Save {filled.length} {filled.length === 1 ? "result" : "results"}
+            {busy
+              ? "Saving…"
+              : `Save ${pendingResults.length} ${pendingResults.length === 1 ? "result" : "results"}`}
           </button>
+          {saveError && <p className="mt-1.5 text-[13px] text-tm-red">{saveError}</p>}
           <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
             Blank rows are skipped. A panel records what was measured, never a gap filled in.
           </p>

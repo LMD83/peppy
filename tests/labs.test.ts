@@ -6,6 +6,7 @@ import {
   PANEL_TEMPLATES,
   isKnownMarker,
   markerByKey,
+  markerByNameOrKey,
   type MarkerDef,
 } from "../convex/tm/data/markers";
 import {
@@ -13,6 +14,7 @@ import {
   CHOLESTEROL_FACTOR,
   FLAT_PCT,
   GLUCOSE_FACTOR,
+  MAX_RESULTS_PER_PANEL,
   MAX_TREND_POINTS,
   RECHECK_DAYS,
   buildLabsView,
@@ -21,6 +23,7 @@ import {
   flagFor,
   isOutOfRange,
   panelSummary,
+  parseLabsCsv,
   pctOutsideRange,
   recheckDue,
   recheckDueDays,
@@ -539,5 +542,178 @@ describe("buildLabsView — empty and unknown", () => {
     expect(view.latestByMarker[0].refHigh).toBe(300);
     expect(view.latestByMarker[0].flag).toBe("borderline-low");
     expect(flagFor(def("ferritin"), 27)).toBe("low");
+  });
+});
+
+describe("markerByNameOrKey — how an import identifies a marker", () => {
+  it("matches the internal key, same as markerByKey", () => {
+    expect(markerByNameOrKey("ldl_c")?.key).toBe("ldl_c");
+  });
+
+  it("matches the printed name a real export uses", () => {
+    expect(markerByNameOrKey("LDL cholesterol")?.key).toBe("ldl_c");
+  });
+
+  it("is forgiving of case and stray whitespace, never of a genuine typo", () => {
+    expect(markerByNameOrKey("  ldl cholesterol  ")?.key).toBe("ldl_c");
+    expect(markerByNameOrKey("LDL  cholesterol")?.key).toBe("ldl_c"); // doubled space, one export style
+    expect(markerByNameOrKey("LDL cholesteral")).toBeNull(); // a typo is not a match
+  });
+
+  it("returns null rather than guess at blank or unrecognised text", () => {
+    expect(markerByNameOrKey("")).toBeNull();
+    expect(markerByNameOrKey("   ")).toBeNull();
+    expect(markerByNameOrKey("Some assay nobody tracks")).toBeNull();
+  });
+});
+
+describe("parseLabsCsv — a structured import, never a document reader", () => {
+  it("parses a plain marker,value,unit export by key", () => {
+    const { rows, errors } = parseLabsCsv(
+      "marker,value,unit\nldl_c,2.1,mmol/L\nglucose_fasting,4.8,mmol/L\n",
+    );
+    expect(errors).toEqual([]);
+    expect(rows).toEqual([
+      { marker: "ldl_c", name: "LDL cholesterol", value: 2.1, unit: "mmol/L" },
+      { marker: "glucose_fasting", name: "Fasting glucose", value: 4.8, unit: "mmol/L" },
+    ]);
+  });
+
+  it("resolves a marker by its printed name, header order and case free", () => {
+    const { rows, errors } = parseLabsCsv("Result,Test\n2.1,LDL cholesterol\n");
+    expect(errors).toEqual([]);
+    expect(rows).toEqual([{ marker: "ldl_c", name: "LDL cholesterol", value: 2.1, unit: "mmol/L" }]);
+  });
+
+  it("accepts a unit column that already matches", () => {
+    const { rows, errors } = parseLabsCsv("marker,value,unit\nldl_c,2.1,mmol/L\n");
+    expect(errors).toEqual([]);
+    expect(rows[0].unit).toBe("mmol/L");
+  });
+
+  it("converts glucose and cholesterol when the file's unit differs", () => {
+    // 90 mg/dL fasting glucose is the mmol/L figure the catalogue expects, rounded.
+    const { rows, errors } = parseLabsCsv("marker,value,unit\nglucose_fasting,90,mg/dL\n");
+    expect(errors).toEqual([]);
+    expect(rows[0].value).toBeCloseTo(90 / GLUCOSE_FACTOR, 2);
+    expect(rows[0].unit).toBe("mmol/L"); // always stored in the catalogue's unit, never the file's
+  });
+
+  it("rejects rather than mislabels a unit it cannot convert", () => {
+    // ferritin has no convertUnit entry — a differing unit here has to be a
+    // reject, not a relabel, or a µg/L value would be stored as ng/mL and every
+    // flag downstream would be wrong by roughly the ratio between them.
+    const { rows, errors } = parseLabsCsv("marker,value,unit\nferritin,80,ng/mL\n");
+    expect(rows).toEqual([]);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatch(/ferritin/i);
+    expect(errors[0]).toMatch(/ng\/mL/);
+  });
+
+  it("skips an unrecognised marker and says which row and why", () => {
+    const { rows, errors } = parseLabsCsv("marker,value\nldl_c,2.1\nmade_up_thing,9\n");
+    expect(rows).toHaveLength(1);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatch(/^Row 3:/);
+    expect(errors[0]).toMatch(/made_up_thing/);
+  });
+
+  it("skips a non-numeric value and says which row and why", () => {
+    const { rows, errors } = parseLabsCsv("marker,value\nldl_c,not-a-number\n");
+    expect(rows).toEqual([]);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatch(/^Row 2:/);
+  });
+
+  it("accepts a decimal comma inside a quoted field, since that is a real locale, not a typo", () => {
+    const { rows, errors } = parseLabsCsv('marker,value\nldl_c,"2,1"\n');
+    expect(errors).toEqual([]);
+    expect(rows[0].value).toBeCloseTo(2.1, 5);
+  });
+
+  it("skips blank lines without treating them as rows", () => {
+    const { rows, errors } = parseLabsCsv("marker,value\nldl_c,2.1\n\n\nglucose_fasting,4.8\n");
+    expect(errors).toEqual([]);
+    expect(rows).toHaveLength(2);
+  });
+
+  it("refuses a file with no recognisable header, rather than guess the columns", () => {
+    const { rows, errors } = parseLabsCsv("2.1,mmol/L\n4.8,mmol/L\n");
+    expect(rows).toEqual([]);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatch(/first row/i);
+  });
+
+  it("reports an empty file rather than silently returning nothing", () => {
+    expect(parseLabsCsv("").errors).toEqual(["The file is empty."]);
+    expect(parseLabsCsv("   \n  \n").errors).toEqual(["The file is empty."]);
+  });
+
+  it("reports a header-only file rather than silently returning nothing", () => {
+    const { rows, errors } = parseLabsCsv("marker,value\n");
+    expect(rows).toEqual([]);
+    expect(errors).toEqual(["No result rows found after the header."]);
+  });
+
+  it("caps a single import at the same ceiling addPanel enforces, and says so", () => {
+    const header = "marker,value";
+    const oneMore = MAX_RESULTS_PER_PANEL + 1;
+    const lines = Array.from({ length: oneMore }, () => "ldl_c,2.1").join("\n");
+    const { rows, errors } = parseLabsCsv(`${header}\n${lines}\n`);
+    expect(rows).toHaveLength(MAX_RESULTS_PER_PANEL);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatch(new RegExp(String(MAX_RESULTS_PER_PANEL)));
+  });
+
+  it("handles a quoted field holding a comma, the one real-world CSV wrinkle worth supporting", () => {
+    const { rows, errors } = parseLabsCsv('marker,value\n"LDL, cholesterol (calc)",2.1\n');
+    // The quoted marker text does not match anything in the catalogue, so this
+    // proves the quote-aware split (one cell, not two) rather than a match —
+    // an unrecognised name inside quotes is still reported as one clean row.
+    expect(rows).toEqual([]);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain("LDL, cholesterol (calc)");
+  });
+});
+
+describe("buildLabsView — provenance", () => {
+  it("defaults an panel with no source to manual, and carries no photo", () => {
+    const view = buildLabsView({
+      mode: "cut",
+      date: TODAY,
+      panels: [{ id: "p1", date: addDays(TODAY, -1), name: "Untyped" }],
+      results: [{ panelId: "p1", date: addDays(TODAY, -1), marker: "ldl_c", value: 2.1, unit: "mmol/L" }],
+    });
+    expect(view.panels[0].source).toBe("manual");
+    expect(view.panels[0].photoUrl).toBeNull();
+  });
+
+  it("carries an explicit source and photo url straight through to the panel view", () => {
+    const view = buildLabsView({
+      mode: "cut",
+      date: TODAY,
+      panels: [
+        {
+          id: "p1",
+          date: addDays(TODAY, -1),
+          name: "Imported",
+          source: "csv",
+          photoUrl: "https://files.example/report.jpg",
+        },
+      ],
+      results: [{ panelId: "p1", date: addDays(TODAY, -1), marker: "ldl_c", value: 2.1, unit: "mmol/L" }],
+    });
+    expect(view.panels[0].source).toBe("csv");
+    expect(view.panels[0].photoUrl).toBe("https://files.example/report.jpg");
+  });
+
+  it("keeps the floor showing nothing about how a panel arrived — same as it shows no panels at all", () => {
+    const view = buildLabsView({
+      mode: "survival",
+      date: TODAY,
+      panels: [{ id: "p1", date: addDays(TODAY, -1), name: "Imported", source: "csv" }],
+      results: [{ panelId: "p1", date: addDays(TODAY, -1), marker: "ldl_c", value: 2.1, unit: "mmol/L" }],
+    });
+    expect(view.panels).toEqual([]);
   });
 });
