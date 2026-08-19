@@ -201,7 +201,8 @@ function DemoBackend({ children }: { children: React.ReactNode }) {
       swapTrainBlock: (exercise, replacement) => slug && db.swapTrainBlock(slug, exercise, replacement),
       logDose: (itemId, timing, taken, site) => slug && db.logDose(slug, date, itemId, timing, taken, site),
       setStackItemActive: (itemId, active) => db.setStackItemActive(itemId, active),
-      addLabPanel: (name, results, fasted) => slug && db.addLabPanel(slug, date, name, results, fasted),
+      addLabPanel: (name, results, fasted, source, photoStorageId) =>
+        slug && db.addLabPanel(slug, date, name, results, fasted, source, photoStorageId),
       submitAssessment: (instrument, answers) => slug && db.submitAssessment(slug, date, instrument, answers),
       addIntention: (trigger, action) => slug && db.addIntention(slug, date, trigger, action),
       markIntentionWin: (intentionId) => db.markIntentionWin(intentionId),
@@ -412,7 +413,17 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
         token && void logDoseMut({ token, date, itemId: itemId as Id<"tm_protocolItems">, timing, taken, site }),
       setStackItemActive: (itemId, active) =>
         token && void setItemActiveMut({ token, itemId: itemId as Id<"tm_protocolItems">, active }),
-      addLabPanel: (name, results, fasted) => token && void addPanelMut({ token, date, name, results, fasted }),
+      addLabPanel: (name, results, fasted, source, photoStorageId) =>
+        token &&
+        void addPanelMut({
+          token,
+          date,
+          name,
+          results,
+          fasted,
+          source,
+          photoStorageId: photoStorageId as Id<"_storage"> | undefined,
+        }),
       submitAssessment: (instrument, answers) =>
         token && void submitAssessmentMut({ token, date, instrument, answers }),
       addIntention: (trigger, action) => token && void addIntentionMut({ token, date, trigger, action }),

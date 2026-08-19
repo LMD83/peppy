@@ -4,6 +4,7 @@ import {
   MARKERS,
   PANEL_TEMPLATES,
   markerByKey,
+  markerByNameOrKey,
   type MarkerDef,
   type MarkerGroup,
 } from "./data/markers";
@@ -266,12 +267,31 @@ export function convertUnit(
 
 /* ===== the view ===== */
 
+/**
+ * How the numbers in a panel got into the file. Not a claim about accuracy —
+ * a manually typed value and a CSV-imported one are checked against the same
+ * catalogue the same way. It exists so the file can say, honestly, where a
+ * number came from, and so a future import path can never be silently
+ * indistinguishable from something a person sat down and typed.
+ */
+export type PanelSource = "manual" | "csv" | "photo";
+
+export const PANEL_SOURCE_LABELS: Record<PanelSource, string> = {
+  manual: "typed in",
+  csv: "imported",
+  photo: "typed in, with a photo attached",
+};
+
 export type RawLabPanel = {
   id: string;
   date: string;
   name: string;
   lab?: string | null;
   fasted?: boolean | null;
+  /** Absent means manual — see PanelSource. */
+  source?: PanelSource | null;
+  /** A viewable link to the attached report photo, or null when there is none. */
+  photoUrl?: string | null;
 };
 
 export type RawLabResult = {
@@ -314,6 +334,8 @@ export type PanelView = {
   name: string;
   lab: string | null;
   fasted: boolean | null;
+  source: PanelSource;
+  photoUrl: string | null;
   results: LabResultView[];
 };
 
@@ -456,6 +478,8 @@ export function buildLabsView(input: LabsViewInput): LabsView {
     name: p.name,
     lab: p.lab ?? null,
     fasted: p.fasted ?? null,
+    source: p.source ?? "manual",
+    photoUrl: p.photoUrl ?? null,
     results: rows
       .filter((r) => r.panelId === p.id)
       .map((r) => viewByRow.get(r))
@@ -546,4 +570,165 @@ export function isKnownMarkerKey(key: string): boolean {
 /** Every catalogue marker, for callers that need the full list without a template. */
 export function allMarkerKeys(): string[] {
   return MARKERS.map((m) => m.key);
+}
+
+/* ===== CSV import =====
+ * A structured-data import, not a document reader. It parses text a person
+ * exported or typed themselves — a spreadsheet, a lab portal's CSV download —
+ * into the same shape the manual-entry form produces, and every row goes
+ * through the identical marker-catalogue check either path uses. It never
+ * reads a PDF, an image, or free text describing a result: the moment this
+ * function had to guess at what a cell meant, it would be doing the thing
+ * research.ts and logicCapture.ts both refuse to do elsewhere in this app. */
+
+/** One row of parsed input, resolved against the catalogue and ready for addPanel. */
+export type CsvImportRow = { marker: string; name: string; value: number; unit: string };
+
+
+export type CsvImportResult = {
+  rows: CsvImportRow[];
+  /**
+   * One line per rejected input row, in the order encountered. A CSV that
+   * drops rows without saying which ones is the same silent-truncation
+   * failure the a11y sweep exists to catch elsewhere in this app — a person
+   * checking their own bloods against a printed report deserves to know
+   * their file has fewer rows than their CSV did, and why.
+   */
+  errors: string[];
+};
+
+/** Same ceiling addPanel enforces — checked here too, so the error is legible before submit. */
+export const MAX_RESULTS_PER_PANEL = 80;
+
+/** Splits one CSV line on commas, honouring "quoted, fields" — nothing fancier. */
+function splitCsvLine(line: string): string[] {
+  const cells: string[] = [];
+  let cell = "";
+  let quoted = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (quoted) {
+      if (ch === '"' && line[i + 1] === '"') {
+        cell += '"';
+        i++;
+      } else if (ch === '"') {
+        quoted = false;
+      } else {
+        cell += ch;
+      }
+    } else if (ch === '"') {
+      quoted = true;
+    } else if (ch === ",") {
+      cells.push(cell);
+      cell = "";
+    } else {
+      cell += ch;
+    }
+  }
+  cells.push(cell);
+  return cells.map((c) => c.trim());
+}
+
+const HEADER_ALIASES = {
+  marker: ["marker", "test", "name", "analyte"],
+  value: ["value", "result"],
+  unit: ["unit", "units"],
+};
+
+function findColumn(header: string[], aliases: string[]): number {
+  return header.findIndex((h) => aliases.includes(h.trim().toLowerCase()));
+}
+
+/**
+ * Parses `marker,value[,unit]` text — a header row naming the columns (in any
+ * order, matched case-insensitively against a few common aliases so "Test",
+ * "Result", "Units" all work), then one result per line.
+ *
+ * The unit column is optional: when a row omits it, or spells it differently
+ * from the catalogue, the catalogue's own unit is used rather than trusting
+ * an unfamiliar string — this app already refuses to guess a unit conversion
+ * anywhere else (see convertUnit above), and an import is not the exception.
+ *
+ * Every rejected row is reported, never dropped silently: an unrecognised
+ * marker name, a non-numeric value, and the panel-size ceiling all produce a
+ * line in `errors` that names the row and why it did not make it in.
+ */
+export function parseLabsCsv(text: string): CsvImportResult {
+  const lines = text
+    .split(/\r\n|\r|\n/)
+    .map((l) => l.trim())
+    .filter((l) => l !== "");
+  if (lines.length === 0) return { rows: [], errors: ["The file is empty."] };
+
+  const header = splitCsvLine(lines[0]).map((h) => h.toLowerCase());
+  const markerCol = findColumn(header, HEADER_ALIASES.marker);
+  const valueCol = findColumn(header, HEADER_ALIASES.value);
+  const unitCol = findColumn(header, HEADER_ALIASES.unit);
+
+  if (markerCol === -1 || valueCol === -1) {
+    return {
+      rows: [],
+      errors: [
+        'The first row must name the columns — at least "marker" and "value" ' +
+          '(e.g. "marker,value,unit").',
+      ],
+    };
+  }
+
+  const rows: CsvImportRow[] = [];
+  const errors: string[] = [];
+  const dataLines = lines.slice(1);
+
+  for (let i = 0; i < dataLines.length; i++) {
+    if (rows.length >= MAX_RESULTS_PER_PANEL) {
+      errors.push(
+        `Row ${i + 2}: skipped — a panel holds at most ${MAX_RESULTS_PER_PANEL} results, and this file has more.`,
+      );
+      continue;
+    }
+    const cells = splitCsvLine(dataLines[i]);
+    const rawMarker = (cells[markerCol] ?? "").trim();
+    const rawValue = (cells[valueCol] ?? "").trim();
+    if (rawMarker === "" && rawValue === "") continue; // a blank line, not a row
+
+    const def = markerByNameOrKey(rawMarker);
+    if (!def) {
+      errors.push(`Row ${i + 2}: "${rawMarker || "(blank)"}" is not a marker this file tracks — skipped.`);
+      continue;
+    }
+    const rawValueNum = Number(rawValue.replace(",", ".")); // a locale that commas its decimals
+    if (!Number.isFinite(rawValueNum)) {
+      errors.push(`Row ${i + 2}: "${rawValue || "(blank)"}" is not a number for ${def.name} — skipped.`);
+      continue;
+    }
+    const rawUnit = unitCol === -1 ? "" : (cells[unitCol] ?? "").trim();
+
+    // No unit column, or it already matches: take the value as printed, in the
+    // catalogue's unit — this is what the manual-entry form does too, since its
+    // template fixes the unit and never asks.
+    let value = rawValueNum;
+    if (rawUnit !== "" && rawUnit.toLowerCase() !== def.unit.toLowerCase()) {
+      // A different unit is only ever handled by converting it, never by
+      // relabelling — a 5.6 written down as mg/dL and stored as mmol/L would
+      // flag as critically low when it is a normal cholesterol reading.
+      // convertUnit only knows glucose and cholesterol (see its own docstring);
+      // anything else it cannot convert is a row this parser has to refuse
+      // rather than guess.
+      const converted = convertUnit(def.key, rawValueNum, rawUnit, def.unit);
+      if (converted === null) {
+        errors.push(
+          `Row ${i + 2}: ${def.name} is tracked in ${def.unit}, not "${rawUnit}" — skipped rather than guess a conversion.`,
+        );
+        continue;
+      }
+      value = converted;
+    }
+    rows.push({ marker: def.key, name: def.name, value, unit: def.unit });
+  }
+
+  if (rows.length === 0 && errors.length === 0) {
+    errors.push("No result rows found after the header.");
+  }
+
+  return { rows, errors };
 }

@@ -21,6 +21,7 @@ import type {
   LabsData,
   MealSlot,
   MindData,
+  PanelSource,
   ProgressData,
   ResearchData,
   StackData,
@@ -606,8 +607,16 @@ export class DemoDb {
     this.bump();
   }
 
-  addLabPanel(slug: string, date: string, name: string, results: LabResultInput[], fasted?: boolean) {
-    labsView.addPanel(this, slug, date, name, results, fasted);
+  addLabPanel(
+    slug: string,
+    date: string,
+    name: string,
+    results: LabResultInput[],
+    fasted?: boolean,
+    source?: PanelSource,
+    photoStorageId?: string,
+  ) {
+    labsView.addPanel(this, slug, date, name, results, fasted, source, photoStorageId);
     this.bump();
   }
 

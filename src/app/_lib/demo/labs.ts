@@ -1,7 +1,9 @@
 import { markerByKey } from "@convex/tm/data/markers";
 import {
+  MAX_RESULTS_PER_PANEL,
   buildLabsView,
   type LabsViewInput,
+  type PanelSource,
   type RawLabPanel,
   type RawLabResult,
 } from "@convex/tm/logicLabs";
@@ -11,9 +13,16 @@ import type { LabResultInput, LabsData } from "../types";
 /**
  * Demo mirror of convex/tm/labs.ts. Same gather, same shared logic, same shape —
  * the view type is derived from the Convex query, so any drift is a build error.
+ *
+ * Same rule the capture demo uses for photos: there is no file storage in demo
+ * mode, so a lab panel's "storage id" is whatever the tab already generated
+ * (a blob: url) — `urlFor` below is only rendering-safe values through.
  */
 
-const MAX_RESULTS_PER_PANEL = 80;
+/** Only something that can actually be rendered becomes a url. */
+function urlFor(storageId: string | undefined): string | null {
+  return storageId && (storageId.startsWith("blob:") || storageId.startsWith("data:")) ? storageId : null;
+}
 
 function gather(db: DemoDb, slug: string, date: string): LabsViewInput {
   const user = db.users.find((u) => u.slug === slug);
@@ -27,6 +36,8 @@ function gather(db: DemoDb, slug: string, date: string): LabsViewInput {
       name: p.name,
       lab: p.lab ?? null,
       fasted: p.fasted ?? null,
+      source: p.source ?? null,
+      photoUrl: urlFor(p.photoStorageId),
     }));
 
   const results: RawLabResult[] = db.labResults
@@ -55,6 +66,8 @@ export function addPanel(
   name: string,
   results: LabResultInput[],
   fasted?: boolean,
+  source?: PanelSource,
+  photoStorageId?: string,
 ): void {
   if (results.length === 0) throw new Error("empty-panel");
   if (results.length > MAX_RESULTS_PER_PANEL) throw new Error("panel-too-large");
@@ -70,6 +83,8 @@ export function addPanel(
     date,
     name: name.trim().slice(0, 80) || "Panel",
     fasted,
+    source,
+    photoStorageId,
   });
   for (const r of results) {
     const def = markerByKey(r.marker);

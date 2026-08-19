@@ -707,6 +707,15 @@ export const MARKERS: MarkerDef[] = [
 
 const BY_KEY: Map<string, MarkerDef> = new Map(MARKERS.map((m) => [m.key, m]));
 
+/** Display name, normalised, → key. A CSV export prints "LDL cholesterol", not "ldl_c". */
+const BY_NAME: Map<string, MarkerDef> = new Map(
+  MARKERS.map((m) => [normaliseMarkerText(m.name), m]),
+);
+
+function normaliseMarkerText(text: string): string {
+  return text.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
 /** Safe lookup — an unknown key returns null instead of throwing in a render path. */
 export function markerByKey(key: string): MarkerDef | null {
   return BY_KEY.get(key) ?? null;
@@ -714,6 +723,21 @@ export function markerByKey(key: string): MarkerDef | null {
 
 export function isKnownMarker(key: string): boolean {
   return BY_KEY.has(key);
+}
+
+/**
+ * A human or an export file identifies a marker by its printed name at least
+ * as often as by our internal key — an imported CSV column reads "LDL
+ * cholesterol", not "ldl_c". This tries the exact key first (cheap, and what
+ * every other caller already passes), then a case/whitespace-insensitive name
+ * match. Anything neither matches returns null rather than a guess: an
+ * unrecognised marker in an import is a row to reject, never one to invent a
+ * catalogue entry for.
+ */
+export function markerByNameOrKey(text: string): MarkerDef | null {
+  const trimmed = text.trim();
+  if (trimmed === "") return null;
+  return BY_KEY.get(trimmed) ?? BY_NAME.get(normaliseMarkerText(trimmed)) ?? null;
 }
 
 export type PanelTemplate = {

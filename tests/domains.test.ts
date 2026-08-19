@@ -50,6 +50,13 @@ async function seeded() {
 
 const args = (token: string) => ({ token, date: TODAY });
 
+type Harness = Awaited<ReturnType<typeof seeded>>["t"];
+
+/** A stored file, so a lab-panel photo under test is backed by a real storage id. */
+async function storeFile(t: Harness) {
+  return await t.run(async (ctx) => await ctx.storage.store(new Blob(["not-a-report"])));
+}
+
 describe("seed", () => {
   it("populates every domain table for the crew", async () => {
     const { t, liam, artur } = await seeded();
@@ -320,5 +327,61 @@ describe("round trips", () => {
     const panel = labs.panels.find((p) => p.name === "Recheck");
     expect(panel).toBeDefined();
     expect(labs.outOfRange.some((r) => r.marker === "hs_crp")).toBe(true);
+  });
+
+  it("defaults an unlabelled panel to manual, with no photo", async () => {
+    const { t, liam } = await seeded();
+    await t.mutation(api.tm.labs.addPanel, {
+      token: liam,
+      date: TODAY,
+      name: "Typed in",
+      results: [{ marker: "ldl_c", value: 2.1, unit: "mmol/L" }],
+    });
+    const panel = (await t.query(api.tm.labs.get, args(liam))).panels.find((p) => p.name === "Typed in");
+    expect(panel?.source).toBe("manual");
+    expect(panel?.photoUrl).toBeNull();
+  });
+
+  it("carries an import source and a report photo through to the view", async () => {
+    const { t, liam } = await seeded();
+    const storageId = await storeFile(t);
+    await t.mutation(api.tm.labs.addPanel, {
+      token: liam,
+      date: TODAY,
+      name: "Imported",
+      source: "csv",
+      photoStorageId: storageId,
+      results: [{ marker: "ldl_c", value: 2.1, unit: "mmol/L" }],
+    });
+    const panel = (await t.query(api.tm.labs.get, args(liam))).panels.find((p) => p.name === "Imported");
+    expect(panel?.source).toBe("csv");
+    expect(panel?.photoUrl).toEqual(expect.any(String));
+  });
+});
+
+describe("a lab-panel photo belongs to one file and reaches no other", () => {
+  it("never appears in the other user's view, and its url is never handed over", async () => {
+    const { t, liam, artur } = await seeded();
+    const storageId = await storeFile(t);
+    await t.mutation(api.tm.labs.addPanel, {
+      token: liam,
+      date: TODAY,
+      name: "Liam's photographed draw",
+      source: "photo",
+      photoStorageId: storageId,
+      results: [{ marker: "ldl_c", value: 2.1, unit: "mmol/L" }],
+    });
+
+    const liamLabs = await t.query(api.tm.labs.get, args(liam));
+    const liamPanel = liamLabs.panels.find((p) => p.name === "Liam's photographed draw");
+    expect(liamPanel?.photoUrl).toEqual(expect.any(String));
+
+    const arturLabs = await t.query(api.tm.labs.get, args(artur));
+    expect(arturLabs.panels.some((p) => p.name === "Liam's photographed draw")).toBe(false);
+    // The serialised view is the strongest form of this proof: the storage id
+    // and the resolved url are both entirely absent from what Artur receives,
+    // not merely unlabelled.
+    const serialised = JSON.stringify(arturLabs);
+    expect(serialised).not.toContain(storageId);
   });
 });

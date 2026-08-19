@@ -453,6 +453,14 @@ export default defineSchema({
     name: v.string(),
     lab: v.optional(v.string()),
     fasted: v.optional(v.boolean()),
+    /** How the numbers got here. Missing means "manual" — every panel before
+     * this field existed was typed in by hand, and that default costs nothing
+     * to keep true. */
+    source: v.optional(v.union(v.literal("manual"), v.literal("csv"), v.literal("photo"))),
+    /** Evidence the report existed — attached, never read. Same rule as the
+     * capture slice: this app does not parse an image or a file for values,
+     * it only stores what a person typed and lets the photo back them up. */
+    photoStorageId: v.optional(v.id("_storage")),
   }).index("by_userId", ["userId"]),
 
   tm_labResults: defineTable({

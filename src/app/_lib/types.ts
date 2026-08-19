@@ -30,6 +30,9 @@ export type MealSlot = "breakfast" | "lunch" | "dinner" | "snack";
 
 export type LabResultInput = { marker: string; value: number; unit: string };
 
+/** How a panel's numbers got into the file. Mirrors logicLabs.ts's PanelSource. */
+export type PanelSource = "manual" | "csv" | "photo";
+
 export type TimentoActions = {
   login: (slug: string, passcode: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => void;
@@ -107,7 +110,13 @@ export type TimentoActions = {
   setStackItemActive: (itemId: string, active: boolean) => void;
 
   /* labs */
-  addLabPanel: (name: string, results: LabResultInput[], fasted?: boolean) => void;
+  addLabPanel: (
+    name: string,
+    results: LabResultInput[],
+    fasted?: boolean,
+    source?: PanelSource,
+    photoStorageId?: string,
+  ) => void;
 
   /* accessibility — "easy" is a mode, not a preference toggle */
   setA11yProfile: (profile: "standard" | "easy") => void;
