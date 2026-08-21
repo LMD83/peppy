@@ -33,25 +33,37 @@
 - Backend logic tests (vitest, privacy proofs for crew views)
 - Convex deployability validation (module naming, "use node" isolation)
 
-**Push Notifications** (Incomplete — Infrastructure Ready)
-- VAPID key gating (supported: false if keys missing)
-- Service worker wired (`public/sw.js`)
-- Cron scheduler ready in `convex/crons.ts`
-- Tests for payload contract in place
+**Push Notifications** (Infrastructure complete, verified working Aug 21, 2026)
+- VAPID key gating (supported: false if keys missing) ✅
+- Service worker wired (`public/sw.js`) ✅
+- Cron scheduler ready in `convex/crons.ts` ✅
+- Tests for payload contract in place — 969/969 vitest tests pass ✅
+- Email delivery already implemented alongside push (see 1.2 below) ✅
+- Enable/disable toggle already in `remind-tab.tsx` (`SwitchCard`, `setReminderPrefs`) ✅
+- Quiet hours already implemented in `logicRemind.ts` ✅
 
 ---
 
 ## Phase 1: Polish & Stabilization (2–3 Weeks)
 
 ### 1.1 **Push Notification Completion**
-**Status:** 90% done (keys missing in dev)  
-**Work:**
-- [ ] Complete VAPID key setup (dev/staging/prod)
-- [ ] Test end-to-end: subscribe → send → receive → payload contract validation
-- [ ] Add settings toggle to enable/disable remind notifications
-- [ ] Verify quiet hours respect in `convex/tm/push.ts`
-- [ ] Monitor delivery metrics in prod (Convex logs)
-- [ ] Add fallback silent notification if user not in browser
+**Status:** Verified working — `npm run build`, `npx vitest run` (969/969 passing), and
+`npm run typecheck` all pass cleanly on this branch as of Aug 21, 2026. Local dev setup with
+generated VAPID keys is documented in `PUSH_NOTIFICATIONS_SETUP.md`.
+
+**Remaining work (narrowed from original list — most items were already built):**
+- [x] ~~Complete VAPID key setup~~ — done, keys generated + documented for dev; prod keys are a
+      deploy-time secret, not an engineering task
+- [ ] Test end-to-end on a **real device** (subscribe → wait for sweep or trigger manually →
+      confirm notification + "Taken" button arrive) — automated e2e only covers the "cannot
+      send" honesty check, not a live push round-trip, since that needs a real push service
+- [x] ~~Add settings toggle~~ — already exists (`SwitchCard`, `setReminderPrefs`)
+- [x] ~~Verify quiet hours~~ — already implemented in `logicRemind.ts`
+- [ ] Monitor delivery metrics in prod (Convex logs) — operational, do once deployed with real
+      VAPID keys
+- [ ] ~~Add fallback silent notification~~ — dropped: not a real gap, the sweep already skips
+      silently and logs when it cannot deliver (see `blockedLog`/`blockedReport` in
+      `logicPush.ts`)
 
 **Files to Touch:**
 - `convex/tm/push.ts` (action payload)
@@ -66,54 +78,62 @@
 
 ---
 
-### 1.2 **Email Notifications (Resend Integration)**
-**Status:** Not started  
-**Rationale:** Emails as async fallback for critical alerts (self-harm, overdue rechecks, streaks at risk)  
-**Work:**
-- [ ] Define trigger rules in `logicRemind.ts` (e.g., PHQ-9 Q9 ≥2 → send to support emails)
-- [ ] Create email template in Resend (clean, branded, minimal)
-- [ ] Add Convex action in `convex/tm/push.ts` to send via Resend (action-only, not query)
-- [ ] Hook email sending into `remind.ts` mutations
-- [ ] Add RESEND_API_KEY to env + prod secrets
-- [ ] Test in dev (Resend sandbox) + staging
+### 1.2 **Email Notifications (Resend Integration)** — ✅ ALREADY IMPLEMENTED
+**Status:** Done — verified Aug 21, 2026, corrected from initial roadmap error  
+**Verification:** `convex/tm/push.ts` already sends both push AND email in the same sweep
+(`if (mailer !== null && batch.email !== "")` loop). `convex/tm/logicEmail.ts` has the full
+message-building, address-cleaning, and capability-detection logic (`emailConfigured`,
+`emailMessage`, `emailFromEnv`). `tests/email.test.ts` covers it. The only remaining step is
+operational: set `RESEND_API_KEY` in whichever environment should actually send.
 
-**Files:**
-- `convex/tm/logicRemind.ts` (trigger rules)
-- `convex/tm/push.ts` (add Resend action)
-- `src/app/_components/remind-tab.tsx` (test send UI)
+**Correction note:** The original version of this roadmap listed this as "Not started" without
+checking the code first. It was already built as part of the reminders feature. No further
+engineering work needed — only a Resend account + API key when the team wants live email.
 
 ---
 
-### 1.3 **Dark Mode Refinement**
-**Status:** Partial (tokens exist, not all tested)  
-**Work:**
-- [ ] Run a11y suite in dark mode across all 21 screens → fix any contrast violations
-- [ ] Verify chart colors are readable in both modes (oklch tokens in `globals.css`)
-- [ ] Test SVG axis labels (axisFontSize calculations) in dark mode
-- [ ] Add dark-mode toggle to settings → persist to localStorage
-- [ ] Verify opacity + contrast rule (any container opacity <1.0 should be checked)
+### 1.3 **Dark Mode Refinement** — ❌ NOT APPLICABLE, REMOVED
+**Status:** Withdrawn — Timento has no light/dark toggle by design.  
+**Verification:** `globals.css` has an unused `.dark` CSS class inherited from the original
+shadcn/website-clone scaffold, but nothing in the app ever adds a `.dark` class to the DOM —
+no `next-themes`, no `ThemeProvider`, no toggle in `settings-tab.tsx`. Timento's actual design
+system (the `tm-*` tokens, ~50 of them) is a single fixed "ink-on-paper, plate-colour" aesthetic
+per `AGENTS.md` — light paper body, dark ink header/scoreboard — already tuned and contrast-
+tested for WCAG 2.2 AA (see the extensive ratio comments in `globals.css` lines 140–209, and
+`tests/a11y-tokens.test.ts` which recomputes every pairing from the file).
 
-**Files:**
-- `src/app/globals.css` (tm-* tokens)
-- `src/app/_components/charts.tsx` (axisFontSize)
-- `src/app/_components/ui.tsx` (dark mode toggle)
-- `tests/a11y-floor-guard.test.ts` (add dark mode run)
+**Correction note:** Building a light/dark toggle would work against the deliberate design and
+duplicate contrast-tuning work already done for the single theme. Recommend: leave as-is, or
+if truly wanted, treat as a **new design initiative** (a second full palette + re-run of the
+a11y contrast suite), not a "refinement." Removed from Phase 1.
 
 ---
 
-### 1.4 **Mobile UX Polish**
-**Status:** Core flows work, but edge cases remain  
-**Work:**
-- [ ] Add haptic feedback on check completion (iOS)
-- [ ] Improve touch targets (ensure ≥44px on mobile)
-- [ ] Test virtual keyboard behavior (inputs don't get occluded)
-- [ ] Add pull-to-refresh on Today tab (crew mode)
-- [ ] Verify scroll position recovery after modal close
-- [ ] Test tab switching performance (lazy load expensive tabs?)
+### 1.4 **Mobile UX Polish** — Partially done, scope narrowed
+**Status:** Touch targets already correct; remaining items are smaller than first estimated  
+**Verification:**
+- ✅ **Touch targets** — already 44×44px per WCAG 2.5.8, with an explicit comment marking the
+  fix (`today-tab.tsx:319`, "size-11 = 44×44 (2.5.8). Was size-8."). Not a gap.
+- ❌ **Haptic feedback** — no `navigator.vibrate` calls anywhere in `src/app/_components/`.
+  Genuine gap, but low priority: haptics need a user gesture and don't help crew accountability;
+  treat as a nice-to-have, not a blocker.
+- **Unverified, need live testing (not just code search):** virtual keyboard occlusion, scroll
+  position recovery after modal close, tab-switching performance. These need a real device or
+  Playwright + a real viewport, not a grep — pick up when doing a manual pass.
+
+**Revised work:**
+- [ ] (Optional, low priority) Add `navigator.vibrate(10)` on check completion, iOS/Android only
+- [ ] Manual pass: virtual keyboard occlusion on iOS Safari + Android Chrome
+- [ ] Manual pass: scroll position after closing a modal (today-tab, stack-tab)
+- [ ] Profile tab-switching in `app.tsx` only if a real perf complaint surfaces — no evidence of
+      a problem yet, don't optimize speculatively
 
 **Files:**
 - `src/app/_components/today-tab.tsx`
 - `src/app/_components/app.tsx` (tab switching)
+
+**Correction note:** The original entry assumed touch targets needed work; the codebase already
+fixed this with a WCAG-citing comment. Scope narrowed to the two items that are real gaps.
 
 ---
 
