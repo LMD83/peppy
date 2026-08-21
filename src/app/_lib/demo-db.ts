@@ -8,6 +8,7 @@ import {
   findPeak,
   isWinterWindow,
   overloadFlag,
+  projectGoal,
   targetKgFor,
   tripwireFor,
   type WallDay,
@@ -319,6 +320,11 @@ export class DemoDb {
     const wall = this.wallFor(user, date);
     const stats = computeStreakAndAdherence(wall, date);
     const latestKg = weighIns.length > 0 ? (weighIns[weighIns.length - 1].weightKg as number) : user.startKg;
+    const goalProjection = projectGoal(
+      latestKg,
+      user.goalKg,
+      weighIns.map((w) => ({ date: w.date, weightKg: w.weightKg as number })),
+    );
     return {
       series,
       ceilingKg: user.ceilingMut,
@@ -329,6 +335,7 @@ export class DemoDb {
       adherence7: stats.adherence7,
       streak: stats.streak,
       deltaKg: Math.round((latestKg - user.startKg) * 10) / 10,
+      goalProjection,
     };
   }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTimento } from "../_lib/backend";
+import type { ProgressData } from "../_lib/types";
 import { Card, Eyebrow, Stat, TmButton } from "./ui";
 import { ConsistencyWall, MassChart } from "./charts";
 
@@ -54,6 +55,7 @@ export function ProgressTab() {
         <p className="mt-2 font-tm-mono text-[11.5px] text-tm-dim">
           Amber line = survival ceiling. It never disappears. It is the floor you defend in a bad season.
         </p>
+        <GoalProjectionLine projection={progress.goalProjection} />
       </Card>
 
       <Card className="lg:col-span-5">
@@ -78,4 +80,35 @@ function nextReview(date: string): string {
   const d = new Date(`${date}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + 28);
   return d.toISOString().slice(0, 10);
+}
+
+type GoalProjection = NonNullable<ProgressData>["goalProjection"];
+
+/** Days as a phrase — a duration this far out reads as a number, not a plan. */
+function inWords(days: number): string {
+  if (days <= 0) return "at goal";
+  if (days <= 120) return `in ~${days}d`;
+  if (days <= 730) return `in ~${Math.round(days / 7)}wk`;
+  return "over a year out at this rate";
+}
+
+/**
+ * "At this rate, goal in ~Nd" — a straight-line read of the current trend,
+ * not a forecast. Silent when the trend is flat or there is too little data
+ * to fit one: the absence of a claim is the honest state, same rule the
+ * Reminders tab follows for what it cannot send.
+ */
+function GoalProjectionLine({ projection }: { projection: GoalProjection }) {
+  if (!projection) return null;
+  if (projection.kind === "on-track") {
+    return (
+      <p className="mt-1 font-tm-mono text-[11.5px] text-tm-dim">
+        ▲ at this rate, goal {inWords(projection.days)} — a projection of the current trend, not a promise
+      </p>
+    );
+  }
+  if (projection.kind === "away-from-goal") {
+    return <p className="mt-1 font-tm-mono text-[11.5px] text-tm-dim">— trending away from goal at this rate</p>;
+  }
+  return null;
 }

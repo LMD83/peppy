@@ -431,6 +431,15 @@ describe("progress", () => {
     expect(progress.wall).toHaveLength(14);
   });
 
+  it("projects a goal date from Liam's real declining trend (95 -> 85)", async () => {
+    const { t, liam } = await seeded();
+    const progress = await t.query(api.tm.progress.get, { token: liam, date: TODAY });
+    expect(progress.goalProjection.kind).toBe("on-track");
+    if (progress.goalProjection.kind === "on-track") {
+      expect(progress.goalProjection.days).toBeGreaterThan(0);
+    }
+  });
+
   it("seed is idempotent", async () => {
     const { t } = await seeded();
     await t.mutation(internal.tm.seed.run, { today: TODAY });

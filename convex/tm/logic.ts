@@ -7,6 +7,7 @@ import {
   daysBetween,
   type TmMode,
 } from "./lib";
+import { weightSlopeKgPerWeek, type WeighIn } from "./logicFuel";
 
 /**
  * Pure Timento domain logic, shared verbatim between the Convex query
@@ -105,6 +106,36 @@ export function targetKgFor(startKg: number, startDate: string, date: string): n
   return (
     Math.round((startKg - (daysBetween(startDate, date) / 7) * CUT_RATE_KG_PER_WEEK) * 10) / 10
   );
+}
+
+/** Below this many weigh-ins, a slope is noise — no projection is offered. */
+export const MIN_WEIGH_INS_FOR_PROJECTION = 4;
+/** Slower than this, in kg/week, reads as no trend rather than a slow one. */
+export const FLAT_SLOPE_KG_PER_WEEK = 0.05;
+
+export type GoalProjection =
+  | { kind: "insufficient-data" }
+  | { kind: "flat" }
+  | { kind: "away-from-goal" }
+  | { kind: "on-track"; days: number };
+
+/**
+ * "At this rate, goal in ~N days" — a straight-line projection from the same
+ * least-squares slope the adaptive-TDEE fit already uses (logicFuel.ts), and
+ * nothing more. It is a projection of the current trend continuing, not a
+ * forecast: it says nothing about whether the trend will hold, and the UI
+ * must not either. Works for a goal above or below the latest weigh-in, so
+ * the same function serves a cut and a future bulk without a second case.
+ */
+export function projectGoal(latestKg: number, goalKg: number, weighIns: WeighIn[]): GoalProjection {
+  if (weighIns.length < MIN_WEIGH_INS_FOR_PROJECTION) return { kind: "insufficient-data" };
+  const slopePerWeek = weightSlopeKgPerWeek(weighIns);
+  if (Math.abs(slopePerWeek) < FLAT_SLOPE_KG_PER_WEEK) return { kind: "flat" };
+  const remainingKg = latestKg - goalKg;
+  if (remainingKg === 0) return { kind: "on-track", days: 0 };
+  const weeksToGoal = remainingKg / -slopePerWeek;
+  if (!Number.isFinite(weeksToGoal) || weeksToGoal <= 0) return { kind: "away-from-goal" };
+  return { kind: "on-track", days: Math.round(weeksToGoal * 7) };
 }
 
 export function tripwireFor(

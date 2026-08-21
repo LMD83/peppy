@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { query } from "../_generated/server";
 import { adherenceStats, requireUser } from "./db";
-import { targetKgFor } from "./logic";
+import { projectGoal, targetKgFor } from "./logic";
 
 export const get = query({
   args: { token: v.string(), date: v.string() },
@@ -26,6 +26,11 @@ export const get = query({
 
     const stats = await adherenceStats(ctx, user, date);
     const latestKg = weighIns.length > 0 ? weighIns[weighIns.length - 1].kg : user.startKg;
+    const goalProjection = projectGoal(
+      latestKg,
+      user.goalKg,
+      weighIns.map((w) => ({ date: w.date, weightKg: w.kg })),
+    );
 
     return {
       series,
@@ -37,6 +42,7 @@ export const get = query({
       adherence7: stats.adherence7,
       streak: stats.streak,
       deltaKg: Math.round((latestKg - user.startKg) * 10) / 10,
+      goalProjection,
     };
   },
 });
