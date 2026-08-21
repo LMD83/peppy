@@ -436,6 +436,64 @@ for (const [label, viewport] of [
     );
   });
 
+  await check("connect: states what arrives, and that an unconfigured sync cannot", async () => {
+    await goTab(page, "More");
+    await page.getByRole("button", { name: /^Connect/ }).first().click({ timeout: NAV_TIMEOUT });
+    await page.waitForFunction(
+      () => /every gadget/i.test(document.querySelector("main")?.innerText ?? ""),
+      undefined,
+      { timeout: NAV_TIMEOUT },
+    );
+    const body = await page.locator("main").innerText();
+    // Demo mode has no poller. A sync card that cannot sync must say so.
+    if (!/no cloud to poll|will not pretend|not configured/i.test(body)) {
+      throw new Error("connect screen does not admit the sync cannot run");
+    }
+    // The no-guess contract is on the surface, not in a footnote.
+    if (!/refused|does not guess/i.test(body)) {
+      throw new Error("connect screen omits the refuse-not-guess promise");
+    }
+    await page.screenshot({ path: `${SHOTS}/${label}-19-connect.png`, fullPage: true });
+  });
+
+  await check("connect: a Renpho CSV round-trips through preview into readings", async () => {
+    // Dates far behind the fixtures, so every row is new and the run is repeatable.
+    const csv = [
+      "Date,Weight(kg),Body Fat(%),Visceral Fat",
+      "2025-12-01 07:15:00,93.1,24.2,9",
+      "2025-12-02 07:12:00,93.0,24.2,9",
+      "2025-12-03 07:18:00,92.9,24.1,9",
+    ].join("\n");
+    await page.locator('input[type="file"]').first().setInputFiles({
+      name: "renpho-export.csv",
+      mimeType: "text/csv",
+      buffer: Buffer.from(csv, "utf8"),
+    });
+    await page.getByText(/Read 3 readings from a Renpho export/i).waitFor({ timeout: NAV_TIMEOUT });
+    await page.getByRole("button", { name: /save to the file/i }).click();
+    await page.getByText(/Wrote 3 readings/i).waitFor({ timeout: NAV_TIMEOUT });
+    // Scale weights land as day weigh-ins only where none existed — the report says so.
+    const report = await page.locator("main").innerText();
+    if (!/filled 3 day weigh-ins/i.test(report)) {
+      throw new Error("import did not report the day weigh-ins it filled");
+    }
+  });
+
+  await check("connect: an InBody sheet types in and lands as one reading", async () => {
+    await page.getByLabel("Weight", { exact: true }).fill("93.5");
+    await page.getByLabel(/Skeletal muscle/i).fill("38.2");
+    await page.getByLabel(/Body fat \(PBF\)/i).fill("23.4");
+    await page.getByRole("button", { name: /save the scan/i }).click();
+    await page.getByText(/Wrote 1 reading\./i).waitFor({ timeout: NAV_TIMEOUT });
+  });
+
+  await check("connect: an implausible value is refused with the band named", async () => {
+    await page.getByLabel("Weight", { exact: true }).fill("935");
+    await page.getByRole("button", { name: /save the scan/i }).click();
+    await page.getByText(/outside the plausible band/i).waitFor({ timeout: NAV_TIMEOUT });
+    await page.getByLabel("Weight", { exact: true }).fill("");
+  });
+
   await check("carer: a pending request states exactly what it shares", async () => {
     await goTab(page, "Crew");
     const request = page.getByText(/carer/i).first();

@@ -476,6 +476,51 @@ export default defineSchema({
     .index("by_userId_and_marker", ["userId", "marker"])
     .index("by_panelId", ["panelId"]),
 
+  /* ===== Connect — readings that arrived from a device or a file =====
+     A reading is a record of what a machine printed, never a judgement about
+     it. Each row names its source, so an imported number can never be
+     silently indistinguishable from one a person typed — the same rule the
+     labs slice holds for panels. Readings stay in the owner's file: nothing
+     here is gathered by any crew query. */
+
+  tm_bodyMeasurements: defineTable({
+    userId: v.id("tm_users"),
+    date: v.string(),
+    /** HH:MM when the source carried one — a scale does, a result sheet may not. */
+    time: v.optional(v.string()),
+    weightKg: v.optional(v.number()),
+    bodyFatPct: v.optional(v.number()),
+    bodyFatMassKg: v.optional(v.number()),
+    /** InBody prints SMM in kg; Renpho prints "muscle mass" — different measures, kept apart. */
+    skeletalMuscleKg: v.optional(v.number()),
+    muscleMassKg: v.optional(v.number()),
+    visceralFat: v.optional(v.number()),
+    waterPct: v.optional(v.number()),
+    bmrKcal: v.optional(v.number()),
+    source: v.union(
+      v.literal("renpho-csv"),
+      v.literal("samsung-csv"),
+      v.literal("csv"),
+      v.literal("inbody"),
+      v.literal("renpho-cloud"),
+    ),
+    /** Free label for the machine: "Renpho ES-CS20M", "InBody 770". */
+    device: v.optional(v.string()),
+    importedAt: v.number(),
+  }).index("by_userId_and_date", ["userId", "date"]),
+
+  /** One row per poller run — the honesty trail behind the Connect screen's
+   * "automatic sync" card. A run that could not fetch says why; a deployment
+   * with no credentials never pretends it synced. Pruned to a short tail. */
+  tm_syncRuns: defineTable({
+    source: v.string(),
+    at: v.number(),
+    ok: v.boolean(),
+    reason: v.string(),
+    fetched: v.number(),
+    wrote: v.number(),
+  }).index("by_source", ["source"]),
+
   /* ===== Mind — validated instruments, intentions, reflections ===== */
 
   tm_assessments: defineTable({

@@ -151,6 +151,23 @@ export type LabResultRow = {
   refHigh?: number;
 };
 
+export type BodyMeasurementRow = {
+  userSlug: string;
+  date: string;
+  time?: string;
+  weightKg?: number;
+  bodyFatPct?: number;
+  bodyFatMassKg?: number;
+  skeletalMuscleKg?: number;
+  muscleMassKg?: number;
+  visceralFat?: number;
+  waterPct?: number;
+  bmrKcal?: number;
+  source: "renpho-csv" | "samsung-csv" | "csv" | "inbody" | "renpho-cloud";
+  device?: string;
+  importedAt: number;
+};
+
 export type AssessmentRow = {
   userSlug: string;
   date: string;

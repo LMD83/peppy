@@ -7,6 +7,7 @@ import { buildMindFixtures, type MindFixtures } from "./fixtures/mind";
 import { buildConsentFixtures, type ConsentFixtures } from "./fixtures/consent";
 import { buildSupplyFixtures, type SupplyFixtures } from "./fixtures/supply";
 import { buildShopFixtures, type ShopFixtures } from "./fixtures/shop";
+import { buildSyncFixtures, type SyncFixtures } from "./fixtures/sync";
 
 /**
  * Deterministic demo dataset for the two crew members, positioned relative to
@@ -81,7 +82,8 @@ export type Fixtures = {
   MindFixtures &
   ConsentFixtures &
   SupplyFixtures &
-  ShopFixtures;
+  ShopFixtures &
+  SyncFixtures;
 
 function wallChecks(userSlug: string, mode: TmMode, endDate: string, wall: number[]): Fixtures["checks"] {
   const keys = MODE_CHECKS[mode].map((c) => c.key);
@@ -301,5 +303,7 @@ export function buildFixtures(today: string): Fixtures {
     ...buildConsentFixtures(today),
     ...buildSupplyFixtures(today),
     ...buildShopFixtures(today),
+    // Scale readings mirror the daily weigh-ins built above, so the two agree.
+    ...buildSyncFixtures(today, days),
   };
 }
