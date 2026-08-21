@@ -8,14 +8,72 @@
 
 ---
 
+## Verification Log (Aug 21, 2026)
+
+Ran the actual toolchain against this branch rather than trusting status claims:
+
+| Check | Result |
+|---|---|
+| `npm install` | ✅ clean (Node engine warning only, non-blocking) |
+| `npx vitest run` | ✅ **969/969 tests pass**, including `tests/push.test.ts` payload/worker contract |
+| `npm run typecheck` | ✅ clean, 0 errors |
+| `npm run lint` | ✅ 0 errors (877 pre-existing warnings, all in vendored skill scripts or unrelated) |
+| `NEXT_PUBLIC_TIMENTO_DEMO=1 npm run build` | ✅ clean production build |
+| `node scripts/timento-e2e.mjs` against the built demo server | ✅ **all 33 flows pass on mobile-390 and desktop-1280, 0 console errors**, including "reminders: previews honestly when it cannot send" |
+| `node scripts/timento-a11y.mjs` | ✅ **75/75 screens pass, 0 WCAG 2.2 AA violations** (after a real bug fix — see below) |
+
+### Bug found and fixed: `/why` page hung the a11y suite (pre-existing, not introduced this session)
+
+The a11y suite deterministically timed out navigating to `/why`, twice in a row, always
+immediately after the `320-reminders` screen. Root-caused with an isolated Playwright repro
+(not guesswork):
+
+1. `remind-tab.tsx` registers the service worker eagerly on every visit to the Reminders tab
+   (by design — "so the worker is already in place when someone taps the switch").
+2. Once that worker calls `clients.claim()` and controls the page, `/why`'s hero image
+   (`<Image priority>` on `kitchen-close.png`) renders **two** requests for the same optimized
+   URL: the `priority` preload `<link>` and the actual `<img>`. Without a controlling service
+   worker the browser's own cache coalesces these; with one, each request is funneled through
+   the worker's fetch interception independently, and the loser of the pair comes back
+   `net::ERR_ABORTED` and never resolves — which means the page's `load` event never fires.
+   `domcontentloaded` fired instantly and Resource Timing showed nothing outstanding, which is
+   what pointed at the `load`-blocking image specifically rather than a general page fault.
+3. Confirmed by removing `priority` from that one `<Image>` (`src/app/why/page.tsx`): the same
+   navigation that timed out at 15s consistently resolved in the 80–90ms range afterward, with
+   the image rendering identically (screenshot-verified at 1280px — pixels unchanged).
+
+This blocks the a11y gate that `AGENTS.md` says must pass in CI, on every run where Reminders
+is visited before `/why` in the same browser session — which the script always does. Fixed on
+this branch; see the commit for the code change and inline comment explaining why `priority`
+stays off that image.
+
+Also generated real VAPID keys (`npx web-push generate-vapid-keys`) and documented them for
+local dev in `PUSH_NOTIFICATIONS_SETUP.md` (keys themselves live only in the gitignored
+`.env.local`, never committed).
+
+**Correction to the original estimate below:** several items in the checklist (settings toggle,
+quiet hours, email delivery) were already implemented before this session started — see
+`TIMENTO_ROADMAP.md` §1.1/1.2 for the corrected status. The checklist below was written before
+that verification pass, so treat any item confirmed done above as satisfied rather than
+re-doing it.
+
+---
+
 ## Overview
 
-Push notifications infrastructure is **90% complete**. The three-part system is wired:
+Push notifications infrastructure is **fully implemented and verified working** as of the log
+above. The three-part system is wired:
 
 - ✅ **Backend schedule** (`convex/crons.ts`) — Runs every 30 minutes
 - ✅ **Delivery engine** (`convex/tm/push.ts`) — Sends via web-push + Resend email
 - ✅ **Service worker** (`public/sw.js`) — Receives & displays notifications
-- ✅ **Tests** (`tests/push.test.ts`) — Payload/worker contract validated
+- ✅ **Tests** (`tests/push.test.ts`) — Payload/worker contract validated, passing
+- ✅ **Settings toggle** — `SwitchCard` / `setReminderPrefs` in `remind-tab.tsx`
+- ✅ **Quiet hours** — implemented in `logicRemind.ts`
+
+**Remaining gap:** live device round-trip (subscribe on a real phone → receive an actual push)
+has not been done in this session — that needs a real push service and a real device, which a
+sandboxed CI-style environment cannot provide. Everything CI-checkable is checked and green.
 
 **Blockers:** None. Setup just requires:
 1. VAPID key generation (5 min)

@@ -100,11 +100,17 @@ export default function WhyPage() {
             </div>
           </div>
           <div className="relative h-40 overflow-hidden rounded-[10px] md:h-[min(62vh,560px)]">
+            {/* No `priority`: it renders a duplicate <link rel=preload> for this
+                same optimized-image URL. Once the reminders tab has registered
+                its service worker (Reminders puts one in place on every visit,
+                by design), that duplicate pair of requests races under the
+                worker's fetch interception and the loser comes back
+                ERR_ABORTED — which never resolves, so the page's `load` event
+                never fires. Same pixels either way; only the preload link goes. */}
             <Image
               src="/why/kitchen-close.png"
               alt="Closed kitchen at night, counters cleared"
               fill
-              priority
               sizes="(min-width: 768px) 50vw, 100vw"
               className="object-cover"
             />
