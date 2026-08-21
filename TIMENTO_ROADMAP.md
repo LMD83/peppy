@@ -149,62 +149,89 @@ fixed this with a WCAG-citing comment. Scope narrowed to the two items that are 
 
 ## Phase 2: Data Richness & Insights (3–4 Weeks)
 
+**Audited against the actual code Aug 21, 2026** (an Explore agent read every file listed as
+evidence below) before writing new code, since Phase 1 found several "not started" items were
+already built. Same pattern here: of the ~15 original sub-items, 3 were already fully built, 1
+was partially built, and 1 (goal-date projection) has now been built and shipped this session.
+The rest are corrected to genuinely NOT STARTED below, with file:line evidence, not vibes.
+
 ### 2.1 **Trends & Analytics**
-**Status:** Not started  
-**Work:**
-- [ ] Add 7/14/30-day rolling views to Fuel, Train, Labs, Mind tabs
-- [ ] Implement trend line (linear regression) on charts → show ↑/↓ direction badges
-- [ ] Add zone shading (reference band, optimal band, caution band on labs charts)
-- [ ] Show variance metrics (CV, std dev) on macro trends
-- [ ] Add predictive caution: "at this rate, goal in X days"
-- [ ] Implement data export (CSV, PDF of monthly summary)
-
-**Files:**
-- `convex/tm/logicFuel.ts`, `logicTrain.ts`, `logicLabs.ts` (add trend calcs)
-- `src/app/_components/charts.tsx` (chart types: trend lines, zones)
-- `src/app/_components/research-tab.tsx` (export UI)
-
-**Queries to Add:**
-- `tm.trends.get(slice: 'fuel' | 'train' | 'labs', range: 7 | 14 | 30)`
+**Status:** Mixed — corrected per sub-item below, one item shipped this session.
+- [x] **Zone shading on lab charts** — ALREADY BUILT. `logicLabs.ts:56-78` (`flagFor`, reference +
+      optimal bands) rendered as real SVG shading in `RangeBar()`, `labs-tab.tsx:378-408`
+      (`fill-tm-green-faint` reference band, `fill-tm-green-mid` optimal band). The roadmap had
+      this listed as unbuilt; it was not.
+- [x] **Predictive caution ("at this rate, goal in X days")** — SHIPPED this session. Added
+      `projectGoal()` to `convex/tm/logic.ts`, reusing the existing `weightSlopeKgPerWeek()` fit
+      from `logicFuel.ts`. Renders on the Trend screen (Body → Trend). 976/976 tests, e2e, and
+      a11y all verified green after the change — see the commit on this branch for detail.
+- [~] **Trend line direction badges** — PARTIALLY BUILT. Fully live for Labs
+      (`logicLabs.ts:100-123` `deltaFor()`, rendered via `DIRECTION_MARK` in `labs-tab.tsx:344`).
+      Not built for Fuel (the slope exists at `logicFuel.ts:175-191` but isn't shown as a badge
+      anywhere) or Train/Mind (no slope calc exists there at all). Real remaining work: extend
+      the already-proven Labs pattern to Fuel first (data's already computed), Train/Mind would
+      need a new slope calc each.
+- [ ] **7/14/30-day rolling views (Fuel/Train/Labs/Mind)** — genuinely NOT STARTED. No
+      `tm.trends.get`-style query exists; `progress.ts` pulls a fixed 180-day window with no
+      range param, `logicLabs.ts`'s `MAX_TREND_POINTS=12` is draw-count-based not day-range-based.
+- [ ] **Variance metrics (CV, std dev)** — genuinely NOT STARTED. No such calc anywhere in
+      `logicFuel.ts`/`logicTrain.ts`/`logicLabs.ts`.
+- [ ] **CSV/PDF export** — genuinely NOT STARTED. The only "export"-shaped code in the repo is
+      CSV *import* for lab uploads (`labs-tab.tsx:490-598`); no outbound export exists.
 
 ---
 
 ### 2.2 **Crew Insights**
-**Status:** Not started  
-**Rationale:** Two-person context → accountability data, not comparison  
-**Work:**
-- [ ] Add "duality score" (how often do both users check on the same day?)
-- [ ] Show "streak parity" (when did one user's mode-adherence streak diverge from the other?)
-- [ ] Add protocol alignment view (both in same mode? days matched?)
-- [ ] Implement crew message board (shared decision log, private to crew only)
-- [ ] Add crew goal sync (both users set a training block together?)
+**Status:** Architecture mismatch — the roadmap imagined the wrong model. Corrected below.
 
-**Privacy Rule:** Crew board shows only projections (adherence %, streak days, mode), never:
-- Exact weights, labs values, food choices, exercise details
-- Raw check times or completion diffs
-- PHQ-9 scores or mental health data
+**The real architecture, read from `convex/tm/crew.ts` (314 lines) and `logicConsent.ts`:** this
+is not the simple two-person comparison the original roadmap assumed. It's a general N-user,
+per-scope consent system — invite/accept/revoke links, `scopes: adherence | supply`,
+`relationship: crew | carer`, a roster, and per-scope projection through `projectMember()` so an
+ungranted scope costs zero reads, let alone gets leaked. `crew.ts:26-41`'s own comment explains
+this replaced an earlier version that leaked adherence data to anyone signed in — any new
+"insight" feature has to go *through* `projectMember`, never bypass it, or it reopens exactly
+that leak.
 
-**Files:**
-- `convex/tm/crew.ts` (add crew.insights query)
-- `convex/tm/logicCrew.ts` (new — crew-level metrics)
-- `src/app/_components/crew-tab.tsx` (new insights section)
+- [x] **Crew message board** — ALREADY BUILT, just under a different name. `crew.ts:183-214`
+      (`feed` query + `nudge` mutation, scoped to consented counterparts only), rendered in
+      `crew-tab.tsx:64,369-417`. The roadmap called this "not started" — it's shipped.
+- [ ] **Duality score / streak parity / protocol alignment / crew goal sync** — genuinely NOT
+      STARTED, all four. The underlying per-member data (`mode`, `streak`, `adherence7`,
+      `daysInMode`) is already exposed per-scope in `MemberFacts` (`crew.ts:120-137`), so any of
+      these would be a *derived view* over data already flowing through consent, not new
+      plumbing — the real work is designing what's worth showing, then computing it inside
+      `projectMember`'s existing scope boundary.
+
+**Files (if picked up):** `convex/tm/crew.ts`, `convex/tm/logicConsent.ts` (extend, don't
+bypass), `src/app/_components/crew-tab.tsx`.
 
 ---
 
 ### 2.3 **Research Mode Enhancement**
-**Status:** 60% done (ledger + E1–E4 exist, needs UI polish)  
-**Work:**
-- [ ] Add experiment templates (sleep experiment, supplement test, protocol variance)
-- [ ] Implement cohort comparison view (E1 vs E2 vs E3 outcomes)
-- [ ] Add evidence-strength labels on all correlations (r=, p-value, n=, CI)
-- [ ] Implement craving trigger map UI (visual 2x2: depletion/emotion/cue/mixed)
-- [ ] Add disputed-marker resolution workflow (vote, note, archive)
-- [ ] Create shareable research summary (PDF or shareable link with password)
+**Status:** More built than the roadmap said, evidence-strength labels are the real gap.
+- [x] **Craving trigger map UI** — ALREADY BUILT. `logic.ts:57-68` (`buildTriggerMap`),
+      `research.ts:12-25`, rendered live via `<TriggerMap>` + engine read-out in
+      `research-tab.tsx:30-41`. The roadmap listed this as work to do; it already ships.
+- [ ] **Evidence-strength labels (r=, p-value, n=, CI)** — genuinely NOT STARTED. `classifyEngine`
+      (`logic.ts:73-84`) and `findPeak` (`logic.ts:86-102`) produce a share % and a dominant-signal
+      label, not a statistical estimate — there is no r/p/CI anywhere in `convex/tm/*.ts`. Given
+      the product's own invariant ("evidence strength is labelled wherever a claim is made"),
+      this is worth prioritizing over the fancier items below — but a fabricated p-value from an
+      n=1 experiment would be worse than none; needs real thought on what's honestly claimable
+      from a two-person, self-tracked dataset before building it.
+- [ ] **Experiment templates** — NOT STARTED. `research.ts:27-41` only reads the static,
+      fixture-seeded `tm_experiments` table; no template catalogue or "start from template"
+      mutation exists.
+- [ ] **Cohort comparison view** — NOT STARTED. `research-tab.tsx:44-61` lists experiments
+      individually; no side-by-side view.
+- [ ] **Disputed-marker resolution workflow (vote/note/archive)** — NOT STARTED. `research.ts`
+      only reads `tm_markers`; status is display-only, no mutation exists to resolve one.
+- [ ] **Shareable research summary** — NOT STARTED. No share-link or export logic anywhere in
+      `research.ts`/`research-tab.tsx`.
 
-**Files:**
-- `convex/tm/research.ts` (add templates query)
-- `convex/tm/logicEasy.ts` (add evidence strength calculations)
-- `src/app/_components/research-tab.tsx` (UI overhaul)
+**Files (if picked up):** `convex/tm/research.ts`, `convex/tm/logic.ts` (evidence calcs),
+`src/app/_components/research-tab.tsx`.
 
 ---
 
