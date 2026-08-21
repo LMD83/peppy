@@ -4,6 +4,16 @@
 **Current Status:** MVP Complete — Core Features Implemented  
 **Target Audience:** Two-person performance-file users (health accountability, protocol modes, crew tracking)
 
+**Phase 1.1 (Push Notifications) verification, Aug 21, 2026:** ran the full toolchain against
+this branch rather than trusting the plan's own status claims. Result: 969/969 vitest tests,
+clean typecheck, clean production build, e2e 33/33 flows × 2 viewports with 0 console errors,
+and a11y 75/75 screens with 0 WCAG 2.2 AA violations — the last of those only after finding and
+fixing a real, pre-existing bug (`/why`'s hero image hung the page's `load` event whenever the
+Reminders tab's service worker had already taken control of the page; see
+`PHASE_1_1_CHECKLIST.md` and the `src/app/why/page.tsx` commit for the root cause). Sections 1.2
+(email) and part of 1.4 (touch targets) turned out to already be built — corrected below rather
+than re-planned as new work.
+
 ---
 
 ## Current State
