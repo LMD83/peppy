@@ -13,8 +13,10 @@ import {
   type WallDay,
 } from "@convex/tm/logic";
 import type {
+  ConnectData,
   CravingEntry,
   CrewData,
+  ExportBundle,
   FeedData,
   FuelData,
   LabResultInput,
@@ -33,10 +35,12 @@ import type {
   TrainData,
 } from "./types";
 import type { FoodEquipment } from "@convex/tm/data/foods";
+import type { ImportReport, MeasurementInput, SyncSource } from "@convex/tm/logicSync";
 import { KITCHEN_PROFILES, type KitchenProfileRow } from "@convex/tm/fixtures/fuel";
 import type { SavedMenuRow } from "./demo/fuel";
 import type {
   AssessmentRow,
+  BodyMeasurementRow,
   DoseLogRow,
   EnergyEstimateRow,
   IntentionRow,
@@ -63,6 +67,7 @@ import * as supply from "./demo/supply";
 import * as ingest from "./demo/ingest";
 import * as shop from "./demo/shop";
 import * as remind from "./demo/remind";
+import * as syncSlice from "./demo/sync";
 
 /**
  * In-memory demo backend. Serves the same view models as the Convex queries,
@@ -99,6 +104,7 @@ export class DemoDb {
   doseLogs: DoseLogRow[];
   labPanels: LabPanelRow[];
   labResults: LabResultRow[];
+  bodyMeasurements: BodyMeasurementRow[];
   assessments: AssessmentRow[];
   intentions: IntentionRow[];
   reflections: ReflectionRow[];
@@ -140,6 +146,7 @@ export class DemoDb {
     this.doseLogs = [...fx.doseLogs];
     this.labPanels = [...fx.labPanels];
     this.labResults = [...fx.labResults];
+    this.bodyMeasurements = [...fx.bodyMeasurements];
     this.assessments = [...fx.assessments];
     this.intentions = [...fx.intentions];
     this.reflections = [...fx.reflections];
@@ -509,6 +516,12 @@ export class DemoDb {
   labsView(slug: string, date: string): LabsData {
     return labsView.view(this, slug, date);
   }
+  connect(slug: string, date: string): ConnectData {
+    return syncSlice.view(this, slug, date);
+  }
+  exportBundle(slug: string): ExportBundle {
+    return syncSlice.exportBundle(this, slug);
+  }
   mind(slug: string, date: string): MindData {
     return mind.view(this, slug, date);
   }
@@ -618,6 +631,17 @@ export class DemoDb {
   ) {
     labsView.addPanel(this, slug, date, name, results, fasted, source, photoStorageId);
     this.bump();
+  }
+
+  importMeasurements(
+    slug: string,
+    source: Exclude<SyncSource, "renpho-cloud">,
+    rows: MeasurementInput[],
+    device?: string,
+  ): ImportReport {
+    const report = syncSlice.importMeasurements(this, slug, source, rows, device);
+    this.bump();
+    return report;
   }
 
   submitAssessment(slug: string, date: string, instrument: string, answers: number[]) {

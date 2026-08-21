@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useSyncExternalStore } from "react";
-import { ConvexProvider, ConvexReactClient, useMutation, useQuery } from "convex/react";
+import { ConvexProvider, ConvexReactClient, useConvex, useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { DemoDb } from "./demo-db";
@@ -223,6 +223,9 @@ function DemoBackend({ children }: { children: React.ReactNode }) {
       setA11yProfile: (profile) => slug && db.setA11yProfile(slug, profile),
       createIngestToken: (label) => slug && db.createIngestToken(slug, date, label),
       revokeIngestToken: (tokenId) => db.revokeIngestToken(tokenId),
+      importMeasurements: async (source, rows, device) =>
+        slug ? db.importMeasurements(slug, source, rows, device) : null,
+      getExportBundle: async () => (slug ? db.exportBundle(slug) : null),
     }),
     [db, slug, date, store],
   );
@@ -246,6 +249,7 @@ function DemoBackend({ children }: { children: React.ReactNode }) {
     handsFree: slug ? db.handsFree(slug, date) : undefined,
     shop: slug ? db.shop(slug, date) : undefined,
     remind: slug ? db.remind(slug, date) : undefined,
+    connect: slug ? db.connect(slug, date) : undefined,
     actions,
   };
   return <TimentoContext.Provider value={value}>{children}</TimentoContext.Provider>;
@@ -286,6 +290,10 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
   const handsFree = useQuery(api.tm.ingest.get, args);
   const shop = useQuery(api.tm.shop.get, args);
   const remind = useQuery(api.tm.remind.get, args);
+  const connect = useQuery(api.tm.sync.get, args);
+  // For the one imperative read (the export bundle) — reactive subscription to
+  // rows that only leave as a file would be paying for freshness nobody sees.
+  const convexClient = useConvex();
 
   const loginMut = useMutation(api.tm.auth.login);
   const logoutMut = useMutation(api.tm.auth.logout);
@@ -335,6 +343,7 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
   const setPrefsMut = useMutation(api.tm.remind.setPrefs);
   const saveCaptureMut = useMutation(api.tm.remind.saveCapture);
   const removeCaptureMut = useMutation(api.tm.remind.removeCapture);
+  const importMeasurementsMut = useMutation(api.tm.sync.importMeasurements);
 
   const actions: TimentoActions = useMemo(
     () => ({
@@ -453,6 +462,24 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
       createIngestToken: (label) => token && void createTokenMut({ token, date, label }),
       revokeIngestToken: (tokenId) =>
         token && void revokeTokenMut({ token, tokenId: tokenId as Id<"tm_ingestTokens"> }),
+      // Null on failure, like logCraving: the screen says "did not land"
+      // rather than crashing mid-import.
+      importMeasurements: async (source, rows, device) => {
+        if (!token) return null;
+        try {
+          return await importMeasurementsMut({ token, source, rows, device });
+        } catch {
+          return null;
+        }
+      },
+      getExportBundle: async () => {
+        if (!token) return null;
+        try {
+          return await convexClient.query(api.tm.sync.exportBundle, { token });
+        } catch {
+          return null;
+        }
+      },
     }),
     [
       token,
@@ -506,6 +533,8 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
       setPrefsMut,
       saveCaptureMut,
       removeCaptureMut,
+      importMeasurementsMut,
+      convexClient,
     ],
   );
 
@@ -528,6 +557,7 @@ function ConvexBackendInner({ children }: { children: React.ReactNode }) {
     handsFree,
     shop,
     remind,
+    connect,
     actions,
   };
   return <TimentoContext.Provider value={value}>{children}</TimentoContext.Provider>;

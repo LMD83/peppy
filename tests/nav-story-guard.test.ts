@@ -46,7 +46,9 @@ describe("Protocol tells the day's work in order", () => {
     const appendix = APP.match(/const APPENDIX:[\s\S]*?=\s*\[([\s\S]*?)\];/);
     expect(appendix, "APPENDIX").toBeTruthy();
     const labels = [...appendix![1].matchAll(/label:\s*"([^"]+)"/g)].map((m) => m[1]);
-    expect(labels).toEqual(["Shopping", "Hands-free", "Reminders", "Photos"]);
+    // Connect joined the appendix with the device/file import work — a
+    // deliberate fifth row, not drift back toward the thirteen-row More list.
+    expect(labels).toEqual(["Shopping", "Hands-free", "Reminders", "Photos", "Connect"]);
   });
 });
 

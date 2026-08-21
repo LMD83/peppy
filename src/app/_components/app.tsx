@@ -39,6 +39,7 @@ const HandsFreePanel = dynamic(() => import("./handsfree-tab").then((m) => m.Han
 const ShopPanel = dynamic(() => import("./shop-tab").then((m) => m.ShopPanel), { loading: TabBusy });
 const RemindPanel = dynamic(() => import("./remind-tab").then((m) => m.RemindPanel), { loading: TabBusy });
 const CapturePanel = dynamic(() => import("./capture-tab").then((m) => m.CapturePanel), { loading: TabBusy });
+const ConnectPanel = dynamic(() => import("./connect-tab").then((m) => m.ConnectPanel), { loading: TabBusy });
 
 /*
   Bottom nav — the same four stamps in both profiles.
@@ -61,7 +62,8 @@ type TabId =
   | "handsfree"
   | "shop"
   | "remind"
-  | "capture";
+  | "capture"
+  | "connect";
 
 const NAV: readonly { id: TabId; label: string }[] = [
   { id: "today", label: "Today" },
@@ -71,7 +73,7 @@ const NAV: readonly { id: TabId; label: string }[] = [
 ];
 
 const PROTOCOL_TABS: ReadonlySet<TabId> = new Set(["fuel", "train", "body", "mind"]);
-const MORE_TABS: ReadonlySet<TabId> = new Set(["settings", "handsfree", "shop", "remind", "capture"]);
+const MORE_TABS: ReadonlySet<TabId> = new Set(["settings", "handsfree", "shop", "remind", "capture", "connect"]);
 
 type Destination = { key: string; label: string; tab: TabId; sub?: string; group: string };
 
@@ -92,6 +94,7 @@ const APPENDIX: Destination[] = [
   { key: "handsfree", label: "Hands-free", tab: "handsfree", group: "appendix" },
   { key: "remind", label: "Reminders", tab: "remind", group: "appendix" },
   { key: "capture", label: "Photos", tab: "capture", group: "appendix" },
+  { key: "connect", label: "Connect", tab: "connect", group: "appendix" },
 ];
 
 const STORY_GROUPS = [
@@ -151,7 +154,7 @@ function ProtocolShelf({
  */
 const MORE_GROUPS: { id: string; eyebrow: string; color: string; keys: string[] }[] = [
   { id: "week", eyebrow: "The week", color: "bg-tm-blue", keys: ["shop", "capture"] },
-  { id: "ways-in", eyebrow: "Ways in", color: "bg-tm-green", keys: ["handsfree", "remind"] },
+  { id: "ways-in", eyebrow: "Ways in", color: "bg-tm-green", keys: ["handsfree", "remind", "connect"] },
 ];
 
 function MoreShelf({
@@ -306,6 +309,7 @@ function Shell() {
         {tab === "shop" && <ShopPanel />}
         {tab === "remind" && <RemindPanel />}
         {tab === "capture" && <CapturePanel />}
+        {tab === "connect" && <ConnectPanel />}
         {tab === "today" && <TodayTab />}
         {tab === "fuel" && <FuelTab />}
         {tab === "train" && <TrainTab />}

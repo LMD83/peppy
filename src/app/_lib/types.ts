@@ -1,5 +1,6 @@
 import type { FunctionReturnType } from "convex/server";
 import type { api } from "@convex/_generated/api";
+import type { ImportReport, MeasurementInput, SyncSource } from "@convex/tm/logicSync";
 
 export type TodayData = FunctionReturnType<typeof api.tm.today.get>;
 export type CrewData = FunctionReturnType<typeof api.tm.crew.board>;
@@ -15,6 +16,12 @@ export type SupplyData = FunctionReturnType<typeof api.tm.supply.get>;
 export type HandsFreeData = FunctionReturnType<typeof api.tm.ingest.get>;
 export type ShopData = FunctionReturnType<typeof api.tm.shop.get>;
 export type RemindData = FunctionReturnType<typeof api.tm.remind.get>;
+export type ConnectData = FunctionReturnType<typeof api.tm.sync.get>;
+export type ExportBundle = FunctionReturnType<typeof api.tm.sync.exportBundle>;
+
+/** The screen's import sources — the poller's own tag never comes from a client. */
+export type ImportSource = Exclude<SyncSource, "renpho-cloud">;
+export type { ImportReport, MeasurementInput };
 
 export type TmSession = { token: string; slug: string; name: string };
 
@@ -118,6 +125,17 @@ export type TimentoActions = {
     photoStorageId?: string,
   ) => void;
 
+  /* connect — readings in from devices and files, raw rows out for the CSVs.
+     Both resolve rather than fire-and-forget: the screen repeats the commit's
+     own numbers back, and a report it never received is a report it must not
+     invent. */
+  importMeasurements: (
+    source: ImportSource,
+    rows: MeasurementInput[],
+    device?: string,
+  ) => Promise<ImportReport | null>;
+  getExportBundle: () => Promise<ExportBundle | null>;
+
   /* accessibility — "easy" is a mode, not a preference toggle */
   setA11yProfile: (profile: "standard" | "easy") => void;
 
@@ -183,6 +201,7 @@ export type TimentoState = {
   handsFree: HandsFreeData | undefined;
   shop: ShopData | undefined;
   remind: RemindData | undefined;
+  connect: ConnectData | undefined;
   actions: TimentoActions;
 };
 

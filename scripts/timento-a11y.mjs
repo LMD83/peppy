@@ -329,7 +329,7 @@ for (const [label, viewport, reflow] of [
   // The More shelf and everything only it reaches.
   await goTab(page, "More");
   await sweep(page, `${label}-more`, { reflow });
-  for (const shelf of [/^Shopping/, /^Reminders/, /^Photos/, /^Hands-free/, /^Settings/]) {
+  for (const shelf of [/^Shopping/, /^Reminders/, /^Photos/, /^Hands-free/, /^Connect/, /^Settings/]) {
     await goShelf(page, shelf);
     await page.waitForTimeout(200);
     await sweep(page, `${label}-${String(shelf).replace(/\W+/g, "")}`.toLowerCase(), { reflow });

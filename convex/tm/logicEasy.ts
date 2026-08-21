@@ -159,6 +159,7 @@ export const plainLanguage: Record<string, string> = {
   Bloods: "Blood tests",
   "Check-in": "Questions",
   Compound: "Medicine or supplement",
+  Connect: "Scales and files",
   Craving: "Urges",
   "Trigger map": "When urges hit",
   Crew: "People helping you",

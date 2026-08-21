@@ -27,4 +27,14 @@ const crons = cronJobs();
 
 crons.interval("timento reminder sweep", { minutes: SWEEP_MINUTES }, internal.tm.push.sweep, {});
 
+/*
+ * The Renpho poll rides the same server-side rule as reminders: the schedule
+ * lives here because no tab can be trusted to be open. Twice a day, around
+ * the two ends of a Dublin day — a morning weigh-in lands before breakfast
+ * is logged, an evening one before the day closes. Delivery is
+ * convex/tm/renphoCloud.ts, a Node action for node:crypto, which is why it is
+ * not this file; without credentials it logs one line and writes nothing.
+ */
+crons.cron("timento renpho sync", "45 5,19 * * *", internal.tm.renphoCloud.sweep, {});
+
 export default crons;

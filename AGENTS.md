@@ -83,6 +83,24 @@ module, `convex/tm/remind.ts`, because backend.tsx wires their mutations togethe
 stay in their own `logicRemind.ts` / `logicCapture.ts`, and `remind.get` carries the whole
 capture view through under `capture`.
 
+A tenth slice, **connect** (More → Connect), is how device data reaches the file:
+CSV import for body scales (Renpho export, Samsung Health download, generic
+date/weight sheets), InBody sheet quick-entry, CSV exports and the GP print
+sheet, plus the env-gated Renpho cloud poller. The strategy is
+`docs/research/INTEGRATIONS.md` (there is no "connect everything" API for a
+two-person web app — the export file is the universal connector); the rules are
+the app's usual ones, enforced in `logicSync.ts`: values checked against
+physiological bands and **refused, never coerced**; ambiguous dates refused with
+reasons; refused rows listed, never dropped; every reading tagged with its
+source. All three write routes — screen import, InBody form, poller — go through
+the ONE commit path in `convex/tm/sync.ts`, which also fills `tm_days.weightKg`
+only where no weigh-in exists (a typed weigh-in is never overwritten). The
+poller (`renphoCloud.ts`) carries `"use node";` for `node:crypto`, so it is
+actions-only and stays out of `crons.ts`, exactly like `push.ts`; without
+`RENPHO_EMAIL`/`RENPHO_PASSWORD` it logs one line and records nothing.
+`tests/sync.test.ts` holds the parser goldens, the dedupe plan, and the proof
+that readings never reach the crew board.
+
 Reminders are wired end to end and gated on one thing only: VAPID keys. `convex/crons.ts` holds
 the schedule, `convex/tm/push.ts` does the sending, and the two are separate modules because
 `web-push` needs Node built-ins — `push.ts` carries `"use node";`, which means it may export

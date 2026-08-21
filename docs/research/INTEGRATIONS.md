@@ -70,6 +70,28 @@ in an `action`). If not, build nothing here.
 **Phase 3 — only if a specific gap bites.** A Withings scale if Renpho breaks.
 Garmin if the program reopens *and* there is a legal entity to apply as.
 
+### Status — August 2026 build
+
+The Connect slice (`convex/tm/sync.ts` + `logicSync.ts` + `renphoCloud.ts`,
+screen at More → Connect) ships the first slice of this plan:
+
+- **Phase 0, partly built**: body-scale CSV import (Renpho export, Samsung
+  Health download, generic date/weight spreadsheets — lb→kg only where the
+  header declares pounds, ambiguous dates and implausible values refused with
+  reasons), InBody sheet quick-entry, per-slice CSV exports (weigh-ins,
+  training, bloods, readings — BOM + ISO dates), and the `@media print` GP
+  handover sheet. **Still open from Phase 0**: lab-PDF import (`unpdf` +
+  per-field confirmation) and the browser-side Apple Health/Fitbit Takeout
+  streaming import.
+- **Phase 1, built**: the Renpho poller, ported from `danvaneijck/renpho-api`
+  (AES-128-ECB envelope, login → device/count → paged measurements) as a
+  `"use node"` actions-only module, twice-daily cron, writing through the
+  same validation and dedupe plan as the CSV import — exactly as this
+  document required. Gated on `RENPHO_EMAIL`/`RENPHO_PASSWORD`; without them
+  it logs one line and records nothing. See DEPLOY.md for the owner steps.
+- **Phase 2**: not started — the Restricted-scope experiment above still
+  decides it.
+
 ### Rejected Renpho paths, and why
 
 - **Renpho → Fitbit → Google Health API.** The Fitbit Web API dies September

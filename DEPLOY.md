@@ -190,6 +190,37 @@ server and the device only receives.
 neither Background Sync nor Periodic Sync — which is why the schedule lives on
 the server and the device only receives.
 
+## Connect: the Renpho scale sync (owner step)
+
+The Connect screen's imports work with no configuration at all. The automatic
+scale sync is gated on one thing: your Renpho credentials on the deployment.
+Accept the terms knowingly (docs/research/INTEGRATIONS.md): Renpho publishes
+no API, so this speaks the app's own reverse-engineered protocol, stores your
+Renpho *password* (not a revocable token) in Convex env, and can break without
+notice. The CSV import is the same parser with none of these terms.
+
+```sh
+npx convex env set RENPHO_EMAIL    you@example.com     --prod
+npx convex env set RENPHO_PASSWORD '<renpho password>' --prod
+npx convex env set RENPHO_USER     liam                --prod  # whose file it lands in (default liam)
+npx convex env set RENPHO_TZ       Europe/Dublin       --prod  # zone readings are dated in (default)
+```
+
+`convex/crons.ts` sweeps at 05:45 and 19:45 UTC. Verify it end to end from a
+checkout:
+
+```sh
+npx convex run tm/renphoCloud:sweep --prod
+```
+
+It returns `{reason, fetched, wrote}` — `"no-credentials"` means the env vars
+are not set (and nothing was recorded, not even a run row), `"auth-failed"`
+means Renpho rejected the login, `"imported"` with a non-zero `wrote` means
+readings landed, and `"no-new-data"` means the dedupe plan found nothing new —
+which is the correct answer on every run after the first. The Connect screen
+shows the same trail under "Automatic sync", and without credentials it says
+it cannot sync rather than showing a switch that lies.
+
 ## Docker path
 
 `next.config.ts` keeps `output: "standalone"` for Docker/self-hosted builds;
