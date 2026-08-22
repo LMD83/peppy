@@ -1,5 +1,5 @@
-import { PeppyFoundation } from "./_components/peppy-foundation";
+import { TimentoApp } from "./_components/app";
 
 export default function HomePage() {
-  return <PeppyFoundation />;
+  return <TimentoApp />;
 }
