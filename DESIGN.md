@@ -1,34 +1,37 @@
 ---
 name: Timento
-description: Performance file UI — paper, ink, mono stamps, mode-aware amber/green
+description: Performance file UI in the Peppy palette — calm green-tinted paper, ink stamps, scheme-aware light/dark
 colors:
-  paper: "#fafaf8"
+  paper: "#f6f7f2"
   panel: "#ffffff"
-  ink: "#15171c"
-  ink-2: "#1e222a"
-  ink-3: "#232730"
-  ink-rule: "#2c313b"
-  dim: "#5f636a"
-  dim-2: "#63676e"
-  on-ink: "#a2a7af"
-  rule: "#e4e5e1"
-  rule-strong: "#888b85"
-  grid: "#eeefeb"
-  soft: "#f3f3f0"
+  ink: "#18201d"
+  ink-2: "#232b27"
+  ink-3: "#2b342f"
+  ink-rule: "#3a453f"
+  dim: "#4e5b55"
+  dim-2: "#52605a"
+  on-ink: "#aebbb3"
+  rule: "#c6d0c9"
+  rule-strong: "#6f7e76"
+  grid: "#e9ece5"
+  soft: "#edefe9"
   blue: "#2b5fab"
   blue-faint: "#e9eff8"
-  red: "#b8323a"
-  red-bg: "#faeceb"
-  green: "#297047"
-  green-mid: "#9cc4a9"
-  green-faint: "#dfeae2"
-  yellow: "#8a6407"
-  amber: "#8f5a15"
-  amber-bg: "#fbf3e4"
+  red: "#9f2f35"
+  red-bg: "#f9ecea"
+  green: "#275d50"
+  green-mid: "#9cc7b4"
+  green-faint: "#e7f2ed"
+  yellow: "#846005"
+  amber: "#855316"
+  amber-bg: "#faf1de"
   amber-ink: "#6b5a2e"
-  amber-lift: "#e0a34e"
+  amber-lift: "#ffd18a"
   purple: "#7e5191"
-  focus: "#3b82f6"
+  focus: "#3e8e6c"
+  board: "#18201d"
+  stamp: "#18201d"
+  on-stamp: "#ffffff"
 typography:
   display:
     fontFamily: "Archivo Black, sans-serif"
@@ -89,8 +92,8 @@ typography:
     letterSpacing: "0.15em"
 rounded:
   sm: "6px"
-  md: "10px"
-  lg: "14px"
+  md: "14px"
+  lg: "18px"
   pill: "20px"
 spacing:
   xs: "4px"
@@ -100,8 +103,8 @@ spacing:
   xl: "24px"
 components:
   button-primary:
-    backgroundColor: "{colors.ink}"
-    textColor: "#ffffff"
+    backgroundColor: "{colors.stamp}"
+    textColor: "{colors.on-stamp}"
     typography: "{typography.label}"
     rounded: "{rounded.md}"
     padding: "12px 16px"
@@ -135,8 +138,8 @@ components:
     padding: "8px 14px"
     height: "44px"
   chip-active:
-    backgroundColor: "{colors.ink}"
-    textColor: "#ffffff"
+    backgroundColor: "{colors.stamp}"
+    textColor: "{colors.on-stamp}"
     typography: "{typography.label}"
     rounded: "{rounded.pill}"
     padding: "8px 14px"
@@ -153,146 +156,212 @@ components:
     padding: "16px"
 ---
 
-# Design System: Timento
+# Design System: Timento × Peppy
 
 ## Overview
 
-**Creative North Star: "The Performance File"**
+**Creative North Star: "The Performance File, on calm paper"**
 
-Timento looks like a paper case file you open every day — cool off-white stock, near-black ink headers, mono uppercase stamps for sections and controls. Density is high but calm: stacked cards in a narrow column, not a dashboard wallpaper. Mode is the only drama — cut/maintain stay green-ink quiet; survival turns amber without becoming neon.
+Timento still looks like a paper case file you open every day — but the stock
+is now Peppy's (`design-system/peppy/MASTER.md`): a green-tinted warm off-white
+instead of cool grey, deep sea-green ink accents instead of neutral greys, and
+softer 14px corners. Density is unchanged: stacked cards in a narrow column,
+mono uppercase stamps, high signal. Mode is still the only drama — cut/maintain
+stay green-ink quiet; survival turns amber without becoming neon.
 
-The system rejects wellness cream-serif kitsch, purple SaaS gradients, and glow-heavy dark dashboards. Evidence over pep talk: eyebrows with a short color hash mark, scoreboard cells as file tabs, sheets as clipped overlays rather than glassmorphism.
+The system rejects wellness cream-serif kitsch, purple SaaS gradients, and
+glow-heavy dark dashboards. Evidence over pep talk: eyebrows with a short color
+hash mark, scoreboard cells as file tabs, sheets as clipped overlays rather
+than glassmorphism.
 
 **Key Characteristics:**
-- Paper / panel / ink neutrals with hairline rules
+- Peppy paper / panel / ink neutrals (green-tinted) with visible rules
 - Archivo Black display + IBM Plex Sans body + IBM Plex Mono labels
-- Mode-aware green (execute) vs amber (floor)
+- Peppy Primary green (execute) vs deepened Peppy Attention amber (floor)
+- Two colour schemes from one utility set — dark follows the OS, light-first
 - Flat surfaces; one soft card shadow; deeper lift only on sheets
 - Mobile-first `max-w-md` column; fixed bottom nav (More is overflow)
 
 ## Colors
 
-A cool paper stack with ink text, semantic greens/ambers for protocol state, and restrained blues/reds for measure and alarm. Values below are the AA-retuned tokens in `src/app/globals.css` — do not restore the pre-retune hex.
+The Peppy palette holds the same semantic roles the file always had. Values
+below are the light scheme; the dark scheme re-points every token in
+`src/app/globals.css`, and `tests/a11y-tokens.test.ts` recomputes every pairing
+for BOTH schemes — take new colors from `globals.css`, never from memory.
+
+### Fill roles (scheme-critical)
+- **Board** (#18201d light / #0f1318 dark): the scoreboard/login header ground.
+  Dark in both schemes — its white title and on-ink text never flip.
+- **Stamp / On-stamp** (#18201d + #ffffff light; mint #8fcdbb + deep green
+  dark): every filled primary control. Never hardcode `text-white` on a fill —
+  use the paired on-token (`tm-onstamp`, `tm-ongreen`, `tm-onamber`,
+  `tm-onred`, `tm-onblue`), or the fill breaks when the scheme flips it light.
 
 ### Primary
-- **File Ink** (#15171c): Primary actions, scoreboard chrome, selected chips, strong text. The voice of the stamp.
-- **Cool Paper** (#fafaf8): App canvas / page ground.
-- **Panel White** (#ffffff): Cards, sheets, bottom chrome.
+- **Peppy Ink** (#18201d): body text; 15.44:1 on paper.
+- **Peppy Page / Surface** (#f6f7f2 / #ffffff): canvas and cards.
 
 ### Secondary
-- **Protocol Green** (#297047): Cut-mode accents, done checks, positive chips, adherence. White on it 5.99:1.
-- **Floor Amber** (#8f5a15) on **Amber Stock** (#fbf3e4): Survival mode, tripwires, review prompts. White on amber 5.77:1; amber on stock 5.23:1. **Amber Ink** (#6b5a2e) for readable copy on amber stock. **Amber Lift** (#e0a34e) is amber on the dark header only.
+- **Peppy Primary green** (#275d50): executed progress, done checks, adherence.
+  On-green on it 7.59:1. **Support** (#e7f2ed) is its faint stock.
+- **Floor amber** (#855316, Peppy Attention deepened one notch) on **Amber
+  Stock** (#faf1de): survival mode, tripwires, review prompts. On-amber on it
+  6.47:1 — within 1.5 of green's ratio, the survival-parity invariant the
+  token test enforces. **Amber Ink** (#6b5a2e) for copy on amber stock.
+  **Amber Lift** (#ffd18a) is amber on the board only, both schemes.
 
 ### Tertiary
-- **Measure Blue** (#2b5fab): Weigh-in / state-check eyebrows, informational accents. **Blue Faint** (#e9eff8) for the maintain badge fill.
-- **Alarm Red** (#b8323a): Craving, kitchen, destructive (sign out), errors. **Red Bg** (#faeceb) for error panels.
-- **Evidence Yellow** (#8a6407): Research / experiment eyebrows.
-- **Marker Purple** (#7e5191): Reserved accent; use sparingly.
+- **Measure Blue** (#2b5fab): weigh-in / state-check eyebrows.
+- **Peppy Danger** (#9f2f35): craving, kitchen, destructive, errors.
+- **Evidence Yellow** (#846005): research / experiment eyebrows.
+- **Marker Purple** (#7e5191): reserved accent; use sparingly.
 
 ### Neutral
-- **Ink 2 / 3 / Rule** (#1e222a / #232730 / #2c313b): Scoreboard interior layers and dark borders.
-- **Dim / Dim 2** (#5f636a / #63676e): Secondary labels on light surfaces (both clear 4.5:1 on paper/panel/soft/grid/amber-bg/green-faint).
-- **On Ink** (#a2a7af): Muted text on the dark scoreboard and login header.
-- **Rule / Rule Strong / Grid / Soft** (#e4e5e1 / #888b85 / #eeefeb / #f3f3f0): Decorative card edges vs 3:1 control boundaries, list dividers, quiet fills.
-- **Focus** (#3b82f6): 3:1 ring on paper and on ink.
-- **Contrast-more overrides** (#3a3d43 / #d9dde3): Under `prefers-contrast: more`, muted text collapses toward ink on paper (10.42:1) and on-ink muted text lifts (13.15:1). These exist only inside that media query.
+- **Peppy Muted ink** (#4e5b55 / #52605a): secondary text — 6.61:1 on paper.
+- **Rule / Rule Strong** (#c6d0c9 / #6f7e76): decorative card edges vs 3:1
+  control boundaries (rule-strong is 4.27:1 on panel).
+- **On Ink** (#aebbb3): muted text on the board, both schemes.
+- **Focus** (#3e8e6c light / #6fd0a8 dark): Peppy-green ring, ≥3:1 on page and
+  board alike.
 
 ### Named Rules
-**The One Stamp Rule.** Saturated accents (green, amber, red, blue) mark state — never decorate empty chrome. Prefer ink + paper first.
+**The One Stamp Rule.** Saturated accents (green, amber, red, blue) mark state
+— never decorate empty chrome. Prefer ink + paper first.
 
-**The Floor Amber Rule.** Amber means survival / tripwire / review. Do not use amber as a generic “warning yellow” for unrelated UI.
+**The Floor Amber Rule.** Amber means survival / tripwire / review. Do not use
+amber as a generic "warning yellow" for unrelated UI.
+
+**The On-Token Rule.** Text on a filled control comes from that fill's on-token,
+never `text-white` — the dark scheme flips fills light.
 
 ## Typography
 
-**Display Font:** Archivo Black (sans)
-**Body Font:** IBM Plex Sans (system-ui fallback)
+Unchanged by the Peppy pass — the ramp was already the accessibility floor.
+
+**Display Font:** Archivo Black (sans) · **Body Font:** IBM Plex Sans ·
 **Label/Mono Font:** IBM Plex Mono
 
-**Character:** Display is compressed and uppercase-friendly for protocol titles; mono carries the file’s bureaucratic voice (eyebrows, buttons, stats labels); sans carries readable body at 13–15px.
-
 ### Hierarchy — the whole ramp, no other sizes
-The app uses exactly six pinned steps plus the display scale. Anything off this list is drift (the sizes below 11.5px that once shipped were raised at the source on 2026-08-17; `tests/a11y-floor-guard.test.ts` fails the build if one returns).
+Exactly six pinned steps plus the display scale; anything off this list is
+drift (`tests/a11y-floor-guard.test.ts` fails the build if a sub-11.5px size
+returns).
 
-- **Label — 11.5px** (mono, 400/500, tracking 0.1–0.15em, uppercase): Eyebrows, buttons, nav, chips, status badges, footnotes. This is the floor for everyone; easy mode lifts it to 16px.
-- **Caption — 13px** (sans 400): Secondary copy, list-row detail lines. Easy mode lifts to 16px.
-- **Body — 14px** (sans 400; 600 for card titles): Explanatory copy, answers, notes. Easy mode lifts to 18px.
-- **Row title — 15px** (sans 500): The primary line of a tappable list row (retailers, doses, choices). Easy mode lifts to 18px.
-- **Shelf row — 17px** (sans 500): Story-shelf navigation rows and the largest tap-row text. Easy mode lifts to 18px.
-- **Display** (Archivo Black 400, tight): Tailwind named steps (`text-lg`–`text-2xl` and up) for headings; pinned numerals at **22px** (scoreboard stats), **32/34/40px** (rest timer, energy figures, weigh-in). Numerals are data, not labels — they scale per surface.
-- **Print exception:** the print-only shopping list runs 16–24px on paper and is unaffected by easy mode.
-- **SVG:** chart text must come from `axisFontSize(viewBoxWidth)` — the viewBox transform means a pinned class lies about its rendered size.
+- **Label — 11.5px** (mono, 400/500, tracking 0.1–0.15em, uppercase): eyebrows,
+  buttons, nav, chips, badges. Easy mode lifts it to 16px.
+- **Caption — 13px** (sans 400). Easy mode lifts to 16px.
+- **Body — 14px** (sans 400; 600 for card titles). Easy mode lifts to 18px.
+- **Row title — 15px** (sans 500). Easy mode lifts to 18px.
+- **Shelf row — 17px** (sans 500). Easy mode lifts to 18px.
+- **Display** (Archivo Black 400, tight): Tailwind named steps for headings;
+  pinned numerals at 22 / 32 / 34 / 40px.
+- **Print exception:** the print-only shopping list runs 16–24px.
+- **SVG:** chart text must come from `axisFontSize(viewBoxWidth)`.
 
 ### Named Rules
-**The Mono Stamp Rule.** Interactive chrome and section labels speak in mono uppercase. Do not title-case primary buttons in sans.
+**The Mono Stamp Rule.** Interactive chrome and section labels speak in mono
+uppercase. Do not title-case primary buttons in sans.
 
 ## Layout
 
-Mobile-first single column capped at `max-w-md` (`lg:max-w-3xl`), horizontal padding ~16px, vertical rhythm of 12px between cards (`gap-3`). Scoreboard is full-bleed ink header; content sits on paper. Bottom chrome is a single tab bar; page padding-bottom is **84px** so content clears it. Desktop keeps the same narrow column centered — not a wide dashboard. Easy mode (`[data-easy="1"]`) raises the root to 18px and targets to 48px.
+Mobile-first single column capped at `max-w-md` (`lg:max-w-3xl`), horizontal
+padding ~16px, vertical rhythm of 12px between cards (`gap-3`). Scoreboard is a
+full-bleed board header; content sits on paper. Bottom chrome is a single tab
+bar; page padding-bottom is **84px**. Desktop keeps the same narrow column
+centered. Easy mode (`[data-easy="1"]`) raises the root to 18px and targets to
+48px — easy mode IS the Peppy 18px/48px experience contract, applied when the
+person chooses it.
+
+## Color Schemes
+
+One utility set, two schemes. `@theme inline` maps every `tm-*` utility onto a
+`var(--tm-*)`; the light values live on `:root` and a single
+`prefers-color-scheme: dark` block re-points all of them (Peppy MASTER.md dark
+column). Light-first: dark is never the only comfortable theme. Rules:
+
+- The dark block re-declares EVERY token — the token test fails on a subset.
+- Board, amber-lift, on-ink and scrim hold one value across schemes.
+- `prefers-contrast: more` has a dark counterpart block; keep both when adding
+  overrides.
 
 ## Elevation & Depth
 
-Flat-by-default file surfaces. Depth comes from paper vs panel contrast and hairline rules, not stacked shadows.
+Flat-by-default file surfaces. Depth comes from paper vs panel contrast and
+hairline rules, not stacked shadows.
 
 ### Shadow Vocabulary
-- **Card rest** (`0 1px 2px rgba(21,23,28,0.04)`): Default cards.
-- **Sheet lift** (`0 8px 32px rgba(21,23,28,0.18)`): Modal sheets only.
-- **Scrim** (`ink` at 40%): Sheet backdrop.
+- **Card rest** (`0 1px 2px rgba(24,32,29,0.04)`): default cards.
+- **Sheet lift** (`0 8px 32px rgba(24,32,29,0.18)`): modal sheets only.
+- **Scrim** (`tm-scrim` at 40%): sheet backdrop, near-black in both schemes.
 
 ### Named Rules
-**The Flat-By-Default Rule.** No glow, no multi-layer glass. Shadows appear only for cards (whisper) and sheets (structure).
+**The Flat-By-Default Rule.** No glow, no multi-layer glass.
 
 ## Shapes
 
-Gently squared file corners on a four-step ramp — **6 / 10 / 14 / 20px**: small controls at 6px (`rounded-md`), cards, buttons and check rows at **10px**, sheets and status pills at **14px**, chips/mode pills at **20px**, with `rounded-full` reserved for dots and true pills. The Tailwind names `rounded-lg` (8px) and `rounded-xl` (12px) are off-ramp and were normalised away on 2026-08-17 — use the pinned values. Eyebrow hash marks are nearly square (`1px` radius). Borders are 1px `rule` or semantic color — no thick outlines.
+Peppy's softer corners on a four-step ramp — **6 / 14 / 18 / 20px**: small
+controls at 6px, cards, buttons, inputs and check rows at **14px** (the Peppy
+"cards and actions" radius), sheets and status pills at **18px**, chips/mode
+pills at 20–22px, `rounded-full` for dots and true pills. Eyebrow hash marks
+stay nearly square (1px). Borders are 1px `rule` or semantic color — no thick
+outlines.
 
 ## Components
 
 ### Buttons (`TmButton`)
-- **Shape:** 10px radius; min height 44px; mono uppercase 11.5px / 0.15em tracking.
-- **Primary:** Ink fill, white text.
-- **Ghost:** Panel fill, rule border, ink text.
-- **Danger:** Alarm red fill.
-- **Soft:** Soft fill for secondary completion states.
-- **Press:** 150ms transform/opacity; disabled at 40%. Reduced motion keeps this press; it stills pulse and the breathe fill only.
+- **Shape:** 14px radius; min height 44px; mono uppercase 11.5px / 0.15em.
+- **Primary:** Stamp fill, on-stamp text. **Ghost:** panel + rule border.
+- **Danger:** Peppy Danger fill. **Soft:** soft fill.
+- **Press:** 150ms transform/opacity; disabled at 40%.
 
 ### Chips (`TmChip`)
-- **Style:** Pill (20px), soft fill + rule border; green tone for crew nudges.
-- **Active:** Ink (or green) fill with white text; `aria-pressed` when used as a toggle.
+- Pill (20px), soft fill + rule border; green tone for crew nudges.
+- **Active:** stamp (or green) fill with its on-token text; `aria-pressed`.
 
 ### Cards (`Card`)
-- **Corner Style:** 10px
-- **Default:** Panel + rule border + whisper shadow; padding 16px.
-- **Amber tone:** Amber stock + amber border for tripwire / survival / review.
+- 14px corners; panel + rule border + whisper shadow; padding 16px.
+- **Amber tone:** amber stock + amber border for tripwire / survival / review.
 
 ### Eyebrow
-Mono uppercase dim label with an 18×4px color hash bar — the file’s section stamp.
+Mono uppercase dim label with an 18×4px color hash bar.
 
 ### Inputs
-Panel background, 10px radius, **rule-strong** border (3:1); focus border shifts to ink. Numeric weigh-in stays narrow mono.
+Panel background, 14px radius, **rule-strong** border (3:1); focus border
+shifts to ink.
 
 ### Navigation
-Fixed bottom tab bar on panel with top rule; mono label; 3px mode-accent pill when active (green or amber). Four stamps for everyone: Today / Protocol / Crew / More. Protocol is the day's work in order (kitchen → body file → mind file); More is the appendix. Easy mode keeps the same stamps and plains the shelf rows only. Labels nowrap at 320px. A “Skip to content” link precedes the scoreboard.
+Fixed bottom tab bar on panel with top rule; mono label; 3px mode-accent pill
+when active. Four stamps: Today / Protocol / Crew / More. Labels nowrap at
+320px. A "Skip to content" link precedes the scoreboard.
 
 ### Scoreboard (signature)
-Ink header with white display title, mono kicker, mode disclosure (not a dialog), and a three-cell dark interior board (Mass / Day / Adherence|Floor). File menu lives here — not in the tab bar.
+Board header (`tm-board`, dark in both schemes) with white display title, mono
+kicker, mode disclosure, and a three-cell interior board on ink2/ink3.
 
 ### Sheets (`TmSheet`)
-Bottom sheet on mobile, centered on larger viewports; 14px radius; title in mono; dismissible scrim (click only, out of tab order). Keyboard: focus Close on open, Tab cycles inside the panel, Escape closes, focus returns to the opener.
+Bottom sheet on mobile, centered on larger viewports; 18px radius; title in
+mono; dismissible scrim (`tm-scrim/40`). Keyboard: focus Close on open, Tab
+cycles inside, Escape closes, focus returns to the opener.
 
 ## Do's and Don'ts
 
 ### Do:
 - **Do** keep the narrow performance-file column and paper/ink pairing.
 - **Do** use mono uppercase for chrome (buttons, nav, eyebrows).
-- **Do** reserve amber for survival / tripwire / review; green for executed progress.
+- **Do** reserve amber for survival / tripwire / review; green for executed
+  progress.
+- **Do** pair every fill with its on-token; test in both schemes.
 - **Do** keep primary controls ≥44px tall (48px in easy mode).
 - **Do** share crew projection only — never style partner weights into the UI.
-- **Do** take new colors from `globals.css` tokens, not from this file’s memory of an older palette.
+- **Do** take new colors from `globals.css` tokens, not from this file's
+  memory of an older palette.
 
 ### Don't:
 - **Don't** introduce purple gradients, glassmorphism, or neon dark themes.
-- **Don't** replace Archivo / IBM Plex with Inter/Roboto “default SaaS” stacks.
+- **Don't** replace Archivo / IBM Plex with Inter/Roboto "default SaaS" stacks.
 - **Don't** add a fifth bottom-nav stamp; Protocol and More are shelves.
+- **Don't** hardcode `text-white` on a token fill — the dark scheme flips it.
 - **Don't** decorate with emoji or sticker badges on the scoreboard.
-- **Don't** invent macro-tracking chrome that violates survival’s three-check floor.
-- **Don't** restore pre-AA hex (`#c77d1f`, `#2e7d4f`, `#c7373f`, `#70747b`, `#9ba0a8`, `#b8860b`).
+- **Don't** invent macro-tracking chrome that violates survival's three-check
+  floor.
+- **Don't** restore pre-AA hex (`#c77d1f`, `#2e7d4f`, `#c7373f`, `#70747b`,
+  `#9ba0a8`, `#b8860b`) — the token test bans them in either scheme.
