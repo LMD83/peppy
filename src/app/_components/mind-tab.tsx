@@ -389,7 +389,7 @@ function Questionnaire({ instrument, onClose }: { instrument: InstrumentView; on
                     className={cn(
                       "h-11 flex-1 cursor-pointer rounded-[14px] border font-tm-mono text-[11.5px] transition-transform duration-150 active:scale-[0.98]",
                       chosen === value
-                        ? "border-tm-ink bg-tm-ink text-white"
+                        ? "border-tm-stamp bg-tm-stamp text-tm-onstamp"
                         : "border-tm-rule bg-tm-panel text-tm-dim",
                     )}
                   >
@@ -413,7 +413,7 @@ function Questionnaire({ instrument, onClose }: { instrument: InstrumentView; on
           disabled={!complete}
           className={cn(
             "min-h-11 flex-1 cursor-pointer rounded-[14px] px-4 font-tm-mono text-[11.5px] tracking-[0.12em] uppercase transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
-            complete ? "bg-tm-ink text-white" : "bg-tm-soft text-tm-dim2",
+            complete ? "bg-tm-stamp text-tm-onstamp" : "bg-tm-soft text-tm-dim2",
           )}
         >
           {complete ? "Submit" : `${instrument.items.length - answered} left`}
@@ -653,7 +653,7 @@ function IntentionBuilder({ suggestions }: { suggestions: Suggestion[] }) {
         disabled={!ready}
         className={cn(
           "mt-2.5 min-h-11 w-full cursor-pointer rounded-[14px] px-4 font-tm-mono text-[11.5px] tracking-[0.12em] uppercase transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
-          ready ? "bg-tm-ink text-white" : "bg-tm-soft text-tm-dim2",
+          ready ? "bg-tm-stamp text-tm-onstamp" : "bg-tm-soft text-tm-dim2",
         )}
       >
         Save plan
@@ -738,7 +738,7 @@ function ReflectionCard({
             disabled={!ready}
             className={cn(
               "mt-2 min-h-11 w-full cursor-pointer rounded-[14px] px-4 font-tm-mono text-[11.5px] tracking-[0.12em] uppercase transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
-              ready ? "bg-tm-ink text-white" : "bg-tm-soft text-tm-dim2",
+              ready ? "bg-tm-stamp text-tm-onstamp" : "bg-tm-soft text-tm-dim2",
             )}
           >
             Save reflection

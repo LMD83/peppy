@@ -192,7 +192,7 @@ export function FuelBank({
                 </div>
                 <button
                   onClick={() => actions.logMenu(menu.slot, menu.items)}
-                  className="min-h-11 shrink-0 cursor-pointer rounded-[14px] bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+                  className="min-h-11 shrink-0 cursor-pointer rounded-[14px] bg-tm-stamp px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-onstamp uppercase transition-transform duration-150 active:scale-[0.98]"
                 >
                   Log
                 </button>
@@ -216,7 +216,7 @@ export function FuelBank({
               onClick={() => setSlot(s)}
               className={cn(
                 "min-h-11 flex-1 cursor-pointer rounded-[14px] border font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
-                slot === s ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule bg-tm-panel text-tm-dim",
+                slot === s ? "border-tm-stamp bg-tm-stamp text-tm-onstamp" : "border-tm-rule bg-tm-panel text-tm-dim",
               )}
             >
               {s}
@@ -236,7 +236,7 @@ export function FuelBank({
               }}
               className={cn(
                 "min-h-11 cursor-pointer rounded-[14px] border px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
-                browse === g ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule bg-tm-panel text-tm-dim",
+                browse === g ? "border-tm-stamp bg-tm-stamp text-tm-onstamp" : "border-tm-rule bg-tm-panel text-tm-dim",
               )}
             >
               {g === "recent" || g === "all" ? g : AISLE_LABELS[g]}
@@ -352,7 +352,7 @@ export function FuelBank({
               />
               <button
                 type="submit"
-                className="min-h-11 flex-1 cursor-pointer rounded-[14px] bg-tm-ink px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+                className="min-h-11 flex-1 cursor-pointer rounded-[14px] bg-tm-stamp px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-onstamp uppercase transition-transform duration-150 active:scale-[0.98]"
               >
                 Log to {slot}
               </button>

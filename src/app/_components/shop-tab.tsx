@@ -226,7 +226,7 @@ function ShopBody({ shop, date, easy }: { shop: ShopData; date: string; easy: bo
                   "min-h-16 flex-1 cursor-pointer rounded-[14px] border px-4 text-[17px] font-medium transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
                   safeStep === lastStep
                     ? "border-tm-rule bg-tm-soft text-tm-dim"
-                    : "border-tm-ink bg-tm-ink text-white",
+                    : "border-tm-stamp bg-tm-stamp text-tm-onstamp",
                 )}
               >
                 Next →
@@ -415,7 +415,7 @@ function ItemRow({
           aria-hidden
           className={cn(
             "flex size-7 shrink-0 items-center justify-center rounded-[6px] border-2 font-tm-mono text-[14px]",
-            ticked ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule-strong bg-tm-panel",
+            ticked ? "border-tm-stamp bg-tm-stamp text-tm-onstamp" : "border-tm-rule-strong bg-tm-panel",
           )}
         >
           {ticked ? "✓" : ""}
@@ -451,7 +451,7 @@ function ItemRow({
           className={cn(
             "min-h-11 cursor-pointer rounded-[14px] border px-3 text-[14px] transition-transform duration-150 active:scale-[0.98]",
             item.have
-              ? "border-tm-ink bg-tm-ink text-white"
+              ? "border-tm-stamp bg-tm-stamp text-tm-onstamp"
               : "border-tm-rule-strong bg-tm-panel text-tm-ink",
           )}
         >
@@ -527,12 +527,12 @@ function RetailerCard({
               onClick={() => onSelect(r.key)}
               className={cn(
                 "flex min-h-11 w-full cursor-pointer items-center justify-between gap-3 rounded-[14px] border px-3 py-2 text-left transition-transform duration-150 active:scale-[0.98]",
-                on ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule-strong bg-tm-panel",
+                on ? "border-tm-stamp bg-tm-stamp text-tm-onstamp" : "border-tm-rule-strong bg-tm-panel",
               )}
             >
               <span className="min-w-0">
                 <span className="block text-[15px] font-medium">{r.name}</span>
-                <span className={cn("block text-[14px]", on ? "text-white" : "text-tm-dim")}>
+                <span className={cn("block text-[14px]", on ? "text-tm-onstamp" : "text-tm-dim")}>
                   {handoffLabel(r)}
                 </span>
               </span>
@@ -579,7 +579,7 @@ function ShareButtons({ shop, className }: { shop: ShopData; className?: string 
       <button
         type="button"
         onClick={copy}
-        className="min-h-11 flex-1 cursor-pointer rounded-[14px] border border-tm-ink bg-tm-ink px-3 text-[14px] text-white transition-transform duration-150 active:scale-[0.98]"
+        className="min-h-11 flex-1 cursor-pointer rounded-[14px] border border-tm-stamp bg-tm-stamp px-3 text-[14px] text-tm-onstamp transition-transform duration-150 active:scale-[0.98]"
       >
         {copied ? "Copied" : "Copy the list"}
       </button>

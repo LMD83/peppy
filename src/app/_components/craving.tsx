@@ -261,7 +261,7 @@ export function CravingLogger() {
                 className={cn(
                   CHIP,
                   s.key === signal
-                    ? "border-tm-ink bg-tm-ink text-white"
+                    ? "border-tm-stamp bg-tm-stamp text-tm-onstamp"
                     : "border-tm-rule-strong bg-tm-soft",
                 )}
               >

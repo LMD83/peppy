@@ -34,7 +34,7 @@ export function Login() {
 
   return (
     <div className="grid min-h-[100dvh] bg-tm-paper lg:grid-cols-2">
-      <div className="relative hidden overflow-hidden bg-tm-ink lg:block">
+      <div className="relative hidden overflow-hidden bg-tm-board lg:block">
         <Image
           src="/why/kitchen-close.png"
           alt=""
@@ -43,7 +43,7 @@ export function Login() {
           sizes="50vw"
           className="object-cover opacity-45"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-tm-ink via-tm-ink/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-tm-board via-tm-board/50 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 p-10">
           <p className="font-tm-mono text-[11.5px] tracking-[0.2em] text-tm-onink uppercase">
             Performance file
@@ -55,7 +55,7 @@ export function Login() {
       </div>
 
       <div className="flex flex-col">
-        <div className="bg-tm-ink px-4 pt-12 pb-8 lg:bg-transparent lg:px-10 lg:pt-16 lg:pb-0">
+        <div className="bg-tm-board px-4 pt-12 pb-8 lg:bg-transparent lg:px-10 lg:pt-16 lg:pb-0">
           <div className="mx-auto w-full max-w-md lg:mx-0">
             <p className="font-tm-mono text-[11.5px] tracking-[0.2em] text-tm-onink uppercase lg:hidden">
               Performance file
@@ -63,7 +63,7 @@ export function Login() {
             <h1 className="mt-3 font-tm-disp text-4xl leading-none tracking-tight text-white uppercase lg:text-5xl lg:text-tm-ink">
               Timento
             </h1>
-            <p className="mt-3 max-w-[34ch] text-[15px] leading-relaxed text-tm-onink lg:text-tm-ink2">
+            <p className="mt-3 max-w-[34ch] text-[15px] leading-relaxed text-tm-onink lg:text-tm-dim">
               Two people, one file. Checks, modes, experiments. Evidence over vibes.
             </p>
           </div>
@@ -84,7 +84,7 @@ export function Login() {
                   className={cn(
                     "min-h-12 flex-1 cursor-pointer rounded-[14px] border px-4 py-3 text-left text-[15px] font-medium transition-[transform,opacity] duration-150 active:scale-[0.98]",
                     slug === u.slug
-                      ? "border-tm-ink bg-tm-ink text-white"
+                      ? "border-tm-stamp bg-tm-stamp text-tm-onstamp"
                       : "border-tm-rule-strong bg-tm-panel text-tm-ink",
                   )}
                 >
@@ -128,7 +128,7 @@ export function Login() {
               // that stays focusable has to stay readable.
               blocked
                 ? "cursor-not-allowed border border-tm-rule-strong bg-tm-soft text-tm-dim"
-                : "cursor-pointer border border-tm-ink bg-tm-ink text-white active:scale-[0.98]",
+                : "cursor-pointer border border-tm-stamp bg-tm-stamp text-tm-onstamp active:scale-[0.98]",
             )}
           >
             {busy ? "Checking…" : "Open the file"}

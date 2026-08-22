@@ -241,7 +241,7 @@ export function StackTodayCard() {
               type="button"
               onClick={() => moveOn(next)}
               aria-label={`Next dose — ${next.name}`}
-              className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[14px] bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+              className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[14px] bg-tm-stamp px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-onstamp uppercase transition-transform duration-150 active:scale-[0.98]"
             >
               Next
             </button>
@@ -257,7 +257,7 @@ export function StackTodayCard() {
             type="button"
             onClick={() => logIt(next)}
             aria-label={`Log ${next.name} as taken`}
-            className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[14px] bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+            className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[14px] bg-tm-stamp px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-onstamp uppercase transition-transform duration-150 active:scale-[0.98]"
           >
             Log it
           </button>
@@ -611,7 +611,7 @@ function ReconCalculator({ items }: { items: ItemView[] }) {
               className={cn(
                 "min-h-11 cursor-pointer rounded-[14px] border px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
                 i.id === picked.id
-                  ? "border-tm-ink bg-tm-ink text-white"
+                  ? "border-tm-stamp bg-tm-stamp text-tm-onstamp"
                   : "border-tm-rule bg-tm-panel text-tm-dim",
               )}
             >

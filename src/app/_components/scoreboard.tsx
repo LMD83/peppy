@@ -51,7 +51,7 @@ export function Scoreboard() {
   ];
 
   return (
-    <header className="bg-tm-ink px-4 pt-5 pb-5">
+    <header className="bg-tm-board px-4 pt-5 pb-5">
       <div className={fileWidth}>
         <div className="flex items-center justify-between gap-2">
           <p className="font-tm-mono text-[11.5px] tracking-[0.16em] text-tm-onink uppercase">
@@ -79,7 +79,7 @@ export function Scoreboard() {
           aria-controls={modePanelId}
           className={cn(
             "mt-3 inline-flex min-h-11 cursor-pointer items-center rounded-[22px] border px-4 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
-            survival ? "border-tm-amber-lift bg-tm-amber-lift text-tm-ink" : "border-tm-inkrule bg-tm-ink3 text-tm-onink",
+            survival ? "border-tm-amber-lift bg-tm-amber-lift text-tm-board" : "border-tm-inkrule bg-tm-ink3 text-tm-onink",
           )}
         >
           {user.mode} mode ⇄ · change

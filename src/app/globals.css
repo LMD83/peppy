@@ -209,6 +209,31 @@
      and the dark header, since the same ring is used on both: 3.69:1 on paper,
      3.97:1 on panel, 3.43:1 on soft, 4.19:1 on ink, 3.24:1 on ink3. */
   --color-tm-focus: #3e8e6c;
+  /* ---- Fill roles ----------------------------------------------------------
+     tm-ink used to carry three jobs at once: body text, the scoreboard ground,
+     and every filled control. One value can hold all three only while there is
+     a single colour scheme — in dark mode text ink must go light while the
+     board stays dark and filled controls flip to light fills with dark text.
+     So the jobs get their own tokens. In the light scheme they resolve to the
+     values they always had, which is why this split changes no rendered pixel.
+
+     board — the scoreboard/login header ground. Dark in BOTH schemes, so the
+     white title and tm-onink text on it never need to flip. */
+  --color-tm-board: #18201d;
+  /* stamp — the fill of a primary control (buttons, active chips, selected
+     rows, the active nav pill). onstamp is the text that sits on it.
+     Light: ink + white (16.62:1). */
+  --color-tm-stamp: #18201d;
+  --color-tm-onstamp: #ffffff;
+  /* Text on the semantic fills. All white in light (white on green 7.59:1,
+     on amber 6.47:1, on red 7.16:1, on blue 6.31:1); dark flips each fill
+     light and these deep. */
+  --color-tm-ongreen: #ffffff;
+  --color-tm-onamber: #ffffff;
+  --color-tm-onred: #ffffff;
+  --color-tm-onblue: #ffffff;
+  /* Sheet scrim — near-black in both schemes; a light scrim reads as fog. */
+  --color-tm-scrim: #0b0e0c;
   --font-tm-disp: var(--font-tm-disp-var), "Archivo Black", sans-serif;
   --font-tm-mono: var(--font-tm-mono-var), "IBM Plex Mono", ui-monospace, monospace;
   --font-tm-sans: var(--font-tm-sans-var), "IBM Plex Sans", system-ui, sans-serif;

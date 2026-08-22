@@ -338,7 +338,7 @@ function PickButton({
         "focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-tm-ink",
         disabled
           ? "cursor-not-allowed border-tm-rule bg-tm-soft text-tm-dim"
-          : "cursor-pointer border-tm-ink bg-tm-ink text-white",
+          : "cursor-pointer border-tm-stamp bg-tm-stamp text-tm-onstamp",
       )}
     >
       <span aria-hidden className="font-tm-mono text-[17px]">

@@ -225,7 +225,7 @@ export function TrainTodayCard() {
         <button
           type="button"
           onClick={() => go("train")}
-          className="mt-3 inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-[14px] bg-tm-ink px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase"
+          className="mt-3 inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-[14px] bg-tm-stamp px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-onstamp uppercase"
         >
           {label}
         </button>
@@ -278,8 +278,8 @@ function MesoCard({
               "flex h-7 flex-1 items-center justify-center rounded-[4px] border font-tm-mono text-[11.5px]",
               w === meso.week
                 ? meso.isDeload
-                  ? "border-tm-amber bg-tm-amber text-white"
-                  : "border-tm-green bg-tm-green text-white"
+                  ? "border-tm-amber bg-tm-amber text-tm-onamber"
+                  : "border-tm-green bg-tm-green text-tm-ongreen"
                 : w === deloadWeek
                   ? "border-tm-amber bg-tm-amber-bg text-tm-amber"
                   : "border-tm-rule bg-tm-panel text-tm-dim",
@@ -412,7 +412,7 @@ function BlockCard({
         <button
           type="button"
           onClick={() => setRest(0)}
-          className="mt-3 min-h-11 w-full cursor-pointer rounded-[14px] bg-tm-ink font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+          className="mt-3 min-h-11 w-full cursor-pointer rounded-[14px] bg-tm-stamp font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-onstamp uppercase transition-transform duration-150 active:scale-[0.98]"
         >
           Rest {rest}s · skip
         </button>
@@ -451,7 +451,7 @@ function BlockCard({
           )}
           <button
             type="submit"
-            className="min-h-14 w-full cursor-pointer rounded-[14px] bg-tm-ink font-tm-mono text-[13px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+            className="min-h-14 w-full cursor-pointer rounded-[14px] bg-tm-stamp font-tm-mono text-[13px] tracking-[0.1em] text-tm-onstamp uppercase transition-transform duration-150 active:scale-[0.98]"
           >
             Log set {nextIndex + 1}
           </button>
@@ -509,7 +509,7 @@ function SessionDoneCard({ logged, planned }: { logged: number; planned: number 
         type="button"
         disabled={today?.day.sessionDone}
         onClick={() => actions.markSessionDone()}
-        className="mt-3 inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-[14px] bg-tm-ink px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase disabled:opacity-40"
+        className="mt-3 inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-[14px] bg-tm-stamp px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-onstamp uppercase disabled:opacity-40"
       >
         {today?.day.sessionDone ? "Session logged" : "Mark session done"}
       </button>
@@ -822,7 +822,7 @@ function ProfileCard({ profile }: { profile: TrainingProfile }) {
           <button
             type="button"
             onClick={save}
-            className="min-h-11 cursor-pointer rounded-[14px] bg-tm-ink font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+            className="min-h-11 cursor-pointer rounded-[14px] bg-tm-stamp font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-onstamp uppercase transition-transform duration-150 active:scale-[0.98]"
           >
             Save profile
           </button>
@@ -854,7 +854,7 @@ function ChipRow<T extends string>({
             onClick={() => onChange(opt.id)}
             className={cn(
               "min-h-11 cursor-pointer rounded-[14px] border px-3 font-tm-mono text-[11.5px] tracking-[0.08em] uppercase transition-transform duration-150 active:scale-[0.98]",
-              value === opt.id ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule bg-tm-panel",
+              value === opt.id ? "border-tm-stamp bg-tm-stamp text-tm-onstamp" : "border-tm-rule bg-tm-panel",
             )}
           >
             {opt.label}
@@ -889,7 +889,7 @@ function ChipMulti<T extends string>({
               onClick={() => onChange(on ? value.filter((x) => x !== opt.id) : [...value, opt.id])}
               className={cn(
                 "min-h-11 cursor-pointer rounded-[14px] border px-3 font-tm-mono text-[11.5px] tracking-[0.08em] uppercase transition-transform duration-150 active:scale-[0.98]",
-                on ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule bg-tm-panel",
+                on ? "border-tm-stamp bg-tm-stamp text-tm-onstamp" : "border-tm-rule bg-tm-panel",
               )}
             >
               {opt.label}

@@ -662,7 +662,7 @@ function AddPanelBody({ templates, upload }: { templates: LabTemplate[]; upload:
             className={cn(
               "min-h-11 flex-1 cursor-pointer rounded-[14px] border font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
               mode === opt.key
-                ? "border-tm-ink bg-tm-ink text-white"
+                ? "border-tm-stamp bg-tm-stamp text-tm-onstamp"
                 : "border-tm-rule bg-tm-panel text-tm-dim",
             )}
           >
@@ -807,7 +807,7 @@ function AddPanelBody({ templates, upload }: { templates: LabTemplate[]; upload:
                 className={cn(
                   "min-h-11 flex-1 cursor-pointer rounded-[14px] border font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
                   fasted === opt.on
-                    ? "border-tm-ink bg-tm-ink text-white"
+                    ? "border-tm-stamp bg-tm-stamp text-tm-onstamp"
                     : "border-tm-rule bg-tm-panel text-tm-dim",
                 )}
               >
@@ -845,7 +845,7 @@ function AddPanelBody({ templates, upload }: { templates: LabTemplate[]; upload:
             disabled={!canSave}
             className={cn(
               "mt-2 min-h-11 w-full cursor-pointer rounded-[14px] px-4 font-tm-mono text-[11.5px] tracking-[0.12em] uppercase transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
-              canSave ? "bg-tm-ink text-white" : "bg-tm-soft text-tm-dim",
+              canSave ? "bg-tm-stamp text-tm-onstamp" : "bg-tm-soft text-tm-dim",
             )}
           >
             {busy

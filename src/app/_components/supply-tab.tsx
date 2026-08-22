@@ -285,7 +285,7 @@ function CountControl({ row }: { row: Row }) {
           }}
           className={cn(
             "min-h-11 shrink-0 cursor-pointer rounded-[14px] border px-3 font-tm-mono text-[11.5px] tracking-[0.12em] uppercase transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
-            valid ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule bg-tm-soft text-tm-dim",
+            valid ? "border-tm-stamp bg-tm-stamp text-tm-onstamp" : "border-tm-rule bg-tm-soft text-tm-dim",
           )}
         >
           {saved ? "counted" : "count"}
@@ -341,7 +341,7 @@ function RefillCard({ supply }: { supply: SupplyData }) {
       <button
         type="button"
         onClick={copy}
-        className="mt-2 min-h-11 w-full cursor-pointer rounded-[14px] border border-tm-ink bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+        className="mt-2 min-h-11 w-full cursor-pointer rounded-[14px] border border-tm-stamp bg-tm-stamp px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-onstamp uppercase transition-transform duration-150 active:scale-[0.98]"
       >
         {copied ? "copied" : "copy the message"}
       </button>
@@ -489,7 +489,7 @@ function ContactForm({
             className={cn(
               "min-h-11 flex-1 cursor-pointer rounded-[14px] border px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
               kind === k
-                ? "border-tm-ink bg-tm-ink text-white"
+                ? "border-tm-stamp bg-tm-stamp text-tm-onstamp"
                 : "border-tm-rule bg-tm-panel text-tm-dim",
             )}
           >
@@ -523,7 +523,7 @@ function ContactForm({
         }}
         className={cn(
           "min-h-11 w-full cursor-pointer rounded-[14px] border px-3 font-tm-mono text-[11.5px] tracking-[0.12em] uppercase transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
-          valid ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule bg-tm-soft text-tm-dim",
+          valid ? "border-tm-stamp bg-tm-stamp text-tm-onstamp" : "border-tm-rule bg-tm-soft text-tm-dim",
         )}
       >
         Save

@@ -142,10 +142,13 @@ export function TodayTab() {
                 aria-pressed={c.done}
                 className={cn(
                   "flex min-h-11 cursor-pointer items-center justify-between rounded-[14px] border px-3.5 py-3 text-left text-[15px] font-medium transition-[transform,opacity] duration-150 active:scale-[0.99]",
-                  // white on tm-amber 5.77:1 — it was 3.29:1, so a ticked check on
-                  // the survival screen was unreadable. white on tm-green 5.99:1.
+                  // onamber on tm-amber 6.47:1 — it was 3.29:1 once, so a ticked
+                  // check on the survival screen was unreadable. ongreen on
+                  // tm-green 7.59:1.
                   c.done
-                    ? cn("text-white", survival ? "border-tm-amber bg-tm-amber" : "border-tm-green bg-tm-green")
+                    ? survival
+                      ? "border-tm-amber bg-tm-amber text-tm-onamber"
+                      : "border-tm-green bg-tm-green text-tm-ongreen"
                     : "border-tm-rule-strong bg-tm-panel text-tm-ink",
                 )}
               >
@@ -331,7 +334,7 @@ function ScaleRow({ label, value, onPick }: { label: string; value: number | nul
             onKeyDown={(e) => handleKeyDown(e, i)}
             className={cn(
               "size-11 cursor-pointer rounded-md border font-tm-mono text-[13px]",
-              value === v ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule-strong bg-tm-panel text-tm-dim",
+              value === v ? "border-tm-stamp bg-tm-stamp text-tm-onstamp" : "border-tm-rule-strong bg-tm-panel text-tm-dim",
             )}
           >
             {v}
@@ -352,7 +355,7 @@ function BreathePrompt() {
       ) : (
         <button
           onClick={() => setOpen(true)}
-          className="mt-1.5 inline-flex min-h-11 cursor-pointer items-center rounded-md bg-tm-ink px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase"
+          className="mt-1.5 inline-flex min-h-11 cursor-pointer items-center rounded-md bg-tm-stamp px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-onstamp uppercase"
         >
           Start 2-min timer
         </button>
@@ -472,7 +475,7 @@ function WeighIn() {
               aria-invalid={error !== null}
               className="min-h-11 w-24 rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 py-2 font-tm-mono text-base outline-none focus:border-tm-ink"
             />
-            <button type="submit" className="min-h-11 cursor-pointer rounded-[14px] bg-tm-ink px-5 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase">
+            <button type="submit" className="min-h-11 cursor-pointer rounded-[14px] bg-tm-stamp px-5 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-onstamp uppercase">
               Log
             </button>
             {editing && (

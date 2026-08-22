@@ -295,7 +295,7 @@ export function CrewTab() {
                 <div className="mt-3 flex gap-2">
                   <button
                     onClick={() => actions.respondToCrewInvite(invite.linkId, true)}
-                    className="min-h-11 flex-1 cursor-pointer rounded-[14px] border border-tm-green bg-tm-green px-3 font-tm-mono text-[13px] text-white transition-transform duration-150 active:scale-[0.98]"
+                    className="min-h-11 flex-1 cursor-pointer rounded-[14px] border border-tm-green bg-tm-green px-3 font-tm-mono text-[13px] text-tm-ongreen transition-transform duration-150 active:scale-[0.98]"
                   >
                     Accept
                   </button>
@@ -372,7 +372,7 @@ export function CrewTab() {
               }}
               className={cn(
                 "min-h-11 cursor-pointer rounded-[14px] border px-3.5 font-tm-mono text-[11.5px] transition-[transform,opacity] duration-150 active:scale-[0.98]",
-                sent === n ? "border-tm-green bg-tm-green text-white" : "border-tm-green text-tm-green",
+                sent === n ? "border-tm-green bg-tm-green text-tm-ongreen" : "border-tm-green text-tm-green",
               )}
             >
               {n}
@@ -402,7 +402,7 @@ export function CrewTab() {
           <button
             type="submit"
             disabled={custom.trim().length === 0}
-            className="min-h-11 cursor-pointer rounded-[14px] bg-tm-ink px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase transition-transform duration-150 active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100"
+            className="min-h-11 cursor-pointer rounded-[14px] bg-tm-stamp px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-onstamp uppercase transition-transform duration-150 active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100"
           >
             Send
           </button>
@@ -630,7 +630,7 @@ function InviteForm({
             onClick={() => setTarget(c.slug)}
             className={cn(
               "min-h-11 cursor-pointer rounded-[14px] border px-3 font-tm-mono text-[11.5px] transition-transform duration-150 active:scale-[0.98]",
-              target === c.slug ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule text-tm-dim",
+              target === c.slug ? "border-tm-stamp bg-tm-stamp text-tm-onstamp" : "border-tm-rule text-tm-dim",
             )}
           >
             {target === c.slug ? `✓ ${c.name}` : c.name}
@@ -652,7 +652,7 @@ function InviteForm({
             }}
             className={cn(
               "min-h-11 cursor-pointer rounded-[14px] border px-3 font-tm-mono text-[11.5px] transition-transform duration-150 active:scale-[0.98]",
-              relationship === r ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule text-tm-dim",
+              relationship === r ? "border-tm-stamp bg-tm-stamp text-tm-onstamp" : "border-tm-rule text-tm-dim",
             )}
           >
             {relationship === r ? `✓ ${RELATIONSHIP_COPY[r].label}` : RELATIONSHIP_COPY[r].label}
@@ -712,7 +712,7 @@ function InviteForm({
           "mt-3 min-h-11 w-full cursor-pointer rounded-[14px] border px-3 font-tm-mono text-[13px] transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
           chosen.length === 0
             ? "border-tm-rule text-tm-dim2"
-            : "border-tm-green bg-tm-green text-white",
+            : "border-tm-green bg-tm-green text-tm-ongreen",
         )}
       >
         {done

@@ -154,14 +154,14 @@ function Toggle({
       onClick={() => onChange(!on)}
       className={cn(
         "flex min-h-14 w-full items-center justify-between gap-3 rounded-[14px] border px-4 py-3 text-left transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
-        on ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule-strong bg-tm-panel text-tm-ink",
+        on ? "border-tm-stamp bg-tm-stamp text-tm-onstamp" : "border-tm-rule-strong bg-tm-panel text-tm-ink",
         disabled && "opacity-60",
       )}
     >
       <span className="min-w-0">
         <span className="block text-[15px] font-medium">{label}</span>
         {detail && (
-          <span className={cn("mt-0.5 block text-[14px]", on ? "text-white" : "text-tm-dim")}>{detail}</span>
+          <span className={cn("mt-0.5 block text-[14px]", on ? "text-tm-onstamp" : "text-tm-dim")}>{detail}</span>
         )}
       </span>
       <span aria-hidden className="shrink-0 font-tm-mono text-[14px]">
@@ -477,7 +477,7 @@ function SwitchCard({
           type="button"
           onClick={onTurnOn}
           disabled={busy || !canSubscribe}
-          className="mt-3 min-h-14 w-full rounded-[14px] border border-tm-ink bg-tm-ink px-4 text-[17px] font-medium text-white transition-transform duration-150 active:scale-[0.98] disabled:border-tm-rule-strong disabled:bg-tm-soft disabled:text-tm-dim disabled:active:scale-100"
+          className="mt-3 min-h-14 w-full rounded-[14px] border border-tm-stamp bg-tm-stamp px-4 text-[17px] font-medium text-tm-onstamp transition-transform duration-150 active:scale-[0.98] disabled:border-tm-rule-strong disabled:bg-tm-soft disabled:text-tm-dim disabled:active:scale-100"
         >
           {busy ? "Setting up…" : "Turn reminders on for this device"}
         </button>

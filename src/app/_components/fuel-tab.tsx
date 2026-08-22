@@ -65,7 +65,7 @@ function PortionToggle({
           className={cn(
             "min-h-11 min-w-11 flex-1 cursor-pointer rounded-[14px] border px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
             mode === m
-              ? "border-tm-ink bg-tm-ink text-white"
+              ? "border-tm-stamp bg-tm-stamp text-tm-onstamp"
               : "border-tm-rule bg-tm-panel text-tm-dim",
           )}
         >
@@ -187,7 +187,7 @@ function FuelTabBody({
           <div className="flex flex-wrap gap-1.5">
             <button
               onClick={() => actions.generateMealPlan()}
-              className="min-h-11 cursor-pointer rounded-[14px] bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+              className="min-h-11 cursor-pointer rounded-[14px] bg-tm-stamp px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-onstamp uppercase transition-transform duration-150 active:scale-[0.98]"
             >
               Generate day
             </button>
@@ -438,7 +438,7 @@ export function FuelTodayCard() {
               type="button"
               onClick={() => moveOn(next)}
               aria-label={`Next meal — ${next.name}`}
-              className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[14px] bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+              className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[14px] bg-tm-stamp px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-onstamp uppercase transition-transform duration-150 active:scale-[0.98]"
             >
               Next
             </button>
@@ -454,7 +454,7 @@ export function FuelTodayCard() {
             type="button"
             onClick={() => logIt(next)}
             aria-label={`Log ${next.name} as eaten`}
-            className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[14px] bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+            className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[14px] bg-tm-stamp px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-onstamp uppercase transition-transform duration-150 active:scale-[0.98]"
           >
             Ate it
           </button>
@@ -658,7 +658,7 @@ function FloorCard({ floor, tone }: { floor: FuelData["floor"]; tone: "default" 
                   setLogged(item.name);
                 }}
                 aria-label={`Log ${item.name} as eaten`}
-                className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[14px] bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+                className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[14px] bg-tm-stamp px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-onstamp uppercase transition-transform duration-150 active:scale-[0.98]"
               >
                 Ate it
               </button>
@@ -772,7 +772,7 @@ function KitchenCard({ kitchen }: { kitchen: FuelData["kitchen"] }) {
               className={cn(
                 "min-h-11 cursor-pointer rounded-[14px] border px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
                 equipment === eq
-                  ? "border-tm-ink bg-tm-ink text-white"
+                  ? "border-tm-stamp bg-tm-stamp text-tm-onstamp"
                   : "border-tm-rule bg-tm-panel text-tm-dim",
               )}
             >
@@ -786,7 +786,7 @@ function KitchenCard({ kitchen }: { kitchen: FuelData["kitchen"] }) {
             onClick={() => setOneHanded((v) => !v)}
             className={cn(
               "min-h-11 flex-1 cursor-pointer rounded-[14px] border font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
-              oneHanded ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule bg-tm-panel text-tm-dim",
+              oneHanded ? "border-tm-stamp bg-tm-stamp text-tm-onstamp" : "border-tm-rule bg-tm-panel text-tm-dim",
             )}
           >
             One hand
@@ -796,7 +796,7 @@ function KitchenCard({ kitchen }: { kitchen: FuelData["kitchen"] }) {
             onClick={() => setCanStand((v) => !v)}
             className={cn(
               "min-h-11 flex-1 cursor-pointer rounded-[14px] border font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
-              !canStand ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule bg-tm-panel text-tm-dim",
+              !canStand ? "border-tm-stamp bg-tm-stamp text-tm-onstamp" : "border-tm-rule bg-tm-panel text-tm-dim",
             )}
           >
             Can&apos;t stand
@@ -811,7 +811,7 @@ function KitchenCard({ kitchen }: { kitchen: FuelData["kitchen"] }) {
           </button>
           <button
             onClick={() => apply(true)}
-            className="min-h-11 flex-1 cursor-pointer rounded-[14px] bg-tm-ink font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+            className="min-h-11 flex-1 cursor-pointer rounded-[14px] bg-tm-stamp font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-onstamp uppercase transition-transform duration-150 active:scale-[0.98]"
           >
             Generate for today
           </button>

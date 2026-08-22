@@ -288,7 +288,7 @@ function Shell() {
     <div className={cn("min-h-screen", tour ? "pb-[300px]" : "pb-[84px]")}>
       <a
         href="#tm-main"
-        className="fixed -top-24 left-3 z-[60] inline-flex min-h-11 items-center rounded-[14px] bg-tm-ink px-4 font-tm-mono text-[11.5px] tracking-[0.15em] text-white uppercase focus:top-3"
+        className="fixed -top-24 left-3 z-[60] inline-flex min-h-11 items-center rounded-[14px] bg-tm-stamp px-4 font-tm-mono text-[11.5px] tracking-[0.15em] text-tm-onstamp uppercase focus:top-3"
       >
         Skip to content
       </a>
@@ -381,7 +381,7 @@ class SessionRecoveryBoundary extends Component<{ children: ReactNode }, { faile
           </p>
           <button
             onClick={() => this.setState({ failed: false })}
-            className="inline-flex min-h-11 cursor-pointer items-center rounded-[14px] bg-tm-ink px-5 font-tm-mono text-[11.5px] tracking-[0.15em] text-white uppercase"
+            className="inline-flex min-h-11 cursor-pointer items-center rounded-[14px] bg-tm-stamp px-5 font-tm-mono text-[11.5px] tracking-[0.15em] text-tm-onstamp uppercase"
           >
             Back to sign-in
           </button>

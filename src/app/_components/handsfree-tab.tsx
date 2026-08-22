@@ -538,7 +538,7 @@ function TalkCard({
           className={cn(
             "flex min-h-24 w-full items-center justify-center gap-3 rounded-[14px] border px-4 text-[17px] font-medium transition-transform duration-150 active:scale-[0.98]",
             listening
-              ? "border-tm-ink bg-tm-ink text-white"
+              ? "border-tm-stamp bg-tm-stamp text-tm-onstamp"
               : "border-tm-rule-strong bg-tm-panel text-tm-ink",
           )}
         >
@@ -577,7 +577,7 @@ function TalkCard({
           type="button"
           onClick={onSubmit}
           disabled={typed.trim() === ""}
-          className="min-h-11 min-w-11 shrink-0 rounded-[14px] border border-tm-ink bg-tm-ink px-4 text-[14px] font-medium text-white transition-transform duration-150 active:scale-[0.98] disabled:border-tm-rule-strong disabled:bg-tm-soft disabled:text-tm-dim disabled:active:scale-100"
+          className="min-h-11 min-w-11 shrink-0 rounded-[14px] border border-tm-stamp bg-tm-stamp px-4 text-[14px] font-medium text-tm-onstamp transition-transform duration-150 active:scale-[0.98] disabled:border-tm-rule-strong disabled:bg-tm-soft disabled:text-tm-dim disabled:active:scale-100"
         >
           Log it
         </button>
@@ -684,7 +684,7 @@ function SecretCard({
         type="button"
         onClick={onTest}
         disabled={testing}
-        className="mt-3 min-h-14 w-full rounded-[14px] border border-tm-ink bg-tm-ink px-4 text-[17px] font-medium text-white transition-transform duration-150 active:scale-[0.98] disabled:border-tm-rule-strong disabled:bg-tm-soft disabled:text-tm-dim disabled:active:scale-100"
+        className="mt-3 min-h-14 w-full rounded-[14px] border border-tm-stamp bg-tm-stamp px-4 text-[17px] font-medium text-tm-onstamp transition-transform duration-150 active:scale-[0.98] disabled:border-tm-rule-strong disabled:bg-tm-soft disabled:text-tm-dim disabled:active:scale-100"
       >
         {testing ? "Testing…" : "Test it now"}
       </button>
@@ -784,7 +784,7 @@ function TokensCard({
       <button
         type="button"
         onClick={onCreate}
-        className="mt-3 min-h-14 w-full rounded-[14px] border border-tm-ink bg-tm-ink px-4 text-[17px] font-medium text-white transition-transform duration-150 active:scale-[0.98]"
+        className="mt-3 min-h-14 w-full rounded-[14px] border border-tm-stamp bg-tm-stamp px-4 text-[17px] font-medium text-tm-onstamp transition-transform duration-150 active:scale-[0.98]"
       >
         Make a new key
       </button>
