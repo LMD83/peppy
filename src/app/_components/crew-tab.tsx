@@ -171,7 +171,7 @@ export function CrewTab() {
               count does not divide evenly. Flex items grow to close the gap, so
               there is never a cell with nothing in it.
             */
-            <dl className="mt-4 flex flex-wrap gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
+            <dl className="mt-4 flex flex-wrap gap-px overflow-hidden rounded-[14px] border border-tm-rule bg-tm-rule">
               {m.streak !== undefined && (
                 <Stat className="min-w-[104px] flex-1 bg-tm-panel px-3 py-3" value={`${m.streak}`} label="Streak" />
               )}
@@ -295,13 +295,13 @@ export function CrewTab() {
                 <div className="mt-3 flex gap-2">
                   <button
                     onClick={() => actions.respondToCrewInvite(invite.linkId, true)}
-                    className="min-h-11 flex-1 cursor-pointer rounded-[10px] border border-tm-green bg-tm-green px-3 font-tm-mono text-[13px] text-white transition-transform duration-150 active:scale-[0.98]"
+                    className="min-h-11 flex-1 cursor-pointer rounded-[14px] border border-tm-green bg-tm-green px-3 font-tm-mono text-[13px] text-white transition-transform duration-150 active:scale-[0.98]"
                   >
                     Accept
                   </button>
                   <button
                     onClick={() => actions.respondToCrewInvite(invite.linkId, false)}
-                    className="min-h-11 flex-1 cursor-pointer rounded-[10px] border border-tm-rule px-3 font-tm-mono text-[13px] text-tm-dim transition-transform duration-150 active:scale-[0.98]"
+                    className="min-h-11 flex-1 cursor-pointer rounded-[14px] border border-tm-rule px-3 font-tm-mono text-[13px] text-tm-dim transition-transform duration-150 active:scale-[0.98]"
                   >
                     Decline
                   </button>
@@ -329,7 +329,7 @@ export function CrewTab() {
                   </span>
                   <button
                     onClick={() => actions.revokeCrewLink(invite.linkId)}
-                    className="min-h-11 shrink-0 cursor-pointer rounded-[10px] border border-tm-rule px-3 font-tm-mono text-[11.5px] text-tm-dim transition-transform duration-150 active:scale-[0.98]"
+                    className="min-h-11 shrink-0 cursor-pointer rounded-[14px] border border-tm-rule px-3 font-tm-mono text-[11.5px] text-tm-dim transition-transform duration-150 active:scale-[0.98]"
                   >
                     Withdraw
                   </button>
@@ -371,7 +371,7 @@ export function CrewTab() {
                 setTimeout(() => setSent(null), 1500);
               }}
               className={cn(
-                "min-h-11 cursor-pointer rounded-[10px] border px-3.5 font-tm-mono text-[11.5px] transition-[transform,opacity] duration-150 active:scale-[0.98]",
+                "min-h-11 cursor-pointer rounded-[14px] border px-3.5 font-tm-mono text-[11.5px] transition-[transform,opacity] duration-150 active:scale-[0.98]",
                 sent === n ? "border-tm-green bg-tm-green text-white" : "border-tm-green text-tm-green",
               )}
             >
@@ -397,12 +397,12 @@ export function CrewTab() {
             placeholder="Custom message"
             aria-label="Custom crew message"
             maxLength={200}
-            className="min-h-11 min-w-0 flex-1 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 py-2 text-[15px] text-tm-ink focus:border-tm-ink"
+            className="min-h-11 min-w-0 flex-1 rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 py-2 text-[15px] text-tm-ink focus:border-tm-ink"
           />
           <button
             type="submit"
             disabled={custom.trim().length === 0}
-            className="min-h-11 cursor-pointer rounded-[10px] bg-tm-ink px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase transition-transform duration-150 active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100"
+            className="min-h-11 cursor-pointer rounded-[14px] bg-tm-ink px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase transition-transform duration-150 active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100"
           >
             Send
           </button>
@@ -524,7 +524,7 @@ function Disclosure({
         {link.yourGrantId && (
           <button
             onClick={onStop}
-            className="min-h-11 cursor-pointer rounded-[10px] border border-tm-red px-3 font-tm-mono text-[11.5px] text-tm-red transition-transform duration-150 active:scale-[0.98]"
+            className="min-h-11 cursor-pointer rounded-[14px] border border-tm-red px-3 font-tm-mono text-[11.5px] text-tm-red transition-transform duration-150 active:scale-[0.98]"
           >
             Stop sharing with {member.name}
           </button>
@@ -532,7 +532,7 @@ function Disclosure({
         {link.theirGrantId && (
           <button
             onClick={() => link.theirGrantId && onStopSeeing(link.theirGrantId)}
-            className="min-h-11 cursor-pointer rounded-[10px] border border-tm-rule px-3 font-tm-mono text-[11.5px] text-tm-dim transition-transform duration-150 active:scale-[0.98]"
+            className="min-h-11 cursor-pointer rounded-[14px] border border-tm-rule px-3 font-tm-mono text-[11.5px] text-tm-dim transition-transform duration-150 active:scale-[0.98]"
           >
             Stop seeing {member.name}
           </button>
@@ -548,7 +548,7 @@ function HandBack({ linkId, name }: { linkId: string; name: string }) {
   return (
     <button
       onClick={() => actions.revokeCrewLink(linkId)}
-      className="mt-2 min-h-11 cursor-pointer rounded-[10px] border border-tm-rule px-3 font-tm-mono text-[11.5px] text-tm-dim transition-transform duration-150 active:scale-[0.98]"
+      className="mt-2 min-h-11 cursor-pointer rounded-[14px] border border-tm-rule px-3 font-tm-mono text-[11.5px] text-tm-dim transition-transform duration-150 active:scale-[0.98]"
     >
       Hand back {name}&rsquo;s seat
     </button>
@@ -564,7 +564,7 @@ function Undo({
 }) {
   const { actions } = useTimento();
   return (
-    <div className="mt-2 rounded-[10px] border border-tm-rule bg-tm-soft p-2.5">
+    <div className="mt-2 rounded-[14px] border border-tm-rule bg-tm-soft p-2.5">
       <p className="text-[13px] text-tm-dim">
         Stopped sharing with {undo.name}. It stopped the moment you tapped. Undo sends a fresh
         invite. {undo.name} has to accept it again.
@@ -574,7 +574,7 @@ function Undo({
           actions.inviteCrew(undo.slug, undo.scopes, undo.relationship);
           onDone();
         }}
-        className="mt-2 min-h-11 cursor-pointer rounded-[10px] border border-tm-green px-3 font-tm-mono text-[11.5px] text-tm-green transition-transform duration-150 active:scale-[0.98]"
+        className="mt-2 min-h-11 cursor-pointer rounded-[14px] border border-tm-green px-3 font-tm-mono text-[11.5px] text-tm-green transition-transform duration-150 active:scale-[0.98]"
       >
         Undo
       </button>
@@ -629,7 +629,7 @@ function InviteForm({
             aria-pressed={target === c.slug}
             onClick={() => setTarget(c.slug)}
             className={cn(
-              "min-h-11 cursor-pointer rounded-[10px] border px-3 font-tm-mono text-[11.5px] transition-transform duration-150 active:scale-[0.98]",
+              "min-h-11 cursor-pointer rounded-[14px] border px-3 font-tm-mono text-[11.5px] transition-transform duration-150 active:scale-[0.98]",
               target === c.slug ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule text-tm-dim",
             )}
           >
@@ -651,7 +651,7 @@ function InviteForm({
               setScopes((prev) => prev.filter((s) => allowedScopesFor(r).includes(s)));
             }}
             className={cn(
-              "min-h-11 cursor-pointer rounded-[10px] border px-3 font-tm-mono text-[11.5px] transition-transform duration-150 active:scale-[0.98]",
+              "min-h-11 cursor-pointer rounded-[14px] border px-3 font-tm-mono text-[11.5px] transition-transform duration-150 active:scale-[0.98]",
               relationship === r ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule text-tm-dim",
             )}
           >
@@ -709,7 +709,7 @@ function InviteForm({
           setTimeout(() => setDone(false), 2000);
         }}
         className={cn(
-          "mt-3 min-h-11 w-full cursor-pointer rounded-[10px] border px-3 font-tm-mono text-[13px] transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
+          "mt-3 min-h-11 w-full cursor-pointer rounded-[14px] border px-3 font-tm-mono text-[13px] transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
           chosen.length === 0
             ? "border-tm-rule text-tm-dim2"
             : "border-tm-green bg-tm-green text-white",
@@ -741,11 +741,11 @@ function CrewSkeleton() {
     <div className="flex flex-col gap-4 pt-5 lg:grid lg:grid-cols-12 lg:gap-6">
       <Card className="lg:col-span-7">
         <div className="h-7 w-32 rounded bg-tm-soft" />
-        <div className="mt-4 h-16 rounded-[10px] bg-tm-soft" />
+        <div className="mt-4 h-16 rounded-[14px] bg-tm-soft" />
       </Card>
       <Card className="lg:col-span-5">
         <div className="h-3 w-20 rounded bg-tm-soft" />
-        <div className="mt-3 h-11 rounded-[10px] bg-tm-soft" />
+        <div className="mt-3 h-11 rounded-[14px] bg-tm-soft" />
       </Card>
     </div>
   );

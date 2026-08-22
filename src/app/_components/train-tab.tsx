@@ -128,7 +128,7 @@ function SessionRunner({
                   focus.exercise,
                 ])
               }
-              className="flex min-h-11 w-full cursor-pointer items-center justify-between gap-3 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 py-2 text-left transition-transform duration-150 active:scale-[0.98]"
+              className="flex min-h-11 w-full cursor-pointer items-center justify-between gap-3 rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 py-2 text-left transition-transform duration-150 active:scale-[0.98]"
             >
               <span className="min-w-0">
                 <span className="block font-tm-mono text-[11.5px] tracking-[0.15em] text-tm-dim uppercase">
@@ -225,7 +225,7 @@ export function TrainTodayCard() {
         <button
           type="button"
           onClick={() => go("train")}
-          className="mt-3 inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-[10px] bg-tm-ink px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase"
+          className="mt-3 inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-[14px] bg-tm-ink px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase"
         >
           {label}
         </button>
@@ -316,7 +316,7 @@ function StartMesoCard() {
           <button
             key={g.goal}
             onClick={() => actions.startMesocycle(g.goal)}
-            className="min-h-11 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2 text-left transition-transform duration-150 active:scale-[0.98]"
+            className="min-h-11 cursor-pointer rounded-[14px] border border-tm-rule bg-tm-panel px-3 py-2 text-left transition-transform duration-150 active:scale-[0.98]"
           >
             <span className="font-tm-mono text-[11.5px] tracking-[0.12em] uppercase">{g.goal}</span>
             <span className="block text-[11.5px] text-tm-dim">{g.blurb}</span>
@@ -412,7 +412,7 @@ function BlockCard({
         <button
           type="button"
           onClick={() => setRest(0)}
-          className="mt-3 min-h-11 w-full cursor-pointer rounded-[10px] bg-tm-ink font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+          className="mt-3 min-h-11 w-full cursor-pointer rounded-[14px] bg-tm-ink font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
         >
           Rest {rest}s · skip
         </button>
@@ -451,7 +451,7 @@ function BlockCard({
           )}
           <button
             type="submit"
-            className="min-h-14 w-full cursor-pointer rounded-[10px] bg-tm-ink font-tm-mono text-[13px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+            className="min-h-14 w-full cursor-pointer rounded-[14px] bg-tm-ink font-tm-mono text-[13px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
           >
             Log set {nextIndex + 1}
           </button>
@@ -463,7 +463,7 @@ function BlockCard({
           <button
             type="button"
             onClick={() => setChange((v) => !v)}
-            className="min-h-11 flex-1 cursor-pointer rounded-[10px] border border-tm-rule font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]"
+            className="min-h-11 flex-1 cursor-pointer rounded-[14px] border border-tm-rule font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]"
           >
             {change ? "Hide numbers" : "Change"}
           </button>
@@ -471,7 +471,7 @@ function BlockCard({
             <button
               type="button"
               onClick={() => setSwapOpen((v) => !v)}
-              className="min-h-11 flex-1 cursor-pointer rounded-[10px] border border-tm-rule font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]"
+              className="min-h-11 flex-1 cursor-pointer rounded-[14px] border border-tm-rule font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]"
             >
               {swapOpen ? "Keep this" : "Can't do this"}
             </button>
@@ -486,7 +486,7 @@ function BlockCard({
               key={swap.key}
               type="button"
               onClick={() => actions.swapTrainBlock(block.exercise, swap.key)}
-              className="min-h-11 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 text-left font-tm-mono text-[11.5px] tracking-[0.08em] uppercase transition-transform duration-150 active:scale-[0.98]"
+              className="min-h-11 cursor-pointer rounded-[14px] border border-tm-rule bg-tm-panel px-3 text-left font-tm-mono text-[11.5px] tracking-[0.08em] uppercase transition-transform duration-150 active:scale-[0.98]"
             >
               {swap.name}
             </button>
@@ -509,7 +509,7 @@ function SessionDoneCard({ logged, planned }: { logged: number; planned: number 
         type="button"
         disabled={today?.day.sessionDone}
         onClick={() => actions.markSessionDone()}
-        className="mt-3 inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-[10px] bg-tm-ink px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase disabled:opacity-40"
+        className="mt-3 inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-[14px] bg-tm-ink px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase disabled:opacity-40"
       >
         {today?.day.sessionDone ? "Session logged" : "Mark session done"}
       </button>
@@ -519,7 +519,7 @@ function SessionDoneCard({ logged, planned }: { logged: number; planned: number 
 
 function DetailsShelf({ train }: { train: TrainData }) {
   return (
-    <details className="rounded-[10px] border border-tm-rule bg-tm-panel">
+    <details className="rounded-[14px] border border-tm-rule bg-tm-panel">
       <summary className="min-h-11 cursor-pointer list-none px-4 py-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-dim uppercase [&::-webkit-details-marker]:hidden">
         Details
       </summary>
@@ -587,7 +587,7 @@ function NumField({
         inputMode="decimal"
         aria-label={label}
         placeholder={placeholder}
-        className="min-h-11 w-14 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-2 text-center font-tm-mono text-[13px] focus:border-tm-ink"
+        className="min-h-11 w-14 rounded-[14px] border border-tm-rule-strong bg-tm-panel px-2 text-center font-tm-mono text-[13px] focus:border-tm-ink"
       />
     </label>
   );
@@ -771,7 +771,7 @@ function ProfileCard({ profile }: { profile: TrainingProfile }) {
             setDraft(profile);
             setOpen((v) => !v);
           }}
-          className="min-h-11 cursor-pointer rounded-[10px] border border-tm-rule px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]"
+          className="min-h-11 cursor-pointer rounded-[14px] border border-tm-rule px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]"
         >
           {open ? "Close" : "Edit"}
         </button>
@@ -804,7 +804,7 @@ function ProfileCard({ profile }: { profile: TrainingProfile }) {
               aria-label="Session minutes"
               value={draft.minutes}
               onChange={(e) => setDraft({ ...draft, minutes: Number(e.target.value) || 20 })}
-              className="min-h-11 w-24 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-2 font-tm-mono text-[13px] focus:border-tm-ink"
+              className="min-h-11 w-24 rounded-[14px] border border-tm-rule-strong bg-tm-panel px-2 font-tm-mono text-[13px] focus:border-tm-ink"
             />
           </label>
           <ChipMulti
@@ -822,7 +822,7 @@ function ProfileCard({ profile }: { profile: TrainingProfile }) {
           <button
             type="button"
             onClick={save}
-            className="min-h-11 cursor-pointer rounded-[10px] bg-tm-ink font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+            className="min-h-11 cursor-pointer rounded-[14px] bg-tm-ink font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
           >
             Save profile
           </button>
@@ -853,7 +853,7 @@ function ChipRow<T extends string>({
             type="button"
             onClick={() => onChange(opt.id)}
             className={cn(
-              "min-h-11 cursor-pointer rounded-[10px] border px-3 font-tm-mono text-[11.5px] tracking-[0.08em] uppercase transition-transform duration-150 active:scale-[0.98]",
+              "min-h-11 cursor-pointer rounded-[14px] border px-3 font-tm-mono text-[11.5px] tracking-[0.08em] uppercase transition-transform duration-150 active:scale-[0.98]",
               value === opt.id ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule bg-tm-panel",
             )}
           >
@@ -888,7 +888,7 @@ function ChipMulti<T extends string>({
               type="button"
               onClick={() => onChange(on ? value.filter((x) => x !== opt.id) : [...value, opt.id])}
               className={cn(
-                "min-h-11 cursor-pointer rounded-[10px] border px-3 font-tm-mono text-[11.5px] tracking-[0.08em] uppercase transition-transform duration-150 active:scale-[0.98]",
+                "min-h-11 cursor-pointer rounded-[14px] border px-3 font-tm-mono text-[11.5px] tracking-[0.08em] uppercase transition-transform duration-150 active:scale-[0.98]",
                 on ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule bg-tm-panel",
               )}
             >

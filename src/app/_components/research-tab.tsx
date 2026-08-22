@@ -50,7 +50,7 @@ export function ResearchTab() {
                 <span className="text-[14px] font-medium">
                   {e.code} · {e.name}
                 </span>
-                <span className={cn("shrink-0 rounded-[10px] border px-2 py-0.5 font-tm-mono text-[11.5px] uppercase", STATUS_STYLE[e.status])}>
+                <span className={cn("shrink-0 rounded-[14px] border px-2 py-0.5 font-tm-mono text-[11.5px] uppercase", STATUS_STYLE[e.status])}>
                   {e.status}
                 </span>
               </div>

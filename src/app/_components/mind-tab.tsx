@@ -145,7 +145,7 @@ export function MindTab() {
 export function MindTodayCard() {
   const { mind } = useTimento();
   if (!mind) {
-    return <div className="h-24 rounded-[10px] border border-tm-rule bg-tm-panel" aria-busy="true" />;
+    return <div className="h-24 rounded-[14px] border border-tm-rule bg-tm-panel" aria-busy="true" />;
   }
   const top = mind.intentions[0] ?? null;
   const wins = mind.intentions.reduce((s, i) => s + i.wins, 0);
@@ -181,7 +181,7 @@ function MindSkeleton() {
   return (
     <div className="flex flex-col gap-3 pt-4" aria-busy="true">
       {[0, 1, 2].map((i) => (
-        <div key={i} className="h-28 rounded-[10px] border border-tm-rule bg-tm-panel" />
+        <div key={i} className="h-28 rounded-[14px] border border-tm-rule bg-tm-panel" />
       ))}
     </div>
   );
@@ -210,7 +210,7 @@ function QuietCard({ quiet }: { quiet: NonNullable<MindData["quietCheck"]> }) {
         <button
           onClick={() => setSupportOpen((open) => !open)}
           aria-expanded={supportOpen}
-          className="min-h-11 flex-1 cursor-pointer rounded-[10px] border border-tm-amber bg-tm-panel px-4 font-tm-mono text-[11.5px] tracking-[0.15em] text-tm-amber uppercase transition-transform duration-150 active:scale-[0.98]"
+          className="min-h-11 flex-1 cursor-pointer rounded-[14px] border border-tm-amber bg-tm-panel px-4 font-tm-mono text-[11.5px] tracking-[0.15em] text-tm-amber uppercase transition-transform duration-150 active:scale-[0.98]"
         >
           Support options
         </button>
@@ -221,13 +221,13 @@ function QuietCard({ quiet }: { quiet: NonNullable<MindData["quietCheck"]> }) {
           <div className="mt-2.5 flex gap-2">
             <a
               href="tel:116123"
-              className="flex min-h-11 flex-1 items-center justify-center rounded-[10px] border border-tm-amber bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-amber uppercase"
+              className="flex min-h-11 flex-1 items-center justify-center rounded-[14px] border border-tm-amber bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-amber uppercase"
             >
               Samaritans 116 123
             </a>
             <a
               href="tel:112"
-              className="flex min-h-11 flex-1 items-center justify-center rounded-[10px] border border-tm-amber bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-amber uppercase"
+              className="flex min-h-11 flex-1 items-center justify-center rounded-[14px] border border-tm-amber bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-amber uppercase"
             >
               Emergency 112
             </a>
@@ -246,13 +246,13 @@ function SafetyCard({ text }: { text: string }) {
       <div className="mt-2.5 flex gap-2">
         <a
           href="tel:116123"
-          className="flex min-h-11 flex-1 items-center justify-center rounded-[10px] border border-tm-amber bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-amber uppercase"
+          className="flex min-h-11 flex-1 items-center justify-center rounded-[14px] border border-tm-amber bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-amber uppercase"
         >
           Samaritans 116 123
         </a>
         <a
           href="tel:112"
-          className="flex min-h-11 flex-1 items-center justify-center rounded-[10px] border border-tm-amber bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-amber uppercase"
+          className="flex min-h-11 flex-1 items-center justify-center rounded-[14px] border border-tm-amber bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-amber uppercase"
         >
           Emergency 112
         </a>
@@ -314,7 +314,7 @@ function DueCard({
             <button
               key={d.key}
               onClick={() => setOpen(d.key)}
-              className="flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3.5 py-2.5 text-left transition-transform duration-150 active:scale-[0.98]"
+              className="flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3.5 py-2.5 text-left transition-transform duration-150 active:scale-[0.98]"
             >
               <span className="min-w-0 flex-1">
                 <span className="block text-[13px] font-medium">{d.name}</span>
@@ -387,7 +387,7 @@ function Questionnaire({ instrument, onClose }: { instrument: InstrumentView; on
                       setAnswers((prev) => prev.map((a, n) => (n === i ? value : a)))
                     }
                     className={cn(
-                      "h-11 flex-1 cursor-pointer rounded-[10px] border font-tm-mono text-[11.5px] transition-transform duration-150 active:scale-[0.98]",
+                      "h-11 flex-1 cursor-pointer rounded-[14px] border font-tm-mono text-[11.5px] transition-transform duration-150 active:scale-[0.98]",
                       chosen === value
                         ? "border-tm-ink bg-tm-ink text-white"
                         : "border-tm-rule bg-tm-panel text-tm-dim",
@@ -412,7 +412,7 @@ function Questionnaire({ instrument, onClose }: { instrument: InstrumentView; on
           onClick={submit}
           disabled={!complete}
           className={cn(
-            "min-h-11 flex-1 cursor-pointer rounded-[10px] px-4 font-tm-mono text-[11.5px] tracking-[0.12em] uppercase transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
+            "min-h-11 flex-1 cursor-pointer rounded-[14px] px-4 font-tm-mono text-[11.5px] tracking-[0.12em] uppercase transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
             complete ? "bg-tm-ink text-white" : "bg-tm-soft text-tm-dim2",
           )}
         >
@@ -420,7 +420,7 @@ function Questionnaire({ instrument, onClose }: { instrument: InstrumentView; on
         </button>
         <button
           onClick={onClose}
-          className="min-h-11 cursor-pointer rounded-[10px] border border-tm-rule px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase transition-transform duration-150 active:scale-[0.98]"
+          className="min-h-11 cursor-pointer rounded-[14px] border border-tm-rule px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase transition-transform duration-150 active:scale-[0.98]"
         >
           Close
         </button>
@@ -451,7 +451,7 @@ function HistoryCard({ history }: { history: HistoryEntry[] }) {
               {h.latest && (
                 <span
                   className={cn(
-                    "rounded-[14px] border px-2.5 py-[3px] font-tm-mono text-[11.5px] tracking-[0.08em] uppercase",
+                    "rounded-[18px] border px-2.5 py-[3px] font-tm-mono text-[11.5px] tracking-[0.08em] uppercase",
                     TONE_BORDER[h.latest.tone],
                     TONE_TEXT[h.latest.tone],
                   )}
@@ -547,7 +547,7 @@ function IntentionsCard({
 function IntentionRow({ intention }: { intention: IntentionView }) {
   const { actions } = useTimento();
   return (
-    <div className="rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2.5">
+    <div className="rounded-[14px] border border-tm-rule bg-tm-panel px-3 py-2.5">
       <p className="text-[13px] leading-snug">
         <span className="font-tm-mono text-[11.5px] text-tm-dim">IF </span>
         {intention.trigger}
@@ -561,7 +561,7 @@ function IntentionRow({ intention }: { intention: IntentionView }) {
         <button
           onClick={() => actions.markIntentionWin(intention.id)}
           aria-label={`Log a win for: if ${intention.trigger} then ${intention.action}`}
-          className="min-h-11 cursor-pointer rounded-[10px] border border-tm-green px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-green uppercase transition-transform duration-150 active:scale-[0.98]"
+          className="min-h-11 cursor-pointer rounded-[14px] border border-tm-green px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-green uppercase transition-transform duration-150 active:scale-[0.98]"
         >
           Ran it
         </button>
@@ -606,7 +606,7 @@ function IntentionBuilder({ suggestions }: { suggestions: Suggestion[] }) {
             onChange={(e) => setTrigger(e.target.value)}
             placeholder="it's 21:00 and I'm tired"
             aria-label="If — the situation"
-            className="min-h-11 flex-1 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-[14px] focus:border-tm-ink"
+            className="min-h-11 flex-1 rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 text-[14px] focus:border-tm-ink"
           />
         </label>
         <label className="flex items-center gap-2">
@@ -616,7 +616,7 @@ function IntentionBuilder({ suggestions }: { suggestions: Suggestion[] }) {
             onChange={(e) => setAction(e.target.value)}
             placeholder="run the close-out ritual, then go up"
             aria-label="Then — the pre-decided action"
-            className="min-h-11 flex-1 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-[14px] focus:border-tm-ink"
+            className="min-h-11 flex-1 rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 text-[14px] focus:border-tm-ink"
           />
         </label>
       </div>
@@ -636,7 +636,7 @@ function IntentionBuilder({ suggestions }: { suggestions: Suggestion[] }) {
                   setAction(s.action);
                 }}
                 aria-label={`Use suggestion: if ${s.trigger} then ${s.action}`}
-                className="min-h-11 cursor-pointer rounded-[10px] bg-tm-soft px-3 py-2 text-left text-[13px] leading-snug transition-transform duration-150 active:scale-[0.98]"
+                className="min-h-11 cursor-pointer rounded-[14px] bg-tm-soft px-3 py-2 text-left text-[13px] leading-snug transition-transform duration-150 active:scale-[0.98]"
               >
                 <span className="font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-dim uppercase">
                   {s.signal}{" "}
@@ -652,7 +652,7 @@ function IntentionBuilder({ suggestions }: { suggestions: Suggestion[] }) {
         type="submit"
         disabled={!ready}
         className={cn(
-          "mt-2.5 min-h-11 w-full cursor-pointer rounded-[10px] px-4 font-tm-mono text-[11.5px] tracking-[0.12em] uppercase transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
+          "mt-2.5 min-h-11 w-full cursor-pointer rounded-[14px] px-4 font-tm-mono text-[11.5px] tracking-[0.12em] uppercase transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
           ready ? "bg-tm-ink text-white" : "bg-tm-soft text-tm-dim2",
         )}
       >
@@ -700,7 +700,7 @@ function ReflectionCard({
       )}
 
       {todays ? (
-        <div className="mt-2 rounded-[10px] bg-tm-soft px-3 py-2.5">
+        <div className="mt-2 rounded-[14px] bg-tm-soft px-3 py-2.5">
           <p className="text-[14px]">{todays.response}</p>
           {todays.win && (
             <p className="mt-1 font-tm-mono text-[11.5px] text-tm-green">win · {todays.win}</p>
@@ -724,20 +724,20 @@ function ReflectionCard({
             rows={3}
             aria-label="Reflection response"
             placeholder="Two lines is plenty."
-            className="w-full rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 py-2 text-[14px] focus:border-tm-ink"
+            className="w-full rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 py-2 text-[14px] focus:border-tm-ink"
           />
           <input
             value={win}
             onChange={(e) => setWin(e.target.value)}
             placeholder="one win today (optional)"
             aria-label="One win today, optional"
-            className="mt-1.5 min-h-11 w-full rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-[14px] focus:border-tm-ink"
+            className="mt-1.5 min-h-11 w-full rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 text-[14px] focus:border-tm-ink"
           />
           <button
             type="submit"
             disabled={!ready}
             className={cn(
-              "mt-2 min-h-11 w-full cursor-pointer rounded-[10px] px-4 font-tm-mono text-[11.5px] tracking-[0.12em] uppercase transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
+              "mt-2 min-h-11 w-full cursor-pointer rounded-[14px] px-4 font-tm-mono text-[11.5px] tracking-[0.12em] uppercase transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
               ready ? "bg-tm-ink text-white" : "bg-tm-soft text-tm-dim2",
             )}
           >

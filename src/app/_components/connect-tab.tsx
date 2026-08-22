@@ -87,7 +87,7 @@ export function ConnectPanel() {
         <p role="status" className="sr-only">
           Loading section…
         </p>
-        <div className="h-24 rounded-[10px] border border-tm-rule bg-tm-panel" />
+        <div className="h-24 rounded-[14px] border border-tm-rule bg-tm-panel" />
       </div>
     );
   }
@@ -213,7 +213,7 @@ function ImportCard() {
         download personal data — the weight CSV), or any spreadsheet with a date and a weight
         column. Apple Watch and Garmin land the same way, through their export files.
       </p>
-      <label className="mt-2 flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-center font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-ink uppercase">
+      <label className="mt-2 flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 text-center font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-ink uppercase">
         {fileName ?? "Choose a .csv file"}
         <input
           ref={inputRef}
@@ -264,7 +264,7 @@ function ImportCard() {
                 value={device}
                 onChange={(e) => setDevice(e.target.value)}
                 placeholder="e.g. Renpho ES-CS20M"
-                className="min-h-11 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 font-tm-mono text-sm focus:border-tm-ink"
+                className="min-h-11 rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 font-tm-mono text-sm focus:border-tm-ink"
               />
               <TmButton onClick={() => void save()} disabled={busy} className="w-full">
                 {busy ? "Saving…" : "Save to the file"}
@@ -378,7 +378,7 @@ function InBodyCard() {
             type="date"
             value={scanDate}
             onChange={(e) => setScanDate(e.target.value)}
-            className="min-h-11 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-2 font-tm-mono text-sm focus:border-tm-ink"
+            className="min-h-11 rounded-[14px] border border-tm-rule-strong bg-tm-panel px-2 font-tm-mono text-sm focus:border-tm-ink"
           />
         </div>
         {INBODY_FIELDS.map((field) => (
@@ -393,7 +393,7 @@ function InBodyCard() {
                 onChange={(e) => setValues((v) => ({ ...v, [field.key]: e.target.value }))}
                 inputMode="decimal"
                 placeholder="—"
-                className="min-h-11 w-20 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-2 py-2 text-right font-tm-mono text-sm focus:border-tm-ink"
+                className="min-h-11 w-20 rounded-[14px] border border-tm-rule-strong bg-tm-panel px-2 py-2 text-right font-tm-mono text-sm focus:border-tm-ink"
               />
               <span className="w-10 font-tm-mono text-[11.5px] text-tm-dim">{field.unit}</span>
             </div>

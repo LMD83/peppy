@@ -144,7 +144,7 @@ export function Walkthrough({
           tabIndex={-1}
           role="region"
           aria-label="Guided walkthrough"
-          className="rounded-[14px] border border-tm-ink bg-tm-ink p-4 text-white shadow-lg outline-none"
+          className="rounded-[18px] border border-tm-ink bg-tm-ink p-4 text-white shadow-lg outline-none"
         >
           <div className="flex items-baseline justify-between gap-3">
             <p className="font-tm-mono text-[11.5px] tracking-[0.15em] text-tm-amber-lift uppercase">
@@ -169,7 +169,7 @@ export function Walkthrough({
               <button
                 type="button"
                 onClick={() => setStep((s) => Math.max(0, s - 1))}
-                className="inline-flex min-h-11 flex-none cursor-pointer items-center rounded-[10px] border border-tm-onink px-4 text-[14px] text-white transition-transform duration-150 active:scale-[0.98]"
+                className="inline-flex min-h-11 flex-none cursor-pointer items-center rounded-[14px] border border-tm-onink px-4 text-[14px] text-white transition-transform duration-150 active:scale-[0.98]"
               >
                 Back
               </button>
@@ -177,7 +177,7 @@ export function Walkthrough({
             <button
               type="button"
               onClick={() => (last ? onClose() : setStep((s) => s + 1))}
-              className="inline-flex min-h-11 flex-1 cursor-pointer items-center justify-center rounded-[10px] bg-white px-4 text-[15px] font-medium text-tm-ink transition-transform duration-150 active:scale-[0.98]"
+              className="inline-flex min-h-11 flex-1 cursor-pointer items-center justify-center rounded-[14px] bg-white px-4 text-[15px] font-medium text-tm-ink transition-transform duration-150 active:scale-[0.98]"
             >
               {last ? "Done" : "Next"}
             </button>

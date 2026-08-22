@@ -592,7 +592,7 @@ function ContactFields({
   onPhone: (v: string) => void;
 }) {
   return (
-    <fieldset className="rounded-[10px] border border-tm-rule bg-tm-panel p-3">
+    <fieldset className="rounded-[14px] border border-tm-rule bg-tm-panel p-3">
       <legend className="px-1 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase">{label}</legend>
       <div className="flex flex-col gap-2 sm:flex-row">
         <label className="flex min-w-0 flex-1 flex-col gap-1">
@@ -600,7 +600,7 @@ function ContactFields({
           <input
             value={name}
             onChange={(e) => onName(e.target.value)}
-            className="min-h-11 w-full rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-[15px] focus:border-tm-ink"
+            className="min-h-11 w-full rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 text-[15px] focus:border-tm-ink"
           />
         </label>
         <label className="flex min-w-0 flex-1 flex-col gap-1">
@@ -610,7 +610,7 @@ function ContactFields({
             inputMode="tel"
             value={phone}
             onChange={(e) => onPhone(e.target.value)}
-            className="min-h-11 w-full rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 font-tm-mono text-[15px] focus:border-tm-ink"
+            className="min-h-11 w-full rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 font-tm-mono text-[15px] focus:border-tm-ink"
           />
         </label>
       </div>

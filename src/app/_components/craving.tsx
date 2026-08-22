@@ -305,7 +305,7 @@ export function CravingLogger() {
               onChange={(e) => setEmotionWord(e.target.value)}
               placeholder="one word for it"
               aria-label="One word for the emotion"
-              className="mb-2 min-h-11 w-full rounded-[10px] border border-tm-rule-strong px-3 py-2 text-base outline-none focus:border-tm-ink"
+              className="mb-2 min-h-11 w-full rounded-[14px] border border-tm-rule-strong px-3 py-2 text-base outline-none focus:border-tm-ink"
             />
           )}
           <div className="flex flex-wrap gap-2">

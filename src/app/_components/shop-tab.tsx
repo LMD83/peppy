@@ -210,7 +210,7 @@ function ShopBody({ shop, date, easy }: { shop: ShopData; date: string; easy: bo
                 onClick={() => setStep(Math.max(0, safeStep - 1))}
                 disabled={safeStep === 0}
                 className={cn(
-                  "min-h-16 flex-1 cursor-pointer rounded-[10px] border px-4 text-[17px] font-medium transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
+                  "min-h-16 flex-1 cursor-pointer rounded-[14px] border px-4 text-[17px] font-medium transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
                   safeStep === 0
                     ? "border-tm-rule bg-tm-soft text-tm-dim"
                     : "border-tm-rule-strong bg-tm-panel text-tm-ink",
@@ -223,7 +223,7 @@ function ShopBody({ shop, date, easy }: { shop: ShopData; date: string; easy: bo
                 onClick={() => setStep(Math.min(lastStep, safeStep + 1))}
                 disabled={safeStep === lastStep}
                 className={cn(
-                  "min-h-16 flex-1 cursor-pointer rounded-[10px] border px-4 text-[17px] font-medium transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
+                  "min-h-16 flex-1 cursor-pointer rounded-[14px] border px-4 text-[17px] font-medium transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
                   safeStep === lastStep
                     ? "border-tm-rule bg-tm-soft text-tm-dim"
                     : "border-tm-ink bg-tm-ink text-white",
@@ -254,7 +254,7 @@ function ShopBody({ shop, date, easy }: { shop: ShopData; date: string; easy: bo
                 {shop.days === 1 ? "today" : `${shop.days} days`}
               </span>
             </div>
-            <dl className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
+            <dl className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-[14px] border border-tm-rule bg-tm-rule">
               <Stat className="bg-tm-panel px-3 py-3" value={String(shop.totals.toBuy)} label="to buy"/>
               <Stat className="bg-tm-panel px-3 py-3" value={String(shop.totals.aisles)} label="aisles"/>
               <Stat className="bg-tm-panel px-3 py-3" value={`${shop.totals.weightKg.toFixed(1)} kg`} label="to carry"/>
@@ -309,7 +309,7 @@ function ShopBody({ shop, date, easy }: { shop: ShopData; date: string; easy: bo
               <button
                 type="button"
                 onClick={ticks.clear}
-                className="min-h-11 flex-1 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 text-[14px] transition-transform duration-150 active:scale-[0.98]"
+                className="min-h-11 flex-1 cursor-pointer rounded-[14px] border border-tm-rule bg-tm-panel px-3 text-[14px] transition-transform duration-150 active:scale-[0.98]"
               >
                 Untick everything
               </button>
@@ -317,7 +317,7 @@ function ShopBody({ shop, date, easy }: { shop: ShopData; date: string; easy: bo
                 <button
                   type="button"
                   onClick={() => actions.clearPantry()}
-                  className="min-h-11 flex-1 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 text-[14px] transition-transform duration-150 active:scale-[0.98]"
+                  className="min-h-11 flex-1 cursor-pointer rounded-[14px] border border-tm-rule bg-tm-panel px-3 text-[14px] transition-transform duration-150 active:scale-[0.98]"
                 >
                   Empty the cupboard ({shop.pantryCount})
                 </button>
@@ -360,7 +360,7 @@ function ShopSkeleton() {
   return (
     <div className="flex flex-col gap-3 pt-4" aria-busy="true">
       {[0, 1, 2].map((i) => (
-        <div key={i} className="h-28 rounded-[10px] border border-tm-rule bg-tm-panel" />
+        <div key={i} className="h-28 rounded-[14px] border border-tm-rule bg-tm-panel" />
       ))}
       <p className="text-center font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase">
         Loading the list…
@@ -397,7 +397,7 @@ function ItemRow({
   return (
     <div
       className={cn(
-        "rounded-[10px] border px-3 py-2",
+        "rounded-[14px] border px-3 py-2",
         item.have ? "border-tm-rule bg-tm-soft" : "border-tm-rule-strong bg-tm-panel",
       )}
     >
@@ -449,7 +449,7 @@ function ItemRow({
           aria-pressed={item.have}
           onClick={onHave}
           className={cn(
-            "min-h-11 cursor-pointer rounded-[10px] border px-3 text-[14px] transition-transform duration-150 active:scale-[0.98]",
+            "min-h-11 cursor-pointer rounded-[14px] border px-3 text-[14px] transition-transform duration-150 active:scale-[0.98]",
             item.have
               ? "border-tm-ink bg-tm-ink text-white"
               : "border-tm-rule-strong bg-tm-panel text-tm-ink",
@@ -463,7 +463,7 @@ function ItemRow({
             type="button"
             aria-expanded={showSubs}
             onClick={() => setShowSubs(!showSubs)}
-            className="min-h-11 cursor-pointer rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-[14px] transition-transform duration-150 active:scale-[0.98]"
+            className="min-h-11 cursor-pointer rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 text-[14px] transition-transform duration-150 active:scale-[0.98]"
           >
             {showSubs ? "Hide swaps" : `Out of stock? (${item.substitutions.length})`}
           </button>
@@ -474,7 +474,7 @@ function ItemRow({
             href={url}
             target="_blank"
             rel="noreferrer noopener"
-            className="flex min-h-11 items-center rounded-[10px] border border-tm-blue bg-tm-panel px-3 text-[14px] text-tm-blue transition-transform duration-150 active:scale-[0.98]"
+            className="flex min-h-11 items-center rounded-[14px] border border-tm-blue bg-tm-panel px-3 text-[14px] text-tm-blue transition-transform duration-150 active:scale-[0.98]"
           >
             Find it on {retailer?.name} ↗
           </a>
@@ -526,7 +526,7 @@ function RetailerCard({
               aria-pressed={on}
               onClick={() => onSelect(r.key)}
               className={cn(
-                "flex min-h-11 w-full cursor-pointer items-center justify-between gap-3 rounded-[10px] border px-3 py-2 text-left transition-transform duration-150 active:scale-[0.98]",
+                "flex min-h-11 w-full cursor-pointer items-center justify-between gap-3 rounded-[14px] border px-3 py-2 text-left transition-transform duration-150 active:scale-[0.98]",
                 on ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule-strong bg-tm-panel",
               )}
             >
@@ -579,14 +579,14 @@ function ShareButtons({ shop, className }: { shop: ShopData; className?: string 
       <button
         type="button"
         onClick={copy}
-        className="min-h-11 flex-1 cursor-pointer rounded-[10px] border border-tm-ink bg-tm-ink px-3 text-[14px] text-white transition-transform duration-150 active:scale-[0.98]"
+        className="min-h-11 flex-1 cursor-pointer rounded-[14px] border border-tm-ink bg-tm-ink px-3 text-[14px] text-white transition-transform duration-150 active:scale-[0.98]"
       >
         {copied ? "Copied" : "Copy the list"}
       </button>
       <button
         type="button"
         onClick={share}
-        className="min-h-11 flex-1 cursor-pointer rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-[14px] transition-transform duration-150 active:scale-[0.98]"
+        className="min-h-11 flex-1 cursor-pointer rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 text-[14px] transition-transform duration-150 active:scale-[0.98]"
       >
         Send it
       </button>
@@ -595,7 +595,7 @@ function ShareButtons({ shop, className }: { shop: ShopData; className?: string 
         onClick={() => {
           if (typeof window !== "undefined") window.print();
         }}
-        className="min-h-11 flex-1 cursor-pointer rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-[14px] transition-transform duration-150 active:scale-[0.98]"
+        className="min-h-11 flex-1 cursor-pointer rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 text-[14px] transition-transform duration-150 active:scale-[0.98]"
       >
         Print it big
       </button>

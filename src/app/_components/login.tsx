@@ -82,7 +82,7 @@ export function Login() {
                   onClick={() => setSlug(u.slug)}
                   aria-pressed={slug === u.slug}
                   className={cn(
-                    "min-h-12 flex-1 cursor-pointer rounded-[10px] border px-4 py-3 text-left text-[15px] font-medium transition-[transform,opacity] duration-150 active:scale-[0.98]",
+                    "min-h-12 flex-1 cursor-pointer rounded-[14px] border px-4 py-3 text-left text-[15px] font-medium transition-[transform,opacity] duration-150 active:scale-[0.98]",
                     slug === u.slug
                       ? "border-tm-ink bg-tm-ink text-white"
                       : "border-tm-rule-strong bg-tm-panel text-tm-ink",
@@ -103,12 +103,12 @@ export function Login() {
               autoComplete="current-password"
               value={passcode}
               onChange={(e) => setPasscode(e.target.value)}
-              className="min-h-12 w-full rounded-[10px] border border-tm-rule-strong bg-tm-panel px-4 py-3 font-tm-mono text-base tracking-[0.3em] text-tm-ink outline-none focus:border-tm-ink"
+              className="min-h-12 w-full rounded-[14px] border border-tm-rule-strong bg-tm-panel px-4 py-3 font-tm-mono text-base tracking-[0.3em] text-tm-ink outline-none focus:border-tm-ink"
               placeholder="••••"
             />
           </label>
           {error && (
-            <p role="alert" className="mt-3 rounded-[10px] border border-tm-red bg-tm-red-bg px-3 py-2.5 text-[14px] text-tm-red">
+            <p role="alert" className="mt-3 rounded-[14px] border border-tm-red bg-tm-red-bg px-3 py-2.5 text-[14px] text-tm-red">
               {error}
             </p>
           )}
@@ -122,7 +122,7 @@ export function Login() {
             aria-disabled={blocked}
             aria-describedby={needsPasscode ? "passcode-hint" : undefined}
             className={cn(
-              "mt-5 min-h-12 w-full rounded-[10px] py-3.5 font-tm-mono text-[13px] tracking-[0.15em] uppercase transition-transform duration-150",
+              "mt-5 min-h-12 w-full rounded-[14px] py-3.5 font-tm-mono text-[13px] tracking-[0.15em] uppercase transition-transform duration-150",
               // Dimmed by swapping the token pair, not by opacity: opacity
               // multiplies the contrast of the label inside it, and a button
               // that stays focusable has to stay readable.
@@ -139,7 +139,7 @@ export function Login() {
             </p>
           )}
           {demo && (
-            <p className="mt-4 rounded-[10px] bg-tm-soft px-3 py-2.5 font-tm-mono text-[11.5px] leading-relaxed text-tm-dim">
+            <p className="mt-4 rounded-[14px] bg-tm-soft px-3 py-2.5 font-tm-mono text-[11.5px] leading-relaxed text-tm-dim">
               Demo mode. No deployment configured. Passcodes: Liam 2580 · Artur 1379.
             </p>
           )}

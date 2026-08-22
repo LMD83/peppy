@@ -84,7 +84,7 @@ export function Scoreboard() {
         >
           {user.mode} mode ⇄ · change
         </button>
-        <dl className="mt-3 flex overflow-hidden rounded-[10px] border border-tm-inkrule bg-tm-ink2">
+        <dl className="mt-3 flex overflow-hidden rounded-[14px] border border-tm-inkrule bg-tm-ink2">
           {cells.map(([label, value, sub, color], i) => (
             <div key={label} className={cn("min-w-0 flex-1 px-3 py-3", i > 0 && "border-l border-tm-inkrule")}>
               <dt className="font-tm-mono text-[11.5px] tracking-[0.08em] text-tm-onink uppercase">{label}</dt>
@@ -140,7 +140,7 @@ export function Scoreboard() {
 
 /** The dark chip both stamp states wear, so the day's end is not a downgrade. */
 const stampShell =
-  "mt-2 flex min-h-11 w-full items-center justify-between gap-3 rounded-[10px] border border-tm-inkrule bg-tm-ink2 px-3.5 py-2.5 text-left";
+  "mt-2 flex min-h-11 w-full items-center justify-between gap-3 rounded-[14px] border border-tm-inkrule bg-tm-ink2 px-3.5 py-2.5 text-left";
 
 /**
  * The file's own to-do line, as a fourth header element.
@@ -231,7 +231,7 @@ function ModeSwitcher({
   }, [onClose]);
 
   return (
-    <div id={id} className="mt-3 rounded-[10px] border border-tm-inkrule bg-tm-ink3 p-3">
+    <div id={id} className="mt-3 rounded-[14px] border border-tm-inkrule bg-tm-ink3 p-3">
       <p className="mb-2 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-onink uppercase">Switch mode. Takes effect now</p>
       <div className="flex flex-col gap-1.5">
         {options.map((o) => (

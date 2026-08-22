@@ -63,7 +63,7 @@ function PortionToggle({
           aria-checked={mode === m}
           onClick={() => onChange(m)}
           className={cn(
-            "min-h-11 min-w-11 flex-1 cursor-pointer rounded-[10px] border px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
+            "min-h-11 min-w-11 flex-1 cursor-pointer rounded-[14px] border px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
             mode === m
               ? "border-tm-ink bg-tm-ink text-white"
               : "border-tm-rule bg-tm-panel text-tm-dim",
@@ -187,26 +187,26 @@ function FuelTabBody({
           <div className="flex flex-wrap gap-1.5">
             <button
               onClick={() => actions.generateMealPlan()}
-              className="min-h-11 cursor-pointer rounded-[10px] bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+              className="min-h-11 cursor-pointer rounded-[14px] bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
             >
               Generate day
             </button>
             <button
               onClick={() => actions.generateWeek()}
-              className="min-h-11 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-ink uppercase transition-transform duration-150 active:scale-[0.98]"
+              className="min-h-11 cursor-pointer rounded-[14px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-ink uppercase transition-transform duration-150 active:scale-[0.98]"
             >
               Generate week
             </button>
             <button
               onClick={() => actions.copyYesterday()}
-              className="min-h-11 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-ink uppercase transition-transform duration-150 active:scale-[0.98]"
+              className="min-h-11 cursor-pointer rounded-[14px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-ink uppercase transition-transform duration-150 active:scale-[0.98]"
             >
               Copy yesterday
             </button>
           </div>
         </div>
         {fuel.proposal && (
-          <p className="mt-2 rounded-[10px] bg-tm-soft px-3 py-2 text-sm">
+          <p className="mt-2 rounded-[14px] bg-tm-soft px-3 py-2 text-sm">
             <span className="font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase">
               Generating costs
             </span>
@@ -314,7 +314,7 @@ function ShoppingCard({ items }: { items: FuelData["shoppingList"] }) {
       <button
         type="button"
         onClick={() => go("shop")}
-        className="mt-2 flex min-h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-[10px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-ink uppercase transition-transform duration-150 active:scale-[0.98]"
+        className="mt-2 flex min-h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-[14px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-ink uppercase transition-transform duration-150 active:scale-[0.98]"
       >
         Open the list
         <span aria-hidden>→</span>
@@ -348,7 +348,7 @@ export function FuelTodayCard() {
   }, [focusWanted]);
 
   if (!fuel || !today) {
-    return <div className="h-24 rounded-[10px] border border-tm-rule bg-tm-panel" aria-busy="true" />;
+    return <div className="h-24 rounded-[14px] border border-tm-rule bg-tm-panel" aria-busy="true" />;
   }
 
   if (fuel.survival) {
@@ -429,7 +429,7 @@ export function FuelTodayCard() {
             type="button"
             onClick={() => undoIt(held)}
             aria-label={`Undo — put ${held.name} back as not eaten`}
-            className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-ink uppercase transition-transform duration-150 active:scale-[0.98]"
+            className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-ink uppercase transition-transform duration-150 active:scale-[0.98]"
           >
             Undo
           </button>
@@ -438,7 +438,7 @@ export function FuelTodayCard() {
               type="button"
               onClick={() => moveOn(next)}
               aria-label={`Next meal — ${next.name}`}
-              className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[10px] bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+              className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[14px] bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
             >
               Next
             </button>
@@ -454,7 +454,7 @@ export function FuelTodayCard() {
             type="button"
             onClick={() => logIt(next)}
             aria-label={`Log ${next.name} as eaten`}
-            className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[10px] bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+            className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[14px] bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
           >
             Ate it
           </button>
@@ -470,7 +470,7 @@ export function FuelTodayCard() {
       <button
         type="button"
         onClick={() => go("fuel")}
-        className="mt-2 flex min-h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-[10px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-ink uppercase transition-transform duration-150 active:scale-[0.98]"
+        className="mt-2 flex min-h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-[14px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-ink uppercase transition-transform duration-150 active:scale-[0.98]"
       >
         Open Fuel
         <span aria-hidden>→</span>
@@ -515,7 +515,7 @@ function FuelSkeleton() {
   return (
     <div className="flex flex-col gap-3 pt-4" aria-busy="true">
       {[0, 1, 2].map((i) => (
-        <div key={i} className="h-28 rounded-[10px] border border-tm-rule bg-tm-panel" />
+        <div key={i} className="h-28 rounded-[14px] border border-tm-rule bg-tm-panel" />
       ))}
       <p className="text-center font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase">
         Loading fuel…
@@ -644,7 +644,7 @@ function FloorCard({ floor, tone }: { floor: FuelData["floor"]; tone: "default" 
         <ul className="mt-2 flex flex-col gap-1.5">
           {floor.items.map((item) => (
             <li key={item.foodKey} className="flex items-stretch gap-1.5">
-              <div className="flex flex-1 flex-col justify-center rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2">
+              <div className="flex flex-1 flex-col justify-center rounded-[14px] border border-tm-rule bg-tm-panel px-3 py-2">
                 <span className="text-sm font-medium">{item.name}</span>
                 <span className="font-tm-mono text-[11.5px] text-tm-dim">
                   {item.slotLabel.toLowerCase()} ·{" "}
@@ -658,7 +658,7 @@ function FloorCard({ floor, tone }: { floor: FuelData["floor"]; tone: "default" 
                   setLogged(item.name);
                 }}
                 aria-label={`Log ${item.name} as eaten`}
-                className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[10px] bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+                className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[14px] bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
               >
                 Ate it
               </button>
@@ -759,7 +759,7 @@ function KitchenCard({ kitchen }: { kitchen: FuelData["kitchen"] }) {
             onChange={(e) => setMinutes(e.target.value)}
             inputMode="numeric"
             aria-label="Hands-on minutes today"
-            className="min-h-11 w-24 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 font-tm-mono text-sm focus:border-tm-ink"
+            className="min-h-11 w-24 rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 font-tm-mono text-sm focus:border-tm-ink"
           />
         </label>
         <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Equipment today">
@@ -770,7 +770,7 @@ function KitchenCard({ kitchen }: { kitchen: FuelData["kitchen"] }) {
               aria-checked={equipment === eq}
               onClick={() => setEquipment(eq)}
               className={cn(
-                "min-h-11 cursor-pointer rounded-[10px] border px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
+                "min-h-11 cursor-pointer rounded-[14px] border px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
                 equipment === eq
                   ? "border-tm-ink bg-tm-ink text-white"
                   : "border-tm-rule bg-tm-panel text-tm-dim",
@@ -785,7 +785,7 @@ function KitchenCard({ kitchen }: { kitchen: FuelData["kitchen"] }) {
             aria-pressed={oneHanded}
             onClick={() => setOneHanded((v) => !v)}
             className={cn(
-              "min-h-11 flex-1 cursor-pointer rounded-[10px] border font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
+              "min-h-11 flex-1 cursor-pointer rounded-[14px] border font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
               oneHanded ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule bg-tm-panel text-tm-dim",
             )}
           >
@@ -795,7 +795,7 @@ function KitchenCard({ kitchen }: { kitchen: FuelData["kitchen"] }) {
             aria-pressed={!canStand}
             onClick={() => setCanStand((v) => !v)}
             className={cn(
-              "min-h-11 flex-1 cursor-pointer rounded-[10px] border font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
+              "min-h-11 flex-1 cursor-pointer rounded-[14px] border font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
               !canStand ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule bg-tm-panel text-tm-dim",
             )}
           >
@@ -805,13 +805,13 @@ function KitchenCard({ kitchen }: { kitchen: FuelData["kitchen"] }) {
         <div className="flex gap-1.5">
           <button
             onClick={() => apply(false)}
-            className="min-h-11 flex-1 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel font-tm-mono text-[11.5px] tracking-[0.12em] uppercase transition-transform duration-150 active:scale-[0.98]"
+            className="min-h-11 flex-1 cursor-pointer rounded-[14px] border border-tm-rule bg-tm-panel font-tm-mono text-[11.5px] tracking-[0.12em] uppercase transition-transform duration-150 active:scale-[0.98]"
           >
             Save kitchen
           </button>
           <button
             onClick={() => apply(true)}
-            className="min-h-11 flex-1 cursor-pointer rounded-[10px] bg-tm-ink font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+            className="min-h-11 flex-1 cursor-pointer rounded-[14px] bg-tm-ink font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
           >
             Generate for today
           </button>
@@ -870,7 +870,7 @@ function SlotBlock({ slot }: { slot: SlotView }) {
                     onClick={() => actions.setFoodEaten(e.id, !e.eaten)}
                     aria-pressed={e.eaten}
                     className={cn(
-                      "flex min-h-11 flex-1 cursor-pointer items-center justify-between gap-2 rounded-[10px] border px-3 py-2 text-left transition-transform duration-150 active:scale-[0.98]",
+                      "flex min-h-11 flex-1 cursor-pointer items-center justify-between gap-2 rounded-[14px] border px-3 py-2 text-left transition-transform duration-150 active:scale-[0.98]",
                       e.eaten
                         ? "border-tm-green bg-tm-green-faint"
                         : "border-tm-rule bg-tm-panel",
@@ -890,7 +890,7 @@ function SlotBlock({ slot }: { slot: SlotView }) {
                     <button
                       onClick={() => setSwapFor(swapFor === e.id ? null : e.id)}
                       aria-expanded={swapFor === e.id}
-                      className="min-h-11 shrink-0 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-2 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-dim uppercase transition-transform duration-150 active:scale-[0.98]"
+                      className="min-h-11 shrink-0 cursor-pointer rounded-[14px] border border-tm-rule bg-tm-panel px-2 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-dim uppercase transition-transform duration-150 active:scale-[0.98]"
                     >
                       Swap
                     </button>
@@ -898,7 +898,7 @@ function SlotBlock({ slot }: { slot: SlotView }) {
                   <button
                     onClick={() => actions.removeFood(e.id)}
                     aria-label={`Remove ${e.name} from ${slot.label.toLowerCase()}`}
-                    className="min-h-11 w-11 shrink-0 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel font-tm-mono text-sm text-tm-dim transition-transform duration-150 active:scale-[0.98]"
+                    className="min-h-11 w-11 shrink-0 cursor-pointer rounded-[14px] border border-tm-rule bg-tm-panel font-tm-mono text-sm text-tm-dim transition-transform duration-150 active:scale-[0.98]"
                   >
                     ×
                   </button>
@@ -912,7 +912,7 @@ function SlotBlock({ slot }: { slot: SlotView }) {
                           actions.swapFood(e.id, s.key);
                           setSwapFor(null);
                         }}
-                        className="min-h-11 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] uppercase transition-transform duration-150 active:scale-[0.98]"
+                        className="min-h-11 cursor-pointer rounded-[14px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] uppercase transition-transform duration-150 active:scale-[0.98]"
                       >
                         {s.name}
                       </button>

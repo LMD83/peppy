@@ -141,7 +141,7 @@ export function TodayTab() {
                 onClick={() => tickCheck(c)}
                 aria-pressed={c.done}
                 className={cn(
-                  "flex min-h-11 cursor-pointer items-center justify-between rounded-[10px] border px-3.5 py-3 text-left text-[15px] font-medium transition-[transform,opacity] duration-150 active:scale-[0.99]",
+                  "flex min-h-11 cursor-pointer items-center justify-between rounded-[14px] border px-3.5 py-3 text-left text-[15px] font-medium transition-[transform,opacity] duration-150 active:scale-[0.99]",
                   // white on tm-amber 5.77:1 — it was 3.29:1, so a ticked check on
                   // the survival screen was unreadable. white on tm-green 5.99:1.
                   c.done
@@ -242,7 +242,7 @@ function KitchenCard() {
         }}
         aria-disabled={today.day.ritualDone}
         className={cn(
-          "mt-2.5 min-h-11 w-full rounded-[10px] px-3 py-2.5 text-left text-[14px]",
+          "mt-2.5 min-h-11 w-full rounded-[14px] px-3 py-2.5 text-left text-[14px]",
           today.day.ritualDone ? "cursor-default bg-tm-green-faint text-tm-green" : "cursor-pointer bg-tm-soft text-tm-ink",
         )}
       >
@@ -345,7 +345,7 @@ function ScaleRow({ label, value, onPick }: { label: string; value: number | nul
 function BreathePrompt() {
   const [open, setOpen] = useState(false);
   return (
-    <div className="mt-2 rounded-[10px] bg-tm-soft px-3 py-2.5">
+    <div className="mt-2 rounded-[14px] bg-tm-soft px-3 py-2.5">
       <p className="text-[14px]">Stress is high. Two minutes of breathing helps the next hour.</p>
       {open ? (
         <BreathingTimerInline onDone={() => setOpen(false)} />
@@ -470,9 +470,9 @@ function WeighIn() {
               placeholder="kg"
               aria-label="Weight in kilograms"
               aria-invalid={error !== null}
-              className="min-h-11 w-24 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 py-2 font-tm-mono text-base outline-none focus:border-tm-ink"
+              className="min-h-11 w-24 rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 py-2 font-tm-mono text-base outline-none focus:border-tm-ink"
             />
-            <button type="submit" className="min-h-11 cursor-pointer rounded-[10px] bg-tm-ink px-5 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase">
+            <button type="submit" className="min-h-11 cursor-pointer rounded-[14px] bg-tm-ink px-5 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase">
               Log
             </button>
             {editing && (
@@ -490,7 +490,7 @@ function WeighIn() {
             )}
           </div>
           {error && (
-            <p role="alert" className="rounded-[10px] border border-tm-red bg-tm-red-bg px-3 py-2.5 text-[14px] text-tm-red">
+            <p role="alert" className="rounded-[14px] border border-tm-red bg-tm-red-bg px-3 py-2.5 text-[14px] text-tm-red">
               {error}
             </p>
           )}

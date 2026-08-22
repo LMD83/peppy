@@ -21,7 +21,7 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-[10px] border p-4 shadow-[0_1px_2px_rgba(24,32,29,0.04)]",
+        "rounded-[14px] border p-4 shadow-[0_1px_2px_rgba(24,32,29,0.04)]",
         tone === "amber" ? "border-tm-amber bg-tm-amber-bg" : "border-tm-rule bg-tm-panel",
         className,
       )}
@@ -142,7 +142,7 @@ export function BigChoice({
             onClick={o.onSelect}
             aria-pressed={o.selected ?? false}
             className={cn(
-              "flex min-h-16 w-full cursor-pointer items-center justify-between gap-3 rounded-[10px] border px-4 py-3 text-left",
+              "flex min-h-16 w-full cursor-pointer items-center justify-between gap-3 rounded-[14px] border px-4 py-3 text-left",
               // white on tm-ink is 16.62:1; the unselected boundary is
               // rule-strong (4.27:1 on panel), so both states carry a 3:1 edge.
               o.selected
@@ -182,7 +182,7 @@ export function ModeBadge({ mode }: { mode: "cut" | "maintain" | "survival" }) {
   return (
     <span
       className={cn(
-        "rounded-[14px] border px-2.5 py-[3px] font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
+        "rounded-[18px] border px-2.5 py-[3px] font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
         styles[mode],
       )}
     >
@@ -223,7 +223,7 @@ export function TmButton({
       onClick={onClick}
       aria-label={ariaLabel}
       className={cn(
-        "inline-flex min-h-11 cursor-pointer items-center justify-center rounded-[10px] px-4 font-tm-mono text-[11.5px] tracking-[0.15em] uppercase transition-[transform,opacity] duration-150 active:scale-[0.98] active:opacity-80 disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100",
+        "inline-flex min-h-11 cursor-pointer items-center justify-center rounded-[14px] px-4 font-tm-mono text-[11.5px] tracking-[0.15em] uppercase transition-[transform,opacity] duration-150 active:scale-[0.98] active:opacity-80 disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100",
         variants[variant],
         className,
       )}
@@ -351,7 +351,7 @@ export function TmSheet({
         aria-modal="true"
         aria-label={label}
         aria-labelledby={title ? titleId : undefined}
-        className="relative z-10 mx-4 mb-4 w-full max-w-md rounded-[14px] border border-tm-rule bg-tm-panel p-4 shadow-[0_8px_32px_rgba(24,32,29,0.18)] sm:mb-0"
+        className="relative z-10 mx-4 mb-4 w-full max-w-md rounded-[18px] border border-tm-rule bg-tm-panel p-4 shadow-[0_8px_32px_rgba(24,32,29,0.18)] sm:mb-0"
       >
         <div className="mb-3 flex items-center justify-between gap-3">
           {title ? (
