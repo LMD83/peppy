@@ -88,7 +88,7 @@ export function PeppyFoundation() {
       {tab === "support" && <Support state={state} save={save} history={history} />}
     </div>
     <p role="status" aria-live="polite" className="mt-5 min-h-14 rounded-[14px] bg-tm-green-faint px-4 py-3 text-base leading-relaxed text-tm-ink">{status || "Peppy saves each choice as you go."}</p>
-    <nav aria-label="Main navigation" className="mt-8 grid grid-cols-4 gap-2 border-t-2 border-tm-rule pt-4">{([["today", "Today"], ["plan", "Plan"], ["capture", "Capture"], ["support", "Support"]] as [Tab, string][]).map(([id, label]) => <button key={id} type="button" aria-current={tab === id ? "page" : undefined} onClick={() => { setTab(id); setStatus(""); }} className={cn("min-h-14 rounded-[14px] px-2 text-sm font-semibold", tab === id ? "bg-tm-green text-tm-ongreen" : "border-2 border-tm-rule-strong bg-tm-panel text-tm-ink")}>{label}</button>)}</nav>
+    <nav aria-label="Main navigation" className="mt-8 grid grid-cols-4 gap-2 border-t border-tm-rule pt-4">{([["today", "Today"], ["plan", "Plan"], ["capture", "Capture"], ["support", "Support"]] as [Tab, string][]).map(([id, label]) => <button key={id} type="button" aria-current={tab === id ? "page" : undefined} onClick={() => { setTab(id); setStatus(""); }} className={cn("min-h-14 rounded-[14px] px-2 text-sm font-semibold", tab === id ? "bg-tm-green text-tm-ongreen" : "border-2 border-tm-rule-strong bg-tm-panel text-tm-ink")}>{label}</button>)}</nav>
   </Shell>;
 }
 

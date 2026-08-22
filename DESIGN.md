@@ -223,6 +223,10 @@ for BOTH schemes — take new colors from `globals.css`, never from memory.
 - **On Ink** (#aebbb3): muted text on the board, both schemes.
 - **Focus** (#3e8e6c light / #6fd0a8 dark): Peppy-green ring, ≥3:1 on page and
   board alike.
+- **Contrast-more overrides** (#333d38 / #dce3df / #f2e3bd / #93a098): under
+  `prefers-contrast: more`, muted text collapses toward ink on paper (10.46:1),
+  board text lifts (12.74:1), and its dark-scheme block does the same the other
+  way. These exist only inside those media queries.
 
 ### Named Rules
 **The One Stamp Rule.** Saturated accents (green, amber, red, blue) mark state

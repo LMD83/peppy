@@ -352,6 +352,18 @@
     scroll-padding-bottom: 6rem;
     scroll-padding-top: 1rem;
   }
+  /* The browser surfaces nobody draws still carry the design: selection wears
+     the Peppy green-mid with ink text (8.90:1 light, 4.52:1 dark), the caret
+     and native form accents take the primary green. Token-driven, so the dark
+     block re-points them with everything else. */
+  ::selection {
+    background-color: var(--tm-green-mid);
+    color: var(--tm-ink);
+  }
+  body {
+    caret-color: var(--tm-focus);
+    accent-color: var(--tm-green);
+  }
 }
 
 /* ---- Type floor (1.4.4 / readability) --------------------------------------

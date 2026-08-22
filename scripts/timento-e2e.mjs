@@ -193,7 +193,10 @@ for (const [label, viewport] of [
 
   await check("train: mesocycle week, suggested load with a reason, volume landmarks", async () => {
     await goTab(page, "Train");
-    await page.getByText(/hypertrophy|strength|recomp|floor/i).first().waitFor();
+    // Fixtures train on MESO_TRAINING_WEEKDAYS (Mon/Tue/Thu/Fri); on the other
+    // days the tab states rest instead of a block goal, and a suite run on a
+    // rest day used to time out here waiting for text the day never renders.
+    await page.getByText(/hypertrophy|strength|recomp|floor|rest — recovery is programmed/i).first().waitFor();
     await page.getByText(/weekly hard sets|movement only/i).first().waitFor();
     await page.screenshot({ path: `${SHOTS}/${label}-10-train.png`, fullPage: true });
   });
