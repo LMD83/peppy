@@ -8,8 +8,9 @@ import { describe, expect, it } from "vitest";
  *
  * Contrast claims rot the moment someone nudges a hex, and a comment saying
  * "4.6:1" is worth nothing on its own. So: parse the actual token values out of
- * globals.css, recompute every ratio from the WCAG 2.x definition, and fail if
- * any pairing the app really renders drops below its threshold.
+ * globals.css — BOTH colour schemes, since the dark media query re-points every
+ * var — recompute every ratio from the WCAG 2.x definition, and fail if any
+ * pairing the app really renders drops below its threshold in either scheme.
  *
  * WCAG 2.2:
  *   1.4.3 Contrast (Minimum)      — 4.5:1 for body text, 3:1 for large text
@@ -45,24 +46,41 @@ export function contrastRatio(a: string, b: string): number {
 
 const round = (n: number) => Math.round(n * 100) / 100;
 
-/* ---- token values, read out of the stylesheet ---------------------------- */
+/* ---- token values, read out of the stylesheet, per scheme ----------------- */
 
-function tokens(): Record<string, string> {
+const DARK_MARKER = "@media (prefers-color-scheme: dark)";
+
+function parseTokens(src: string): Record<string, string> {
   const found: Record<string, string> = {};
-  // Only the Timento block declares --color-tm-*; the shadcn block is oklch.
-  for (const [, name, hex] of CSS.matchAll(/--color-(tm-[a-z0-9-]+):\s*(#[0-9a-fA-F]{6});/g)) {
+  // Raw scheme vars: --tm-name: #hex;  (the @theme block holds only var()
+  // references, and the shadcn block above it is oklch — neither matches.)
+  for (const [, name, hex] of src.matchAll(/--(tm-[a-z0-9-]+):\s*(#[0-9a-fA-F]{6});/g)) {
     found[name] = hex.toLowerCase();
   }
   return found;
 }
 
-const T = tokens();
-/** A hex literal used directly in a component, not (yet) a token. */
+const darkStart = CSS.indexOf(DARK_MARKER);
+const LIGHT_T = parseTokens(CSS.slice(0, darkStart));
+// Everything after the dark marker: the only --tm-*: #hex declarations there
+// are the dark :root's (the later preference blocks re-declare utilities, and
+// easy mode's --tm-type-floor is not a hex).
+const DARK_ONLY = parseTokens(CSS.slice(darkStart));
+// A token the dark block does not re-declare falls through to its light value.
+const DARK_T = { ...LIGHT_T, ...DARK_ONLY };
+
+const SCHEMES: [string, Record<string, string>][] = [
+  ["light", LIGHT_T],
+  ["dark", DARK_T],
+];
+
+/** A hex literal used directly in a component, not (yet) a token. Only board
+ * text still does this, and the board is dark in both schemes. */
 const LITERAL = {
   white: "#ffffff",
 } as const;
 
-function colour(ref: string): string {
+function colour(T: Record<string, string>, ref: string): string {
   const value = T[ref] ?? LITERAL[ref as keyof typeof LITERAL];
   if (!value) throw new Error(`no such colour: ${ref}`);
   return value;
@@ -87,23 +105,50 @@ describe("the contrast function itself", () => {
   });
 });
 
+const TOKEN_NAMES = [
+  "tm-paper", "tm-panel", "tm-ink", "tm-ink2", "tm-ink3", "tm-inkrule", "tm-dim",
+  "tm-dim2", "tm-onink", "tm-rule", "tm-rule-strong", "tm-grid", "tm-soft",
+  "tm-blue", "tm-red", "tm-green", "tm-green-faint", "tm-blue-faint", "tm-red-bg",
+  "tm-yellow", "tm-amber", "tm-amber-bg", "tm-amber-ink", "tm-amber-lift",
+  "tm-purple", "tm-focus",
+  // The fill roles: the board is dark in both schemes; stamps and semantic
+  // fills flip light in dark with deep text on them.
+  "tm-board", "tm-stamp", "tm-onstamp", "tm-ongreen", "tm-onamber", "tm-onred",
+  "tm-onblue", "tm-scrim",
+];
+
 describe("globals.css exposes the tokens the app is built on", () => {
-  it("parses every Timento colour token", () => {
-    for (const name of [
-      "tm-paper", "tm-panel", "tm-ink", "tm-ink2", "tm-ink3", "tm-dim", "tm-dim2",
-      "tm-onink", "tm-rule", "tm-rule-strong", "tm-grid", "tm-soft", "tm-blue",
-      "tm-red", "tm-green", "tm-green-faint", "tm-blue-faint", "tm-red-bg",
-      "tm-yellow", "tm-amber",
-      "tm-amber-bg", "tm-amber-ink", "tm-amber-lift", "tm-purple", "tm-focus",
-    ]) {
-      expect(T[name], `--color-${name} missing from globals.css`).toMatch(/^#[0-9a-f]{6}$/);
+  it.each(SCHEMES)("%s scheme declares every Timento colour token", (_scheme, T) => {
+    for (const name of TOKEN_NAMES) {
+      expect(T[name], `--${name} missing`).toMatch(/^#[0-9a-f]{6}$/);
     }
   });
 
-  it("has not silently reverted to a value that fails", () => {
+  it("maps every utility token onto its scheme var", () => {
+    // The @theme block must reference vars, not literals — a literal there is
+    // baked into the utility and the dark block silently stops applying to it.
+    const theme = CSS.slice(CSS.indexOf("--color-tm-paper"), CSS.indexOf("--font-tm-disp"));
+    for (const [, name] of theme.matchAll(/--color-(tm-[a-z0-9-]+):/g)) {
+      expect(theme, `--color-${name} must resolve to var(--${name})`).toContain(
+        `--color-${name}: var(--${name});`,
+      );
+    }
+  });
+
+  it("re-points the whole palette in the dark scheme, not a subset", () => {
+    // Silent fall-through is how a half-dark theme ships: assert the dark
+    // block re-declares every light token (same value is fine — amber-lift,
+    // onink and scrim are shared on purpose).
+    for (const name of Object.keys(LIGHT_T)) {
+      if (name === "tm-type-floor") continue;
+      expect(DARK_ONLY[name], `dark block does not re-declare --${name}`).toBeDefined();
+    }
+  });
+
+  it.each(SCHEMES)("%s scheme has not silently reverted to a value that fails", (_scheme, T) => {
     const retired = ["#70747b", "#9ba0a8", "#c77d1f", "#b8860b", "#c7373f", "#2e7d4f", "#8a5a9e"];
     for (const [name, value] of Object.entries(T)) {
-      expect(retired, `--color-${name} is back to a known-failing value`).not.toContain(value);
+      expect(retired, `--${name} is back to a known-failing value`).not.toContain(value);
     }
   });
 });
@@ -113,20 +158,21 @@ describe("globals.css exposes the tokens the app is built on", () => {
 type Pair = [fg: string, bg: string, min: number, where: string];
 
 /**
- * Every light surface a muted foreground lands on. tm-green-faint is the
- * darkest of them, so it is the binding constraint, and it is a real pairing
- * (the stack tab renders text-tm-green on bg-tm-green-faint).
+ * Every page surface a muted foreground lands on. In the light scheme grid is
+ * the darkest and binds; in dark the same six names hold the dark surfaces and
+ * the loop checks them all the same way.
  */
-const LIGHT = ["tm-paper", "tm-panel", "tm-soft", "tm-grid", "tm-amber-bg", "tm-green-faint"];
+const SURFACES = ["tm-paper", "tm-panel", "tm-soft", "tm-grid", "tm-amber-bg", "tm-green-faint"];
 
 const TEXT_PAIRS: Pair[] = [
-  ...LIGHT.map((bg): Pair => ["tm-dim", bg, 4.5, "the colour of most small text in the app"]),
-  ...LIGHT.map((bg): Pair => ["tm-dim2", bg, 4.5, "crew chips, mind pills"]),
-  ...LIGHT.map((bg): Pair => ["tm-amber", bg, 4.5, "survival accents, evidence tiers, borderline labs"]),
-  ...LIGHT.map((bg): Pair => ["tm-green", bg, 4.5, "adherence, taken doses, in-range markers"]),
-  ...LIGHT.map((bg): Pair => ["tm-red", bg, 4.5, "tripwires, out-of-range labs"]),
-  ...LIGHT.map((bg): Pair => ["tm-blue", bg, 4.5, "state check, weigh-in"]),
-  ...LIGHT.map((bg): Pair => ["tm-purple", bg, 4.5, "mind instrument accents"]),
+  ...SURFACES.map((bg): Pair => ["tm-ink", bg, 4.5, "body ink everywhere"]),
+  ...SURFACES.map((bg): Pair => ["tm-dim", bg, 4.5, "the colour of most small text in the app"]),
+  ...SURFACES.map((bg): Pair => ["tm-dim2", bg, 4.5, "crew chips, mind pills"]),
+  ...SURFACES.map((bg): Pair => ["tm-amber", bg, 4.5, "survival accents, evidence tiers, borderline labs"]),
+  ...SURFACES.map((bg): Pair => ["tm-green", bg, 4.5, "adherence, taken doses, in-range markers"]),
+  ...SURFACES.map((bg): Pair => ["tm-red", bg, 4.5, "tripwires, out-of-range labs"]),
+  ...SURFACES.map((bg): Pair => ["tm-blue", bg, 4.5, "state check, weigh-in"]),
+  ...SURFACES.map((bg): Pair => ["tm-purple", bg, 4.5, "mind instrument accents"]),
   ["tm-yellow", "tm-panel", 4.5, "research: unclear markers"],
   ["tm-yellow", "tm-grid", 4.5, "research: unclear markers"],
   ["tm-amber-ink", "tm-amber-bg", 4.5, "every survival/tripwire paragraph"],
@@ -135,29 +181,35 @@ const TEXT_PAIRS: Pair[] = [
   ["tm-blue", "tm-blue-faint", 4.5, "ModeBadge maintain"],
   ["tm-red", "tm-red-bg", 4.5, "login error panel"],
 
-  // Reversed: white or ink sitting ON a filled control.
-  ["white", "tm-amber", 4.5, "SURVIVAL: the ticked floor check — the worst screen in the app"],
-  ["white", "tm-green", 4.5, "a ticked check in cut/maintain"],
-  ["white", "tm-blue", 4.5, "filled blue controls"],
-  ["white", "tm-ink", 4.5, "primary buttons, the header title"],
-  ["tm-ink", "tm-amber-lift", 4.5, "the survival mode-switch chip in the header"],
+  // Text sitting ON a filled control — via the on-* role tokens, so the fills
+  // can flip light in dark while the text flips deep.
+  ["tm-onamber", "tm-amber", 4.5, "SURVIVAL: the ticked floor check — the worst screen in the app"],
+  ["tm-ongreen", "tm-green", 4.5, "a ticked check in cut/maintain"],
+  ["tm-onblue", "tm-blue", 4.5, "filled blue controls"],
+  ["tm-onstamp", "tm-stamp", 4.5, "primary buttons, selected chips and rows"],
+  ["tm-onred", "tm-red", 4.5, "danger buttons"],
+  ["tm-board", "tm-amber-lift", 4.5, "the survival mode-switch chip in the header"],
 
-  // The dark header (scoreboard + login banner).
-  ["tm-onink", "tm-ink", 4.5, "eyebrow, stat labels, sign-out"],
+  // The board (scoreboard + login banner) is dark in both schemes, so its
+  // white title and muted onink text hold without flipping.
+  ["tm-onink", "tm-board", 4.5, "eyebrow, stat labels, sign-out"],
   ["tm-onink", "tm-ink2", 4.5, "stat sub-labels"],
   ["tm-onink", "tm-ink3", 4.5, "mode switcher copy"],
-  ["tm-amber-lift", "tm-ink", 4.5, "SURVIVAL: 'executing as designed' in the header"],
+  ["tm-amber-lift", "tm-board", 4.5, "SURVIVAL: 'executing as designed' in the header"],
+  ["white", "tm-board", 4.5, "the header title"],
   ["white", "tm-ink2", 4.5, "mode switcher option name"],
 ];
 
 describe("1.4.3 — text contrast", () => {
-  it.each(TEXT_PAIRS)("%s on %s clears %s:1 (%s)", (fg, bg, min) => {
-    const ratio = contrastRatio(colour(fg), colour(bg));
-    expect(
-      round(ratio),
-      `${fg} (${colour(fg)}) on ${bg} (${colour(bg)}) is ${round(ratio)}:1, needs ${min}:1`,
-    ).toBeGreaterThanOrEqual(min);
-  });
+  for (const [scheme, T] of SCHEMES) {
+    it.each(TEXT_PAIRS)(`${scheme}: %s on %s clears %s:1 (%s)`, (fg, bg, min) => {
+      const ratio = contrastRatio(colour(T, fg), colour(T, bg));
+      expect(
+        round(ratio),
+        `[${scheme}] ${fg} (${colour(T, fg)}) on ${bg} (${colour(T, bg)}) is ${round(ratio)}:1, needs ${min}:1`,
+      ).toBeGreaterThanOrEqual(min);
+    });
+  }
 });
 
 const UI_PAIRS: Pair[] = [
@@ -169,34 +221,36 @@ const UI_PAIRS: Pair[] = [
   ["tm-focus", "tm-paper", 3, "focus ring on the page"],
   ["tm-focus", "tm-panel", 3, "focus ring on a card"],
   ["tm-focus", "tm-soft", 3, "focus ring on the soft fill"],
-  ["tm-focus", "tm-ink", 3, "focus ring on the dark header"],
+  ["tm-focus", "tm-board", 3, "focus ring on the dark header"],
   ["tm-focus", "tm-ink3", 3, "focus ring inside the mode switcher"],
 ];
 
 describe("1.4.11 — non-text contrast", () => {
-  it.each(UI_PAIRS)("%s against %s clears %s:1 (%s)", (fg, bg, min) => {
-    const ratio = contrastRatio(colour(fg), colour(bg));
-    expect(
-      round(ratio),
-      `${fg} (${colour(fg)}) against ${bg} (${colour(bg)}) is ${round(ratio)}:1, needs ${min}:1`,
-    ).toBeGreaterThanOrEqual(min);
-  });
+  for (const [scheme, T] of SCHEMES) {
+    it.each(UI_PAIRS)(`${scheme}: %s against %s clears %s:1 (%s)`, (fg, bg, min) => {
+      const ratio = contrastRatio(colour(T, fg), colour(T, bg));
+      expect(
+        round(ratio),
+        `[${scheme}] ${fg} (${colour(T, fg)}) against ${bg} (${colour(T, bg)}) is ${round(ratio)}:1, needs ${min}:1`,
+      ).toBeGreaterThanOrEqual(min);
+    });
+  }
 });
 
 describe("survival mode is not the least legible screen we ship", () => {
   // The whole point of the retune: the floor screen has to be at least as
   // legible as the cut screen, because it is the one someone reads on a bad day.
-  it("holds the amber surface to the green surface's standard", () => {
-    const amberOnFill = contrastRatio(colour("white"), colour("tm-amber"));
-    const greenOnFill = contrastRatio(colour("white"), colour("tm-green"));
+  it.each(SCHEMES)("%s: holds the amber surface to the green surface's standard", (_scheme, T) => {
+    const amberOnFill = contrastRatio(colour(T, "tm-onamber"), colour(T, "tm-amber"));
+    const greenOnFill = contrastRatio(colour(T, "tm-ongreen"), colour(T, "tm-green"));
     expect(round(amberOnFill)).toBeGreaterThanOrEqual(4.5);
     expect(round(greenOnFill)).toBeGreaterThanOrEqual(4.5);
     expect(Math.abs(amberOnFill - greenOnFill)).toBeLessThan(1.5);
   });
 
-  it("keeps the amber card readable end to end", () => {
+  it.each(SCHEMES)("%s: keeps the amber card readable end to end", (_scheme, T) => {
     for (const fg of ["tm-amber", "tm-amber-ink", "tm-dim"]) {
-      expect(round(contrastRatio(colour(fg), colour("tm-amber-bg")))).toBeGreaterThanOrEqual(4.5);
+      expect(round(contrastRatio(colour(T, fg), colour(T, "tm-amber-bg")))).toBeGreaterThanOrEqual(4.5);
     }
   });
 });
@@ -217,10 +271,17 @@ describe("the stylesheet carries the rest of the floor", () => {
     expect(CSS).toMatch(/outline-offset:\s*2px/);
   });
 
-  it("answers the three user preferences that were entirely absent", () => {
+  it("answers the four user preferences", () => {
     expect(CSS).toContain("@media (prefers-reduced-motion: reduce)");
     expect(CSS).toContain("@media (prefers-contrast: more)");
     expect(CSS).toContain("@media (forced-colors: active)");
+    expect(CSS).toContain("@media (prefers-color-scheme: dark)");
+  });
+
+  it("gives contrast-more a dark answer too", () => {
+    // The light overrides are near-black text; without a dark counterpart,
+    // dark + contrast-more would collapse muted text INTO the background.
+    expect(CSS).toContain("@media (prefers-contrast: more) and (prefers-color-scheme: dark)");
   });
 
   it("stills pulse and the breathe fill without a global 0.01ms kill", () => {
