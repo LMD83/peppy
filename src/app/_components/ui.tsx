@@ -21,7 +21,7 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-[10px] border p-4 shadow-[0_1px_2px_rgba(21,23,28,0.04)]",
+        "rounded-[10px] border p-4 shadow-[0_1px_2px_rgba(24,32,29,0.04)]",
         tone === "amber" ? "border-tm-amber bg-tm-amber-bg" : "border-tm-rule bg-tm-panel",
         className,
       )}
@@ -143,8 +143,8 @@ export function BigChoice({
             aria-pressed={o.selected ?? false}
             className={cn(
               "flex min-h-16 w-full cursor-pointer items-center justify-between gap-3 rounded-[10px] border px-4 py-3 text-left",
-              // white on tm-ink is 16.4:1; the unselected boundary is
-              // rule-strong (3.45:1 on panel), so both states carry a 3:1 edge.
+              // white on tm-ink is 16.62:1; the unselected boundary is
+              // rule-strong (4.27:1 on panel), so both states carry a 3:1 edge.
               o.selected
                 ? "border-tm-ink bg-tm-ink text-white"
                 : "border-tm-rule-strong bg-tm-panel text-tm-ink",
@@ -171,7 +171,7 @@ export function BigChoice({
 
 /**
  * Contrast on each pairing (see globals.css for the palette rationale):
- * green on green-faint 4.85:1 · blue on blue-faint 5.46:1 · amber on amber-bg 5.23:1.
+ * green on green-faint 6.62:1 · blue on blue-faint 5.46:1 · amber on amber-bg 5.76:1.
  */
 export function ModeBadge({ mode }: { mode: "cut" | "maintain" | "survival" }) {
   const styles = {
@@ -351,7 +351,7 @@ export function TmSheet({
         aria-modal="true"
         aria-label={label}
         aria-labelledby={title ? titleId : undefined}
-        className="relative z-10 mx-4 mb-4 w-full max-w-md rounded-[14px] border border-tm-rule bg-tm-panel p-4 shadow-[0_8px_32px_rgba(21,23,28,0.18)] sm:mb-0"
+        className="relative z-10 mx-4 mb-4 w-full max-w-md rounded-[14px] border border-tm-rule bg-tm-panel p-4 shadow-[0_8px_32px_rgba(24,32,29,0.18)] sm:mb-0"
       >
         <div className="mb-3 flex items-center justify-between gap-3">
           {title ? (
