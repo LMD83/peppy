@@ -23,10 +23,10 @@ const sans = IBM_Plex_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: "Timento · performance file",
-    template: "%s | Timento",
+    default: "Peppy · daily life, made easier",
+    template: "%s | Peppy",
   },
-  description: "Two-person performance file: checks, modes, experiments, evidence.",
+  description: "A calm, accessible assistant for the next useful thing in daily life.",
   manifest: "/manifest.webmanifest",
   icons: { icon: "/icon-192.png", apple: "/icon-192.png" },
 };
