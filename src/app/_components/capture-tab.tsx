@@ -205,7 +205,7 @@ function CaptureBody({ upload }: { upload: Uploader }) {
               <img
                 src={preview}
                 alt="The photo you just took, not yet saved."
-                className="max-h-64 w-full rounded-[10px] border border-tm-rule object-contain"
+                className="max-h-64 w-full rounded-[14px] border border-tm-rule object-contain"
               />
             )}
 
@@ -233,7 +233,7 @@ function CaptureBody({ upload }: { upload: Uploader }) {
               type="button"
               onClick={reset}
               disabled={busy}
-              className="min-h-11 w-full cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 text-[14px] text-tm-dim transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100"
+              className="min-h-11 w-full cursor-pointer rounded-[14px] border border-tm-rule bg-tm-panel px-3 text-[14px] text-tm-dim transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100"
             >
               Throw this photo away
             </button>
@@ -305,7 +305,7 @@ function CaptureSkeleton() {
   return (
     <div className="flex flex-col gap-3 pt-4" aria-busy="true">
       {[0, 1].map((i) => (
-        <div key={i} className="h-32 rounded-[10px] border border-tm-rule bg-tm-panel" />
+        <div key={i} className="h-32 rounded-[14px] border border-tm-rule bg-tm-panel" />
       ))}
       <p className="text-center font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase">
         Loading check-ins…
@@ -334,11 +334,11 @@ function PickButton({
   return (
     <label
       className={cn(
-        "mt-3 flex min-h-16 w-full items-center justify-center gap-3 rounded-[10px] border px-4 py-3 text-[17px] font-medium transition-transform duration-150 active:scale-[0.98]",
+        "mt-3 flex min-h-16 w-full items-center justify-center gap-3 rounded-[14px] border px-4 py-3 text-[17px] font-medium transition-transform duration-150 active:scale-[0.98]",
         "focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-tm-ink",
         disabled
           ? "cursor-not-allowed border-tm-rule bg-tm-soft text-tm-dim"
-          : "cursor-pointer border-tm-ink bg-tm-ink text-white",
+          : "cursor-pointer border-tm-stamp bg-tm-stamp text-tm-onstamp",
       )}
     >
       <span aria-hidden className="font-tm-mono text-[17px]">
@@ -399,7 +399,7 @@ function ConfirmStep({
         type="button"
         onClick={() => onChoose(escape)}
         disabled={busy}
-        className="min-h-11 w-full cursor-pointer rounded-[10px] border border-tm-rule-strong bg-tm-panel px-4 py-2 text-left text-[15px] transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100"
+        className="min-h-11 w-full cursor-pointer rounded-[14px] border border-tm-rule-strong bg-tm-panel px-4 py-2 text-left text-[15px] transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100"
       >
         <span className="block font-medium">{escape.label}</span>
         <span className="block text-[14px] text-tm-dim">{escape.detail}</span>
@@ -427,9 +427,9 @@ function TodayStrip({ view, onDelete }: { view: CaptureView; onDelete: (id: stri
       </div>
       <ul className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
         {view.today.map((row) => (
-          <li key={row.id} className="rounded-[10px] border border-tm-rule p-2">
+          <li key={row.id} className="rounded-[14px] border border-tm-rule p-2">
             {row.url === null ? (
-              <div className="flex h-24 items-center justify-center rounded-[10px] bg-tm-soft text-[14px] text-tm-dim">
+              <div className="flex h-24 items-center justify-center rounded-[14px] bg-tm-soft text-[14px] text-tm-dim">
                 Picture gone
               </div>
             ) : (
@@ -437,7 +437,7 @@ function TodayStrip({ view, onDelete }: { view: CaptureView; onDelete: (id: stri
               <img
                 src={row.url}
                 alt={captureLabel(row)}
-                className="h-24 w-full rounded-[10px] object-cover"
+                className="h-24 w-full rounded-[14px] object-cover"
               />
             )}
             <p className="mt-1.5 text-[14px]">{captureLabel(row)}</p>
@@ -445,7 +445,7 @@ function TodayStrip({ view, onDelete }: { view: CaptureView; onDelete: (id: stri
             <button
               type="button"
               onClick={() => onDelete(row.id)}
-              className="mt-1.5 min-h-11 w-full cursor-pointer rounded-[10px] border border-tm-red bg-tm-panel px-2 text-[14px] text-tm-red transition-transform duration-150 active:scale-[0.98]"
+              className="mt-1.5 min-h-11 w-full cursor-pointer rounded-[14px] border border-tm-red bg-tm-panel px-2 text-[14px] text-tm-red transition-transform duration-150 active:scale-[0.98]"
             >
               Delete this photo
             </button>
@@ -474,7 +474,7 @@ function EarlierCard({ view, onDelete }: { view: CaptureView; onDelete: (id: str
               {day.captures.map((row) => (
                 <li
                   key={row.id}
-                  className="flex items-center justify-between gap-2 rounded-[10px] border border-tm-rule px-3 py-2"
+                  className="flex items-center justify-between gap-2 rounded-[14px] border border-tm-rule px-3 py-2"
                 >
                   <span className="min-w-0">
                     <span className="block truncate text-[14px]">{captureLabel(row)}</span>
@@ -485,7 +485,7 @@ function EarlierCard({ view, onDelete }: { view: CaptureView; onDelete: (id: str
                   <button
                     type="button"
                     onClick={() => onDelete(row.id)}
-                    className="min-h-11 shrink-0 cursor-pointer rounded-[10px] border border-tm-red bg-tm-panel px-3 text-[14px] text-tm-red transition-transform duration-150 active:scale-[0.98]"
+                    className="min-h-11 shrink-0 cursor-pointer rounded-[14px] border border-tm-red bg-tm-panel px-3 text-[14px] text-tm-red transition-transform duration-150 active:scale-[0.98]"
                   >
                     Delete
                   </button>

@@ -67,7 +67,7 @@ export function LabsTab() {
       <div className="flex flex-col gap-4 pt-5">
         <Card tone="amber">
           <Eyebrow color="bg-tm-amber">Bloods, floor</Eyebrow>
-          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-amber bg-tm-amber">
+          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[14px] border border-tm-amber bg-tm-amber">
             <Stat className="bg-tm-amber-bg px-3 py-3" value={String(labs.outOfRange.length)} label="outside range"/>
             <Stat className="bg-tm-amber-bg px-3 py-3" value={String(labs.dueRechecks.length)} label="rechecks overdue"/>
           </dl>
@@ -140,7 +140,7 @@ export function LabsTab() {
 export function LabsTodayCard() {
   const { labs } = useTimento();
   if (!labs) {
-    return <div className="h-24 rounded-[10px] border border-tm-rule bg-tm-panel" aria-busy="true" />;
+    return <div className="h-24 rounded-[14px] border border-tm-rule bg-tm-panel" aria-busy="true" />;
   }
 
   const nearest = labs.dueRechecks[0] ?? null;
@@ -174,7 +174,7 @@ function LabsSkeleton() {
   return (
     <div className="flex flex-col gap-3 pt-4" aria-busy="true">
       {[0, 1, 2].map((i) => (
-        <div key={i} className="h-28 rounded-[10px] border border-tm-rule bg-tm-panel" />
+        <div key={i} className="h-28 rounded-[14px] border border-tm-rule bg-tm-panel" />
       ))}
       <p className="text-center font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase">
         Loading bloods…
@@ -218,7 +218,7 @@ function LatestPanelCard({ panel, results }: { panel: LabPanel | null; results: 
         </span>
       </div>
       <h2 className="mt-2 font-tm-disp text-2xl leading-[1.1] tracking-tight uppercase">{panel.name}</h2>
-      <dl className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule sm:grid-cols-4">
+      <dl className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-[14px] border border-tm-rule bg-tm-rule sm:grid-cols-4">
         <Stat className="bg-tm-panel px-3 py-3" value={String(counts.out)} label="outside range"/>
         <Stat className="bg-tm-panel px-3 py-3" value={String(counts.borderline)} label="near a bound"/>
         <Stat className="bg-tm-panel px-3 py-3" value={String(counts.optimal)} label="optimal band"/>
@@ -333,7 +333,7 @@ function MarkerRow({ result, trend }: { result: LabResult; trend: LabTrend | nul
         <div className="flex items-center justify-between gap-2">
           <span
             className={cn(
-              "rounded-[14px] border px-2 py-[2px] font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
+              "rounded-[18px] border px-2 py-[2px] font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
               FLAG_CHIP[result.flag],
             )}
           >
@@ -348,7 +348,7 @@ function MarkerRow({ result, trend }: { result: LabResult; trend: LabTrend | nul
       </button>
 
       {open && (
-        <div className="mb-2 rounded-[10px] bg-tm-soft p-3">
+        <div className="mb-2 rounded-[14px] bg-tm-soft p-3">
           {trend && trend.points.length >= 2 && <Sparkline trend={trend} />}
           <p className="text-[13px]">{result.blurb}</p>
           {result.movedBy.length > 0 && (
@@ -660,9 +660,9 @@ function AddPanelBody({ templates, upload }: { templates: LabTemplate[]; upload:
             aria-checked={mode === opt.key}
             onClick={() => setMode(opt.key)}
             className={cn(
-              "min-h-11 flex-1 cursor-pointer rounded-[10px] border font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
+              "min-h-11 flex-1 cursor-pointer rounded-[14px] border font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
               mode === opt.key
-                ? "border-tm-ink bg-tm-ink text-white"
+                ? "border-tm-stamp bg-tm-stamp text-tm-onstamp"
                 : "border-tm-rule bg-tm-panel text-tm-dim",
             )}
           >
@@ -679,7 +679,7 @@ function AddPanelBody({ templates, upload }: { templates: LabTemplate[]; upload:
                 <button
                   key={t.key}
                   onClick={() => setTemplateKey(t.key)}
-                  className="min-h-11 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]"
+                  className="min-h-11 cursor-pointer rounded-[14px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]"
                 >
                   {t.name}
                 </button>
@@ -718,7 +718,7 @@ function AddPanelBody({ templates, upload }: { templates: LabTemplate[]; upload:
                       onChange={(e) => setValues((v) => ({ ...v, [m.key]: e.target.value }))}
                       inputMode="decimal"
                       placeholder="—"
-                      className="min-h-11 w-20 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-2 py-2 text-right font-tm-mono text-sm focus:border-tm-ink"
+                      className="min-h-11 w-20 rounded-[14px] border border-tm-rule-strong bg-tm-panel px-2 py-2 text-right font-tm-mono text-sm focus:border-tm-ink"
                     />
                     <span className="w-16 font-tm-mono text-[11.5px] text-tm-dim">{m.unit}</span>
                   </div>
@@ -729,7 +729,7 @@ function AddPanelBody({ templates, upload }: { templates: LabTemplate[]; upload:
         )
       ) : (
         <div className="mt-2 flex flex-col gap-2">
-          <label className="flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-center font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-ink uppercase">
+          <label className="flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 text-center font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-ink uppercase">
             {csvFileName ?? "Choose a .csv file"}
             <input
               ref={csvInputRef}
@@ -756,7 +756,7 @@ function AddPanelBody({ templates, upload }: { templates: LabTemplate[]; upload:
                 value={csvName}
                 onChange={(e) => setCsvName(e.target.value)}
                 placeholder="e.g. Randox full panel"
-                className="min-h-11 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 font-tm-mono text-sm focus:border-tm-ink"
+                className="min-h-11 rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 font-tm-mono text-sm focus:border-tm-ink"
               />
 
               <p className="font-tm-mono text-[11.5px] text-tm-dim">
@@ -805,9 +805,9 @@ function AddPanelBody({ templates, upload }: { templates: LabTemplate[]; upload:
                 aria-checked={fasted === opt.on}
                 onClick={() => setFasted(opt.on)}
                 className={cn(
-                  "min-h-11 flex-1 cursor-pointer rounded-[10px] border font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
+                  "min-h-11 flex-1 cursor-pointer rounded-[14px] border font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
                   fasted === opt.on
-                    ? "border-tm-ink bg-tm-ink text-white"
+                    ? "border-tm-stamp bg-tm-stamp text-tm-onstamp"
                     : "border-tm-rule bg-tm-panel text-tm-dim",
                 )}
               >
@@ -816,7 +816,7 @@ function AddPanelBody({ templates, upload }: { templates: LabTemplate[]; upload:
             ))}
           </div>
 
-          <label className="mt-2 flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-center font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-ink uppercase">
+          <label className="mt-2 flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 text-center font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-ink uppercase">
             {photo ? "Change the photo" : "Attach a photo of the report (optional)"}
             <input
               type="file"
@@ -831,7 +831,7 @@ function AddPanelBody({ templates, upload }: { templates: LabTemplate[]; upload:
             <img
               src={photo.preview}
               alt=""
-              className="mt-1.5 h-24 w-full rounded-[10px] object-cover"
+              className="mt-1.5 h-24 w-full rounded-[14px] object-cover"
             />
           )}
           {photoError && <p className="mt-1 text-[13px] text-tm-red">{photoError}</p>}
@@ -844,8 +844,8 @@ function AddPanelBody({ templates, upload }: { templates: LabTemplate[]; upload:
             onClick={() => void save()}
             disabled={!canSave}
             className={cn(
-              "mt-2 min-h-11 w-full cursor-pointer rounded-[10px] px-4 font-tm-mono text-[11.5px] tracking-[0.12em] uppercase transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
-              canSave ? "bg-tm-ink text-white" : "bg-tm-soft text-tm-dim",
+              "mt-2 min-h-11 w-full cursor-pointer rounded-[14px] px-4 font-tm-mono text-[11.5px] tracking-[0.12em] uppercase transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
+              canSave ? "bg-tm-stamp text-tm-onstamp" : "bg-tm-soft text-tm-dim",
             )}
           >
             {busy

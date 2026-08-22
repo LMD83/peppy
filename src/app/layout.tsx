@@ -34,7 +34,10 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#15171c",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#0f1318" },
+    { color: "#18201d" },
+  ],
 };
 
 export default function TimentoLayout({ children }: { children: React.ReactNode }) {

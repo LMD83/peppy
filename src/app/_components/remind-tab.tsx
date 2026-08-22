@@ -153,15 +153,15 @@ function Toggle({
       disabled={disabled}
       onClick={() => onChange(!on)}
       className={cn(
-        "flex min-h-14 w-full items-center justify-between gap-3 rounded-[10px] border px-4 py-3 text-left transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
-        on ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule-strong bg-tm-panel text-tm-ink",
+        "flex min-h-14 w-full items-center justify-between gap-3 rounded-[14px] border px-4 py-3 text-left transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
+        on ? "border-tm-stamp bg-tm-stamp text-tm-onstamp" : "border-tm-rule-strong bg-tm-panel text-tm-ink",
         disabled && "opacity-60",
       )}
     >
       <span className="min-w-0">
         <span className="block text-[15px] font-medium">{label}</span>
         {detail && (
-          <span className={cn("mt-0.5 block text-[14px]", on ? "text-white" : "text-tm-dim")}>{detail}</span>
+          <span className={cn("mt-0.5 block text-[14px]", on ? "text-tm-onstamp" : "text-tm-dim")}>{detail}</span>
         )}
       </span>
       <span aria-hidden className="shrink-0 font-tm-mono text-[14px]">
@@ -468,7 +468,7 @@ function SwitchCard({
           type="button"
           onClick={onTurnOff}
           disabled={busy}
-          className="mt-3 min-h-14 w-full rounded-[10px] border border-tm-red bg-tm-panel px-4 text-[17px] font-medium text-tm-red transition-transform duration-150 active:scale-[0.98] disabled:opacity-60 disabled:active:scale-100"
+          className="mt-3 min-h-14 w-full rounded-[14px] border border-tm-red bg-tm-panel px-4 text-[17px] font-medium text-tm-red transition-transform duration-150 active:scale-[0.98] disabled:opacity-60 disabled:active:scale-100"
         >
           Turn reminders off on this device
         </button>
@@ -477,7 +477,7 @@ function SwitchCard({
           type="button"
           onClick={onTurnOn}
           disabled={busy || !canSubscribe}
-          className="mt-3 min-h-14 w-full rounded-[10px] border border-tm-ink bg-tm-ink px-4 text-[17px] font-medium text-white transition-transform duration-150 active:scale-[0.98] disabled:border-tm-rule-strong disabled:bg-tm-soft disabled:text-tm-dim disabled:active:scale-100"
+          className="mt-3 min-h-14 w-full rounded-[14px] border border-tm-stamp bg-tm-stamp px-4 text-[17px] font-medium text-tm-onstamp transition-transform duration-150 active:scale-[0.98] disabled:border-tm-rule-strong disabled:bg-tm-soft disabled:text-tm-dim disabled:active:scale-100"
         >
           {busy ? "Setting up…" : "Turn reminders on for this device"}
         </button>
@@ -486,7 +486,7 @@ function SwitchCard({
       <button
         type="button"
         onClick={onTest}
-        className="mt-2 min-h-14 w-full rounded-[10px] border border-tm-rule-strong bg-tm-panel px-4 text-[17px] font-medium text-tm-ink transition-transform duration-150 active:scale-[0.98]"
+        className="mt-2 min-h-14 w-full rounded-[14px] border border-tm-rule-strong bg-tm-panel px-4 text-[17px] font-medium text-tm-ink transition-transform duration-150 active:scale-[0.98]"
       >
         Show me what one looks like
       </button>
@@ -513,7 +513,7 @@ function PreviewCard({ data, easy }: { data: RemindData; easy: boolean }) {
         <>
           <ul className="flex flex-col gap-2">
             {data.preview.map((r) => (
-              <li key={r.key} className="rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2.5">
+              <li key={r.key} className="rounded-[14px] border border-tm-rule bg-tm-panel px-3 py-2.5">
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="font-tm-mono text-[11.5px] tracking-[0.14em] text-tm-dim uppercase">
                     {r.at}
@@ -550,7 +550,7 @@ function PreviewCard({ data, easy }: { data: RemindData; easy: boolean }) {
       )}
 
       {data.survival && (
-        <p className="mt-3 rounded-[10px] border border-tm-amber bg-tm-amber-bg px-3 py-2 text-[14px] leading-relaxed text-tm-amber-ink">
+        <p className="mt-3 rounded-[14px] border border-tm-amber bg-tm-amber-bg px-3 py-2 text-[14px] leading-relaxed text-tm-amber-ink">
           {data.survivalNote}
         </p>
       )}
@@ -562,7 +562,7 @@ function PreviewCard({ data, easy }: { data: RemindData; easy: boolean }) {
           </summary>
           <ul className="mt-1 flex flex-col gap-2">
             {held.map(({ card, why }) => (
-              <li key={`${card.key}-${why}`} className="rounded-[10px] border border-tm-rule bg-tm-soft px-3 py-2">
+              <li key={`${card.key}-${why}`} className="rounded-[14px] border border-tm-rule bg-tm-soft px-3 py-2">
                 <p className="text-[14px] font-medium">{card.title}</p>
                 <p className="mt-0.5 text-[14px] text-tm-dim">
                   {card.at} · {why}
@@ -596,7 +596,7 @@ function EmailCard({ data, onChange }: { data: RemindData; onChange: (p: PrefsCh
             const email = cleanEmail(e.target.value);
             onChange({ email, ...(email !== "" ? { enabled: true } : {}) });
           }}
-          className="min-h-11 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-[15px]"
+          className="min-h-11 rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 text-[15px]"
         />
       </label>
       {!data.emailSupported && data.prefs.email !== "" ? (
@@ -667,7 +667,7 @@ function QuietCard({ data, onChange }: { data: RemindData; onChange: (p: PrefsCh
             type="time"
             value={data.prefs.quietFrom}
             onChange={(e) => onChange({ quietFrom: e.target.value })}
-            className="min-h-11 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-[15px]"
+            className="min-h-11 rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 text-[15px]"
           />
         </label>
         <label className="flex min-w-32 flex-1 flex-col gap-1 text-[14px] font-medium">
@@ -676,7 +676,7 @@ function QuietCard({ data, onChange }: { data: RemindData; onChange: (p: PrefsCh
             type="time"
             value={data.prefs.quietTo}
             onChange={(e) => onChange({ quietTo: e.target.value })}
-            className="min-h-11 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-[15px]"
+            className="min-h-11 rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 text-[15px]"
           />
         </label>
       </div>
@@ -695,7 +695,7 @@ function DevicesCard({ data, subscribedHere }: { data: RemindData; subscribedHer
       ) : (
         <ul className="flex flex-col gap-2">
           {data.subscriptions.map((s) => (
-            <li key={s.id} className="rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2.5">
+            <li key={s.id} className="rounded-[14px] border border-tm-rule bg-tm-panel px-3 py-2.5">
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-[14px] font-medium">{s.label}</span>
                 <span className="font-tm-mono text-[11.5px] tracking-[0.14em] text-tm-dim uppercase">

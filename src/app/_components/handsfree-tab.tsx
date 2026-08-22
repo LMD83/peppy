@@ -170,7 +170,7 @@ function CopyButton({ value, what }: { value: string; what: string }) {
           () => setCopied(false),
         );
       }}
-      className="min-h-11 min-w-11 shrink-0 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-[14px] font-medium text-tm-ink transition-transform duration-150 active:scale-[0.98]"
+      className="min-h-11 min-w-11 shrink-0 rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 text-[14px] font-medium text-tm-ink transition-transform duration-150 active:scale-[0.98]"
     >
       {/* A word, not a hue — the state is readable with colour switched off. */}
       {copied ? "Copied ✓" : "Copy"}
@@ -182,7 +182,7 @@ function CopyButton({ value, what }: { value: string; what: string }) {
 function Field({ label, value, what }: { label: string; value: string; what: string }) {
   return (
     <div className="mt-2 flex items-start gap-2">
-      <div className="min-w-0 flex-1 rounded-[10px] border border-tm-rule bg-tm-soft px-3 py-2">
+      <div className="min-w-0 flex-1 rounded-[14px] border border-tm-rule bg-tm-soft px-3 py-2">
         <div className="font-tm-mono text-[11.5px] tracking-[0.14em] text-tm-dim uppercase">
           {label}
         </div>
@@ -458,7 +458,7 @@ function HandsFree({ data }: { data: HandsFreeData }) {
             type="button"
             onClick={() => setShowSetup((s) => !s)}
             aria-expanded={showSetup}
-            className="min-h-11 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-4 text-[14px] font-medium text-tm-ink transition-transform duration-150 active:scale-[0.98]"
+            className="min-h-11 rounded-[14px] border border-tm-rule-strong bg-tm-panel px-4 text-[14px] font-medium text-tm-ink transition-transform duration-150 active:scale-[0.98]"
           >
             {showSetup ? "Hide the phone setup" : "Set it up on your phone"}
           </button>
@@ -500,7 +500,7 @@ function SayItCard({ data }: { data: HandsFreeData }) {
       </p>
       <ul className="mt-3 flex flex-col gap-2">
         {data.phrases.map((p) => (
-          <li key={p.text} className="rounded-[10px] border border-tm-rule bg-tm-soft px-3 py-2">
+          <li key={p.text} className="rounded-[14px] border border-tm-rule bg-tm-soft px-3 py-2">
             <div className="text-[14px] font-medium">“{p.text}”</div>
             <div className="mt-0.5 text-[14px] text-tm-dim">{p.meaning}</div>
           </li>
@@ -536,9 +536,9 @@ function TalkCard({
           onClick={listening ? onStop : onStart}
           aria-pressed={listening}
           className={cn(
-            "flex min-h-24 w-full items-center justify-center gap-3 rounded-[10px] border px-4 text-[17px] font-medium transition-transform duration-150 active:scale-[0.98]",
+            "flex min-h-24 w-full items-center justify-center gap-3 rounded-[14px] border px-4 text-[17px] font-medium transition-transform duration-150 active:scale-[0.98]",
             listening
-              ? "border-tm-ink bg-tm-ink text-white"
+              ? "border-tm-stamp bg-tm-stamp text-tm-onstamp"
               : "border-tm-rule-strong bg-tm-panel text-tm-ink",
           )}
         >
@@ -571,13 +571,13 @@ function TalkCard({
             if (e.key === "Enter") onSubmit();
           }}
           placeholder="took my morning tablets"
-          className="min-h-11 min-w-0 flex-1 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-[14px]"
+          className="min-h-11 min-w-0 flex-1 rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 text-[14px]"
         />
         <button
           type="button"
           onClick={onSubmit}
           disabled={typed.trim() === ""}
-          className="min-h-11 min-w-11 shrink-0 rounded-[10px] border border-tm-ink bg-tm-ink px-4 text-[14px] font-medium text-white transition-transform duration-150 active:scale-[0.98] disabled:border-tm-rule-strong disabled:bg-tm-soft disabled:text-tm-dim disabled:active:scale-100"
+          className="min-h-11 min-w-11 shrink-0 rounded-[14px] border border-tm-stamp bg-tm-stamp px-4 text-[14px] font-medium text-tm-onstamp transition-transform duration-150 active:scale-[0.98] disabled:border-tm-rule-strong disabled:bg-tm-soft disabled:text-tm-dim disabled:active:scale-100"
         >
           Log it
         </button>
@@ -595,7 +595,7 @@ function CapturesCard({ captures, onClear }: { captures: Capture[]; onClear: () 
       </Eyebrow>
       <ul className="flex flex-col gap-2">
         {captures.map((c) => (
-          <li key={c.id} className="rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2.5">
+          <li key={c.id} className="rounded-[14px] border border-tm-rule bg-tm-panel px-3 py-2.5">
             <div className="flex items-baseline justify-between gap-2">
               <span className="font-tm-mono text-[11.5px] tracking-[0.14em] text-tm-dim uppercase">
                 {stamp(c.at)}
@@ -615,7 +615,7 @@ function CapturesCard({ captures, onClear }: { captures: Capture[]; onClear: () 
                     key={choice.id}
                     type="button"
                     onClick={choice.run}
-                    className="min-h-11 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-left text-[14px] font-medium text-tm-ink transition-transform duration-150 active:scale-[0.98]"
+                    className="min-h-11 rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 text-left text-[14px] font-medium text-tm-ink transition-transform duration-150 active:scale-[0.98]"
                   >
                     Log {choice.label}
                   </button>
@@ -628,7 +628,7 @@ function CapturesCard({ captures, onClear }: { captures: Capture[]; onClear: () 
       <button
         type="button"
         onClick={onClear}
-        className="mt-3 min-h-11 w-full rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-[14px] font-medium text-tm-ink transition-transform duration-150 active:scale-[0.98]"
+        className="mt-3 min-h-11 w-full rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 text-[14px] font-medium text-tm-ink transition-transform duration-150 active:scale-[0.98]"
       >
         Clear this list
       </button>
@@ -684,12 +684,12 @@ function SecretCard({
         type="button"
         onClick={onTest}
         disabled={testing}
-        className="mt-3 min-h-14 w-full rounded-[10px] border border-tm-ink bg-tm-ink px-4 text-[17px] font-medium text-white transition-transform duration-150 active:scale-[0.98] disabled:border-tm-rule-strong disabled:bg-tm-soft disabled:text-tm-dim disabled:active:scale-100"
+        className="mt-3 min-h-14 w-full rounded-[14px] border border-tm-stamp bg-tm-stamp px-4 text-[17px] font-medium text-tm-onstamp transition-transform duration-150 active:scale-[0.98] disabled:border-tm-rule-strong disabled:bg-tm-soft disabled:text-tm-dim disabled:active:scale-100"
       >
         {testing ? "Testing…" : "Test it now"}
       </button>
       {testResult !== null && (
-        <p className="mt-2 rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2 text-[14px] leading-relaxed">
+        <p className="mt-2 rounded-[14px] border border-tm-rule bg-tm-panel px-3 py-2 text-[14px] leading-relaxed">
           {testResult}
         </p>
       )}
@@ -755,7 +755,7 @@ function TokensCard({
           {tokens.map((t) => (
             <li
               key={t.id}
-              className="rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2.5"
+              className="rounded-[14px] border border-tm-rule bg-tm-panel px-3 py-2.5"
             >
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-[14px] font-medium">{t.label}</span>
@@ -772,7 +772,7 @@ function TokensCard({
                 <button
                   type="button"
                   onClick={() => onRevoke(t.id)}
-                  className="mt-2 min-h-14 w-full rounded-[10px] border border-tm-red bg-tm-panel px-3 text-[17px] font-medium text-tm-red transition-transform duration-150 active:scale-[0.98]"
+                  className="mt-2 min-h-14 w-full rounded-[14px] border border-tm-red bg-tm-panel px-3 text-[17px] font-medium text-tm-red transition-transform duration-150 active:scale-[0.98]"
                 >
                   Revoke this key
                 </button>
@@ -784,7 +784,7 @@ function TokensCard({
       <button
         type="button"
         onClick={onCreate}
-        className="mt-3 min-h-14 w-full rounded-[10px] border border-tm-ink bg-tm-ink px-4 text-[17px] font-medium text-white transition-transform duration-150 active:scale-[0.98]"
+        className="mt-3 min-h-14 w-full rounded-[14px] border border-tm-stamp bg-tm-stamp px-4 text-[17px] font-medium text-tm-onstamp transition-transform duration-150 active:scale-[0.98]"
       >
         Make a new key
       </button>

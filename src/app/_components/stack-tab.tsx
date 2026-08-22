@@ -69,7 +69,7 @@ export function StackTab() {
       <div className="flex flex-col gap-4 pt-5">
         <Card tone="amber">
           <Eyebrow color="bg-tm-amber">Stack, floor</Eyebrow>
-          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-amber bg-tm-amber">
+          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[14px] border border-tm-amber bg-tm-amber">
             <Stat className="bg-tm-amber-bg px-3 py-3" value={`${stack.takenCount}/${stack.dueCount}`} label="doses taken today"/>
             <Stat className="bg-tm-amber-bg px-3 py-3" value={`${stack.adherence30.pct}%`} label="30-day adherence"/>
           </dl>
@@ -162,7 +162,7 @@ export function StackTodayCard() {
   }, [focusWanted]);
 
   if (!stack) {
-    return <div className="h-24 rounded-[10px] border border-tm-rule bg-tm-panel" aria-busy="true" />;
+    return <div className="h-24 rounded-[14px] border border-tm-rule bg-tm-panel" aria-busy="true" />;
   }
 
   const floor = stack.dueToday.filter((d) => !d.deferred);
@@ -232,7 +232,7 @@ export function StackTodayCard() {
             type="button"
             onClick={() => undoIt(held)}
             aria-label={`Undo — put ${held.name} back as not taken`}
-            className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-ink uppercase transition-transform duration-150 active:scale-[0.98]"
+            className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-ink uppercase transition-transform duration-150 active:scale-[0.98]"
           >
             Undo
           </button>
@@ -241,7 +241,7 @@ export function StackTodayCard() {
               type="button"
               onClick={() => moveOn(next)}
               aria-label={`Next dose — ${next.name}`}
-              className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[10px] bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+              className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[14px] bg-tm-stamp px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-onstamp uppercase transition-transform duration-150 active:scale-[0.98]"
             >
               Next
             </button>
@@ -257,7 +257,7 @@ export function StackTodayCard() {
             type="button"
             onClick={() => logIt(next)}
             aria-label={`Log ${next.name} as taken`}
-            className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[10px] bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+            className="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-[14px] bg-tm-stamp px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-onstamp uppercase transition-transform duration-150 active:scale-[0.98]"
           >
             Log it
           </button>
@@ -270,7 +270,7 @@ export function StackTodayCard() {
       <button
         type="button"
         onClick={() => go("body", "stack")}
-        className="mt-2 flex min-h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-[10px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-ink uppercase transition-transform duration-150 active:scale-[0.98]"
+        className="mt-2 flex min-h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-[14px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-ink uppercase transition-transform duration-150 active:scale-[0.98]"
       >
         Open Stack
         <span aria-hidden>→</span>
@@ -285,7 +285,7 @@ function StackSkeleton() {
   return (
     <div className="flex flex-col gap-3 pt-4" aria-busy="true">
       {[0, 1, 2].map((i) => (
-        <div key={i} className="h-28 rounded-[10px] border border-tm-rule bg-tm-panel" />
+        <div key={i} className="h-28 rounded-[14px] border border-tm-rule bg-tm-panel" />
       ))}
       <p className="text-center font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase">
         Loading stack…
@@ -340,7 +340,7 @@ function DoseRow({ dose }: { dose: DoseView }) {
       onClick={() => actions.logDose(dose.itemId, dose.timing, !dose.taken, dose.site ?? undefined)}
       aria-pressed={dose.taken}
       className={cn(
-        "flex min-h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-[10px] border px-3 py-2 text-left transition-transform duration-150 active:scale-[0.98]",
+        "flex min-h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-[14px] border px-3 py-2 text-left transition-transform duration-150 active:scale-[0.98]",
         dose.taken ? "border-tm-green bg-tm-green-faint" : "border-tm-rule bg-tm-panel",
       )}
     >
@@ -446,7 +446,7 @@ function CyclesCard({ cycles }: { cycles: StackData["cycles"] }) {
         {cycles.map((c) => (
           <div
             key={c.id}
-            className="flex items-center justify-between gap-2 rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2.5"
+            className="flex items-center justify-between gap-2 rounded-[14px] border border-tm-rule bg-tm-panel px-3 py-2.5"
           >
             <span className="min-w-0">
               <span className="block truncate text-[13px] font-medium">{c.name}</span>
@@ -456,7 +456,7 @@ function CyclesCard({ cycles }: { cycles: StackData["cycles"] }) {
             </span>
             <span
               className={cn(
-                "shrink-0 rounded-[14px] border px-2.5 py-[3px] font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
+                "shrink-0 rounded-[18px] border px-2.5 py-[3px] font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
                 c.phase === "on"
                   ? "border-tm-green bg-tm-green-faint text-tm-green"
                   : "border-tm-rule bg-tm-soft text-tm-dim",
@@ -500,7 +500,7 @@ function ProtocolList({ stack }: { stack: StackData }) {
                     <div
                       key={item.id}
                       className={cn(
-                        "rounded-[10px] border px-3 py-2.5",
+                        "rounded-[14px] border px-3 py-2.5",
                         item.active ? "border-tm-rule bg-tm-panel" : "border-tm-rule bg-tm-soft",
                       )}
                     >
@@ -519,7 +519,7 @@ function ProtocolList({ stack }: { stack: StackData }) {
                         </span>
                         <span
                           className={cn(
-                            "shrink-0 rounded-[14px] border bg-tm-panel px-2 py-[3px] font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
+                            "shrink-0 rounded-[18px] border bg-tm-panel px-2 py-[3px] font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
                             EVIDENCE_TONE[item.evidence],
                           )}
                         >
@@ -539,7 +539,7 @@ function ProtocolList({ stack }: { stack: StackData }) {
                       <button
                         onClick={() => actions.setStackItemActive(item.id, !item.active)}
                         aria-pressed={!item.active}
-                        className="mt-2 min-h-11 w-full cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase transition-transform duration-150 active:scale-[0.98]"
+                        className="mt-2 min-h-11 w-full cursor-pointer rounded-[14px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase transition-transform duration-150 active:scale-[0.98]"
                       >
                         {item.active ? "Pause this item" : "Resume this item"}
                       </button>
@@ -609,9 +609,9 @@ function ReconCalculator({ items }: { items: ItemView[] }) {
               aria-checked={i.id === picked.id}
               onClick={() => select(i.id)}
               className={cn(
-                "min-h-11 cursor-pointer rounded-[10px] border px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
+                "min-h-11 cursor-pointer rounded-[14px] border px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
                 i.id === picked.id
-                  ? "border-tm-ink bg-tm-ink text-white"
+                  ? "border-tm-stamp bg-tm-stamp text-tm-onstamp"
                   : "border-tm-rule bg-tm-panel text-tm-dim",
               )}
             >
@@ -634,13 +634,13 @@ function ReconCalculator({ items }: { items: ItemView[] }) {
       </div>
 
       {result ? (
-        <dl className="mt-3 grid grid-cols-3 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
+        <dl className="mt-3 grid grid-cols-3 gap-px overflow-hidden rounded-[14px] border border-tm-rule bg-tm-rule">
           <Stat className="bg-tm-soft px-3 py-2.5" value={`${fmt(result.syringeUnits)}`} label="syringe units"/>
           <Stat className="bg-tm-soft px-3 py-2.5" value={`${fmt(result.mlPerDose)} mL`} label="per dose"/>
           <Stat className="bg-tm-soft px-3 py-2.5" value={`${fmt(result.mgPerMl)}`} label="mg per mL"/>
         </dl>
       ) : (
-        <p className="mt-3 rounded-[10px] bg-tm-amber-bg px-3 py-2.5 text-[13px] text-tm-amber-ink">
+        <p className="mt-3 rounded-[14px] bg-tm-amber-bg px-3 py-2.5 text-[13px] text-tm-amber-ink">
           {error}
         </p>
       )}
@@ -675,7 +675,7 @@ function NumField({
         onChange={(e) => onChange(e.target.value)}
         inputMode="decimal"
         placeholder={placeholder}
-        className="min-h-11 w-full rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 py-2 font-tm-mono text-sm focus:border-tm-ink"
+        className="min-h-11 w-full rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 py-2 font-tm-mono text-sm focus:border-tm-ink"
       />
     </label>
   );
@@ -702,7 +702,7 @@ function InteractionsCard({ interactions }: { interactions: StackData["interacti
                 </span>
                 <span
                   className={cn(
-                    "shrink-0 rounded-[14px] border px-2 py-[3px] font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
+                    "shrink-0 rounded-[18px] border px-2 py-[3px] font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
                     x.severity === "caution"
                       ? "border-tm-amber bg-tm-amber-bg text-tm-amber"
                       : "border-tm-rule bg-tm-panel text-tm-dim",

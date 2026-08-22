@@ -106,7 +106,7 @@ export function SupplyPanel() {
       ) : (
         <Card>
           <Eyebrow color="bg-tm-green">Supply</Eyebrow>
-          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-tm-rule bg-tm-rule">
+          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[14px] border border-tm-rule bg-tm-rule">
             <Stat className="bg-tm-panel px-3 py-3" value={String(supply.okCount)} label="items covered"/>
             <Stat className="bg-tm-panel px-3 py-3" value="0" label="need ordering"/>
           </dl>
@@ -165,7 +165,7 @@ function SupplySkeleton() {
   return (
     <div className="flex flex-col gap-3 pt-4" aria-busy="true">
       {[0, 1, 2].map((i) => (
-        <div key={i} className="h-28 rounded-[10px] border border-tm-rule bg-tm-panel" />
+        <div key={i} className="h-28 rounded-[14px] border border-tm-rule bg-tm-panel" />
       ))}
       <p className="text-center font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase">
         Loading supply…
@@ -176,7 +176,7 @@ function SupplySkeleton() {
 
 function AttentionRow({ row }: { row: Row }) {
   return (
-    <div className="rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2.5">
+    <div className="rounded-[14px] border border-tm-rule bg-tm-panel px-3 py-2.5">
       <div className="flex items-start justify-between gap-2">
         <span className="min-w-0">
           <span className="block truncate font-tm-disp text-lg leading-[1.1] tracking-tight uppercase">{row.name}</span>
@@ -186,7 +186,7 @@ function AttentionRow({ row }: { row: Row }) {
         </span>
         <span
           className={cn(
-            "shrink-0 rounded-[14px] border px-2 py-[3px] font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
+            "shrink-0 rounded-[18px] border px-2 py-[3px] font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
             STATUS_TONE[row.status],
           )}
         >
@@ -203,7 +203,7 @@ function AttentionRow({ row }: { row: Row }) {
       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
         <span
           className={cn(
-            "rounded-[14px] border bg-tm-panel px-2 py-[3px] font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
+            "rounded-[18px] border bg-tm-panel px-2 py-[3px] font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
             ROUTE_TONE[row.route],
           )}
         >
@@ -251,7 +251,7 @@ function CountControl({ row }: { row: Row }) {
           type="button"
           onClick={() => step(-1)}
           aria-label={`One fewer ${row.name}`}
-          className="size-11 shrink-0 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel font-tm-mono text-lg transition-transform duration-150 active:scale-[0.98]"
+          className="size-11 shrink-0 cursor-pointer rounded-[14px] border border-tm-rule bg-tm-panel font-tm-mono text-lg transition-transform duration-150 active:scale-[0.98]"
         >
           −
         </button>
@@ -264,14 +264,14 @@ function CountControl({ row }: { row: Row }) {
               setSaved(false);
             }}
             inputMode="decimal"
-            className="min-h-11 w-full rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-center font-tm-disp text-lg focus:border-tm-ink"
+            className="min-h-11 w-full rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 text-center font-tm-disp text-lg focus:border-tm-ink"
           />
         </label>
         <button
           type="button"
           onClick={() => step(1)}
           aria-label={`One more ${row.name}`}
-          className="size-11 shrink-0 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel font-tm-mono text-lg transition-transform duration-150 active:scale-[0.98]"
+          className="size-11 shrink-0 cursor-pointer rounded-[14px] border border-tm-rule bg-tm-panel font-tm-mono text-lg transition-transform duration-150 active:scale-[0.98]"
         >
           +
         </button>
@@ -284,8 +284,8 @@ function CountControl({ row }: { row: Row }) {
             setSaved(true);
           }}
           className={cn(
-            "min-h-11 shrink-0 cursor-pointer rounded-[10px] border px-3 font-tm-mono text-[11.5px] tracking-[0.12em] uppercase transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
-            valid ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule bg-tm-soft text-tm-dim",
+            "min-h-11 shrink-0 cursor-pointer rounded-[14px] border px-3 font-tm-mono text-[11.5px] tracking-[0.12em] uppercase transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
+            valid ? "border-tm-stamp bg-tm-stamp text-tm-onstamp" : "border-tm-rule bg-tm-soft text-tm-dim",
           )}
         >
           {saved ? "counted" : "count"}
@@ -334,14 +334,14 @@ function RefillCard({ supply }: { supply: SupplyData }) {
         tabIndex={0}
         role="group"
         aria-label="The message to read out to the pharmacy"
-        className="max-h-56 overflow-auto rounded-[10px] border border-tm-rule bg-tm-soft px-3 py-2.5 font-tm-mono text-[11.5px] whitespace-pre-wrap"
+        className="max-h-56 overflow-auto rounded-[14px] border border-tm-rule bg-tm-soft px-3 py-2.5 font-tm-mono text-[11.5px] whitespace-pre-wrap"
       >
         {supply.refillMessage}
       </pre>
       <button
         type="button"
         onClick={copy}
-        className="mt-2 min-h-11 w-full cursor-pointer rounded-[10px] border border-tm-ink bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+        className="mt-2 min-h-11 w-full cursor-pointer rounded-[14px] border border-tm-stamp bg-tm-stamp px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-onstamp uppercase transition-transform duration-150 active:scale-[0.98]"
       >
         {copied ? "copied" : "copy the message"}
       </button>
@@ -386,7 +386,7 @@ function CallButton({
     <a
       href={telHref(contact.phone)}
       className={cn(
-        "flex min-h-11 items-center justify-between gap-2 rounded-[10px] border px-3 py-2",
+        "flex min-h-11 items-center justify-between gap-2 rounded-[14px] border px-3 py-2",
         emphasis ? "border-tm-red bg-tm-panel" : "border-tm-rule bg-tm-panel",
       )}
     >
@@ -457,7 +457,7 @@ function ContactsCard({ contacts }: { contacts: SupplyData["contacts"] }) {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="mt-2 min-h-11 w-full cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase transition-transform duration-150 active:scale-[0.98]"
+        className="mt-2 min-h-11 w-full cursor-pointer rounded-[14px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-dim uppercase transition-transform duration-150 active:scale-[0.98]"
       >
         {open ? "close" : "add or change a number"}
       </button>
@@ -487,9 +487,9 @@ function ContactForm({
             aria-checked={kind === k}
             onClick={() => setKind(k)}
             className={cn(
-              "min-h-11 flex-1 cursor-pointer rounded-[10px] border px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
+              "min-h-11 flex-1 cursor-pointer rounded-[14px] border px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
               kind === k
-                ? "border-tm-ink bg-tm-ink text-white"
+                ? "border-tm-stamp bg-tm-stamp text-tm-onstamp"
                 : "border-tm-rule bg-tm-panel text-tm-dim",
             )}
           >
@@ -502,7 +502,7 @@ function ContactForm({
         onChange={(e) => setName(e.target.value)}
         placeholder="Name"
         aria-label="Contact name"
-        className="min-h-11 w-full rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 text-sm focus:border-tm-ink"
+        className="min-h-11 w-full rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 text-sm focus:border-tm-ink"
       />
       <input
         value={phone}
@@ -510,7 +510,7 @@ function ContactForm({
         placeholder="Phone"
         inputMode="tel"
         aria-label="Contact phone"
-        className="min-h-11 w-full rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 font-tm-mono text-sm focus:border-tm-ink"
+        className="min-h-11 w-full rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 font-tm-mono text-sm focus:border-tm-ink"
       />
       <button
         type="button"
@@ -522,8 +522,8 @@ function ContactForm({
           setPhone("");
         }}
         className={cn(
-          "min-h-11 w-full cursor-pointer rounded-[10px] border px-3 font-tm-mono text-[11.5px] tracking-[0.12em] uppercase transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
-          valid ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule bg-tm-soft text-tm-dim",
+          "min-h-11 w-full cursor-pointer rounded-[14px] border px-3 font-tm-mono text-[11.5px] tracking-[0.12em] uppercase transition-transform duration-150 active:scale-[0.98] disabled:active:scale-100",
+          valid ? "border-tm-stamp bg-tm-stamp text-tm-onstamp" : "border-tm-rule bg-tm-soft text-tm-dim",
         )}
       >
         Save

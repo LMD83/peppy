@@ -21,7 +21,7 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-[10px] border p-4 shadow-[0_1px_2px_rgba(21,23,28,0.04)]",
+        "rounded-[14px] border p-4 shadow-[0_1px_2px_rgba(24,32,29,0.04)]",
         tone === "amber" ? "border-tm-amber bg-tm-amber-bg" : "border-tm-rule bg-tm-panel",
         className,
       )}
@@ -142,18 +142,18 @@ export function BigChoice({
             onClick={o.onSelect}
             aria-pressed={o.selected ?? false}
             className={cn(
-              "flex min-h-16 w-full cursor-pointer items-center justify-between gap-3 rounded-[10px] border px-4 py-3 text-left",
-              // white on tm-ink is 16.4:1; the unselected boundary is
-              // rule-strong (3.45:1 on panel), so both states carry a 3:1 edge.
+              "flex min-h-16 w-full cursor-pointer items-center justify-between gap-3 rounded-[14px] border px-4 py-3 text-left",
+              // white on tm-ink is 16.62:1; the unselected boundary is
+              // rule-strong (4.27:1 on panel), so both states carry a 3:1 edge.
               o.selected
-                ? "border-tm-ink bg-tm-ink text-white"
+                ? "border-tm-stamp bg-tm-stamp text-tm-onstamp"
                 : "border-tm-rule-strong bg-tm-panel text-tm-ink",
             )}
           >
             <span className="min-w-0">
               <span className="block text-[17px] font-medium">{o.label}</span>
               {o.detail && (
-                <span className={cn("mt-0.5 block text-[14px]", o.selected ? "text-white" : "text-tm-dim")}>
+                <span className={cn("mt-0.5 block text-[14px]", o.selected ? "text-tm-onstamp" : "text-tm-dim")}>
                   {o.detail}
                 </span>
               )}
@@ -171,7 +171,7 @@ export function BigChoice({
 
 /**
  * Contrast on each pairing (see globals.css for the palette rationale):
- * green on green-faint 4.85:1 · blue on blue-faint 5.46:1 · amber on amber-bg 5.23:1.
+ * green on green-faint 6.62:1 · blue on blue-faint 5.46:1 · amber on amber-bg 5.76:1.
  */
 export function ModeBadge({ mode }: { mode: "cut" | "maintain" | "survival" }) {
   const styles = {
@@ -182,7 +182,7 @@ export function ModeBadge({ mode }: { mode: "cut" | "maintain" | "survival" }) {
   return (
     <span
       className={cn(
-        "rounded-[14px] border px-2.5 py-[3px] font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
+        "rounded-[18px] border px-2.5 py-[3px] font-tm-mono text-[11.5px] tracking-[0.1em] uppercase",
         styles[mode],
       )}
     >
@@ -211,9 +211,9 @@ export function TmButton({
   "aria-label"?: string;
 }) {
   const variants: Record<TmButtonVariant, string> = {
-    primary: "bg-tm-ink text-white",
+    primary: "bg-tm-stamp text-tm-onstamp",
     ghost: "border border-tm-rule bg-tm-panel text-tm-ink",
-    danger: "bg-tm-red text-white",
+    danger: "bg-tm-red text-tm-onred",
     soft: "bg-tm-soft text-tm-ink",
   };
   return (
@@ -223,7 +223,7 @@ export function TmButton({
       onClick={onClick}
       aria-label={ariaLabel}
       className={cn(
-        "inline-flex min-h-11 cursor-pointer items-center justify-center rounded-[10px] px-4 font-tm-mono text-[11.5px] tracking-[0.15em] uppercase transition-[transform,opacity] duration-150 active:scale-[0.98] active:opacity-80 disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100",
+        "inline-flex min-h-11 cursor-pointer items-center justify-center rounded-[14px] px-4 font-tm-mono text-[11.5px] tracking-[0.15em] uppercase transition-[transform,opacity] duration-150 active:scale-[0.98] active:opacity-80 disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100",
         variants[variant],
         className,
       )}
@@ -255,10 +255,10 @@ export function TmChip({
         "min-h-11 cursor-pointer rounded-[20px] border px-3.5 py-2 font-tm-mono text-[11.5px] transition-[transform,opacity] duration-150 active:scale-[0.98] active:opacity-80",
         tone === "green"
           ? active
-            ? "border-tm-green bg-tm-green text-white"
+            ? "border-tm-green bg-tm-green text-tm-ongreen"
             : "border-tm-green text-tm-green"
           : active
-            ? "border-tm-ink bg-tm-ink text-white"
+            ? "border-tm-stamp bg-tm-stamp text-tm-onstamp"
             : "border-tm-rule bg-tm-soft text-tm-ink",
         className,
       )}
@@ -342,7 +342,7 @@ export function TmSheet({
         type="button"
         tabIndex={-1}
         aria-hidden
-        className="absolute inset-0 cursor-pointer bg-tm-ink/40"
+        className="absolute inset-0 cursor-pointer bg-tm-scrim/40"
         onClick={onClose}
       />
       <div
@@ -351,7 +351,7 @@ export function TmSheet({
         aria-modal="true"
         aria-label={label}
         aria-labelledby={title ? titleId : undefined}
-        className="relative z-10 mx-4 mb-4 w-full max-w-md rounded-[14px] border border-tm-rule bg-tm-panel p-4 shadow-[0_8px_32px_rgba(21,23,28,0.18)] sm:mb-0"
+        className="relative z-10 mx-4 mb-4 w-full max-w-md rounded-[18px] border border-tm-rule bg-tm-panel p-4 shadow-[0_8px_32px_rgba(24,32,29,0.18)] sm:mb-0"
       >
         <div className="mb-3 flex items-center justify-between gap-3">
           {title ? (

@@ -20,7 +20,7 @@ function TabBusy() {
       <p role="status" className="sr-only">
         Loading section…
       </p>
-      <div className="h-24 rounded-[10px] border border-tm-rule bg-tm-panel" />
+      <div className="h-24 rounded-[14px] border border-tm-rule bg-tm-panel" />
     </div>
   );
 }
@@ -111,7 +111,7 @@ function NavRow({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="flex min-h-16 w-full cursor-pointer items-center justify-between gap-3 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-4 py-3 text-left text-[17px] font-medium text-tm-ink transition-transform duration-150 active:scale-[0.98]"
+      className="flex min-h-16 w-full cursor-pointer items-center justify-between gap-3 rounded-[14px] border border-tm-rule-strong bg-tm-panel px-4 py-3 text-left text-[17px] font-medium text-tm-ink transition-transform duration-150 active:scale-[0.98]"
     >
       <span className="min-w-0">{label}</span>
       <span aria-hidden className="shrink-0 font-tm-mono text-[17px] text-tm-dim">
@@ -288,7 +288,7 @@ function Shell() {
     <div className={cn("min-h-screen", tour ? "pb-[300px]" : "pb-[84px]")}>
       <a
         href="#tm-main"
-        className="fixed -top-24 left-3 z-[60] inline-flex min-h-11 items-center rounded-[10px] bg-tm-ink px-4 font-tm-mono text-[11.5px] tracking-[0.15em] text-white uppercase focus:top-3"
+        className="fixed -top-24 left-3 z-[60] inline-flex min-h-11 items-center rounded-[14px] bg-tm-stamp px-4 font-tm-mono text-[11.5px] tracking-[0.15em] text-tm-onstamp uppercase focus:top-3"
       >
         Skip to content
       </a>
@@ -381,7 +381,7 @@ class SessionRecoveryBoundary extends Component<{ children: ReactNode }, { faile
           </p>
           <button
             onClick={() => this.setState({ failed: false })}
-            className="inline-flex min-h-11 cursor-pointer items-center rounded-[10px] bg-tm-ink px-5 font-tm-mono text-[11.5px] tracking-[0.15em] text-white uppercase"
+            className="inline-flex min-h-11 cursor-pointer items-center rounded-[14px] bg-tm-stamp px-5 font-tm-mono text-[11.5px] tracking-[0.15em] text-tm-onstamp uppercase"
           >
             Back to sign-in
           </button>

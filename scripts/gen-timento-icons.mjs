@@ -6,12 +6,12 @@ import { mkdir } from "node:fs/promises";
 const svg = (size) => `<!doctype html><meta charset="utf-8">
 <body style="margin:0">
 <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="12" fill="#15171c"/>
-  <rect x="12" y="40" width="8" height="12" fill="#2b5fab"/>
-  <rect x="24" y="32" width="8" height="20" fill="#2e7d4f"/>
-  <rect x="36" y="24" width="8" height="28" fill="#c7373f"/>
-  <rect x="48" y="34" width="4" height="18" fill="#b8860b"/>
-  <path d="M10 22 L26 16 L40 20 L54 12" stroke="#fafaf8" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect width="64" height="64" rx="12" fill="#18201d"/>
+  <rect x="12" y="40" width="8" height="12" fill="#9ec1f0"/>
+  <rect x="24" y="32" width="8" height="20" fill="#8fcdbb"/>
+  <rect x="36" y="24" width="8" height="28" fill="#ffb4b7"/>
+  <rect x="48" y="34" width="4" height="18" fill="#ffd18a"/>
+  <path d="M10 22 L26 16 L40 20 L54 12" stroke="#f6f7f2" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 </svg></body>`;
 
 const executablePath = process.env.TIMENTO_CHROMIUM ?? "/opt/pw-browsers/chromium";

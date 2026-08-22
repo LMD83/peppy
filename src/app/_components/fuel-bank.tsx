@@ -178,7 +178,7 @@ export function FuelBank({
             });
             return (
               <div key={menu.key} className="flex items-stretch gap-1.5">
-                <div className="flex min-h-11 flex-1 flex-col justify-center rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2">
+                <div className="flex min-h-11 flex-1 flex-col justify-center rounded-[14px] border border-tm-rule bg-tm-panel px-3 py-2">
                   <span className="text-sm font-medium">{menu.name}</span>
                   <span className="font-tm-mono text-[11.5px] text-tm-dim">
                     {menu.kcal} kcal · {fmt(menu.proteinG)} g protein · {menu.effortSummary}
@@ -192,7 +192,7 @@ export function FuelBank({
                 </div>
                 <button
                   onClick={() => actions.logMenu(menu.slot, menu.items)}
-                  className="min-h-11 shrink-0 cursor-pointer rounded-[10px] bg-tm-ink px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+                  className="min-h-11 shrink-0 cursor-pointer rounded-[14px] bg-tm-stamp px-3 font-tm-mono text-[11.5px] tracking-[0.1em] text-tm-onstamp uppercase transition-transform duration-150 active:scale-[0.98]"
                 >
                   Log
                 </button>
@@ -215,8 +215,8 @@ export function FuelBank({
               aria-checked={slot === s}
               onClick={() => setSlot(s)}
               className={cn(
-                "min-h-11 flex-1 cursor-pointer rounded-[10px] border font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
-                slot === s ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule bg-tm-panel text-tm-dim",
+                "min-h-11 flex-1 cursor-pointer rounded-[14px] border font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
+                slot === s ? "border-tm-stamp bg-tm-stamp text-tm-onstamp" : "border-tm-rule bg-tm-panel text-tm-dim",
               )}
             >
               {s}
@@ -235,8 +235,8 @@ export function FuelBank({
                 setPicked(null);
               }}
               className={cn(
-                "min-h-11 cursor-pointer rounded-[10px] border px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
-                browse === g ? "border-tm-ink bg-tm-ink text-white" : "border-tm-rule bg-tm-panel text-tm-dim",
+                "min-h-11 cursor-pointer rounded-[14px] border px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]",
+                browse === g ? "border-tm-stamp bg-tm-stamp text-tm-onstamp" : "border-tm-rule bg-tm-panel text-tm-dim",
               )}
             >
               {g === "recent" || g === "all" ? g : AISLE_LABELS[g]}
@@ -252,7 +252,7 @@ export function FuelBank({
           }}
           placeholder="Search: brand, pack, Tesco, freezer"
           aria-label="Search catalogue"
-          className="mt-2 min-h-11 w-full rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 py-2 text-sm focus:border-tm-ink"
+          className="mt-2 min-h-11 w-full rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 py-2 text-sm focus:border-tm-ink"
         />
 
         {picked === null || !pickedFood ? (
@@ -270,7 +270,7 @@ export function FuelBank({
                     setPicked(p);
                     setGrams(String(p.packG));
                   }}
-                  className="flex min-h-11 w-full cursor-pointer flex-col justify-center rounded-[10px] border border-tm-rule bg-tm-panel px-3 py-2 text-left transition-transform duration-150 active:scale-[0.98]"
+                  className="flex min-h-11 w-full cursor-pointer flex-col justify-center rounded-[14px] border border-tm-rule bg-tm-panel px-3 py-2 text-left transition-transform duration-150 active:scale-[0.98]"
                 >
                   {/* Name truncates, the kcal figure holds one stable position —
                       short and long names used to place macros differently
@@ -290,7 +290,7 @@ export function FuelBank({
             })}
           </div>
         ) : (
-          <div className="mt-2 rounded-[10px] bg-tm-soft p-3">
+          <div className="mt-2 rounded-[14px] bg-tm-soft p-3">
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-sm font-semibold">{picked.name}</span>
               <button
@@ -316,13 +316,13 @@ export function FuelBank({
             <div className="mt-2 flex flex-wrap gap-1.5">
               <button
                 onClick={() => log(picked.packG)}
-                className="min-h-11 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]"
+                className="min-h-11 cursor-pointer rounded-[14px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]"
               >
                 Log pack · {picked.packLabel}
               </button>
               <button
                 onClick={() => log(pickedFood.portionG)}
-                className="min-h-11 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]"
+                className="min-h-11 cursor-pointer rounded-[14px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]"
               >
                 {portions === "hands"
                   ? `${pickedFood.handPortion} · ${pickedFood.portionLabel}`
@@ -330,7 +330,7 @@ export function FuelBank({
               </button>
               <button
                 onClick={() => log(100)}
-                className="min-h-11 cursor-pointer rounded-[10px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]"
+                className="min-h-11 cursor-pointer rounded-[14px] border border-tm-rule bg-tm-panel px-3 font-tm-mono text-[11.5px] tracking-[0.1em] uppercase transition-transform duration-150 active:scale-[0.98]"
               >
                 100 g
               </button>
@@ -348,11 +348,11 @@ export function FuelBank({
                 inputMode="numeric"
                 aria-label="Grams"
                 placeholder="g"
-                className="min-h-11 w-24 rounded-[10px] border border-tm-rule-strong bg-tm-panel px-3 py-2 font-tm-mono text-sm focus:border-tm-ink"
+                className="min-h-11 w-24 rounded-[14px] border border-tm-rule-strong bg-tm-panel px-3 py-2 font-tm-mono text-sm focus:border-tm-ink"
               />
               <button
                 type="submit"
-                className="min-h-11 flex-1 cursor-pointer rounded-[10px] bg-tm-ink px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-white uppercase transition-transform duration-150 active:scale-[0.98]"
+                className="min-h-11 flex-1 cursor-pointer rounded-[14px] bg-tm-stamp px-4 font-tm-mono text-[11.5px] tracking-[0.12em] text-tm-onstamp uppercase transition-transform duration-150 active:scale-[0.98]"
               >
                 Log to {slot}
               </button>
